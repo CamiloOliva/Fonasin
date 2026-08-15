@@ -2,6 +2,8 @@
 
 Este directorio es la fuente de verdad para las decisiones tecnicas del proyecto.
 
+La guia obligatoria de implementacion para agentes y desarrolladores esta en [`AGENTS.md`](../AGENTS.md).
+
 ## Indice
 
 - [Arquitectura](architecture/overview.md): componentes, capas y limites de los modulos.
