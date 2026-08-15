@@ -1,0 +1,9 @@
+---
+deployment:
+  tasks:
+    # Reemplazar con la ruta real del document root del subdominio.
+    - export DEPLOYPATH=/home/CPANEL_USER/dev.tudominio.com
+    - npm ci
+    - npm run build
+    - /bin/mkdir -p $DEPLOYPATH
+    - /bin/cp -R dist/. $DEPLOYPATH

@@ -1,6 +1,6 @@
-# FONASIN — Frontend institucional
+# FONASIN — Plataforma institucional
 
-Frontend en React + TypeScript + Vite + Tailwind CSS. Está organizado para que el contenido editable viva en `src/data/` y la futura integración con Laravel pueda concentrarse en `src/services/`.
+Frontend actual en React + TypeScript + Vite + Tailwind CSS. El proyecto se prepara para evolucionar a un monolito modular en Laravel, React/Inertia, Filament y PostgreSQL, sin interrumpir el sitio actual.
 
 ## Requisitos
 - Node.js 20+
@@ -30,3 +30,11 @@ npm run preview
 - Imágenes: `src/assets/images/`
 
 > El contenido marcado como provisional/placeholder debe sustituirse por información oficial de FONASIN antes de producción.
+
+## Arquitectura y desarrollo
+
+- [Documentacion tecnica](docs/README.md)
+- [Arquitectura objetivo](docs/architecture/overview.md)
+- [Modelo de datos](docs/architecture/data-model.md)
+- [Desarrollo local y ramas](docs/operations/local-development.md)
+- [Preparacion de cPanel](infra/cpanel/README.md)
