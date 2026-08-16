@@ -13,5 +13,5 @@ Usar PostgreSQL con UUID, migraciones versionadas y tablas `audit_events` y `aut
 ## Consecuencias
 
 - Las acciones importantes son trazables sin guardar contenido sensible en la bitacora.
-- Las migraciones se prueban en staging antes de produccion.
+- Las migraciones se validan localmente antes de produccion y se respaldan antes de ejecutarse en el servidor.
 - La auditoria avanzada por triggers se pospone hasta que exista una necesidad comprobada.

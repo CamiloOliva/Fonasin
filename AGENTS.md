@@ -136,9 +136,10 @@ tests/Browser/    # Flujos criticos: afiliacion, portal y administracion
 feature/* -> develop -> main
 ```
 
-- `develop` es la rama de integracion y se prueba en el subdominio de staging.
-- `main` representa produccion y solo recibe cambios mediante una pull request aprobada.
-- Staging y produccion usan bases, storage, claves y `.env` diferentes.
+- `develop` es la rama de integracion local. No se despliega en cPanel.
+- Diego revisa y realiza el merge de `develop` hacia `main` cuando el cambio este validado localmente.
+- `main` representa produccion y es la unica rama que se despliega al dominio principal.
+- Produccion usa sus propias claves, `.env`, base de datos y almacenamiento. Nunca se usan datos reales en `develop`.
 - Nunca ejecutar migraciones, seeds destructivos ni pruebas contra produccion sin respaldo verificable y aprobacion explicita.
 - No configurar `.cpanel.yml` con rutas inventadas. Las rutas de cPanel deben confirmarse antes de versionar configuracion de despliegue.
 

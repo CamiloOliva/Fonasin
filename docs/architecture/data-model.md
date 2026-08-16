@@ -7,6 +7,19 @@
 - Los datos de negocio se archivan mediante estado; no se eliminan de forma fisica desde la aplicacion.
 - Los datos sensibles se cifran en la capa de aplicacion antes de persistirse.
 - Los archivos se guardan en storage privado; PostgreSQL conserva sus metadatos y relaciones.
+- Las restricciones, indices y relaciones se declaran en migraciones, no solo en validacion de interfaz.
+- Los catalogos de estados se validan en dominio y se documentan antes de agregarse.
+
+## Relaciones principales
+
+```text
+users <-> roles                 mediante role_user
+users -> associates             una cuenta puede representar un asociado
+associates -> credit_accounts   un asociado puede tener varios creditos
+associates -> affiliation_applications
+applications -> sections, documents, consent_records
+users -> audit_events           un actor realiza una accion auditable
+```
 
 ## Identidad y acceso
 
@@ -114,6 +127,23 @@ Registra evidencia de aceptacion sin depender de que una politica cambie despues
 | `registered_by_user_id` | UUID | FK al administrador responsable |
 
 Un asociado puede tener varios creditos. No se deben borrar; una correccion crea auditoria y un credito no vigente se archiva.
+
+## Convenciones de migracion
+
+- Crear una migracion por cambio logico, con nombre descriptivo.
+- Agregar primero columnas o tablas nuevas; migrar datos; cambiar codigo; retirar elementos obsoletos en una migracion posterior.
+- Para importes monetarios usar `numeric`, nunca `float`.
+- Definir FKs y reglas `on delete` deliberadamente. En datos historicos preferir impedir la eliminacion.
+- Crear indices para FKs, busquedas por estado/fecha y consultas frecuentes del portal.
+- Un seeder no contiene datos reales ni se ejecuta en produccion sin aprobacion expresa.
+
+## Decisiones pendientes antes de la primera migracion
+
+1. Momento exacto en que se crea `users` para un asociado.
+2. Campos definitivos y obligatorios de cada etapa de afiliacion.
+3. Catalogo de documentos obligatorios y sus limites de archivo.
+4. Regla de correccion, archivo y vigencia de un credito.
+5. Retencion aprobada para solicitudes, documentos y eventos de auditoria.
 
 ## Contenido y FPQRS
 

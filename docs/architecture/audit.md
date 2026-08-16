@@ -44,6 +44,23 @@ Registra `login_succeeded`, `login_failed`, `logout`, `password_reset_requested`
 - Las transacciones de negocio y su evento de auditoria se guardan juntas; si una falla, ninguna queda persistida.
 - Para acciones administrativas criticas se exige `actor_user_id` y `correlation_id`.
 
+## Patron de implementacion
+
+1. El caso de uso inicia una transaccion.
+2. Realiza el cambio de negocio autorizado.
+3. Inserta el evento de auditoria con una accion semantica.
+4. Confirma la transaccion.
+
+Si el cambio o la auditoria fallan, se revierte todo. No registrar diffs completos de registros sensibles: usar campos permitidos y valores redactados.
+
+## Consulta operativa
+
+Las vistas administrativas deben filtrar eventos por modulo, recurso, actor, accion y rango de fechas. El detalle se trata como evidencia operativa y es de solo lectura.
+
+## Retencion
+
+El periodo de retencion se definira con FONASIN y su asesoria juridica. Hasta contar con esa decision, los agentes no deben implementar eliminacion automatica de auditoria, documentos ni solicitudes.
+
 ## Evolucion
 
 La primera version usa auditoria desde la aplicacion. Si se habilitan integraciones, acceso SQL de terceros o requerimientos de inmutabilidad reforzada, se evaluan triggers PostgreSQL, exportacion a almacenamiento inmutable y alertas.
