@@ -27,5 +27,6 @@ La aplicacion activa es un frontend React, TypeScript, Vite y Tailwind. Laravel,
 - [API futura](api/README.md): reglas de versionado e integracion externa.
 - [Decisiones de arquitectura](adr/): decisiones aceptadas y su justificacion.
 - [Desarrollo local](operations/local-development.md): ramas, comandos y controles previos a una PR.
+- [Frontend React](operations/frontend-development.md): desarrollo Vite, rutas SPA y publicacion segura en Apache.
 - [Despliegue](operations/deployment.md): validacion local, merge de Diego y produccion en `main`.
 - [Estrategia de contenedores](operations/container-strategy.md): Docker local y limites del cPanel actual.

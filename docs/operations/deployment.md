@@ -31,6 +31,8 @@ Como cPanel no dispone de Node.js para la cuenta, el bundle Vite se compila fuer
 
 No confirmar `dist/` en Git como solucion permanente y no copiar `node_modules` al hosting.
 
+React Router requiere el fallback de Apache incluido en `public/.htaccess`; este archivo se copia al build y evita errores 404 al abrir una ruta directamente. Consultar `frontend-development.md` antes de modificar rutas o automatizar la publicacion.
+
 ## Verificacion posterior
 
 - pagina principal responde por HTTPS;

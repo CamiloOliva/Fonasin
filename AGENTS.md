@@ -100,6 +100,10 @@ Consultar `docs/architecture/audit.md` antes de añadir una accion con impacto d
 ## 8. Frontend y experiencia
 
 - Conservar la compilacion Vite actual en cada cambio mientras Laravel no este inicializado.
+- El frontend se desarrolla en `src/` y se publica como archivos estaticos de `dist/`; Apache no ejecuta React ni Node.js.
+- No editar ni confirmar `dist/` o `node_modules/`. El build de produccion se genera desde el commit aprobado de `main`.
+- React Router requiere mantener `public/.htaccess` y probar recargas directas de rutas privadas y publicas en Apache.
+- Ninguna variable `VITE_*` puede contener un secreto, porque termina en el bundle publico.
 - Organizar codigo nuevo por modulo en `src/modules/` y, tras la migracion, en `resources/js/`.
 - Mantener componentes compartidos libres de reglas de negocio.
 - Los estados de carga, error, vacio y sin permisos son obligatorios para formularios y pantallas privadas.

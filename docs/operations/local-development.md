@@ -28,6 +28,8 @@ npm run build
 
 `npm run build` es obligatorio antes de solicitar un merge, porque verifica TypeScript y genera el bundle Vite.
 
+La guia completa sobre rutas React Router, variables, archivos estaticos y Apache esta en `frontend-development.md`.
+
 ## Flujo de cambio
 
 1. Crear una rama `feature/<descripcion>` desde `develop`.
