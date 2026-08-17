@@ -125,6 +125,7 @@ Antes de confirmar cambios:
 3. Ejecutar `git diff --check`.
 4. Actualizar documentacion si cambia arquitectura, modelo de datos, auditoria, despliegue o una decision de alcance.
 5. Incluir pruebas para toda regla de negocio nueva: casos validos, permisos y errores previsibles.
+6. Actualizar `docs/requirements/frontend-traceability.md` cuando una PR implemente, valide, bloquee o cambie un requisito Frontend.
 
 Al iniciar Laravel, usar:
 

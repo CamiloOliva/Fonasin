@@ -30,3 +30,4 @@ La aplicacion activa es un frontend React, TypeScript, Vite y Tailwind. Laravel,
 - [Frontend React](operations/frontend-development.md): desarrollo Vite, rutas SPA y publicacion segura en Apache.
 - [Despliegue](operations/deployment.md): validacion local, merge de Diego y produccion en `main`.
 - [Estrategia de contenedores](operations/container-strategy.md): Docker local y limites del cPanel actual.
+- [Trazabilidad Frontend](requirements/frontend-traceability.md): estado, evidencia y criterio de cierre de cada requisito funcional.

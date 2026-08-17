@@ -1,4 +1,4 @@
-import { ArrowUpRight, BadgeDollarSign, CircleDollarSign, HandCoins, Landmark, PiggyBank, ShieldCheck, Sparkles } from 'lucide-react';
+import { BadgeDollarSign, CircleDollarSign, HandCoins, Landmark, PiggyBank, ShieldCheck, Sparkles } from 'lucide-react';
 
 const creditLines = [
   {
@@ -48,7 +48,7 @@ const creditLines = [
   },
 ];
 
-export default function Creditos() {
+export default function CreditsPage() {
   return (
     <div className="relative overflow-hidden bg-[linear-gradient(160deg,#003d22_0%,#005c31_34%,#08783f_64%,#e5efd0_100%)] py-10 sm:py-14">
       <div className="pointer-events-none absolute -left-24 top-1/3 h-80 w-80 rounded-full bg-fonasin-lime/10 blur-3xl" />
@@ -105,16 +105,9 @@ export default function Creditos() {
                   <h3 className="mt-2 text-2xl font-black tracking-wide text-fonasin-deep">{name}</h3>
                 </div>
                 <p className="relative mt-3 max-w-md leading-7 text-slate-600">{description}</p>
-                <a
-                  href="#"
-                  onClick={(event) => event.preventDefault()}
-                  aria-label={`Conoce más sobre ${name}. Información detallada próximamente.`}
-                  className="group/cta relative mt-auto inline-flex w-fit items-center gap-2 overflow-hidden rounded-xl border border-fonasin-green/15 bg-fonasin-green/10 px-4 py-2.5 text-sm font-black text-fonasin-green transition duration-300 hover:border-fonasin-green hover:text-white focus-ring"
-                >
-                  <span className="absolute inset-0 origin-left scale-x-0 bg-gradient-to-r from-fonasin-green to-fonasin-dark transition-transform duration-500 ease-out group-hover/cta:scale-x-100" />
-                  <span className="relative">Conoce más</span>
-                  <ArrowUpRight size={17} aria-hidden="true" className="relative transition duration-300 group-hover/cta:translate-x-1 group-hover/cta:-translate-y-1 group-hover/cta:rotate-12" />
-                </a>
+                <span className="relative mt-auto inline-flex w-fit rounded-full bg-fonasin-green/10 px-3 py-1.5 text-sm font-bold text-fonasin-green">
+                  Información detallada próximamente
+                </span>
               </article>
             ))}
           </div>
