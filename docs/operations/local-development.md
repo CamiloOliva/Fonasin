@@ -59,4 +59,4 @@ El workflow de GitHub ejecuta `php artisan test` y `npm run build` en cada `push
 
 ## Estado del repositorio
 
-La rama local activa es `develop`. Debe publicarse cuando la cuenta autenticada disponga de permiso de escritura sobre el repositorio remoto.
+El trabajo se realiza en una rama `feature/*` creada desde `develop`. Los commits se publican en su rama y se integran a `develop` despues de pasar las validaciones locales y de CI.

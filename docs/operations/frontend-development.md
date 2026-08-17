@@ -81,7 +81,7 @@ VITE_WHATSAPP_URL=
 - `.env` nunca se sube a Git.
 - Solo publicar con `VITE_*` valores seguros para cualquier visitante.
 - En produccion, `VITE_API_BASE_URL` debe usar HTTPS y el dominio aprobado.
-- Cuando exista Laravel, los secretos permanecen en el `.env` del backend y nunca pasan al build React.
+- Los secretos permanecen en `backend/.env` y nunca pasan al build React.
 
 ## Flujo de version y publicacion
 

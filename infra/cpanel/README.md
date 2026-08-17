@@ -16,7 +16,7 @@ La cuenta actual no tiene Node.js ni permisos de administrador. Por lo tanto, cP
 
 1. Mantener el repositorio administrado por cPanel con `main` como rama activa.
 2. Configurar el despliegue del dominio principal solo desde `main`.
-3. Crear el `.env` de produccion cuando exista Laravel.
+3. Crear el `.env` de produccion al preparar el despliegue de Laravel.
 4. Configurar la base PostgreSQL y almacenamiento privado de produccion.
 
 ## Publicacion actual del frontend
@@ -25,9 +25,9 @@ Apache sirve archivos estaticos desde el document root de dominio principal. La 
 
 La automatizacion futura debe copiar unicamente el contenido de `dist/` compilado fuera del hosting. El document root no debe contener el repositorio completo, `node_modules`, archivos `.env`, documentos privados ni fuentes de desarrollo innecesarias.
 
-## Laravel futuro
+## Backend Laravel
 
-Cuando se apruebe el backend, el codigo Laravel debe ubicarse fuera del document root. Apache debe apuntar solamente al directorio `public` de Laravel. Antes de hacerlo, confirmar PHP compatible, Composer, extensiones, PostgreSQL, cron y permisos de storage.
+Laravel vive en `backend/`, fuera del document root. Cuando se apruebe su despliegue, Apache debe apuntar solamente a `backend/public/`. Antes de activarlo, confirmar PHP compatible, Composer, extensiones, PostgreSQL, cron y permisos de `backend/storage/` y `backend/bootstrap/cache/`.
 
 ## Antes de activar el despliegue
 

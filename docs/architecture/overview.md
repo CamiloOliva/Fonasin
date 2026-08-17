@@ -60,23 +60,24 @@ Una respuesta nunca incluye campos privados que la pantalla no necesita ni enlac
 ## Estructura de codigo
 
 ```text
-app/
-  Application/       # Casos de uso y DTOs
-  Domain/            # Entidades, reglas, estados y eventos
-  Infrastructure/    # Persistencia, storage, correo y auditoria
-  Http/              # Controllers, Requests y Middleware
-database/
-  migrations/        # Un cambio versionado por archivo
-  seeders/           # Solo datos de desarrollo controlados
-resources/js/
-  Pages/             # Pantallas Inertia
-  Components/        # Componentes reutilizables
-  Layouts/           # Layout publico, portal y administracion
+backend/
+  app/
+    Application/       # Casos de uso y DTOs
+    Domain/            # Entidades, reglas, estados y eventos
+    Infrastructure/    # Persistencia, storage, correo y auditoria
+    Http/              # Controllers, Requests y Middleware
+  database/
+    migrations/        # Un cambio versionado por archivo
+    seeders/           # Solo datos de desarrollo controlados
+  resources/js/
+    Pages/             # Pantallas Inertia
+    Components/        # Componentes reutilizables
+    Layouts/           # Layout publico, portal y administracion
 ```
 
 ## Transicion desde el frontend actual
 
-El frontend Vite existente en `src/` sigue operativo. Cuando se inicialice Laravel, sus paginas y componentes se migraran de forma incremental a `resources/js/`; no se reescribe la interfaz de una sola vez.
+El frontend Vite existente en `src/` sigue operativo y Laravel ya esta inicializado en `backend/`. Las paginas y componentes se migraran de forma incremental a `backend/resources/js/`; no se reescribe la interfaz de una sola vez.
 
 ## Criterio para extraer un servicio futuro
 

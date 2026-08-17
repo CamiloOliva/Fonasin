@@ -2,7 +2,7 @@
 
 ## Decision actual
 
-Usar Docker Compose **solo para desarrollo local y pruebas automatizadas** cuando se inicialice Laravel y PostgreSQL. No usar Docker para produccion mientras FONASIN permanezca en el hosting cPanel compartido actual.
+Laravel y PostgreSQL ya funcionan localmente sin contenedores. Docker Compose se evaluara **solo para desarrollo local y pruebas automatizadas** si aporta reproducibilidad; no se usara en produccion mientras FONASIN permanezca en el hosting cPanel compartido actual.
 
 ## Evidencia del hosting actual
 
@@ -27,9 +27,9 @@ Apache cPanel
 | `develop` | equipo local | compilacion y pruebas locales |
 | `main` | dominio principal | artefacto `dist/` aprobado |
 
-## Docker Compose local futuro
+## Docker Compose local propuesto
 
-Cuando exista Laravel, el entorno local tendra servicios separados:
+Si se adopta Docker Compose, el entorno local tendra servicios separados:
 
 ```text
 app        Laravel + PHP
@@ -39,7 +39,7 @@ mailpit    correo de prueba (opcional)
 
 El frontend puede seguir usando Vite local o integrarse posteriormente con Laravel/Inertia. Los volumenes de Docker son exclusivamente locales; nunca contienen datos personales reales.
 
-## Composicion propuesta cuando exista backend
+## Composicion propuesta
 
 ```text
 compose.yaml
@@ -73,11 +73,11 @@ Si el proveedor habilita Application Manager con Node.js, se evaluara esa opcion
 
 ## Regla para produccion
 
-Docker en produccion solo se evaluara si FONASIN migra a un VPS o a una plataforma administrada con soporte de contenedores, observabilidad, backups y actualizaciones de seguridad. El hosting cPanel compartido actual sigue usando Apache para archivos estaticos y PHP para un futuro Laravel.
+Docker en produccion solo se evaluara si FONASIN migra a un VPS o a una plataforma administrada con soporte de contenedores, observabilidad, backups y actualizaciones de seguridad. El hosting cPanel compartido actual sigue usando Apache para archivos estaticos y usara PHP cuando se apruebe el despliegue del backend Laravel.
 
-## Laravel en una fase posterior
+## Despliegue posterior del backend
 
-Laravel puede ejecutarse con Apache/PHP si el proveedor confirma PHP compatible, Composer, extensiones requeridas y acceso SSH. El codigo Laravel debe quedar fuera de `public_html` y el document root debe apuntar unicamente a `backend/public`.
+Laravel puede ejecutarse con Apache/PHP si el proveedor confirma PHP compatible, Composer, extensiones requeridas y acceso SSH. El codigo de `backend/` debe quedar fuera del document root y Apache debe apuntar unicamente a `backend/public/`.
 
 Antes de activar Laravel en produccion se debe confirmar:
 

@@ -17,9 +17,10 @@ El alcance vigente no incluye un CMS general, pasarela de pagos, integraciones c
 ## 2. Estado actual y transicion
 
 - El sitio actual funciona con React, TypeScript, Vite y Tailwind en `src/`.
-- Aun no existe una aplicacion Laravel ni una base PostgreSQL creada.
-- Las carpetas `app/`, `database/`, `resources/`, `storage/` y `tests/` son el esqueleto objetivo; no asumir que ya contienen infraestructura Laravel funcional.
-- La migracion de React hacia `resources/js/` sera incremental. No mover ni reescribir pantallas existentes por motivos cosmeticos. Cada traslado debe mantener rutas, comportamiento y compilacion.
+- Laravel 12 vive en `backend/` y usa PostgreSQL para los datos operativos locales.
+- Las rutas oficiales del backend son `backend/app/`, `backend/database/`, `backend/resources/`, `backend/storage/` y `backend/tests/`. Los esqueletos homonimos de la raiz no reciben codigo nuevo.
+- Las migraciones base de Identity, Affiliation, Credits y Audit ya existen en `backend/database/migrations/`.
+- La migracion de React hacia `backend/resources/js/` sera incremental. No mover ni reescribir pantallas existentes por motivos cosmeticos. Cada traslado debe mantener rutas, comportamiento y compilacion.
 
 ## 3. Arquitectura obligatoria
 
@@ -33,9 +34,9 @@ Presentacion -> HTTP -> Aplicacion -> Dominio -> Infraestructura
 
 1. React/Inertia y Filament son presentacion: muestran datos y envian acciones; no contienen reglas de negocio sensibles.
 2. Controladores, rutas y Form Requests autentican, autorizan y validan; no implementan flujos complejos ni persisten reglas de negocio directamente.
-3. Los casos de uso de `app/Application/` coordinan operaciones completas y transacciones.
-4. `app/Domain/` contiene estados, reglas y eventos del negocio; no debe depender de HTTP, React, Filament, cPanel, SQL concreto ni proveedores externos.
-5. `app/Infrastructure/` implementa PostgreSQL, almacenamiento, correo, auditoria y adaptadores externos.
+3. Los casos de uso de `backend/app/Application/` coordinan operaciones completas y transacciones.
+4. `backend/app/Domain/` contiene estados, reglas y eventos del negocio; no debe depender de HTTP, React, Filament, cPanel, SQL concreto ni proveedores externos.
+5. `backend/app/Infrastructure/` implementa PostgreSQL, almacenamiento, correo, auditoria y adaptadores externos.
 6. Nunca saltar una capa por rapidez. Un componente React no consulta PostgreSQL; un controlador no accede directamente a storage; un modulo no modifica tablas de otro modulo sin pasar por un caso de uso definido.
 
 ## 4. Limites de modulos
@@ -99,12 +100,12 @@ Consultar `docs/architecture/audit.md` antes de añadir una accion con impacto d
 
 ## 8. Frontend y experiencia
 
-- Conservar la compilacion Vite actual en cada cambio mientras Laravel no este inicializado.
+- Conservar la compilacion Vite actual mientras el frontend independiente en `src/` siga activo.
 - El frontend se desarrolla en `src/` y se publica como archivos estaticos de `dist/`; Apache no ejecuta React ni Node.js.
 - No editar ni confirmar `dist/` o `node_modules/`. El build de produccion se genera desde el commit aprobado de `main`.
 - React Router requiere mantener `public/.htaccess` y probar recargas directas de rutas privadas y publicas en Apache.
 - Ninguna variable `VITE_*` puede contener un secreto, porque termina en el bundle publico.
-- Organizar codigo nuevo por modulo en `src/modules/` y, tras la migracion, en `resources/js/`.
+- Organizar codigo nuevo por modulo en `src/modules/` y, tras la migracion, en `backend/resources/js/`.
 - Mantener componentes compartidos libres de reglas de negocio.
 - Los estados de carga, error, vacio y sin permisos son obligatorios para formularios y pantallas privadas.
 - No crear placeholders que aparenten una funcion terminada. Identificar claramente las funciones pendientes.
@@ -127,12 +128,12 @@ Antes de confirmar cambios:
 5. Incluir pruebas para toda regla de negocio nueva: casos validos, permisos y errores previsibles.
 6. Actualizar `docs/requirements/frontend-traceability.md` cuando una PR implemente, valide, bloquee o cambie un requisito Frontend.
 
-Al iniciar Laravel, usar:
+Para Laravel, usar:
 
 ```text
-tests/Unit/       # Reglas puras de dominio
-tests/Feature/    # Casos de uso, HTTP, permisos y persistencia
-tests/Browser/    # Flujos criticos: afiliacion, portal y administracion
+backend/tests/Unit/       # Reglas puras de dominio
+backend/tests/Feature/    # Casos de uso, HTTP, permisos y persistencia
+backend/tests/Browser/    # Flujos criticos: afiliacion, portal y administracion
 ```
 
 ## 11. Ramas y despliegue
