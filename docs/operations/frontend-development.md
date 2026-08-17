@@ -28,6 +28,8 @@ Codigo fuente en src/
 npm ci
 npm run dev
 npm run build
+npm run test
+npm run test:watch
 npm run preview
 ```
 
@@ -97,6 +99,7 @@ Solo `main` se publica. No copiar un build de `develop` sobre el dominio princip
 ## Lista de salida obligatoria
 
 - [ ] `npm ci` termina sin errores.
+- [ ] `npm run test` termina sin errores.
 - [ ] `npm run build` termina sin errores.
 - [ ] `npm run preview` permite navegar las rutas criticas.
 - [ ] No hay secretos, URLs locales ni credenciales en el bundle.

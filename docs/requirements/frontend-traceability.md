@@ -88,9 +88,9 @@ La pagina publica `/creditos` solo cubre informacion general de `FE-WEB-004`; no
 
 | Control | Estado | Evidencia requerida para `Validado` |
 |---|---|---|
-| Compilacion TypeScript/Vite | Implementado | `npm run build` exitoso en el commit revisado. |
+| Compilacion TypeScript/Vite | Implementado | `npm run build` local y workflow `.github/workflows/frontend-ci.yml` en cada push y pull request. |
 | Rutas SPA en Apache | Implementado | `public/.htaccess` incluido en `dist` y recarga directa verificada. |
-| Pruebas unitarias | Pendiente | Reporte automatizado de componentes y utilidades criticas. |
+| Pruebas unitarias | En curso | Vitest y Testing Library cubren rutas y navegacion; ampliar a componentes y utilidades criticas. |
 | Pruebas de integracion | Pendiente | Formularios, archivos, errores y confirmaciones. |
 | Responsive | Pendiente | Matriz movil, tableta y escritorio. |
 | Accesibilidad | Pendiente | Teclado, foco, labels, contraste, semantica y auditoria. |

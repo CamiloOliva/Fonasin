@@ -1,111 +1,97 @@
 import { BadgeDollarSign, CircleDollarSign, HandCoins, Landmark, PiggyBank, ShieldCheck, Sparkles } from 'lucide-react';
+import { WHATSAPP_URL } from '../../../data/siteConfig';
 
 const creditLines = [
-  {
-    number: '01',
-    name: 'FONALIBRE',
-    description: 'Tu crédito de libre inversión para lo que necesites, cuándo lo necesites.',
-    icon: HandCoins,
-    gradient: 'from-fonasin-green to-fonasin-dark',
-    iconSurface: 'bg-fonasin-green/10 text-fonasin-green',
-    layout: 'xl:col-span-3',
-  },
-  {
-    number: '02',
-    name: 'FONAROTATIVO',
-    description: 'Liquidez inmediata a tu alcance. Úsalo, págalo y vuelve a disfrutarlo.',
-    icon: BadgeDollarSign,
-    gradient: 'from-fonasin-deep to-fonasin-green',
-    iconSurface: 'bg-fonasin-deep/10 text-fonasin-deep',
-    layout: 'xl:col-span-3',
-  },
-  {
-    number: '03',
-    name: 'FONAPRIMA',
-    description: 'No esperes a mitad o fin de año; recibe el anticipo de tu prima sin complicaciones.',
-    icon: Landmark,
-    gradient: 'from-[#8b8e10] to-fonasin-green',
-    iconSurface: 'bg-fonasin-lime/25 text-fonasin-deep',
-    layout: 'xl:col-span-2',
-  },
-  {
-    number: '04',
-    name: 'FONAPEN',
-    description: 'Disfruta tu tranquilidad con un crédito diseñado especialmente para ti.',
-    icon: ShieldCheck,
-    gradient: 'from-fonasin-dark to-fonasin-deep',
-    iconSurface: 'bg-fonasin-deep/10 text-fonasin-deep',
-    layout: 'xl:col-span-2',
-  },
-  {
-    number: '05',
-    name: 'FONAPORTES',
-    description: 'Tu propio respaldo. Financiación garantizada con tus aportes sociales.',
-    icon: PiggyBank,
-    gradient: 'from-fonasin-green to-[#81920d]',
-    iconSurface: 'bg-fonasin-lime/25 text-fonasin-deep',
-    layout: 'xl:col-span-2',
-  },
+  { number: '01', name: 'FONALIBRE', description: 'Tu crédito de libre inversión para lo que necesites, cuando lo necesites.', icon: HandCoins, gradient: 'from-[#b7791f] to-[#f3c969]', iconSurface: 'bg-[#fdf3d7] text-[#9a6416]', layout: 'xl:col-span-3' },
+  { number: '02', name: 'FONAPEN', description: 'Disfruta tu tranquilidad con un crédito diseñado especialmente para ti.', icon: BadgeDollarSign, gradient: 'from-[#7c5319] to-[#dba73f]', iconSurface: 'bg-[#fff7e6] text-[#805718]', layout: 'xl:col-span-3' },
+  { number: '03', name: 'FONAPRIMA', description: 'No esperes a mitad o fin de año; recibe el anticipo de tu prima sin complicaciones.', icon: Landmark, gradient: 'from-[#9a6416] to-[#f0bf56]', iconSurface: 'bg-[#fff4d6] text-[#9a6416]', layout: 'xl:col-span-2' },
+  { number: '04', name: 'FONAROTATIVO', description: 'Liquidez inmediata a tu alcance. Úsalo, págalo y vuelve a disfrutarlo.', icon: ShieldCheck, gradient: 'from-[#5f421b] to-[#c9912f]', iconSurface: 'bg-[#fbf1db] text-[#72501d]', layout: 'xl:col-span-2' },
+  { number: '05', name: 'FONAPORTES', description: 'Tu propio respaldo. Financiación garantizada con tus aportes sociales.', icon: PiggyBank, gradient: 'from-[#c08a29] to-[#f4cf78]', iconSurface: 'bg-[#fff5df] text-[#9a6416]', layout: 'xl:col-span-2' },
 ];
 
 export default function CreditsPage() {
   return (
-    <div className="relative overflow-hidden bg-[linear-gradient(160deg,#003d22_0%,#005c31_34%,#08783f_64%,#e5efd0_100%)] py-10 sm:py-14">
-      <div className="pointer-events-none absolute -left-24 top-1/3 h-80 w-80 rounded-full bg-fonasin-lime/10 blur-3xl" />
-      <div className="pointer-events-none absolute -right-32 bottom-16 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
-      <div className="container-page">
-        <section className="relative isolate overflow-hidden rounded-[2.25rem] border border-white/15 bg-gradient-to-br from-fonasin-deep/90 via-fonasin-dark/90 to-fonasin-green/90 px-6 py-11 text-white shadow-2xl shadow-fonasin-deep/30 sm:px-10 sm:py-14 lg:px-14 lg:py-16">
-          <div className="absolute inset-0 -z-10 opacity-40 [background-image:radial-gradient(rgba(255,255,255,0.16)_1px,transparent_1px)] [background-size:18px_18px]" />
-          <div className="absolute -left-20 bottom-0 h-64 w-64 rounded-full bg-fonasin-lime/15 blur-3xl" />
-          <div className="absolute -right-20 -top-28 h-80 w-80 rounded-full bg-fonasin-lime/25 blur-3xl" />
+    <div className="relative overflow-hidden bg-fonasin-deep py-8 sm:py-12">
+      <img src="/images/DineroPlaya.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover object-[60%_center]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(0,61,34,0.72),rgba(0,61,34,0.42)_46%,rgba(255,244,210,0.40))]" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        <div className="absolute -left-32 top-28 h-72 w-[72%] -rotate-6 rounded-[100%] border-y border-[#b7791f]/20 bg-[linear-gradient(90deg,rgba(183,121,31,0.2),rgba(245,204,114,0.2),transparent)] blur-[1px]" />
+        <div className="absolute -right-48 bottom-12 h-80 w-[70%] rotate-[9deg] rounded-[100%] border-y border-[#b7791f]/15 bg-[linear-gradient(90deg,transparent,rgba(218,166,57,0.16),rgba(255,244,210,0.46))] blur-[1px]" />
+        <div className="absolute inset-0 opacity-35 [background-image:linear-gradient(135deg,transparent_0_48%,rgba(154,100,22,0.08)_48%_49%,transparent_49%_100%)] [background-size:42px_42px]" />
+        <div className="absolute -left-24 bottom-0 h-80 w-80 rounded-full bg-[#d99e2f]/20 blur-3xl" />
+        <div className="absolute -right-20 top-0 h-72 w-72 rounded-full bg-white/70 blur-3xl" />
+      </div>
 
-          <div className="relative max-w-3xl">
-            <span className="inline-flex items-center gap-2 rounded-full border border-fonasin-lime/30 bg-white/10 px-3.5 py-1.5 text-xs font-bold uppercase tracking-[.15em] text-fonasin-lime">
-              <Sparkles size={15} aria-hidden="true" /> Soluciones de crédito
-            </span>
-            <h1 className="mt-5 max-w-2xl text-4xl font-black leading-[1.03] tracking-tight sm:text-5xl lg:text-6xl">
-              Un impulso para cada uno de tus proyectos.
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-white/80">
-              Explora nuestras líneas de crédito y encuentra una alternativa pensada para acompañarte cuando más lo necesitas.
-            </p>
-          </div>
+      <div className="container-page relative z-10">
+        <section className="relative isolate overflow-hidden rounded-[2.25rem] border border-fonasin-green/20 px-5 py-8 text-white shadow-2xl shadow-fonasin-green/20 sm:px-8 sm:py-10 lg:min-h-[520px] lg:px-14 lg:py-16">
+          <img src="/images/credits-hero.jpg" alt="Pareja revisando opciones de crédito desde casa" className="absolute inset-0 -z-20 h-full w-full object-cover object-center" />
+          <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(0,39,22,0.88)_0%,rgba(0,61,34,0.74)_40%,rgba(0,61,34,0.18)_73%,rgba(0,61,34,0.04)_100%)]" />
+          <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(0,0,0,0.12),transparent_45%,rgba(0,0,0,0.12))]" />
 
-          <div className="relative mt-9 flex flex-wrap gap-3">
-            <div className="inline-flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-sm">
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-fonasin-lime text-fonasin-deep"><CircleDollarSign size={21} aria-hidden="true" /></span>
-              <span><strong className="block text-sm">5 líneas de crédito</strong><span className="text-xs text-white/65">Para diferentes necesidades</span></span>
+          <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(240px,280px)] lg:items-start">
+            <div className="relative max-w-3xl">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-3.5 py-1.5 text-xs font-bold uppercase tracking-[.15em] text-fonasin-lime backdrop-blur-sm">
+                <Sparkles size={15} aria-hidden="true" /> Soluciones de crédito
+              </span>
+              <h1 className="mt-5 max-w-2xl text-4xl font-black leading-[1.03] tracking-tight sm:text-5xl lg:text-6xl">
+                Un impulso para cada uno de tus proyectos.
+              </h1>
+              <p className="mt-5 max-w-2xl text-base leading-7 text-white/85 sm:mt-6 sm:text-lg sm:leading-8">
+                Explora nuestras líneas de crédito y encuentra una alternativa pensada para acompañarte cuando más lo necesitas.
+              </p>
+
+              <div className="mt-8 flex flex-wrap gap-3 sm:mt-10">
+                <a href="#credit-lines" className="rounded-xl bg-fonasin-lime px-5 py-3 font-bold text-fonasin-deep shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:bg-white focus-ring">
+                  Ver líneas de crédito
+                </a>
+                <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="rounded-xl border border-white/45 bg-white/10 px-5 py-3 font-bold text-white backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/20 focus-ring">
+                  Contáctanos
+                </a>
+              </div>
             </div>
-            <div className="inline-flex items-center rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white/85 backdrop-blur-sm">
-              Conoce la que mejor se adapta a ti
+
+            <div className="relative grid gap-3 lg:pt-2">
+              <div className="flex items-start gap-3 rounded-2xl border border-white/20 bg-black/12 px-4 py-3 shadow-lg shadow-black/10 backdrop-blur-[2px]">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fonasin-green text-white">
+                  <CircleDollarSign size={20} aria-hidden="true" />
+                </span>
+                <span>
+                  <span className="block text-[0.65rem] font-black uppercase tracking-[.22em] text-white/65">Línea destacada</span>
+                  <strong className="mt-0.5 block text-lg font-black leading-tight">5 líneas de crédito</strong>
+                  <span className="mt-0.5 block text-xs leading-5 text-white/72">Para diferentes necesidades</span>
+                </span>
+              </div>
+              <div className="rounded-2xl border border-white/20 bg-black/12 px-4 py-3 text-sm font-semibold leading-6 text-white/92 shadow-lg shadow-black/10 backdrop-blur-[2px]">
+                Conoce la que mejor se adapta a ti
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="relative mt-10 rounded-[2rem] border border-white/15 bg-fonasin-deep/15 p-6 shadow-xl shadow-fonasin-deep/15 backdrop-blur-sm sm:p-8 lg:p-10" aria-label="Líneas de crédito FONASIN">
-          <div className="absolute right-8 top-7 hidden h-16 w-16 rounded-full border-[10px] border-fonasin-lime/25 lg:block" />
-          <div className="relative flex flex-col gap-4 border-b border-white/15 pb-7 sm:flex-row sm:items-end sm:justify-between">
+        <section className="relative mt-10 rounded-[2rem] border border-fonasin-green/10 bg-white/80 p-5 shadow-xl shadow-fonasin-green/10 backdrop-blur-sm sm:p-8 lg:p-10" aria-label="Líneas de crédito FONASIN">
+          <div className="absolute right-8 top-7 hidden h-16 w-16 rounded-full border-[10px] border-fonasin-lime/30 lg:block" />
+          <div className="relative flex flex-col gap-4 border-b border-fonasin-green/10 pb-7 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-sm font-bold uppercase tracking-[.16em] text-fonasin-lime">Elige tu línea</p>
-              <h2 className="mt-1 text-3xl font-black tracking-tight text-white sm:text-4xl">Créditos a tu medida</h2>
+              <p className="text-sm font-bold uppercase tracking-[.16em] text-fonasin-green">Elige tu línea</p>
+              <h2 className="mt-1 text-3xl font-black tracking-tight text-fonasin-deep sm:text-4xl">Créditos a tu medida</h2>
             </div>
-            <p className="max-w-md text-sm leading-6 text-white/70">Selecciona una alternativa para conocer más. Las condiciones y requisitos detallados se publicarán próximamente.</p>
+            <p className="max-w-md text-sm leading-6 text-slate-600">Selecciona una alternativa para conocer más. Las condiciones y requisitos detallados se publicarán próximamente.</p>
           </div>
 
-          <div className="relative mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-6">
+          <div id="credit-lines" className="relative mt-8 grid gap-4 sm:gap-5 md:grid-cols-2 xl:grid-cols-6">
             {creditLines.map(({ number, name, description, icon: Icon, gradient, iconSurface, layout }) => (
-              <article key={name} className={`group relative flex min-h-[300px] flex-col overflow-hidden rounded-3xl border border-white/40 bg-[linear-gradient(145deg,#f8faed_0%,#e4efcf_100%)] p-7 shadow-xl shadow-fonasin-deep/15 transition duration-500 hover:-translate-y-1.5 hover:border-amber-300 hover:shadow-[0_0_0_2px_rgba(253,230,138,0.45),0_24px_35px_-22px_rgba(0,61,34,0.5)] ${layout}`}>
+              <article key={name} className={`group relative flex min-h-[250px] flex-col overflow-hidden rounded-3xl border border-white/20 bg-[linear-gradient(145deg,#003d22_0%,#08783f_100%)] p-5 shadow-[0_16px_32px_-14px_rgba(0,61,34,0.42)] transition duration-500 hover:-translate-y-1.5 hover:border-[#f7c95e] hover:shadow-[0_0_0_3px_rgba(247,201,94,0.58),0_0_34px_rgba(238,183,51,0.72),0_26px_42px_-18px_rgba(0,61,34,0.5)] sm:min-h-[270px] sm:p-6 lg:p-7 ${layout}`}>
                 <div className={`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${gradient}`} />
-                <div className="absolute -right-5 -top-8 select-none text-8xl font-black tracking-tighter text-fonasin-deep/15" aria-hidden="true">{number}</div>
-                <div className={`relative grid h-14 w-14 place-items-center rounded-2xl ${iconSurface} ring-1 ring-inset ring-fonasin-green/10 transition duration-300 group-hover:scale-110`}>
-                  <Icon size={28} aria-hidden="true" />
+                <div className="absolute right-2 -top-4 select-none text-6xl font-black tracking-tighter text-[#f7d77f]/15 sm:text-7xl xl:text-8xl" aria-hidden="true">{number}</div>
+                <div className={`relative grid h-12 w-12 place-items-center rounded-2xl ${iconSurface} ring-1 ring-inset ring-[#b7791f]/10 transition duration-300 group-hover:scale-110 sm:h-14 sm:w-14`}>
+                  <Icon size={24} className="sm:size-7" aria-hidden="true" />
                 </div>
-                <div className="relative mt-6">
-                  <span className="text-xs font-black tracking-[.2em] text-fonasin-green/65">LÍNEA {number}</span>
-                  <h3 className="mt-2 text-2xl font-black tracking-wide text-fonasin-deep">{name}</h3>
+                <div className="relative mt-5 sm:mt-6">
+                  <span className="text-[0.65rem] font-black tracking-[.2em] text-[#f5cc72] sm:text-xs">LÍNEA {number}</span>
+                  <h3 className="mt-2 text-xl font-black tracking-wide text-white sm:text-2xl">{name}</h3>
                 </div>
-                <p className="relative mt-3 max-w-md leading-7 text-slate-600">{description}</p>
-                <span className="relative mt-auto inline-flex w-fit rounded-full bg-fonasin-green/10 px-3 py-1.5 text-sm font-bold text-fonasin-green">
+                <p className="relative mt-3 max-w-md text-sm leading-6 text-white/80 sm:text-base sm:leading-7">{description}</p>
+                <span className="relative mt-auto inline-flex w-fit rounded-full bg-[#fdf0cc] px-3 py-1.5 text-xs font-bold text-[#805718] sm:text-sm">
                   Información detallada próximamente
                 </span>
               </article>
