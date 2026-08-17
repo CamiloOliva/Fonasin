@@ -55,7 +55,7 @@ php artisan test
 
 El `.env.example` contiene solo valores de desarrollo. Las migraciones se ejecutan despues de confirmar la conexion local a PostgreSQL. No usar `migrate --force` en desarrollo ni produccion sin una ventana y respaldo aprobados.
 
-El workflow de GitHub ejecuta `php artisan test` y `npm run build` en cada `push` a cualquier rama, y también en los Pull Requests dirigidos a `develop` o `main`. Así, una rama `feature/*` se valida antes de integrarse.
+El workflow de GitHub ejecuta `php artisan test` y `npm run build` en cada `push` a cualquier rama, y también en los Pull Requests dirigidos a `develop` o `main`. Además verifica los artefactos que Apache necesita: `dist/.htaccess` para React Router y `backend/public/.htaccess` para Laravel. Así, una rama `feature/*` se valida antes de integrarse al entorno Apache final.
 
 ## Estado del repositorio
 

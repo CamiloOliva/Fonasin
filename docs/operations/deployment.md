@@ -17,6 +17,14 @@ El hosting cPanel actual usa Apache y no tiene Node.js disponible para la cuenta
 
 La estrategia de Docker local y los requisitos para una futura aplicacion Laravel se documentan en `container-strategy.md`.
 
+La validacion automatizada comprueba que `public/.htaccess` se copie a `dist/.htaccess`. Apache debe servir el contenido compilado de `dist/` en el document root del dominio principal; no debe recibir `src/`, `node_modules/` ni ejecutar Node.js.
+
+## Backend Laravel en Apache/cPanel
+
+Cuando el Backend entre en produccion, Apache debe apuntar exclusivamente a `backend/public/`. El codigo de `backend/` debe permanecer fuera del document root. El servidor debe tener PHP compatible, extensiones requeridas, Composer, PostgreSQL y permisos controlados para `storage/` y `bootstrap/cache/`.
+
+XAMPP, PHP local, `vendor/` local y los archivos `.env` de desarrollo nunca se suben a `main` ni al servidor. En produccion se instala Composer en el servidor o mediante un artefacto de despliegue aprobado y se configura un `.env` propio.
+
 ## Flujo de produccion actual
 
 ```text

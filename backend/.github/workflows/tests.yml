@@ -64,3 +64,11 @@ jobs:
 
       - name: Build frontend
         run: npm run build
+
+      - name: Verify Apache publication artifacts
+        shell: bash
+        run: |
+          test -f public/.htaccess
+          test -f dist/.htaccess
+          test -f backend/public/.htaccess
+          grep -q "RewriteRule" dist/.htaccess
