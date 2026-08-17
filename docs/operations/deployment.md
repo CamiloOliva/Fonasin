@@ -58,4 +58,17 @@ React Router requiere el fallback de Apache incluido en `public/.htaccess`; este
 5. Desplegar `main` y ejecutar migraciones de forma controlada.
 6. Verificar autenticacion, cargas documentales y funciones publicas.
 
+### Diagnostico previo de consentimientos
+
+Antes de ejecutar `2026_08_17_140950_add_unique_constraint_to_consent_records.php` en una base que ya contenga consentimientos, ejecutar:
+
+```sql
+SELECT application_id, consent_type, policy_version, COUNT(*) AS records
+FROM consent_records
+GROUP BY application_id, consent_type, policy_version
+HAVING COUNT(*) > 1;
+```
+
+La migracion puede continuar solamente si la consulta no devuelve filas. Si existen duplicados, detener el despliegue y revisar cada caso con el responsable funcional. Los consentimientos son evidencia y no deben eliminarse o consolidarse automaticamente.
+
 No se configura despliegue automatico ni `.cpanel.yml` hasta confirmar usuario de cPanel, rutas reales, version de PHP, Composer, Node y disponibilidad de PostgreSQL.
