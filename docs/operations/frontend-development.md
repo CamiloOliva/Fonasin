@@ -106,3 +106,5 @@ Solo `main` se publica. No copiar un build de `develop` sobre el dominio princip
 - [ ] Las rutas directas funcionan con Apache y `.htaccess`.
 - [ ] `git diff --check` no reporta problemas.
 - [ ] Documentacion actualizada cuando cambia una ruta, variable, dependencia o comportamiento de despliegue.
+
+El workflow central `.github/workflows/quality-gates.yml` valida Frontend, Backend y los artefactos requeridos por Apache en cada push y Pull Request.
