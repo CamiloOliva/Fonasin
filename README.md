@@ -8,6 +8,7 @@ FONASIN combina el frontend publico actual en React/Vite con un backend Laravel 
 - Laravel vive en `backend/`; no agregar codigo de backend en los esqueletos homonimos de la raiz.
 - PostgreSQL es la fuente de verdad para datos operativos.
 - Las migraciones base de Identity, Affiliation, Credits y Audit ya estan creadas.
+- Identity ya cuenta con los modelos `User`, `Role` y `Associate`, sus relaciones y los roles iniciales versionados mediante seeder.
 - La autenticacion, los casos de uso, el portal privado y la administracion siguen pendientes.
 
 ## Requisitos locales
