@@ -1,13 +1,7 @@
-import { BadgeDollarSign, CircleDollarSign, HandCoins, Landmark, PiggyBank, ShieldCheck, Sparkles } from 'lucide-react';
+import { CircleDollarSign, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { WHATSAPP_URL } from '../../../data/siteConfig';
-
-const creditLines = [
-  { number: '01', name: 'FONALIBRE', description: 'Tu crédito de libre inversión para lo que necesites, cuando lo necesites.', icon: HandCoins, gradient: 'from-[#b7791f] to-[#f3c969]', iconSurface: 'bg-[#fdf3d7] text-[#9a6416]', layout: 'xl:col-span-3' },
-  { number: '02', name: 'FONAPEN', description: 'Disfruta tu tranquilidad con un crédito diseñado especialmente para ti.', icon: BadgeDollarSign, gradient: 'from-[#7c5319] to-[#dba73f]', iconSurface: 'bg-[#fff7e6] text-[#805718]', layout: 'xl:col-span-3' },
-  { number: '03', name: 'FONAPRIMA', description: 'No esperes a mitad o fin de año; recibe el anticipo de tu prima sin complicaciones.', icon: Landmark, gradient: 'from-[#9a6416] to-[#f0bf56]', iconSurface: 'bg-[#fff4d6] text-[#9a6416]', layout: 'xl:col-span-2' },
-  { number: '04', name: 'FONAROTATIVO', description: 'Liquidez inmediata a tu alcance. Úsalo, págalo y vuelve a disfrutarlo.', icon: ShieldCheck, gradient: 'from-[#5f421b] to-[#c9912f]', iconSurface: 'bg-[#fbf1db] text-[#72501d]', layout: 'xl:col-span-2' },
-  { number: '05', name: 'FONAPORTES', description: 'Tu propio respaldo. Financiación garantizada con tus aportes sociales.', icon: PiggyBank, gradient: 'from-[#c08a29] to-[#f4cf78]', iconSurface: 'bg-[#fff5df] text-[#9a6416]', layout: 'xl:col-span-2' },
-];
+import { creditLines } from '../data/creditLines';
 
 export default function CreditsPage() {
   return (
@@ -79,7 +73,7 @@ export default function CreditsPage() {
           </div>
 
           <div id="credit-lines" className="relative mt-8 grid gap-4 sm:gap-5 md:grid-cols-2 xl:grid-cols-6">
-            {creditLines.map(({ number, name, description, icon: Icon, gradient, iconSurface, layout }) => (
+            {creditLines.map(({ slug, number, name, description, icon: Icon, gradient, iconSurface, layout }) => (
               <article key={name} className={`group relative flex min-h-[250px] flex-col overflow-hidden rounded-3xl border border-white/20 bg-[linear-gradient(145deg,#003d22_0%,#08783f_100%)] p-5 shadow-[0_16px_32px_-14px_rgba(0,61,34,0.42)] transition duration-500 hover:-translate-y-1.5 hover:border-[#f7c95e] hover:shadow-[0_0_0_3px_rgba(247,201,94,0.58),0_0_34px_rgba(238,183,51,0.72),0_26px_42px_-18px_rgba(0,61,34,0.5)] sm:min-h-[270px] sm:p-6 lg:p-7 ${layout}`}>
                 <div className={`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${gradient}`} />
                 <div className="absolute right-2 -top-4 select-none text-6xl font-black tracking-tighter text-[#f7d77f]/15 sm:text-7xl xl:text-8xl" aria-hidden="true">{number}</div>
@@ -91,9 +85,14 @@ export default function CreditsPage() {
                   <h3 className="mt-2 text-xl font-black tracking-wide text-white sm:text-2xl">{name}</h3>
                 </div>
                 <p className="relative mt-3 max-w-md text-sm leading-6 text-white/80 sm:text-base sm:leading-7">{description}</p>
-                <span className="relative mt-auto inline-flex w-fit rounded-full bg-[#fdf0cc] px-3 py-1.5 text-xs font-bold text-[#805718] sm:text-sm">
-                  Información detallada próximamente
-                </span>
+                <div className="relative mt-auto pt-5">
+                  <Link
+                    to={`/creditos/${slug}`}
+                    className="inline-flex items-center justify-center rounded-full bg-[#fdf0cc] px-4 py-2 text-xs font-black uppercase tracking-[.14em] text-[#805718] transition hover:bg-white hover:text-[#5f421b] focus-ring"
+                  >
+                    Conoce más
+                  </Link>
+                </div>
               </article>
             ))}
           </div>

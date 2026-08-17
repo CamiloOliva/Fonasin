@@ -18,6 +18,12 @@ describe('AppRoutes', () => {
     expect(screen.getByRole('heading', { name: /un impulso para cada uno de tus proyectos/i })).toBeInTheDocument();
   });
 
+  it('renders the FONALIBRE detail route', () => {
+    renderRoute('/creditos/fonalibre');
+
+    expect(screen.getByRole('heading', { name: /fonalibre/i })).toBeInTheDocument();
+  });
+
   it('falls back to the home page for an unknown route', () => {
     renderRoute('/ruta-inexistente');
 
