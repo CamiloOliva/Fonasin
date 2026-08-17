@@ -1,40 +1,58 @@
-# FONASIN — Plataforma institucional
+# FONASIN - Plataforma institucional
 
-Frontend actual en React + TypeScript + Vite + Tailwind CSS. El proyecto se prepara para evolucionar a un monolito modular en Laravel, React/Inertia, Filament y PostgreSQL, sin interrumpir el sitio actual.
+FONASIN combina el frontend publico actual en React/Vite con un backend Laravel 12 en construccion. El objetivo es un monolito modular con PostgreSQL, afiliacion digital, portal privado, administracion limitada y trazabilidad.
 
-## Requisitos
-- Node.js 20+
-- npm
+## Estado actual
 
-## Ejecutar
+- El frontend publico vive en `src/` y se compila como archivos estaticos en `dist/`.
+- Laravel vive en `backend/`; no agregar codigo de backend en los esqueletos homonimos de la raiz.
+- PostgreSQL es la fuente de verdad para datos operativos.
+- Las migraciones base de Identity, Affiliation, Credits y Audit ya estan creadas.
+- La autenticacion, los casos de uso, el portal privado y la administracion siguen pendientes.
+
+## Requisitos locales
+
+- Node.js 20 o superior y npm.
+- PHP 8.2 o superior y Composer.
+- PostgreSQL con una base y un usuario exclusivos para desarrollo.
+
+## Frontend
+
+Desde la raiz del repositorio:
+
 ```bash
-npm install
+npm ci
 npm run dev
-```
-
-## Verificar producción
-```bash
+npm run test
 npm run build
-npm run preview
 ```
 
-## Personalización rápida
-- Colores: `tailwind.config.js`
-- WhatsApp: `src/data/siteConfig.ts` o `VITE_WHATSAPP_URL`
-- Navegación: `src/data/navigation.ts`
-- Flyers: `src/data/flyers.ts`
-- Convenios: `src/data/convenios.ts`
-- Historia: `src/data/history.ts`
-- Productos: `src/data/products.ts`
-- Documentos: `src/data/documents.ts`
-- Imágenes: `src/assets/images/`
+## Backend
 
-> El contenido marcado como provisional/placeholder debe sustituirse por información oficial de FONASIN antes de producción.
+```bash
+cd backend
+composer install
+copy .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan test
+php artisan serve
+```
 
-## Arquitectura y desarrollo
+Antes de ejecutar migraciones, confirmar que `backend/.env` apunta a PostgreSQL local. En Linux o macOS usar `cp .env.example .env`.
 
+## Seguridad
+
+- No versionar `.env`, credenciales, documentos privados ni datos personales.
+- No guardar archivos en PostgreSQL ni dentro de directorios publicos.
+- No ejecutar migraciones o seeds contra produccion sin respaldo y aprobacion explicita.
+- El contenido marcado como provisional debe sustituirse por informacion oficial antes de produccion.
+
+## Documentacion
+
+- [Guia obligatoria](AGENTS.md)
 - [Documentacion tecnica](docs/README.md)
-- [Arquitectura objetivo](docs/architecture/overview.md)
+- [Arquitectura](docs/architecture/overview.md)
 - [Modelo de datos](docs/architecture/data-model.md)
-- [Desarrollo local y ramas](docs/operations/local-development.md)
+- [Desarrollo local](docs/operations/local-development.md)
 - [Preparacion de cPanel](infra/cpanel/README.md)
