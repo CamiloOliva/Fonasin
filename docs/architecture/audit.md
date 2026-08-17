@@ -14,7 +14,7 @@ Registrar quien hizo una accion, sobre que registro, cuando ocurrio y cual fue e
 | `occurred_at` | timestamptz | fecha y hora UTC |
 | `actor_user_id` | UUID nullable | usuario que realizo la accion; null si fue sistema |
 | `actor_type` | varchar(20) | `user` o `system` |
-| `module` | varchar(40) | `affiliation`, `credits`, `portal`, `content`, `fpqrs` |
+| `module` | varchar(40) | `identity`, `affiliation`, `credits`, `portal`, `content`, `fpqrs` |
 | `action` | varchar(80) | accion semantica registrada |
 | `subject_type` | varchar(80) | tipo del recurso afectado |
 | `subject_id` | UUID | recurso afectado |
@@ -24,7 +24,19 @@ Registrar quien hizo una accion, sobre que registro, cuando ocurrio y cual fue e
 
 ### `auth_events`
 
-Registra `login_succeeded`, `login_failed`, `logout`, `password_reset_requested`, `password_reset_completed`, `account_blocked` y cambios de segundo factor.
+| Campo | Tipo | Descripcion |
+|---|---|---|
+| `id` | UUID | identificador del evento |
+| `occurred_at` | timestamptz | fecha y hora UTC |
+| `user_id` | UUID nullable | usuario relacionado; null cuando no se identifica una cuenta |
+| `event_type` | varchar(80) | tipo semantico del evento de autenticacion |
+| `email_hash` | char(64) nullable | referencia minimizada para correlacionar intentos sin guardar el correo |
+| `ip_hash` | char(64) nullable | referencia tecnica minimizada |
+| `user_agent_hash` | char(64) nullable | huella minimizada del cliente |
+| `correlation_id` | UUID nullable | agrupa eventos de una misma operacion |
+| `metadata` | jsonb | solo contexto tecnico permitido y valores redactados |
+
+`event_type` registra `login_succeeded`, `login_failed`, `logout`, `password_reset_requested`, `password_reset_completed`, `account_blocked` y cambios de segundo factor.
 
 ## Eventos obligatorios
 
@@ -40,6 +52,7 @@ Registra `login_succeeded`, `login_failed`, `logout`, `password_reset_requested`
 
 - Los eventos son solo de insercion desde la aplicacion; no se editan ni eliminan desde Filament.
 - No se incluyen contrasenas, tokens, valores financieros completos, numeros de documento, contenido SARLAFT, archivos ni mensajes completos de FPQRS.
+- `auth_events` no conserva correos, direcciones IP ni agentes de usuario en texto claro.
 - Los cambios se almacenan como resumen redactado, por ejemplo `status: submitted -> under_review`.
 - Las transacciones de negocio y su evento de auditoria se guardan juntas; si una falla, ninguna queda persistida.
 - Para acciones administrativas criticas se exige `actor_user_id` y `correlation_id`.

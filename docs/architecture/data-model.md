@@ -159,3 +159,6 @@ Un asociado puede tener varios creditos. No se deben borrar; una correccion crea
 - `application_documents(application_id, status)`.
 - `credit_accounts(associate_id, status)`.
 - `audit_events(subject_type, subject_id, occurred_at)`.
+- `audit_events(actor_user_id, occurred_at)`.
+- `auth_events(user_id, occurred_at)`.
+- `auth_events(event_type, occurred_at)`.
