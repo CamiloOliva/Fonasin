@@ -11,17 +11,16 @@ function ActionList() {
   return (
     <div className="flex flex-col gap-2">
       {actions.map(({ label, icon: Icon }) => (
-        <button
+        <div
           key={label}
-          type="button"
-          disabled
-          aria-label={`${label}: próximamente`}
-          title={`${label}: próximamente`}
-          className="group flex w-52 items-center gap-3 bg-fonasin-green bg-gradient-to-r from-transparent to-fonasin-lime/15 py-3.5 pl-7 pr-5 text-left text-[15px] font-bold text-white shadow-lg shadow-fonasin-deep/20 transition duration-300 [clip-path:polygon(0_50%,14%_0,100%_0,100%_100%,14%_100%)] disabled:cursor-not-allowed hover:-translate-x-2 hover:bg-fonasin-deep lg:w-56 lg:text-base"
+          className="flex w-52 items-center gap-3 bg-fonasin-green bg-gradient-to-r from-transparent to-fonasin-lime/15 py-3 pl-7 pr-4 text-left text-white shadow-lg shadow-fonasin-deep/20 [clip-path:polygon(0_50%,14%_0,100%_0,100%_100%,14%_100%)] lg:w-56"
         >
           <Icon size={20} aria-hidden="true" className="shrink-0 text-fonasin-lime" />
-          <span className="min-w-0 leading-tight">{label}</span>
-        </button>
+          <span className="min-w-0 leading-tight">
+            <strong className="block text-[15px] lg:text-base">{label}</strong>
+            <span className="block text-[11px] font-semibold uppercase tracking-wide text-white/70">Próximamente</span>
+          </span>
+        </div>
       ))}
     </div>
   );
