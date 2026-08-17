@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   backend:
-    name: Backend tests (PHP 8.3)
+    name: Backend tests (SQLite, PHP 8.3)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -39,6 +39,55 @@ jobs:
           php artisan key:generate --force
 
       - name: Run PHPUnit and Laravel feature tests
+        run: php artisan test --compact
+
+  backend-postgres:
+    name: Backend tests (PostgreSQL, PHP 8.3)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: fonasin_test
+          POSTGRES_USER: fonasin
+          POSTGRES_PASSWORD: fonasin_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fonasin -d fonasin_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: fonasin_test
+      DB_USERNAME: fonasin
+      DB_PASSWORD: fonasin_test
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, pdo_pgsql
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Configure test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+
+      - name: Run migrations and PostgreSQL tests
         run: php artisan test --compact
 
   frontend:

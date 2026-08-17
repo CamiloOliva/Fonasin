@@ -12,7 +12,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('application_id')
                 ->constrained('affiliation_applications')
-                ->restrictOnDelete();
+                ->cascadeOnDelete();
             $table->string('section', 40);
             $table->integer('schema_version');
             $table->text('data_encrypted');
