@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom';
 import CreditsPage from '../modules/credits/pages/CreditsPage';
 import CreditLinePage from '../modules/credits/pages/CreditLinePage';
 import FONAROTATIVO from '../modules/credits/pages/FONAROTATIVO';
+import FonaPortesPage from '../modules/credits/pages/FonaPortesPage';
 import Afiliacion from '../pages/AfiliacionPlaceholder/AfiliacionPlaceholder';
 import Convenios from '../pages/Convenios/Convenios';
 import FPQRS from '../pages/FPQRS/FPQRS';
@@ -18,6 +19,7 @@ export default function AppRoutes() {
       <Route path="/productos-y-servicios" element={<ProductosServicios />} />
       <Route path="/creditos" element={<CreditsPage />} />
       <Route path="/creditos/fonarotativo" element={<FONAROTATIVO />} />
+      <Route path="/creditos/fonaportes" element={<FonaPortesPage />} />
       <Route path="/creditos/:slug" element={<CreditLinePage />} />
       <Route path="/convenios" element={<Convenios />} />
       <Route path="/fpqrs" element={<FPQRS />} />

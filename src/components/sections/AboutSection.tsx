@@ -10,8 +10,8 @@ type AboutItem = {
 const aboutItems: AboutItem[] = [
   {
     title: 'Quiénes somos',
-    content: 'Espacio reservado para presentar la identidad institucional de FONASIN.',
-    pending: true,
+    content:
+      'FONASIN es el Fondo de Empleados creado para contribuir al bienestar y desarrollo integral de sus asociados y sus familias, promoviendo el ahorro, facilitando el acceso a soluciones de crédito y ofreciendo servicios y beneficios que aporten al mejoramiento de su calidad de vida. Trabajamos bajo los principios de solidaridad, confianza, responsabilidad y ayuda mutua, buscando construir relaciones cercanas y sostenibles con nuestros asociados. En FONASIN creemos que cada aporte cuenta y que, cuando trabajamos juntos, podemos generar mayores oportunidades para todos.',
   },
   {
     title: 'Misión',
@@ -28,7 +28,11 @@ const aboutItems: AboutItem[] = [
     content:
       'Fortalecer el crecimiento sostenible de FONASIN mediante el desarrollo de soluciones financieras, programas de bienestar, innovación tecnológica y una gestión eficiente de los recursos, generando valor para los asociados y sus familias.',
   },
-  { title: 'Valores', content: 'Placeholder pendiente de contenido oficial.', pending: true },
+  {
+    title: 'Valores',
+    content:
+      'Trabajamos bajo los principios de solidaridad, confianza, responsabilidad y ayuda mutua, buscando construir relaciones cercanas y sostenibles con nuestros asociados.',
+  },
 ];
 
 export default function AboutSection() {
@@ -71,11 +75,6 @@ export default function AboutSection() {
                 </summary>
                 <div className="border-t border-fonasin-green/10 bg-fonasin-surface/70 px-5 py-4 sm:px-6">
                   <p className="text-justify leading-7 text-slate-700">{item.content}</p>
-                  {item.pending && (
-                    <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-fonasin-green/75">
-                      Contenido institucional provisional
-                    </p>
-                  )}
                 </div>
               </details>
             ))}
