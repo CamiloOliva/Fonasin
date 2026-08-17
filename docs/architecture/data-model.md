@@ -109,6 +109,8 @@ Registra evidencia de aceptacion sin depender de que una politica cambie despues
 | `accepted_at` | timestamptz | obligatorio |
 | `ip_hash` | char(64) | nullable; no se conserva la IP sin necesidad |
 
+Una solicitud solo puede registrar una aceptacion por tipo y version de politica. Una nueva version permite una nueva aceptacion sin perder el historial anterior.
+
 ## Creditos
 
 ### `credit_accounts`
@@ -137,13 +139,15 @@ Un asociado puede tener varios creditos. No se deben borrar; una correccion crea
 - Crear indices para FKs, busquedas por estado/fecha y consultas frecuentes del portal.
 - Un seeder no contiene datos reales ni se ejecuta en produccion sin aprobacion expresa.
 
-## Decisiones pendientes antes de la primera migracion
+## Decisiones funcionales pendientes
 
 1. Momento exacto en que se crea `users` para un asociado.
 2. Campos definitivos y obligatorios de cada etapa de afiliacion.
 3. Catalogo de documentos obligatorios y sus limites de archivo.
 4. Regla de correccion, archivo y vigencia de un credito.
 5. Retencion aprobada para solicitudes, documentos y eventos de auditoria.
+6. Catalogos definitivos y si su integridad se aplica solo en dominio o tambien mediante restricciones de base de datos.
+7. Moneda, fechas, limites de tasa y demas invariantes financieras de `credit_accounts`.
 
 ## Contenido y FPQRS
 
