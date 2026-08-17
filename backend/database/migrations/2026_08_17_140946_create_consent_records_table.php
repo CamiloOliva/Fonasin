@@ -8,23 +8,23 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('application_sections', function (Blueprint $table) {
+        Schema::create('consent_records', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('application_id')
                 ->constrained('affiliation_applications')
                 ->restrictOnDelete();
-            $table->string('section', 40);
-            $table->integer('schema_version');
-            $table->text('data_encrypted');
-            $table->timestampTz('completed_at')->nullable();
+            $table->string('consent_type', 50);
+            $table->string('policy_version', 50);
+            $table->timestampTz('accepted_at');
+            $table->char('ip_hash', 64)->nullable();
             $table->timestampsTz();
 
-            $table->unique(['application_id', 'section']);
+            $table->index(['application_id', 'consent_type']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('application_sections');
+        Schema::dropIfExists('consent_records');
     }
 };
