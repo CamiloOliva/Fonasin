@@ -13,7 +13,6 @@ const aboutItems: AboutItem[] = [
     content: 'Espacio reservado para presentar la identidad institucional de FONASIN.',
     pending: true,
   },
-  { title: 'Reseña', content: 'Placeholder pendiente de contenido oficial.', pending: true },
   {
     title: 'Misión',
     content:
@@ -71,7 +70,7 @@ export default function AboutSection() {
                   />
                 </summary>
                 <div className="border-t border-fonasin-green/10 bg-fonasin-surface/70 px-5 py-4 sm:px-6">
-                  <p className="leading-7 text-slate-700">{item.content}</p>
+                  <p className="text-justify leading-7 text-slate-700">{item.content}</p>
                   {item.pending && (
                     <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-fonasin-green/75">
                       Contenido institucional provisional
