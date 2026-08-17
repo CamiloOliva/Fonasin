@@ -12,7 +12,7 @@ describe('CreditsPage', () => {
     );
 
     expect(screen.getByRole('heading', { name: /créditos a tu medida/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/información detallada próximamente/i)).toHaveLength(5);
+    expect(screen.getAllByRole('link', { name: /conoce más/i })).toHaveLength(5);
     expect(screen.getByRole('link', { name: /contáctanos/i })).toHaveAttribute('href', expect.stringContaining('wa.me'));
   });
 });
