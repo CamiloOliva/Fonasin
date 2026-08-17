@@ -13,6 +13,7 @@ const products = [
   {
     title: 'Créditos',
     description: 'Información de productos de crédito. Condiciones por confirmar.',
+    to: '/creditos',
     icon: HandCoins,
     accent: 'bg-fonasin-deep',
     iconSurface: 'bg-fonasin-deep/10 text-fonasin-deep',
