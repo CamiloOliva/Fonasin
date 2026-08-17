@@ -40,9 +40,22 @@ La guia completa sobre rutas React Router, variables, archivos estaticos y Apach
 6. Integrar la rama en `develop`.
 7. Diego revisa y realiza el merge de `develop` hacia `main` cuando el cambio este listo para produccion.
 
-## Backend futuro
+## Backend Laravel actual
 
-Cuando se inicialice Laravel, agregar comandos reales de Composer, migraciones y pruebas a este documento. No inventar comandos ni ejecutar migraciones hasta que `backend/` exista y su `.env` local este configurado.
+Laravel vive en `backend/`. La base local debe ser PostgreSQL; no usar credenciales reales ni ejecutar estos comandos contra produccion.
+
+```bash
+cd backend
+composer install
+copy .env.example .env       # PowerShell; en Linux/macOS: cp .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan test
+```
+
+El `.env.example` contiene solo valores de desarrollo. Las migraciones se ejecutan despues de confirmar la conexion local a PostgreSQL. No usar `migrate --force` en desarrollo ni produccion sin una ventana y respaldo aprobados.
+
+El workflow de GitHub ejecuta `php artisan test` y `npm run build` en cada `push` a cualquier rama, y también en los Pull Requests dirigidos a `develop` o `main`. Así, una rama `feature/*` se valida antes de integrarse.
 
 ## Estado del repositorio
 
