@@ -6,7 +6,7 @@ La guia obligatoria para agentes y desarrolladores esta en [`AGENTS.md`](../AGEN
 
 ## Estado actual
 
-El frontend publico activo usa React, TypeScript, Vite y Tailwind desde la raiz. Laravel 12 vive en `backend/`, se conecta a PostgreSQL y ya contiene las migraciones base de Identity, Affiliation, Credits y Audit. El portal privado, la autenticacion y los casos de uso siguen pendientes.
+El frontend publico activo usa React, TypeScript, Vite y Tailwind desde la raiz. Laravel 12 vive en `backend/`, se conecta a PostgreSQL y ya contiene las migraciones base junto con los modelos iniciales de Identity. El portal privado, la autenticacion y los casos de uso siguen pendientes.
 
 ## Lectura por rol
 

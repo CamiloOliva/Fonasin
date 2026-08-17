@@ -179,13 +179,13 @@ class SchemaContractTest extends TestCase
         $this->assertIndex('auth_events', ['correlation_id']);
     }
 
-    public function test_database_seeder_uses_the_current_users_contract(): void
+    public function test_database_seeder_creates_the_initial_roles(): void
     {
         $this->seed();
 
-        $this->assertDatabaseHas('users', [
-            'email' => 'test@example.com',
-            'status' => 'active',
-        ]);
+        $this->assertDatabaseCount('roles', 3);
+        $this->assertDatabaseHas('roles', ['name' => 'admin']);
+        $this->assertDatabaseHas('roles', ['name' => 'reviewer']);
+        $this->assertDatabaseHas('roles', ['name' => 'associate']);
     }
 }

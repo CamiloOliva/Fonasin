@@ -20,6 +20,7 @@ El alcance vigente no incluye un CMS general, pasarela de pagos, integraciones c
 - Laravel 12 vive en `backend/` y usa PostgreSQL para los datos operativos locales.
 - Las rutas oficiales del backend son `backend/app/`, `backend/database/`, `backend/resources/`, `backend/storage/` y `backend/tests/`. Los esqueletos homonimos de la raiz no reciben codigo nuevo.
 - Las migraciones base de Identity, Affiliation, Credits y Audit ya existen en `backend/database/migrations/`.
+- Los modelos iniciales `User`, `Role` y `Associate`, sus relaciones y el seeder de roles existen en `backend/`.
 - La migracion de React hacia `backend/resources/js/` sera incremental. No mover ni reescribir pantallas existentes por motivos cosmeticos. Cada traslado debe mantener rutas, comportamiento y compilacion.
 
 ## 3. Arquitectura obligatoria
