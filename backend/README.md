@@ -2,7 +2,7 @@
 
 Aplicacion Laravel 12 que concentra persistencia PostgreSQL, autenticacion futura, autorizacion, casos de uso, documentos privados y auditoria de FONASIN.
 
-El backend esta en construccion. Actualmente contiene las migraciones base, modelos Eloquent y relaciones para Identity, Affiliation, Credits y persistencia de eventos, el seeder de roles y pruebas de persistencia; todavia no expone autenticacion, portal privado ni funciones administrativas.
+El backend esta en construccion. Actualmente contiene las migraciones base, modelos Eloquent y relaciones para Identity, Affiliation, Credits y persistencia de eventos, la primera regla de dominio para estados de afiliacion, el seeder de roles y pruebas de persistencia; todavia no expone autenticacion, portal privado ni funciones administrativas.
 
 ## Requisitos
 
@@ -38,7 +38,7 @@ El frontend React activo se desarrolla y compila desde la raiz del repositorio, 
 
 ```text
 backend/
-  app/              # HTTP, modelos y futuras capas de aplicacion, dominio e infraestructura
+  app/              # HTTP, modelos y capas de aplicacion, dominio e infraestructura
   database/         # Migraciones, factories y seeders
   resources/        # Presentacion Laravel/Inertia durante la migracion incremental
   routes/           # Rutas web y comandos
