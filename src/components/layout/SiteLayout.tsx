@@ -1,1 +1,15 @@
-import {ReactNode} from 'react';import Navbar from '../navbar/Navbar';import Footer from '../footer/Footer';export default function SiteLayout({children}:{children:ReactNode}){return <div className="min-h-screen flex flex-col"><Navbar/><main className="flex-1">{children}</main><Footer/></div>}
+import type { ReactNode } from 'react';
+import Footer from '../footer/Footer';
+import Navbar from '../navbar/Navbar';
+import FloatingActions from '../ui/FloatingActions';
+
+export default function SiteLayout({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Navbar />
+      <main className="flex-1">{children}</main>
+      <Footer />
+      <FloatingActions />
+    </div>
+  );
+}
