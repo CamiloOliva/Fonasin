@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Associate extends Model
 {
@@ -27,5 +28,15 @@ class Associate extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function affiliationApplications(): HasMany
+    {
+        return $this->hasMany(AffiliationApplication::class);
+    }
+
+    public function creditAccounts(): HasMany
+    {
+        return $this->hasMany(CreditAccount::class);
     }
 }
