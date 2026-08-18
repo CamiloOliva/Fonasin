@@ -60,7 +60,7 @@ Representa la solicitud y sus metadatos operativos, no todos los datos sensibles
 |---|---|---|
 | `id` | UUID | PK |
 | `associate_id` | UUID | FK nullable mientras no exista asociado |
-| `status` | varchar(30) | `draft`, `submitted`, `under_review`, `approved`, `rejected`, `cancelled` |
+| `status` | varchar(30) | `draft`, `submitted`, `under_review`, `pending_correction`, `approved`, `enabled`, `disabled`, `withdrawn`, `rejected`, `cancelled` |
 | `current_step` | varchar(30) | etapa visible al solicitante |
 | `submitted_at` | timestamptz | nullable |
 | `reviewed_by_user_id` | UUID | FK nullable |
@@ -138,6 +138,19 @@ Un asociado puede tener varios creditos. No se deben borrar; una correccion crea
 - Definir FKs y reglas `on delete` deliberadamente. En datos historicos preferir impedir la eliminacion.
 - Crear indices para FKs, busquedas por estado/fecha y consultas frecuentes del portal.
 - Un seeder no contiene datos reales ni se ejecuta en produccion sin aprobacion expresa.
+
+## Reglas de dominio iniciales
+
+Affiliation valida sus estados mediante `App\Domain\Affiliation`. Las transiciones iniciales son:
+
+- `draft` -> `submitted` o `cancelled`.
+- `submitted` -> `under_review`.
+- `under_review` -> `pending_correction`, `approved` o `rejected`.
+- `pending_correction` -> `submitted` o `cancelled`.
+- `approved` -> `enabled` o `pending_correction`.
+- `enabled` -> `disabled` o `withdrawn`.
+- `disabled` -> `enabled` o `withdrawn`.
+- `withdrawn`, `rejected` y `cancelled` son terminales.
 
 ## Decisiones funcionales pendientes
 
