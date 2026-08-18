@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use LogicException;
 
 class AuditEvent extends Model
 {
@@ -12,18 +13,7 @@ class AuditEvent extends Model
 
     public $timestamps = false;
 
-    protected $fillable = [
-        'occurred_at',
-        'actor_user_id',
-        'actor_type',
-        'module',
-        'action',
-        'subject_type',
-        'subject_id',
-        'correlation_id',
-        'ip_hash',
-        'metadata',
-    ];
+    protected $guarded = ['*'];
 
     protected $hidden = [
         'ip_hash',
@@ -35,6 +25,17 @@ class AuditEvent extends Model
             'occurred_at' => 'datetime',
             'metadata' => 'array',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (): void {
+            throw new LogicException('Audit events are immutable.');
+        });
+
+        static::deleting(function (): void {
+            throw new LogicException('Audit events are immutable.');
+        });
     }
 
     public function actor(): BelongsTo

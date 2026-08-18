@@ -15,7 +15,6 @@ class ConsentRecord extends Model
         'consent_type',
         'policy_version',
         'accepted_at',
-        'ip_hash',
     ];
 
     protected $hidden = [
