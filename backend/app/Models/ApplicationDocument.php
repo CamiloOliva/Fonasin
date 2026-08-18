@@ -14,7 +14,6 @@ class ApplicationDocument extends Model
         'application_id',
         'document_type',
         'original_filename',
-        'storage_key',
         'mime_type',
         'byte_size',
         'status',
