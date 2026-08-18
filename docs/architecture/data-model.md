@@ -69,7 +69,7 @@ Representa la solicitud y sus metadatos operativos, no todos los datos sensibles
 
 ### `application_sections`
 
-Una fila por etapa: `personal`, `employment`, `financial`, `beneficiaries` y `sarlaft`.
+Una fila por etapa de formulario: `personal`, `employment`, `financial`, `beneficiaries` y `sarlaft`. Los pasos `documents`, `consents` y `summary` coordinan otras tablas o vistas y no se guardan en `application_sections`.
 
 | Campo | Tipo | Regla |
 |---|---|---|

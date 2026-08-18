@@ -2,7 +2,7 @@
 
 Aplicacion Laravel 12 que concentra persistencia PostgreSQL, autenticacion futura, autorizacion, casos de uso, documentos privados y auditoria de FONASIN.
 
-El backend esta en construccion. Actualmente contiene las migraciones base, modelos Eloquent y relaciones para Identity, Affiliation, Credits y persistencia de eventos, las primeras reglas de dominio para afiliacion, el caso de uso inicial para crear borradores, el seeder de roles y pruebas de persistencia; todavia no expone autenticacion, portal privado ni funciones administrativas.
+El backend esta en construccion. Actualmente contiene las migraciones base, modelos Eloquent y relaciones para Identity, Affiliation, Credits y persistencia de eventos, las primeras reglas de dominio para afiliacion, casos de uso iniciales para crear borradores y guardar secciones cifradas, el seeder de roles y pruebas de persistencia; todavia no expone autenticacion, portal privado ni funciones administrativas.
 
 ## Requisitos
 

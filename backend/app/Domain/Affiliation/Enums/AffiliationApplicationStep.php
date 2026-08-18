@@ -12,4 +12,23 @@ enum AffiliationApplicationStep: string
     case Documents = 'documents';
     case Consents = 'consents';
     case Summary = 'summary';
+
+    public function isFormSection(): bool
+    {
+        return in_array($this, self::formSections(), true);
+    }
+
+    /**
+     * @return list<self>
+     */
+    public static function formSections(): array
+    {
+        return [
+            self::Personal,
+            self::Employment,
+            self::Financial,
+            self::Beneficiaries,
+            self::Sarlaft,
+        ];
+    }
 }
