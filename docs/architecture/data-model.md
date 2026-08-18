@@ -61,7 +61,7 @@ Representa la solicitud y sus metadatos operativos, no todos los datos sensibles
 | `id` | UUID | PK |
 | `associate_id` | UUID | FK nullable mientras no exista asociado |
 | `status` | varchar(30) | `draft`, `submitted`, `under_review`, `pending_correction`, `approved`, `enabled`, `disabled`, `withdrawn`, `rejected`, `cancelled` |
-| `current_step` | varchar(30) | etapa visible al solicitante |
+| `current_step` | varchar(30) | etapa visible al solicitante: `personal`, `employment`, `financial`, `beneficiaries`, `sarlaft`, `documents`, `consents`, `summary` |
 | `submitted_at` | timestamptz | nullable |
 | `reviewed_by_user_id` | UUID | FK nullable |
 | `reviewed_at` | timestamptz | nullable |
