@@ -87,7 +87,14 @@ export default function ProductosServicios() {
               const className = `relative flex min-h-[280px] flex-col overflow-hidden rounded-3xl border border-fonasin-green/10 bg-white p-7 shadow-sm transition duration-300 hover:border-amber-400 hover:shadow-[0_0_0_2px_rgba(251,191,36,0.3),0_20px_30px_-20px_rgba(0,61,34,0.32)] ${product.to ? 'group focus-ring hover:-translate-y-1' : ''}`;
 
               return product.to ? (
-                <Link key={product.title} to={product.to} className={className}>{content}</Link>
+                <Link
+                  key={product.title}
+                  to={product.to}
+                  state={product.to === '/creditos' ? { showCreditLoader: true } : undefined}
+                  className={className}
+                >
+                  {content}
+                </Link>
               ) : (
                 <article key={product.title} className={className}>{content}</article>
               );

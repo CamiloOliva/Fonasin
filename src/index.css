@@ -76,3 +76,85 @@ summary {
   position: relative;
   z-index: 1;
 }
+
+@keyframes credit-loader-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes credit-loader-dot-pulse {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+@keyframes credit-loader-bar-sweep {
+  0% {
+    transform: translateX(-110%);
+  }
+
+  100% {
+    transform: translateX(210%);
+  }
+}
+
+@keyframes credit-loader-coin-drop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -6px) scale(0.72);
+  }
+
+  18% {
+    opacity: 1;
+  }
+
+  68% {
+    opacity: 1;
+    transform: translate(-50%, 72px) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 82px) scale(0.88);
+  }
+}
+
+.credit-loader-video {
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.15));
+}
+
+.credit-loader-bar {
+  animation: credit-loader-bar-sweep 1.8s ease-in-out infinite;
+  will-change: transform;
+}
+
+.credit-loader-dot {
+  animation: credit-loader-dot-pulse 1.2s ease-in-out infinite;
+}
+
+.credit-loader-coin {
+  animation: credit-loader-coin-drop 2.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .credit-loader-bar,
+  .credit-loader-dot,
+  .credit-loader-coin {
+    animation: none !important;
+  }
+}
