@@ -8,6 +8,7 @@ import Convenios from '../pages/Convenios/Convenios';
 import FPQRS from '../pages/FPQRS/FPQRS';
 import Home from '../pages/Home/Home';
 import MiFondo from '../pages/MiFondo/MiFondo';
+import Estatutos from '../pages/Estatutos/Estatutos';
 import Portal from '../pages/PortalAsociadoPlaceholder/PortalAsociadoPlaceholder';
 import ProductosServicios from '../pages/ProductosServicios/ProductosServicios';
 
@@ -17,6 +18,7 @@ export default function AppRoutes() {
       <Route path="/" element={<Home />} />
       <Route path="/mi-fondo" element={<MiFondo />} />
       <Route path="/productos-y-servicios" element={<ProductosServicios />} />
+      <Route path="/estatutos" element={<Estatutos />} />
       <Route path="/creditos" element={<CreditsPage />} />
       <Route path="/creditos/fonarotativo" element={<FONAROTATIVO />} />
       <Route path="/creditos/fonaportes" element={<FonaPortesPage />} />

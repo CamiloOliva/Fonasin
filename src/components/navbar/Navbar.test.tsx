@@ -19,6 +19,8 @@ describe('Navbar', () => {
 
     const mobileNavigation = screen.getByRole('navigation', { name: /navegación móvil/i });
     expect(mobileNavigation).toBeInTheDocument();
+    expect(within(mobileNavigation).queryByRole('link', { name: 'Mi Fondo' })).not.toBeInTheDocument();
+    expect(within(mobileNavigation).getByRole('link', { name: 'Estatutos' })).toHaveAttribute('href', '/estatutos');
     expect(within(mobileNavigation).getByRole('link', { name: 'FPQRS' })).toHaveAttribute('href', '/fpqrs');
 
     await user.click(screen.getByRole('button', { name: /cerrar menú/i }));

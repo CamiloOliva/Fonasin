@@ -18,6 +18,12 @@ describe('AppRoutes', () => {
     expect(screen.getByRole('heading', { name: /un impulso para cada uno de tus proyectos/i })).toBeInTheDocument();
   });
 
+  it('renders the estatutos route', () => {
+    renderRoute('/estatutos');
+
+    expect(screen.getByRole('heading', { level: 1, name: /estatutos/i })).toBeInTheDocument();
+  });
+
   it('renders the FONALIBRE detail route', () => {
     renderRoute('/creditos/fonalibre');
 
