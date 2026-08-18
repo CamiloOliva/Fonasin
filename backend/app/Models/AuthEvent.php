@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use LogicException;
 
 class AuthEvent extends Model
 {
@@ -12,16 +13,7 @@ class AuthEvent extends Model
 
     public $timestamps = false;
 
-    protected $fillable = [
-        'occurred_at',
-        'user_id',
-        'event_type',
-        'email_hash',
-        'ip_hash',
-        'user_agent_hash',
-        'correlation_id',
-        'metadata',
-    ];
+    protected $guarded = ['*'];
 
     protected $hidden = [
         'email_hash',
@@ -35,6 +27,17 @@ class AuthEvent extends Model
             'occurred_at' => 'datetime',
             'metadata' => 'array',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (): void {
+            throw new LogicException('Authentication events are immutable.');
+        });
+
+        static::deleting(function (): void {
+            throw new LogicException('Authentication events are immutable.');
+        });
     }
 
     public function user(): BelongsTo

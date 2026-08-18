@@ -14,6 +14,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use LogicException;
 use Tests\TestCase;
 
 class CorePersistenceModelsTest extends TestCase
@@ -32,14 +33,14 @@ class CorePersistenceModelsTest extends TestCase
             'reviewed_by_user_id' => $reviewer->id,
             'reviewed_at' => now(),
         ]);
-        $section = ApplicationSection::query()->create([
+        $section = ApplicationSection::query()->forceCreate([
             'application_id' => $application->id,
             'section' => 'personal',
             'schema_version' => 1,
             'data_encrypted' => 'test-ciphertext',
             'completed_at' => now(),
         ]);
-        $document = ApplicationDocument::query()->create([
+        $document = ApplicationDocument::query()->forceCreate([
             'application_id' => $application->id,
             'document_type' => 'identity',
             'original_filename' => 'synthetic-document.pdf',
@@ -49,7 +50,7 @@ class CorePersistenceModelsTest extends TestCase
             'status' => 'uploaded',
             'uploaded_at' => now(),
         ]);
-        $consent = ConsentRecord::query()->create([
+        $consent = ConsentRecord::query()->forceCreate([
             'application_id' => $application->id,
             'consent_type' => 'data_processing',
             'policy_version' => 'test-v1',
@@ -106,7 +107,7 @@ class CorePersistenceModelsTest extends TestCase
         $user = User::factory()->create();
         $subjectId = (string) Str::uuid();
         $correlationId = (string) Str::uuid();
-        $auditEvent = AuditEvent::query()->create([
+        $auditEvent = AuditEvent::query()->forceCreate([
             'occurred_at' => now(),
             'actor_user_id' => $user->id,
             'actor_type' => 'user',
@@ -118,7 +119,7 @@ class CorePersistenceModelsTest extends TestCase
             'ip_hash' => hash('sha256', '192.0.2.2'),
             'metadata' => ['source' => 'test'],
         ]);
-        $authEvent = AuthEvent::query()->create([
+        $authEvent = AuthEvent::query()->forceCreate([
             'occurred_at' => now(),
             'user_id' => $user->id,
             'event_type' => 'login.succeeded',
@@ -151,13 +152,13 @@ class CorePersistenceModelsTest extends TestCase
             'associate_id' => $associate->id,
             'status' => 'draft',
         ]);
-        $section = ApplicationSection::query()->create([
+        $section = ApplicationSection::query()->forceCreate([
             'application_id' => $application->id,
             'section' => 'sarlaft',
             'schema_version' => 1,
             'data_encrypted' => 'test-ciphertext',
         ]);
-        $document = ApplicationDocument::query()->create([
+        $document = ApplicationDocument::query()->forceCreate([
             'application_id' => $application->id,
             'document_type' => 'identity',
             'original_filename' => 'synthetic-document.pdf',
@@ -167,14 +168,14 @@ class CorePersistenceModelsTest extends TestCase
             'status' => 'uploaded',
             'uploaded_at' => now(),
         ]);
-        $consent = ConsentRecord::query()->create([
+        $consent = ConsentRecord::query()->forceCreate([
             'application_id' => $application->id,
             'consent_type' => 'data_processing',
             'policy_version' => 'test-v1',
             'accepted_at' => now(),
             'ip_hash' => hash('sha256', '192.0.2.4'),
         ]);
-        $auditEvent = AuditEvent::query()->create([
+        $auditEvent = AuditEvent::query()->forceCreate([
             'occurred_at' => now(),
             'actor_user_id' => $user->id,
             'actor_type' => 'user',
@@ -185,7 +186,7 @@ class CorePersistenceModelsTest extends TestCase
             'ip_hash' => hash('sha256', '192.0.2.5'),
             'metadata' => [],
         ]);
-        $authEvent = AuthEvent::query()->create([
+        $authEvent = AuthEvent::query()->forceCreate([
             'occurred_at' => now(),
             'user_id' => $user->id,
             'event_type' => 'login.failed',
@@ -202,6 +203,60 @@ class CorePersistenceModelsTest extends TestCase
         $this->assertArrayNotHasKey('email_hash', $authEvent->toArray());
         $this->assertArrayNotHasKey('ip_hash', $authEvent->toArray());
         $this->assertArrayNotHasKey('user_agent_hash', $authEvent->toArray());
+    }
+
+    public function test_sensitive_fields_are_not_mass_assignable(): void
+    {
+        $this->assertFalse((new ApplicationSection)->isFillable('data_encrypted'));
+        $this->assertFalse((new ApplicationDocument)->isFillable('storage_key'));
+        $this->assertFalse((new ConsentRecord)->isFillable('ip_hash'));
+
+        foreach (['ip_hash', 'metadata'] as $field) {
+            $this->assertFalse((new AuditEvent)->isFillable($field));
+        }
+
+        foreach (['email_hash', 'ip_hash', 'user_agent_hash', 'metadata'] as $field) {
+            $this->assertFalse((new AuthEvent)->isFillable($field));
+        }
+    }
+
+    public function test_event_models_are_immutable_after_creation(): void
+    {
+        $user = User::factory()->create();
+        $auditEvent = AuditEvent::query()->forceCreate([
+            'occurred_at' => now(),
+            'actor_user_id' => $user->id,
+            'actor_type' => 'user',
+            'module' => 'affiliation',
+            'action' => 'application.submitted',
+            'subject_type' => 'affiliation_application',
+            'subject_id' => (string) Str::uuid(),
+            'metadata' => [],
+        ]);
+        $authEvent = AuthEvent::query()->forceCreate([
+            'occurred_at' => now(),
+            'user_id' => $user->id,
+            'event_type' => 'login.succeeded',
+            'metadata' => [],
+        ]);
+
+        $this->assertThrowsLogicException(fn () => $auditEvent->forceFill(['action' => 'application.approved'])->save());
+        $this->assertThrowsLogicException(fn () => $auditEvent->delete());
+        $this->assertThrowsLogicException(fn () => $authEvent->forceFill(['event_type' => 'logout'])->save());
+        $this->assertThrowsLogicException(fn () => $authEvent->delete());
+
+        $this->assertDatabaseHas('audit_events', ['id' => $auditEvent->id]);
+        $this->assertDatabaseHas('auth_events', ['id' => $authEvent->id]);
+    }
+
+    private function assertThrowsLogicException(callable $callback): void
+    {
+        try {
+            $callback();
+            $this->fail('Expected a LogicException to be thrown.');
+        } catch (LogicException $exception) {
+            $this->assertNotSame('', $exception->getMessage());
+        }
     }
 
     private function createAssociate(): Associate

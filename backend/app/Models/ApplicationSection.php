@@ -14,7 +14,6 @@ class ApplicationSection extends Model
         'application_id',
         'section',
         'schema_version',
-        'data_encrypted',
         'completed_at',
     ];
 
