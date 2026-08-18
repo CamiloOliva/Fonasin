@@ -4,13 +4,3 @@ dist
 .env.*
 !.env.example
 .DS_Store
-
-# Laravel / PostgreSQL runtime files (planned backend)
-/vendor
-/bootstrap/cache/*.php
-/storage/app/private/*
-!/storage/app/private/.gitkeep
-/storage/framework/*
-!/storage/framework/.gitkeep
-/storage/logs/*
-!/storage/logs/.gitkeep
