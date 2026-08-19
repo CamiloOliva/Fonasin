@@ -56,6 +56,19 @@ class User extends Authenticatable
         return $this->belongsToMany(Role::class)->withPivot('created_at');
     }
 
+    public function hasRole(string $role): bool
+    {
+        return $this->roles->contains('name', $role);
+    }
+
+    /**
+     * @param  list<string>  $roles
+     */
+    public function hasAnyRole(array $roles): bool
+    {
+        return $this->roles->whereIn('name', $roles)->isNotEmpty();
+    }
+
     public function associate(): HasOne
     {
         return $this->hasOne(Associate::class);
