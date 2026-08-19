@@ -3,6 +3,7 @@
 namespace App\Application\Affiliation\UseCases;
 
 use App\Application\Affiliation\Exceptions\CannotSaveApplicationSection;
+use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Models\AffiliationApplication;
 use App\Models\ApplicationSection;
@@ -11,18 +12,25 @@ use Illuminate\Support\Facades\DB;
 
 class SaveApplicationSection
 {
+    public function __construct(
+        private readonly EncryptsSensitiveData $cipher,
+    ) {}
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public function __invoke(
         AffiliationApplication $application,
         AffiliationApplicationStep $section,
         int $schemaVersion,
-        string $dataEncrypted,
+        array $data,
         ?Carbon $completedAt = null,
     ): ApplicationSection {
         if (! $section->isFormSection()) {
             throw CannotSaveApplicationSection::unsupportedSection($section->value);
         }
 
-        return DB::transaction(function () use ($application, $section, $schemaVersion, $dataEncrypted, $completedAt) {
+        return DB::transaction(function () use ($application, $section, $schemaVersion, $data, $completedAt) {
             $applicationSection = ApplicationSection::query()->firstOrNew([
                 'application_id' => $application->id,
                 'section' => $section->value,
@@ -30,7 +38,7 @@ class SaveApplicationSection
 
             $applicationSection->forceFill([
                 'schema_version' => $schemaVersion,
-                'data_encrypted' => $dataEncrypted,
+                'data_encrypted' => $this->cipher->encryptArray($data),
                 'completed_at' => $completedAt,
             ]);
 

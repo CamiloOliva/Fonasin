@@ -100,7 +100,7 @@ class SubmitAffiliationApplicationTest extends TestCase
                 application: $application,
                 section: $section,
                 schemaVersion: 1,
-                dataEncrypted: "encrypted-{$section->value}-payload",
+                data: ['section' => $section->value],
                 completedAt: now()->startOfSecond(),
             );
         }

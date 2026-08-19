@@ -82,6 +82,8 @@ Una fila por etapa de formulario: `personal`, `employment`, `financial`, `benefi
 
 Esta tabla permite ajustar campos pendientes sin romper solicitudes creadas con una version anterior. Los campos finales que necesiten reportes se normalizaran despues de su aprobacion funcional.
 
+El caso de uso de guardado recibe datos estructurados y delega el cifrado a `App\Infrastructure\Security`; no debe aceptar payloads cifrados desde capas externas ni persistir datos en texto plano.
+
 ### `application_documents`
 
 | Campo | Tipo | Regla |
