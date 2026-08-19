@@ -3,15 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Application\Affiliation\UseCases\AcceptApplicationConsent;
+use App\Application\Affiliation\UseCases\ApproveAffiliationApplication;
 use App\Application\Affiliation\UseCases\CreateAffiliationDraft;
 use App\Application\Affiliation\UseCases\RegisterApplicationDocument;
+use App\Application\Affiliation\UseCases\RejectAffiliationApplication;
+use App\Application\Affiliation\UseCases\RequestAffiliationCorrection;
 use App\Application\Affiliation\UseCases\SaveApplicationSection;
+use App\Application\Affiliation\UseCases\StartAffiliationReview;
 use App\Application\Affiliation\UseCases\SubmitAffiliationApplication;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\ApplicationDocumentType;
 use App\Domain\Affiliation\Enums\ConsentType;
 use App\Http\Requests\Affiliation\AcceptApplicationConsentRequest;
 use App\Http\Requests\Affiliation\RegisterApplicationDocumentRequest;
+use App\Http\Requests\Affiliation\RejectApplicationRequest;
+use App\Http\Requests\Affiliation\RequestApplicationCorrectionRequest;
 use App\Http\Requests\Affiliation\StoreApplicationSectionRequest;
 use App\Http\Requests\Affiliation\SubmitAffiliationApplicationRequest;
 use App\Models\AffiliationApplication;
@@ -116,6 +122,88 @@ class AffiliationApplicationController extends Controller
         ]);
     }
 
+    public function startReview(
+        Request $request,
+        AffiliationApplication $application,
+        StartAffiliationReview $startReview,
+    ): JsonResponse {
+        try {
+            $review = $startReview(
+                application: $application,
+                actor: $request->user(),
+                ipHash: $this->ipHash($request),
+            );
+        } catch (DomainException $exception) {
+            return $this->domainError($exception);
+        }
+
+        return response()->json([
+            'data' => $this->applicationPayload($review),
+        ]);
+    }
+
+    public function requestCorrection(
+        RequestApplicationCorrectionRequest $request,
+        AffiliationApplication $application,
+        RequestAffiliationCorrection $requestCorrection,
+    ): JsonResponse {
+        try {
+            $correction = $requestCorrection(
+                application: $application,
+                actor: $request->user(),
+                reason: $request->string('reason')->toString(),
+                ipHash: $this->ipHash($request),
+            );
+        } catch (DomainException $exception) {
+            return $this->domainError($exception);
+        }
+
+        return response()->json([
+            'data' => $this->applicationPayload($correction),
+        ]);
+    }
+
+    public function approve(
+        Request $request,
+        AffiliationApplication $application,
+        ApproveAffiliationApplication $approveApplication,
+    ): JsonResponse {
+        try {
+            $approved = $approveApplication(
+                application: $application,
+                actor: $request->user(),
+                ipHash: $this->ipHash($request),
+            );
+        } catch (DomainException $exception) {
+            return $this->domainError($exception);
+        }
+
+        return response()->json([
+            'data' => $this->applicationPayload($approved),
+        ]);
+    }
+
+    public function reject(
+        RejectApplicationRequest $request,
+        AffiliationApplication $application,
+        RejectAffiliationApplication $rejectApplication,
+    ): JsonResponse {
+        try {
+            $rejected = $rejectApplication(
+                application: $application,
+                actor: $request->user(),
+                rejectionReason: $request->string('reason')->toString(),
+                ipHash: $this->ipHash($request),
+            );
+        } catch (DomainException $exception) {
+            return $this->domainError($exception);
+        }
+
+        return response()->json([
+            'data' => $this->applicationPayload($rejected),
+        ]);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -126,6 +214,8 @@ class AffiliationApplicationController extends Controller
             'status' => $application->status,
             'current_step' => $application->current_step,
             'submitted_at' => $application->submitted_at?->toJSON(),
+            'reviewed_by_user_id' => $application->reviewed_by_user_id,
+            'reviewed_at' => $application->reviewed_at?->toJSON(),
         ];
     }
 
