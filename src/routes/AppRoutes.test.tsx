@@ -30,6 +30,18 @@ describe('AppRoutes', () => {
     expect(screen.getByRole('heading', { name: /fonalibre/i })).toBeInTheDocument();
   });
 
+  it('renders the FONAPEN detail route', () => {
+    renderRoute('/creditos/fonapen');
+
+    expect(screen.getByRole('heading', { level: 1, name: /fonapen/i })).toBeInTheDocument();
+  });
+
+  it('renders the FONAPRIMA detail route', () => {
+    renderRoute('/creditos/fonaprima');
+
+    expect(screen.getByRole('heading', { level: 1, name: /fonaprima/i })).toBeInTheDocument();
+  });
+
   it('renders the FONAPORTES detail route', () => {
     renderRoute('/creditos/fonaportes');
 
