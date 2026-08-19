@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Application\Affiliation\Exceptions\CannotSaveApplicationSection;
 use App\Application\Affiliation\UseCases\CreateAffiliationDraft;
 use App\Application\Affiliation\UseCases\SaveApplicationSection;
+use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -13,23 +14,29 @@ class SaveApplicationSectionTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_it_creates_an_encrypted_application_section(): void
+    public function test_it_encrypts_plain_application_section_data_before_persisting_it(): void
     {
         $application = app(CreateAffiliationDraft::class)();
         $completedAt = now()->startOfSecond();
+        $plainData = [
+            'document_number' => '123456789',
+            'full_name' => 'Synthetic Test Person',
+        ];
 
         $section = app(SaveApplicationSection::class)(
             application: $application,
             section: AffiliationApplicationStep::Personal,
             schemaVersion: 1,
-            dataEncrypted: 'encrypted-personal-payload',
+            data: $plainData,
             completedAt: $completedAt,
         );
 
         $this->assertTrue($section->application->is($application));
         $this->assertSame(AffiliationApplicationStep::Personal->value, $section->section);
         $this->assertSame(1, $section->schema_version);
-        $this->assertSame('encrypted-personal-payload', $section->getAttribute('data_encrypted'));
+        $this->assertNotSame(json_encode($plainData), $section->getAttribute('data_encrypted'));
+        $this->assertStringNotContainsString('123456789', $section->getAttribute('data_encrypted'));
+        $this->assertSame($plainData, app(EncryptsSensitiveData::class)->decryptArray($section->getAttribute('data_encrypted')));
         $this->assertTrue($completedAt->equalTo($section->completed_at));
         $this->assertSame(AffiliationApplicationStep::Personal->value, $application->refresh()->current_step);
 
@@ -50,19 +57,19 @@ class SaveApplicationSectionTest extends TestCase
             application: $application,
             section: AffiliationApplicationStep::Financial,
             schemaVersion: 1,
-            dataEncrypted: 'encrypted-financial-payload-v1',
+            data: ['income' => 1000000],
         );
         $second = $useCase(
             application: $application,
             section: AffiliationApplicationStep::Financial,
             schemaVersion: 2,
-            dataEncrypted: 'encrypted-financial-payload-v2',
+            data: ['income' => 2000000],
         );
 
         $this->assertTrue($first->is($second));
         $this->assertSame(1, $application->sections()->where('section', AffiliationApplicationStep::Financial->value)->count());
         $this->assertSame(2, $second->schema_version);
-        $this->assertSame('encrypted-financial-payload-v2', $second->getAttribute('data_encrypted'));
+        $this->assertSame(['income' => 2000000], app(EncryptsSensitiveData::class)->decryptArray($second->getAttribute('data_encrypted')));
     }
 
     public function test_it_rejects_steps_that_are_not_form_sections(): void
@@ -75,7 +82,7 @@ class SaveApplicationSectionTest extends TestCase
             application: $application,
             section: AffiliationApplicationStep::Documents,
             schemaVersion: 1,
-            dataEncrypted: 'encrypted-documents-payload',
+            data: ['document' => 'not-a-section'],
         );
     }
 }

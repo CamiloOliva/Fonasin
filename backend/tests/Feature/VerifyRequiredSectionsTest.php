@@ -33,7 +33,7 @@ class VerifyRequiredSectionsTest extends TestCase
             application: $application,
             section: AffiliationApplicationStep::Personal,
             schemaVersion: 1,
-            dataEncrypted: 'encrypted-personal-payload',
+            data: ['section' => 'personal'],
             completedAt: now(),
         );
 
@@ -58,7 +58,7 @@ class VerifyRequiredSectionsTest extends TestCase
                 application: $application,
                 section: $section,
                 schemaVersion: 1,
-                dataEncrypted: "encrypted-{$section->value}-payload",
+                data: ['section' => $section->value],
                 completedAt: now(),
             );
         }
