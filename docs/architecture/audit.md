@@ -66,7 +66,7 @@ Registrar quien hizo una accion, sobre que registro, cuando ocurrio y cual fue e
 
 Si el cambio o la auditoria fallan, se revierte todo. No registrar diffs completos de registros sensibles: usar campos permitidos y valores redactados.
 
-La primera implementacion reutilizable es `App\Application\Audit\UseCases\RecordAuditEvent`. Los casos de uso sensibles deben invocarla dentro de su propia transaccion de negocio. El envio de afiliacion registra `application.submitted` con metadatos redactados de cambio de estado y version de politica.
+La primera implementacion reutilizable es `App\Application\Audit\UseCases\RecordAuditEvent`. Los casos de uso sensibles deben invocarla dentro de su propia transaccion de negocio. El envio de afiliacion registra `application.submitted` con metadatos redactados de cambio de estado y version de politica. Las acciones de backoffice de afiliacion registran `application.review_started`, `application.correction_requested`, `application.approved` y `application.rejected` sin guardar razones completas en `metadata`.
 
 ## Consulta operativa
 
