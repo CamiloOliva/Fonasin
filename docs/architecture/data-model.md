@@ -172,7 +172,7 @@ El caso de uso inicial de envio exige las secciones de formulario completas, los
 
 - `carousel_assets`: imagen, texto alternativo, enlace, orden, estado y publicacion.
 - `convenios`: nombre, categoria, logo, contenido y estado de publicacion.
-- `fpqrs_submissions`: nombre, correo, tipo, mensaje, adjunto opcional, estado de entrega de correo y fecha. No implementa radicado ni seguimiento publico.
+- `fpqrs_submissions`: nombre, correo, hash de correo, tipo, mensaje, adjunto opcional en storage privado, estado de entrega de correo y fecha. No implementa radicado ni seguimiento publico.
 
 ## Indices minimos
 

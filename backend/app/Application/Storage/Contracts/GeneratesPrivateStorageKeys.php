@@ -12,4 +12,9 @@ interface GeneratesPrivateStorageKeys
         ApplicationDocumentType $documentType,
         string $originalFilename,
     ): string;
+
+    public function forFpqrsAttachment(
+        string $submissionId,
+        string $originalFilename,
+    ): string;
 }

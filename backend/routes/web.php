@@ -3,6 +3,7 @@
 use App\Http\Controllers\AffiliationApplicationController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\CreditAccountController;
+use App\Http\Controllers\FpqrsSubmissionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -70,3 +71,6 @@ Route::middleware('auth')
 Route::middleware('auth')
     ->get('/portal/credits', [CreditAccountController::class, 'mine'])
     ->name('portal.credits.index');
+
+Route::post('/fpqrs-submissions', [FpqrsSubmissionController::class, 'store'])
+    ->name('fpqrs-submissions.store');
