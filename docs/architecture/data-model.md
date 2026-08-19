@@ -152,6 +152,8 @@ Affiliation valida sus estados mediante `App\Domain\Affiliation`. Las transicion
 - `disabled` -> `enabled` o `withdrawn`.
 - `withdrawn`, `rejected` y `cancelled` son terminales.
 
+El caso de uso inicial de envio exige las secciones de formulario completas y los consentimientos obligatorios para la version de politica vigente antes de aplicar `draft` -> `submitted`.
+
 ## Decisiones funcionales pendientes
 
 1. Momento exacto en que se crea `users` para un asociado.

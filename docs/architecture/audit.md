@@ -66,6 +66,8 @@ Registrar quien hizo una accion, sobre que registro, cuando ocurrio y cual fue e
 
 Si el cambio o la auditoria fallan, se revierte todo. No registrar diffs completos de registros sensibles: usar campos permitidos y valores redactados.
 
+La primera implementacion reutilizable es `App\Application\Audit\UseCases\RecordAuditEvent`. Los casos de uso sensibles deben invocarla dentro de su propia transaccion de negocio. El envio de afiliacion registra `application.submitted` con metadatos redactados de cambio de estado y version de politica.
+
 ## Consulta operativa
 
 Las vistas administrativas deben filtrar eventos por modulo, recurso, actor, accion y rango de fechas. El detalle se trata como evidencia operativa y es de solo lectura.
