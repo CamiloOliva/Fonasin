@@ -90,6 +90,32 @@ class AuthenticationHttpTest extends TestCase
         ]);
     }
 
+    public function test_login_is_rate_limited_after_repeated_failures(): void
+    {
+        User::factory()->create([
+            'email' => 'limited@example.test',
+            'password' => Hash::make('correct-password'),
+            'status' => 'active',
+        ]);
+
+        for ($attempt = 1; $attempt <= 5; $attempt++) {
+            $this->postJson('/login', [
+                'email' => 'limited@example.test',
+                'password' => 'wrong-password',
+            ])->assertUnprocessable();
+        }
+
+        $this->postJson('/login', [
+            'email' => 'limited@example.test',
+            'password' => 'wrong-password',
+        ])->assertStatus(429);
+
+        $this->assertDatabaseHas('auth_events', [
+            'event_type' => AuthEventType::LoginFailed->value,
+            'metadata->reason' => 'rate_limited',
+        ]);
+    }
+
     public function test_user_can_logout_and_auth_event_is_recorded(): void
     {
         $user = User::factory()->create();

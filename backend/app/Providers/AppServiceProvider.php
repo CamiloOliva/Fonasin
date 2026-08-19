@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Application\Storage\Contracts\GeneratesPrivateStorageKeys;
+use App\Application\Storage\Contracts\StoresPrivateFiles;
 use App\Infrastructure\Security\LaravelSensitiveDataCipher;
+use App\Infrastructure\Storage\LaravelPrivateFileStorage;
 use App\Infrastructure\Storage\LaravelPrivateStorageKeyGenerator;
 use App\Models\AffiliationApplication;
 use App\Models\CreditAccount;
@@ -22,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(EncryptsSensitiveData::class, LaravelSensitiveDataCipher::class);
         $this->app->bind(GeneratesPrivateStorageKeys::class, LaravelPrivateStorageKeyGenerator::class);
+        $this->app->bind(StoresPrivateFiles::class, LaravelPrivateFileStorage::class);
     }
 
     /**

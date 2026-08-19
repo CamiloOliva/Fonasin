@@ -27,6 +27,7 @@ use App\Models\ConsentRecord;
 use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 
 class AffiliationApplicationController extends Controller
 {
@@ -67,14 +68,17 @@ class AffiliationApplicationController extends Controller
         AffiliationApplication $application,
         RegisterApplicationDocument $registerDocument,
     ): JsonResponse {
+        $file = $request->file('file');
+
         try {
             $document = $registerDocument(
                 application: $application,
                 documentType: ApplicationDocumentType::from($request->string('document_type')->toString()),
-                originalFilename: $request->string('original_filename')->toString(),
-                mimeType: $request->string('mime_type')->toString(),
-                byteSize: (int) $request->integer('byte_size'),
+                originalFilename: $file->getClientOriginalName(),
+                mimeType: $file->getMimeType() ?: 'application/octet-stream',
+                byteSize: $file->getSize() ?: 0,
                 ipHash: $this->ipHash($request),
+                fileContents: $file->get(),
             );
         } catch (DomainException $exception) {
             return $this->domainError($exception);
@@ -216,6 +220,45 @@ class AffiliationApplicationController extends Controller
             'submitted_at' => $application->submitted_at?->toJSON(),
             'reviewed_by_user_id' => $application->reviewed_by_user_id,
             'reviewed_at' => $application->reviewed_at?->toJSON(),
+            'links' => $this->applicationSignedLinks($application),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function applicationSignedLinks(AffiliationApplication $application): array
+    {
+        $expiresAt = now()->addHours(24);
+
+        return [
+            'sections' => collect(AffiliationApplicationStep::formSections())
+                ->mapWithKeys(fn (AffiliationApplicationStep $section): array => [
+                    $section->value => URL::temporarySignedRoute(
+                        'affiliation-applications.sections.store',
+                        $expiresAt,
+                        [
+                            'application' => $application,
+                            'section' => $section->value,
+                        ],
+                    ),
+                ])
+                ->all(),
+            'documents' => URL::temporarySignedRoute(
+                'affiliation-applications.documents.store',
+                $expiresAt,
+                ['application' => $application],
+            ),
+            'consents' => URL::temporarySignedRoute(
+                'affiliation-applications.consents.store',
+                $expiresAt,
+                ['application' => $application],
+            ),
+            'submit' => URL::temporarySignedRoute(
+                'affiliation-applications.submit',
+                $expiresAt,
+                ['application' => $application],
+            ),
         ];
     }
 

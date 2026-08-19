@@ -5,6 +5,7 @@ namespace App\Application\Affiliation\UseCases;
 use App\Application\Affiliation\Exceptions\CannotRegisterApplicationDocument;
 use App\Application\Audit\UseCases\RecordAuditEvent;
 use App\Application\Storage\Contracts\GeneratesPrivateStorageKeys;
+use App\Application\Storage\Contracts\StoresPrivateFiles;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
 use App\Domain\Affiliation\Enums\ApplicationDocumentStatus;
 use App\Domain\Affiliation\Enums\ApplicationDocumentType;
@@ -30,6 +31,7 @@ class RegisterApplicationDocument
 
     public function __construct(
         private readonly GeneratesPrivateStorageKeys $storageKeys,
+        private readonly StoresPrivateFiles $privateFiles,
         private readonly RecordAuditEvent $recordAuditEvent,
     ) {}
 
@@ -43,6 +45,7 @@ class RegisterApplicationDocument
         ?string $correlationId = null,
         ?string $ipHash = null,
         ?Carbon $uploadedAt = null,
+        ?string $fileContents = null,
     ): ApplicationDocument {
         if ($byteSize <= 0) {
             throw CannotRegisterApplicationDocument::invalidByteSize($byteSize);
@@ -52,7 +55,7 @@ class RegisterApplicationDocument
             throw CannotRegisterApplicationDocument::invalidMimeType($mimeType);
         }
 
-        return DB::transaction(function () use ($application, $documentType, $originalFilename, $mimeType, $byteSize, $actor, $correlationId, $ipHash, $uploadedAt) {
+        return DB::transaction(function () use ($application, $documentType, $originalFilename, $mimeType, $byteSize, $actor, $correlationId, $ipHash, $uploadedAt, $fileContents) {
             $uploadedAt ??= now();
             $correlationId ??= (string) Str::uuid();
 
@@ -71,6 +74,10 @@ class RegisterApplicationDocument
                 'status' => ApplicationDocumentStatus::Uploaded->value,
                 'uploaded_at' => $uploadedAt,
             ]);
+
+            if ($fileContents !== null) {
+                $this->privateFiles->put($document->storage_key, $fileContents);
+            }
 
             ($this->recordAuditEvent)(
                 module: AuditModule::Affiliation,

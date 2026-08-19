@@ -11,6 +11,7 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 - Cada accion privada debe pasar por una policy de Laravel; ocultar un boton no es autorizacion.
 - Un asociado solo puede leer recursos relacionados con su propio `associate_id` resuelto en el servidor.
 - Acciones administrativas sensibles requieren usuario identificado y registro de auditoria.
+- El flujo publico de afiliacion protege las mutaciones de una solicitud mediante URLs temporales firmadas por Laravel. El UUID de la solicitud por si solo no autoriza guardar secciones, documentos, consentimientos ni enviar.
 
 ## Datos sensibles
 
