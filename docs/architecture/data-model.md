@@ -98,6 +98,8 @@ El caso de uso de guardado recibe datos estructurados y delega el cifrado a `App
 | `status` | varchar(30) | `uploaded`, `accepted`, `rejected`, `archived` |
 | `uploaded_at` | timestamptz | fecha de carga |
 
+La carga de documentos registra metadatos y genera una `storage_key` privada desde `App\Infrastructure\Storage`. La aplicacion no acepta rutas publicas ni claves de almacenamiento enviadas por el navegador. Al reemplazar un documento del mismo tipo, el anterior se archiva y se conserva como historial.
+
 ### `consent_records`
 
 Registra evidencia de aceptacion sin depender de que una politica cambie despues.
