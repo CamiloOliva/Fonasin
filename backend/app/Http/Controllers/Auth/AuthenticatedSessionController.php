@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
 class AuthenticatedSessionController extends Controller
@@ -23,6 +24,25 @@ class AuthenticatedSessionController extends Controller
         $emailHash = hash('sha256', $email);
         $ipHash = $this->ipHash($request);
         $userAgentHash = $this->userAgentHash($request);
+        $throttleKey = $this->throttleKey($email, $request);
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            ($recordAuthEvent)(
+                eventType: AuthEventType::LoginFailed,
+                emailHash: $emailHash,
+                ipHash: $ipHash,
+                userAgentHash: $userAgentHash,
+                correlationId: $correlationId,
+                metadata: [
+                    'reason' => 'rate_limited',
+                    'available_in_seconds' => RateLimiter::availableIn($throttleKey),
+                ],
+            );
+
+            return response()->json([
+                'message' => 'Too many login attempts.',
+            ], 429);
+        }
 
         /** @var User|null $user */
         $user = User::query()->where('email', $email)->first();
@@ -36,6 +56,7 @@ class AuthenticatedSessionController extends Controller
                 correlationId: $correlationId,
                 metadata: ['reason' => 'invalid_credentials'],
             );
+            RateLimiter::hit($throttleKey, 60);
 
             return response()->json([
                 'message' => 'Invalid credentials.',
@@ -52,6 +73,7 @@ class AuthenticatedSessionController extends Controller
                 correlationId: $correlationId,
                 metadata: ['reason' => 'inactive_user'],
             );
+            RateLimiter::hit($throttleKey, 60);
 
             return response()->json([
                 'message' => 'User account is inactive.',
@@ -60,6 +82,7 @@ class AuthenticatedSessionController extends Controller
 
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
+        RateLimiter::clear($throttleKey);
 
         $user->forceFill([
             'last_login_at' => now(),
@@ -121,5 +144,10 @@ class AuthenticatedSessionController extends Controller
         $userAgent = $request->userAgent();
 
         return $userAgent ? hash('sha256', $userAgent) : null;
+    }
+
+    private function throttleKey(string $email, Request $request): string
+    {
+        return 'login|'.$email.'|'.$request->ip();
     }
 }

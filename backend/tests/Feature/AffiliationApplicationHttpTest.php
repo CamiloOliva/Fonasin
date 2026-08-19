@@ -11,6 +11,9 @@ use App\Domain\Affiliation\Enums\ApplicationDocumentType;
 use App\Domain\Affiliation\Enums\ConsentType;
 use App\Models\AffiliationApplication;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class AffiliationApplicationHttpTest extends TestCase
@@ -38,7 +41,7 @@ class AffiliationApplicationHttpTest extends TestCase
             'current_step' => AffiliationApplicationStep::Personal->value,
         ]);
 
-        $response = $this->postJson("/affiliation-applications/{$application->id}/sections/personal", [
+        $response = $this->postJson($this->signedSectionUrl($application, AffiliationApplicationStep::Personal), [
             'schema_version' => 1,
             'data' => [
                 'document_number' => '123456789',
@@ -64,7 +67,7 @@ class AffiliationApplicationHttpTest extends TestCase
             'current_step' => AffiliationApplicationStep::Personal->value,
         ]);
 
-        $this->postJson("/affiliation-applications/{$application->id}/sections/documents", [
+        $this->postJson($this->signedSectionUrl($application, AffiliationApplicationStep::Documents), [
             'schema_version' => 1,
             'data' => ['document' => 'not-a-section'],
         ])->assertUnprocessable();
@@ -72,17 +75,16 @@ class AffiliationApplicationHttpTest extends TestCase
 
     public function test_it_registers_document_without_exposing_storage_key_over_http(): void
     {
+        Storage::fake('local');
         $application = AffiliationApplication::query()->forceCreate([
             'status' => AffiliationApplicationStatus::Draft->value,
             'current_step' => AffiliationApplicationStep::Documents->value,
         ]);
 
-        $response = $this->postJson("/affiliation-applications/{$application->id}/documents", [
+        $response = $this->post($this->signedDocumentUrl($application), [
             'document_type' => ApplicationDocumentType::Identity->value,
-            'original_filename' => 'identity.pdf',
-            'mime_type' => 'application/pdf',
-            'byte_size' => 2048,
-        ]);
+            'file' => UploadedFile::fake()->create('identity.pdf', 64, 'application/pdf'),
+        ], ['Accept' => 'application/json']);
 
         $response->assertCreated()
             ->assertJsonPath('data.application_id', $application->id)
@@ -93,6 +95,9 @@ class AffiliationApplicationHttpTest extends TestCase
             'application_id' => $application->id,
             'document_type' => ApplicationDocumentType::Identity->value,
         ]);
+        Storage::disk('local')->assertExists(
+            $application->documents()->where('document_type', ApplicationDocumentType::Identity->value)->firstOrFail()->getAttribute('storage_key')
+        );
     }
 
     public function test_it_accepts_consent_over_http(): void
@@ -102,7 +107,7 @@ class AffiliationApplicationHttpTest extends TestCase
             'current_step' => AffiliationApplicationStep::Consents->value,
         ]);
 
-        $response = $this->postJson("/affiliation-applications/{$application->id}/consents", [
+        $response = $this->postJson($this->signedConsentUrl($application), [
             'consent_type' => ConsentType::DataProcessing->value,
             'policy_version' => '2026-01',
         ]);
@@ -123,7 +128,7 @@ class AffiliationApplicationHttpTest extends TestCase
         $this->uploadRequiredDocuments($application);
         $this->acceptRequiredConsents($application, '2026-01');
 
-        $response = $this->postJson("/affiliation-applications/{$application->id}/submit", [
+        $response = $this->postJson($this->signedSubmitUrl($application), [
             'policy_version' => '2026-01',
         ]);
 
@@ -140,9 +145,41 @@ class AffiliationApplicationHttpTest extends TestCase
             'current_step' => AffiliationApplicationStep::Personal->value,
         ]);
 
-        $this->postJson("/affiliation-applications/{$application->id}/submit", [
+        $this->postJson($this->signedSubmitUrl($application), [
             'policy_version' => '2026-01',
         ])->assertUnprocessable();
+    }
+
+    public function test_it_rejects_public_application_mutations_without_signed_url(): void
+    {
+        $application = AffiliationApplication::query()->forceCreate([
+            'status' => AffiliationApplicationStatus::Draft->value,
+            'current_step' => AffiliationApplicationStep::Personal->value,
+        ]);
+
+        $this->postJson("/affiliation-applications/{$application->id}/sections/personal", [
+            'schema_version' => 1,
+            'data' => ['section' => 'personal'],
+        ])->assertForbidden();
+    }
+
+    public function test_it_rejects_signed_url_reused_for_another_application(): void
+    {
+        $application = AffiliationApplication::query()->forceCreate([
+            'status' => AffiliationApplicationStatus::Draft->value,
+            'current_step' => AffiliationApplicationStep::Personal->value,
+        ]);
+        $otherApplication = AffiliationApplication::query()->forceCreate([
+            'status' => AffiliationApplicationStatus::Draft->value,
+            'current_step' => AffiliationApplicationStep::Personal->value,
+        ]);
+        $signedUrl = $this->signedSectionUrl($application, AffiliationApplicationStep::Personal);
+        $tamperedUrl = str_replace($application->id, $otherApplication->id, $signedUrl);
+
+        $this->postJson($tamperedUrl, [
+            'schema_version' => 1,
+            'data' => ['section' => 'personal'],
+        ])->assertForbidden();
     }
 
     private function completeSections(AffiliationApplication $application): void
@@ -182,5 +219,34 @@ class AffiliationApplicationHttpTest extends TestCase
         foreach (ConsentType::requiredForSubmission() as $consentType) {
             $acceptConsent($application, $consentType, $policyVersion);
         }
+    }
+
+    private function signedSectionUrl(AffiliationApplication $application, AffiliationApplicationStep $section): string
+    {
+        return URL::temporarySignedRoute('affiliation-applications.sections.store', now()->addHour(), [
+            'application' => $application,
+            'section' => $section->value,
+        ]);
+    }
+
+    private function signedDocumentUrl(AffiliationApplication $application): string
+    {
+        return URL::temporarySignedRoute('affiliation-applications.documents.store', now()->addHour(), [
+            'application' => $application,
+        ]);
+    }
+
+    private function signedConsentUrl(AffiliationApplication $application): string
+    {
+        return URL::temporarySignedRoute('affiliation-applications.consents.store', now()->addHour(), [
+            'application' => $application,
+        ]);
+    }
+
+    private function signedSubmitUrl(AffiliationApplication $application): string
+    {
+        return URL::temporarySignedRoute('affiliation-applications.submit', now()->addHour(), [
+            'application' => $application,
+        ]);
     }
 }

@@ -20,9 +20,7 @@ class RegisterApplicationDocumentRequest extends FormRequest
     {
         return [
             'document_type' => ['required', Rule::enum(ApplicationDocumentType::class)],
-            'original_filename' => ['required', 'string', 'max:255'],
-            'mime_type' => ['required', 'string', Rule::in(['application/pdf', 'image/jpeg', 'image/png'])],
-            'byte_size' => ['required', 'integer', 'min:1'],
+            'file' => ['required', 'file', 'max:5120', 'mimetypes:application/pdf,image/jpeg,image/png'],
         ];
     }
 }

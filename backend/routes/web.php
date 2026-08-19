@@ -21,12 +21,16 @@ Route::prefix('affiliation-applications')->group(function (): void {
     Route::post('/', [AffiliationApplicationController::class, 'store'])
         ->name('affiliation-applications.store');
     Route::post('/{application}/sections/{section}', [AffiliationApplicationController::class, 'storeSection'])
+        ->middleware('signed')
         ->name('affiliation-applications.sections.store');
     Route::post('/{application}/documents', [AffiliationApplicationController::class, 'storeDocument'])
+        ->middleware('signed')
         ->name('affiliation-applications.documents.store');
     Route::post('/{application}/consents', [AffiliationApplicationController::class, 'storeConsent'])
+        ->middleware('signed')
         ->name('affiliation-applications.consents.store');
     Route::post('/{application}/submit', [AffiliationApplicationController::class, 'submit'])
+        ->middleware('signed')
         ->name('affiliation-applications.submit');
 });
 
