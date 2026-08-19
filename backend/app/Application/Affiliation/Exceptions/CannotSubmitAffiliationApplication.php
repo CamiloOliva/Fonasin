@@ -4,6 +4,7 @@ namespace App\Application\Affiliation\Exceptions;
 
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
+use App\Domain\Affiliation\Enums\ApplicationDocumentType;
 use App\Domain\Affiliation\Enums\ConsentType;
 use DomainException;
 
@@ -38,5 +39,18 @@ class CannotSubmitAffiliationApplication extends DomainException
         ));
 
         return new self("Application cannot be submitted because consents are missing: {$consents}.");
+    }
+
+    /**
+     * @param  list<ApplicationDocumentType>  $missingDocumentTypes
+     */
+    public static function missingDocuments(array $missingDocumentTypes): self
+    {
+        $documents = implode(', ', array_map(
+            fn (ApplicationDocumentType $documentType): string => $documentType->value,
+            $missingDocumentTypes,
+        ));
+
+        return new self("Application cannot be submitted because documents are missing: {$documents}.");
     }
 }
