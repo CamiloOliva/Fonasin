@@ -36,7 +36,7 @@ Registrar quien hizo una accion, sobre que registro, cuando ocurrio y cual fue e
 | `correlation_id` | UUID nullable | agrupa eventos de una misma operacion |
 | `metadata` | jsonb | solo contexto tecnico permitido y valores redactados |
 
-`event_type` registra `login_succeeded`, `login_failed`, `logout`, `password_reset_requested`, `password_reset_completed`, `account_blocked` y cambios de segundo factor.
+`event_type` registra `login_succeeded`, `login_failed`, `logout`, `password_reset_requested`, `password_reset_completed`, `account_blocked` y cambios de segundo factor. La primera implementacion reusable para autenticacion es `App\Application\Identity\UseCases\RecordAuthEvent`.
 
 ## Eventos obligatorios
 

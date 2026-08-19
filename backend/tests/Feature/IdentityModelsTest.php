@@ -35,6 +35,19 @@ class IdentityModelsTest extends TestCase
         $this->assertNotNull($user->roles->first()->pivot->created_at);
     }
 
+    public function test_user_can_check_roles(): void
+    {
+        $user = User::factory()->create();
+        $reviewer = Role::query()->create(['name' => 'reviewer']);
+
+        $user->roles()->attach($reviewer);
+        $user->load('roles');
+
+        $this->assertTrue($user->hasRole('reviewer'));
+        $this->assertTrue($user->hasAnyRole(['admin', 'reviewer']));
+        $this->assertFalse($user->hasRole('admin'));
+    }
+
     public function test_user_and_associate_relationship_is_bidirectional(): void
     {
         $user = User::factory()->create();

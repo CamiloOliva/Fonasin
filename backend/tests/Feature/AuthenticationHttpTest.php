@@ -1,0 +1,108 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Domain\Identity\Enums\AuthEventType;
+use App\Models\AuthEvent;
+use App\Models\Role;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
+use Tests\TestCase;
+
+class AuthenticationHttpTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_user_can_login_and_auth_event_is_recorded(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'reviewer@example.test',
+            'password' => Hash::make('correct-password'),
+            'status' => 'active',
+        ]);
+        $role = Role::query()->create(['name' => 'reviewer']);
+        $user->roles()->attach($role);
+
+        $response = $this->postJson('/login', [
+            'email' => 'reviewer@example.test',
+            'password' => 'correct-password',
+        ], [
+            'User-Agent' => 'Feature Test Browser',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.id', $user->id)
+            ->assertJsonPath('data.roles.0', 'reviewer')
+            ->assertJsonMissingPath('data.password');
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertNotNull($user->refresh()->last_login_at);
+        $this->assertDatabaseHas('auth_events', [
+            'user_id' => $user->id,
+            'event_type' => AuthEventType::LoginSucceeded->value,
+        ]);
+    }
+
+    public function test_failed_login_records_redacted_auth_event(): void
+    {
+        User::factory()->create([
+            'email' => 'associate@example.test',
+            'password' => Hash::make('correct-password'),
+            'status' => 'active',
+        ]);
+
+        $this->postJson('/login', [
+            'email' => 'associate@example.test',
+            'password' => 'wrong-password',
+        ])->assertUnprocessable();
+
+        $this->assertGuest();
+
+        $event = AuthEvent::query()
+            ->where('event_type', AuthEventType::LoginFailed->value)
+            ->firstOrFail();
+
+        $this->assertNull($event->user_id);
+        $this->assertSame(['reason' => 'invalid_credentials'], $event->metadata);
+        $this->assertArrayNotHasKey('email_hash', $event->toArray());
+        $this->assertArrayNotHasKey('ip_hash', $event->toArray());
+        $this->assertStringNotContainsString('associate@example.test', json_encode($event->metadata, JSON_THROW_ON_ERROR));
+    }
+
+    public function test_inactive_user_cannot_login_and_is_audited(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'inactive@example.test',
+            'password' => Hash::make('correct-password'),
+            'status' => 'inactive',
+        ]);
+
+        $this->postJson('/login', [
+            'email' => 'inactive@example.test',
+            'password' => 'correct-password',
+        ])->assertForbidden();
+
+        $this->assertGuest();
+        $this->assertDatabaseHas('auth_events', [
+            'user_id' => $user->id,
+            'event_type' => AuthEventType::LoginFailed->value,
+        ]);
+    }
+
+    public function test_user_can_logout_and_auth_event_is_recorded(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->postJson('/logout');
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Logged out.');
+
+        $this->assertGuest();
+        $this->assertDatabaseHas('auth_events', [
+            'user_id' => $user->id,
+            'event_type' => AuthEventType::Logout->value,
+        ]);
+    }
+}
