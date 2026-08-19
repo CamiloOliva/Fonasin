@@ -30,6 +30,12 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 5. Auditar carga, cambio de estado y descarga.
 6. No incluir archivos ni su contenido en backups de desarrollo, pruebas o ejemplos sin autorizacion.
 
+## FPQRS
+
+- El modulo FPQRS solo registra la recepcion inicial, adjunto opcional privado y estado interno de entrega.
+- No genera radicado ni seguimiento publico.
+- La auditoria no almacena correo, mensaje completo ni contenido del adjunto.
+
 ## Secretos y configuracion
 
 - `.env` no se versiona.

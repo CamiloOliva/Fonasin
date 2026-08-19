@@ -29,4 +29,23 @@ class LaravelPrivateStorageKeyGenerator implements GeneratesPrivateStorageKeys
             $filename,
         ]);
     }
+
+    public function forFpqrsAttachment(
+        string $submissionId,
+        string $originalFilename,
+    ): string {
+        $extension = pathinfo($originalFilename, PATHINFO_EXTENSION);
+        $filename = (string) Str::uuid();
+
+        if ($extension !== '') {
+            $filename .= '.'.Str::lower($extension);
+        }
+
+        return implode('/', [
+            'fpqrs-submissions',
+            $submissionId,
+            'attachments',
+            $filename,
+        ]);
+    }
 }

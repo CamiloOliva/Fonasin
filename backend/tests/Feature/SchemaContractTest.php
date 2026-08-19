@@ -138,6 +138,30 @@ class SchemaContractTest extends TestCase
         $this->assertIndex('credit_accounts', ['associate_id', 'status']);
     }
 
+    public function test_fpqrs_submissions_have_the_expected_contract(): void
+    {
+        $this->assertTrue(Schema::hasTable('fpqrs_submissions'));
+        $this->assertTrue(Schema::hasColumns('fpqrs_submissions', [
+            'id',
+            'full_name',
+            'email',
+            'email_hash',
+            'submission_type',
+            'message',
+            'attachment_original_filename',
+            'attachment_storage_key',
+            'attachment_mime_type',
+            'attachment_byte_size',
+            'delivery_status',
+            'submitted_at',
+            'ip_hash',
+        ]));
+
+        $this->assertIndex('fpqrs_submissions', ['email_hash']);
+        $this->assertIndex('fpqrs_submissions', ['submission_type', 'submitted_at']);
+        $this->assertIndex('fpqrs_submissions', ['delivery_status', 'submitted_at']);
+    }
+
     public function test_audit_tables_have_the_expected_contract(): void
     {
         $this->assertTrue(Schema::hasTable('audit_events'));
