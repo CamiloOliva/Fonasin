@@ -104,7 +104,7 @@ Registra evidencia de aceptacion sin depender de que una politica cambie despues
 |---|---|---|
 | `id` | UUID | PK |
 | `application_id` | UUID | FK |
-| `consent_type` | varchar(50) | tratamiento de datos, declaracion u otro texto aprobado |
+| `consent_type` | varchar(50) | catalogo de dominio inicial: `data_processing`, `bylaws` |
 | `policy_version` | varchar(50) | version exacta aceptada |
 | `accepted_at` | timestamptz | obligatorio |
 | `ip_hash` | char(64) | nullable; no se conserva la IP sin necesidad |
