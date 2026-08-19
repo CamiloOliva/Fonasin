@@ -28,3 +28,21 @@ Route::prefix('affiliation-applications')->group(function (): void {
     Route::post('/{application}/submit', [AffiliationApplicationController::class, 'submit'])
         ->name('affiliation-applications.submit');
 });
+
+Route::middleware('auth')
+    ->prefix('admin/affiliation-applications')
+    ->name('admin.affiliation-applications.')
+    ->group(function (): void {
+        Route::post('/{application}/review', [AffiliationApplicationController::class, 'startReview'])
+            ->middleware('can:startReview,application')
+            ->name('review');
+        Route::post('/{application}/correction', [AffiliationApplicationController::class, 'requestCorrection'])
+            ->middleware('can:requestCorrection,application')
+            ->name('correction');
+        Route::post('/{application}/approve', [AffiliationApplicationController::class, 'approve'])
+            ->middleware('can:approve,application')
+            ->name('approve');
+        Route::post('/{application}/reject', [AffiliationApplicationController::class, 'reject'])
+            ->middleware('can:reject,application')
+            ->name('reject');
+    });
