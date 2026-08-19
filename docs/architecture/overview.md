@@ -37,6 +37,8 @@ Asociado autenticado
 
 Una respuesta nunca incluye campos privados que la pantalla no necesita ni enlaces directos al storage.
 
+Mientras se completa la migracion a presentacion Laravel/Inertia, el backend expone rutas `web` con respuestas JSON para probar el flujo inicial de afiliacion. Estas rutas reutilizan los casos de uso de `Application/` y no constituyen una API publica versionada.
+
 ## Modulos de dominio
 
 | Modulo | Responsabilidad | No es responsable de |
