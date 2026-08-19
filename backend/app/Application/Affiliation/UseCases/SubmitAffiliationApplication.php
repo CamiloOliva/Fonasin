@@ -21,6 +21,7 @@ class SubmitAffiliationApplication
     public function __construct(
         private readonly AffiliationApplicationStateMachine $stateMachine,
         private readonly VerifyRequiredSections $verifyRequiredSections,
+        private readonly VerifyRequiredDocuments $verifyRequiredDocuments,
         private readonly VerifyRequiredConsents $verifyRequiredConsents,
         private readonly RecordAuditEvent $recordAuditEvent,
     ) {}
@@ -46,6 +47,12 @@ class SubmitAffiliationApplication
 
             if ($missingSections !== []) {
                 throw CannotSubmitAffiliationApplication::missingSections($missingSections);
+            }
+
+            $missingDocuments = $this->verifyRequiredDocuments->missingDocumentTypes($application);
+
+            if ($missingDocuments !== []) {
+                throw CannotSubmitAffiliationApplication::missingDocuments($missingDocuments);
             }
 
             $missingConsents = $this->verifyRequiredConsents->missingConsentTypes($application, $policyVersion);

@@ -98,7 +98,7 @@ El caso de uso de guardado recibe datos estructurados y delega el cifrado a `App
 | `status` | varchar(30) | `uploaded`, `accepted`, `rejected`, `archived` |
 | `uploaded_at` | timestamptz | fecha de carga |
 
-La carga de documentos registra metadatos y genera una `storage_key` privada desde `App\Infrastructure\Storage`. La aplicacion no acepta rutas publicas ni claves de almacenamiento enviadas por el navegador. Al reemplazar un documento del mismo tipo, el anterior se archiva y se conserva como historial.
+La carga de documentos registra metadatos y genera una `storage_key` privada desde `App\Infrastructure\Storage`. La aplicacion no acepta rutas publicas ni claves de almacenamiento enviadas por el navegador. Al reemplazar un documento del mismo tipo, el anterior se archiva y se conserva como historial. Para envio inicial se exige el documento `identity` en estado `uploaded`.
 
 ### `consent_records`
 
@@ -156,7 +156,7 @@ Affiliation valida sus estados mediante `App\Domain\Affiliation`. Las transicion
 - `disabled` -> `enabled` o `withdrawn`.
 - `withdrawn`, `rejected` y `cancelled` son terminales.
 
-El caso de uso inicial de envio exige las secciones de formulario completas y los consentimientos obligatorios para la version de politica vigente antes de aplicar `draft` -> `submitted`.
+El caso de uso inicial de envio exige las secciones de formulario completas, los documentos obligatorios y los consentimientos obligatorios para la version de politica vigente antes de aplicar `draft` -> `submitted`.
 
 ## Decisiones funcionales pendientes
 

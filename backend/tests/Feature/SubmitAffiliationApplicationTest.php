@@ -5,11 +5,13 @@ namespace Tests\Feature;
 use App\Application\Affiliation\Exceptions\CannotSubmitAffiliationApplication;
 use App\Application\Affiliation\UseCases\AcceptApplicationConsent;
 use App\Application\Affiliation\UseCases\CreateAffiliationDraft;
+use App\Application\Affiliation\UseCases\RegisterApplicationDocument;
 use App\Application\Affiliation\UseCases\SaveApplicationSection;
 use App\Application\Affiliation\UseCases\SubmitAffiliationApplication;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
+use App\Domain\Affiliation\Enums\ApplicationDocumentType;
 use App\Domain\Affiliation\Enums\ConsentType;
 use App\Domain\Audit\Enums\AuditModule;
 use App\Models\AffiliationApplication;
@@ -31,6 +33,7 @@ class SubmitAffiliationApplicationTest extends TestCase
         $ipHash = hash('sha256', '192.0.2.30');
 
         $this->completeSections($application);
+        $this->uploadRequiredDocuments($application);
         $this->acceptRequiredConsents($application, '2026-01');
 
         $submitted = app(SubmitAffiliationApplication::class)(
@@ -60,6 +63,7 @@ class SubmitAffiliationApplicationTest extends TestCase
     public function test_it_rejects_submission_when_required_sections_are_missing(): void
     {
         $application = app(CreateAffiliationDraft::class)();
+        $this->uploadRequiredDocuments($application);
         $this->acceptRequiredConsents($application, '2026-01');
 
         $this->expectException(CannotSubmitAffiliationApplication::class);
@@ -71,6 +75,18 @@ class SubmitAffiliationApplicationTest extends TestCase
     {
         $application = app(CreateAffiliationDraft::class)();
         $this->completeSections($application);
+        $this->uploadRequiredDocuments($application);
+
+        $this->expectException(CannotSubmitAffiliationApplication::class);
+
+        app(SubmitAffiliationApplication::class)($application, '2026-01');
+    }
+
+    public function test_it_rejects_submission_when_required_documents_are_missing(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $this->completeSections($application);
+        $this->acceptRequiredConsents($application, '2026-01');
 
         $this->expectException(CannotSubmitAffiliationApplication::class);
 
@@ -84,6 +100,7 @@ class SubmitAffiliationApplicationTest extends TestCase
             'status' => AffiliationApplicationStatus::Submitted->value,
         ])->save();
         $this->completeSections($application);
+        $this->uploadRequiredDocuments($application);
         $this->acceptRequiredConsents($application, '2026-01');
 
         $this->expectException(CannotSubmitAffiliationApplication::class);
@@ -112,6 +129,21 @@ class SubmitAffiliationApplicationTest extends TestCase
 
         foreach (ConsentType::requiredForSubmission() as $consentType) {
             $acceptConsent($application, $consentType, $policyVersion);
+        }
+    }
+
+    private function uploadRequiredDocuments(AffiliationApplication $application): void
+    {
+        $registerDocument = app(RegisterApplicationDocument::class);
+
+        foreach (ApplicationDocumentType::requiredForSubmission() as $documentType) {
+            $registerDocument(
+                application: $application,
+                documentType: $documentType,
+                originalFilename: "{$documentType->value}.pdf",
+                mimeType: 'application/pdf',
+                byteSize: 2048,
+            );
         }
     }
 }
