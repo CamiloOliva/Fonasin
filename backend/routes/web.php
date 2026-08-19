@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AffiliationApplicationController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\CreditAccountController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -46,3 +47,22 @@ Route::middleware('auth')
             ->middleware('can:reject,application')
             ->name('reject');
     });
+
+Route::middleware('auth')
+    ->prefix('admin/credits')
+    ->name('admin.credits.')
+    ->group(function (): void {
+        Route::post('/', [CreditAccountController::class, 'store'])
+            ->middleware('can:create,App\Models\CreditAccount')
+            ->name('store');
+        Route::patch('/{credit}', [CreditAccountController::class, 'update'])
+            ->middleware('can:update,credit')
+            ->name('update');
+        Route::post('/{credit}/archive', [CreditAccountController::class, 'archive'])
+            ->middleware('can:archive,credit')
+            ->name('archive');
+    });
+
+Route::middleware('auth')
+    ->get('/portal/credits', [CreditAccountController::class, 'mine'])
+    ->name('portal.credits.index');

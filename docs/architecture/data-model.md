@@ -132,7 +132,7 @@ Una solicitud solo puede registrar una aceptacion por tipo y version de politica
 | `status` | varchar(30) | `active`, `settled`, `archived` |
 | `registered_by_user_id` | UUID | FK al administrador responsable |
 
-Un asociado puede tener varios creditos. No se deben borrar; una correccion crea auditoria y un credito no vigente se archiva.
+Un asociado puede tener varios creditos. No se deben borrar; una correccion crea auditoria y un credito no vigente se archiva. Los casos de uso iniciales de Credits permiten registrar, actualizar campos existentes, archivar y consultar creditos propios desde la sesion del asociado; no aceptan `associate_id` del navegador para consultas privadas.
 
 ## Convenciones de migracion
 
