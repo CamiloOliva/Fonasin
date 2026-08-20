@@ -82,6 +82,6 @@ describe('AppRoutes', () => {
   it('falls back to the home page for an unknown route', () => {
     renderRoute('/ruta-inexistente');
 
-    expect(screen.getByRole('heading', { name: /un fondo pensado para acompañar a sus asociados/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /un fondo que te acompa/i })).toBeInTheDocument();
   });
 });
