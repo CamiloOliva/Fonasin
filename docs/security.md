@@ -32,7 +32,8 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 
 ## FPQRS
 
-- El modulo FPQRS solo registra la recepcion inicial, adjunto opcional privado y estado interno de entrega.
+- El modulo FPQRS registra la recepcion inicial, adjunto opcional privado y estado interno de entrega por correo institucional.
+- El correo institucional contiene el mensaje recibido y metadatos minimos; los adjuntos quedan en storage privado y no se adjuntan al correo.
 - No genera radicado ni seguimiento publico.
 - La auditoria no almacena correo, mensaje completo ni contenido del adjunto.
 

@@ -3,6 +3,7 @@
 namespace App\Application\Fpqrs\UseCases;
 
 use App\Application\Audit\UseCases\RecordAuditEvent;
+use App\Application\Fpqrs\Contracts\DeliversFpqrsSubmissions;
 use App\Application\Storage\Contracts\GeneratesPrivateStorageKeys;
 use App\Application\Storage\Contracts\StoresPrivateFiles;
 use App\Domain\Audit\Enums\AuditActorType;
@@ -13,12 +14,14 @@ use App\Domain\Fpqrs\Enums\FpqrsSubmissionType;
 use App\Models\FpqrsSubmission;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Throwable;
 
 class SubmitFpqrsSubmission
 {
     public function __construct(
         private readonly GeneratesPrivateStorageKeys $storageKeys,
         private readonly StoresPrivateFiles $privateFiles,
+        private readonly DeliversFpqrsSubmissions $deliverSubmissions,
         private readonly RecordAuditEvent $recordAuditEvent,
     ) {}
 
@@ -39,9 +42,10 @@ class SubmitFpqrsSubmission
         ?string $correlationId = null,
         ?string $ipHash = null,
     ): FpqrsSubmission {
-        return DB::transaction(function () use ($data, $correlationId, $ipHash) {
+        $correlationId ??= (string) Str::uuid();
+
+        $submission = DB::transaction(function () use ($data, $correlationId, $ipHash) {
             $submittedAt = now();
-            $correlationId ??= (string) Str::uuid();
             $submissionId = (string) Str::uuid();
             $email = Str::lower($data['email']);
             $attachmentStorageKey = null;
@@ -84,6 +88,64 @@ class SubmitFpqrsSubmission
                     'delivery_status' => $submission->delivery_status,
                 ],
                 occurredAt: $submittedAt,
+            );
+
+            return $submission->refresh();
+        });
+
+        try {
+            $this->deliverSubmissions->deliver($submission);
+
+            return $this->markDeliveryStatus(
+                submission: $submission,
+                status: FpqrsDeliveryStatus::Sent,
+                action: FpqrsAuditAction::DeliverySent,
+                correlationId: $correlationId,
+                ipHash: $ipHash,
+            );
+        } catch (Throwable $exception) {
+            return $this->markDeliveryStatus(
+                submission: $submission,
+                status: FpqrsDeliveryStatus::Failed,
+                action: FpqrsAuditAction::DeliveryFailed,
+                correlationId: $correlationId,
+                ipHash: $ipHash,
+                metadata: [
+                    'error_class' => $exception::class,
+                ],
+            );
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $metadata
+     */
+    private function markDeliveryStatus(
+        FpqrsSubmission $submission,
+        FpqrsDeliveryStatus $status,
+        FpqrsAuditAction $action,
+        string $correlationId,
+        ?string $ipHash,
+        array $metadata = [],
+    ): FpqrsSubmission {
+        return DB::transaction(function () use ($submission, $status, $action, $correlationId, $ipHash, $metadata) {
+            $submission->forceFill([
+                'delivery_status' => $status->value,
+            ])->save();
+
+            ($this->recordAuditEvent)(
+                module: AuditModule::Fpqrs,
+                action: $action->value,
+                subjectType: 'fpqrs_submission',
+                subjectId: $submission->id,
+                actorType: AuditActorType::System,
+                correlationId: $correlationId,
+                ipHash: $ipHash,
+                metadata: [
+                    'delivery_status' => $status->value,
+                    ...$metadata,
+                ],
+                occurredAt: now(),
             );
 
             return $submission->refresh();
