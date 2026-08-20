@@ -16,23 +16,23 @@ const usageItems = [
 
 const amountRows = [
   {
-    tier: 'Hasta 5 SMMLV',
-    amount: '0.5 – 5 SMMLV',
-    description: 'Sujeto a capacidad de pago y consulta de riesgo cuando corresponda.',
+    tier: 'Desde 0.5 SMMLV a 5 SMMLV',
+    amount: 'Hasta 5 SMMLV',
+    description: 'Aportes y ahorros permanentes. Sujeto a capacidad de pago y consulta de riesgo cuando corresponda.',
   },
   {
-    tier: 'Más de 5 hasta 10 SMMLV',
-    amount: '>5 – 10 SMMLV',
-    description: 'El codeudor o deudor solidario debe acreditar capacidad de pago.',
+    tier: 'Mayor a 5 SMMLV y hasta 10 SMMLV',
+    amount: 'Hasta 10 SMMLV',
+    description: 'Aportes, ahorros permanentes y un codeudor o deudor solidario. El codeudor debe acreditar capacidad de pago.',
   },
 ];
 
 const rateRows = [
-  { term: '1 – 18 meses', ea: '18.16%', na: '16.80%', monthly: '1.4%' },
-  { term: '19 – 24 meses', ea: '19.56%', na: '18.00%', monthly: '1.5%' },
-  { term: '25 – 36 meses', ea: '20.98%', na: '19.20%', monthly: '1.6%' },
-  { term: '37 – 48 meses', ea: '22.42%', na: '20.40%', monthly: '1.7%' },
-  { term: '49 – 60 meses', ea: '23.87%', na: '21.60%', monthly: '1.8%' },
+  { term: '01 - 18 meses', ea: '18.16%', na: '16.80%', monthly: '1.4%' },
+  { term: '19 - 24 meses', ea: '19.56%', na: '18.00%', monthly: '1.5%' },
+  { term: '25 - 36 meses', ea: '20.98%', na: '19.20%', monthly: '1.6%' },
+  { term: '37 - 48 meses', ea: '22.42%', na: '20.40%', monthly: '1.7%' },
+  { term: '49 - 60 meses', ea: '23.87%', na: '21.60%', monthly: '1.8%' },
 ];
 
 function ComingSoon({ title }: { title: string }) {
@@ -48,9 +48,7 @@ function ComingSoon({ title }: { title: string }) {
 
           <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl">{title}</h1>
 
-          <p className="mt-4 max-w-2xl text-white/80">
-            Esta línea todavía no tiene su ficha completa publicada.
-          </p>
+          <p className="mt-4 max-w-2xl text-white/80">Esta línea todavía no tiene su ficha completa publicada.</p>
 
           <div className="mt-8">
             <Link
@@ -90,7 +88,7 @@ export default function CreditLinePage() {
           'Línea de crédito destinada a atender necesidades de libre inversión del asociado, orientadas al mejoramiento de su calidad de vida y la de su grupo familiar.',
         chips: ['Libre inversión', 'Hasta 10 SMMLV', 'Hasta 48 meses*'],
         stats: [
-          { icon: Banknote, label: 'Monto', value: '0.5 a 10 SMMLV' },
+          { icon: Banknote, label: 'Monto', value: 'Hasta 10 SMMLV' },
           { icon: CalendarRange, label: 'Plazo', value: 'Hasta 48 meses*' },
           { icon: Banknote, label: 'Amortización', value: 'Mensual' },
           { icon: ShieldCheck, label: 'Garantía', value: 'Aportes y ahorros' },
@@ -102,6 +100,7 @@ export default function CreditLinePage() {
         description:
           'FONALIBRE está pensado para atender necesidades personales y familiares con un enfoque flexible, sujeto a capacidad de pago, consulta de riesgo cuando corresponda y las garantías requeridas.',
         itemsTitle: '¿Para qué se puede utilizar?',
+        itemLayout: 'center',
         items: usageItems,
         sideEyebrow: 'Condiciones clave',
         sideCards: [
@@ -110,15 +109,14 @@ export default function CreditLinePage() {
           { label: 'Destino', value: 'Necesidades de libre inversión' },
         ],
         sideNote:
-          'No se exige soporte específico del destino, salvo que FONASIN lo requiera por razones de riesgo, control o trazabilidad.',
+          'No se exige soporte específico del destino, salvo que FONASIN lo requiera por razones de riesgo, control o trazabilidad. El plazo máximo general es de 48 meses; excepcionalmente, los créditos por valor de 10 SMMLV pueden otorgarse hasta 60 meses, previa aprobación de la instancia competente.',
       }}
       amounts={{
         eyebrow: 'Monto y garantías',
         title: 'Garantía según el monto solicitado',
         subtitle: 'Condiciones establecidas para FONALIBRE',
         rows: amountRows,
-        note:
-          'El monto está sujeto a capacidad de pago y a consulta de riesgo cuando corresponda.',
+        note: 'El monto está sujeto a capacidad de pago y a consulta de riesgo cuando corresponda.',
       }}
       rates={{
         eyebrow: 'Plazos y tasas',
@@ -135,13 +133,13 @@ export default function CreditLinePage() {
         cards: [
           {
             label: 'Hasta 5 SMMLV',
-            title: 'Aportes y ahorros',
+            title: 'Aportes y ahorros permanentes',
             description: 'Sujeto a capacidad de pago y consulta de riesgo cuando corresponda.',
           },
           {
             label: 'Más de 5 hasta 10 SMMLV',
-            title: 'Aportes + ahorros + codeudor',
-            description: 'Puede ser codeudor o deudor solidario y debe acreditar capacidad de pago.',
+            title: 'Aportes, ahorros y codeudor',
+            description: 'El codeudor o deudor solidario debe acreditar capacidad de pago.',
           },
           {
             label: 'Condición general',

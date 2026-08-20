@@ -9,9 +9,9 @@ export const fonalibreStyles = {
   ambientGlowRight:
     'pointer-events-none absolute inset-y-0 right-0 w-[20rem] bg-[linear-gradient(180deg,transparent,rgba(245,204,114,0.06)_22%,rgba(183,121,31,0.1)_50%,rgba(245,204,114,0.06)_78%,transparent)] blur-2xl',
   hero: 'relative overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,#003d22,#08783f)] text-white shadow-2xl shadow-black/20',
-  heroImage: 'absolute inset-0 opacity-28 mix-blend-soft-light',
+  heroImage: 'absolute inset-0 opacity-100',
   heroOverlay:
-    'absolute inset-0 bg-[linear-gradient(115deg,rgba(0,39,22,0.6)_0%,rgba(0,61,34,0.34)_48%,rgba(17,77,50,0.06)_100%)]',
+    'absolute inset-0 bg-[linear-gradient(90deg,rgba(0,39,22,0.92)_0%,rgba(0,61,34,0.78)_22%,rgba(0,61,34,0.46)_46%,rgba(0,61,34,0.16)_68%,rgba(0,61,34,0)_100%)]',
   heroGlow: 'absolute -right-10 -top-10 h-72 w-72 rounded-full bg-[#d1d900]/10 blur-3xl',
   heroBackLink:
     'inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/20 focus-ring',
@@ -40,9 +40,9 @@ export const fonapenStyles = {
     'pointer-events-none absolute inset-y-0 right-0 w-[20rem] bg-[linear-gradient(180deg,transparent,rgba(245,158,11,0.06)_22%,rgba(251,191,36,0.1)_50%,rgba(245,158,11,0.06)_78%,transparent)] blur-2xl',
   hero:
     'relative overflow-hidden rounded-[2rem] border border-slate-300/80 bg-gradient-to-r from-slate-800 via-slate-700 to-zinc-800 text-white shadow-2xl shadow-slate-900/10',
-  heroImage: 'absolute inset-0 opacity-26 mix-blend-soft-light',
+  heroImage: 'absolute inset-0 opacity-100',
   heroOverlay:
-    'absolute inset-0 bg-[linear-gradient(115deg,rgba(15,23,42,0.72)_0%,rgba(15,23,42,0.5)_38%,rgba(15,23,42,0.12)_100%)]',
+    'absolute inset-0 bg-[linear-gradient(90deg,rgba(15,23,42,0.94)_0%,rgba(15,23,42,0.78)_22%,rgba(15,23,42,0.46)_46%,rgba(15,23,42,0.16)_68%,rgba(15,23,42,0)_100%)]',
   heroGlow: 'absolute -right-10 -top-10 h-72 w-72 rounded-full bg-slate-400/20 blur-3xl',
   heroBackLink:
     'inline-flex items-center gap-2 rounded-full border border-slate-400/30 bg-white/10 px-4 py-2 text-sm font-bold text-slate-100 transition hover:bg-white/20 focus-ring',
@@ -70,16 +70,16 @@ export const fonaprimaStyles = {
   ambientGlowRight:
     'pointer-events-none absolute inset-y-0 right-0 w-[20rem] bg-[linear-gradient(180deg,transparent,rgba(214,158,36,0.04)_22%,rgba(245,199,71,0.08)_50%,rgba(214,158,36,0.04)_78%,transparent)] blur-2xl',
   hero:
-    'relative overflow-hidden rounded-[2rem] border border-yellow-300/55 bg-gradient-to-r from-[#cc941f] via-[#dfb34a] to-[#f2da8a] text-amber-950 shadow-2xl shadow-yellow-500/10',
-  heroImage: 'absolute inset-0 opacity-26 mix-blend-soft-light',
+    'relative overflow-hidden rounded-[2rem] border border-yellow-300/55 bg-gradient-to-r from-[#cc941f] via-[#dfb34a] to-[#f2da8a] text-white shadow-2xl shadow-yellow-500/10',
+  heroImage: 'absolute inset-0 opacity-100',
   heroOverlay:
-    'absolute inset-0 bg-[linear-gradient(115deg,rgba(110,60,18,0.16)_0%,rgba(180,123,32,0.1)_42%,rgba(255,255,255,0.06)_100%)]',
+    'absolute inset-0 bg-[linear-gradient(90deg,rgba(110,60,18,0.82)_0%,rgba(180,123,32,0.68)_22%,rgba(180,123,32,0.42)_46%,rgba(180,123,32,0.14)_68%,rgba(180,123,32,0)_100%)]',
   heroGlow: 'absolute -right-10 -top-10 h-72 w-72 rounded-full bg-yellow-200/22 blur-3xl',
   heroBackLink:
-    'inline-flex items-center gap-2 rounded-full border border-amber-950/15 bg-white/40 px-4 py-2 text-sm font-bold text-amber-950 transition hover:bg-white/60 focus-ring',
+    'inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/15 px-4 py-2 text-sm font-bold text-white transition hover:bg-black/25 focus-ring',
   heroBadge:
-    'inline-flex items-center gap-2 rounded-full border border-amber-950/20 bg-white/50 px-3.5 py-1.5 text-xs font-black uppercase tracking-[.18em] text-amber-950 shadow-sm',
-  heroStatCard: 'rounded-2xl border border-white/60 bg-white/40 p-4 shadow-sm backdrop-blur-md',
+    'inline-flex items-center gap-2 rounded-full border border-white/30 bg-black/15 px-3.5 py-1.5 text-xs font-black uppercase tracking-[.18em] text-yellow-100 shadow-sm',
+  heroStatCard: 'rounded-2xl border border-white/25 bg-black/20 p-4 shadow-sm backdrop-blur-md',
   heroStatIcon: 'grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white text-amber-950 shadow-sm',
   softCard: 'rounded-[1.75rem] border border-amber-200/80 bg-[#fffaf0]/92 p-6 shadow-xl shadow-amber-950/5 sm:p-7',
   darkCard:
@@ -102,9 +102,9 @@ export const fonarotativoStyles = {
     'pointer-events-none absolute inset-y-0 right-0 w-[20rem] bg-[linear-gradient(180deg,transparent,rgba(56,189,248,0.06)_22%,rgba(125,211,252,0.1)_50%,rgba(56,189,248,0.06)_78%,transparent)] blur-2xl',
   hero:
     'relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/8 text-white shadow-2xl shadow-black/20 backdrop-blur-md',
-  heroImage: 'absolute inset-0 opacity-24',
+  heroImage: 'absolute inset-0 opacity-100',
   heroOverlay:
-    'absolute inset-0 bg-[linear-gradient(90deg,rgba(6,18,54,0.84)_0%,rgba(12,41,100,0.68)_48%,rgba(32,67,124,0.28)_100%)]',
+    'absolute inset-0 bg-[linear-gradient(90deg,rgba(6,18,54,0.94)_0%,rgba(12,41,100,0.78)_22%,rgba(12,41,100,0.46)_46%,rgba(32,67,124,0.16)_68%,rgba(32,67,124,0)_100%)]',
   heroGlow: 'absolute -right-10 -top-10 h-72 w-72 rounded-full bg-sky-300/15 blur-3xl',
   heroBackLink:
     'inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white/90 transition hover:bg-white/20 focus-ring',
@@ -133,9 +133,9 @@ export const fonaportesStyles = {
     'pointer-events-none absolute inset-y-0 right-0 w-[20rem] bg-[linear-gradient(180deg,transparent,rgba(253,224,71,0.06)_22%,rgba(251,191,36,0.1)_50%,rgba(253,224,71,0.06)_78%,transparent)] blur-2xl',
   hero:
     'relative overflow-hidden rounded-[2rem] border border-amber-200/40 bg-amber-950/20 text-white shadow-2xl shadow-black/40 backdrop-blur-md',
-  heroImage: 'absolute inset-0 opacity-16',
+  heroImage: 'absolute inset-0 opacity-100',
   heroOverlay:
-    'absolute inset-0 bg-[linear-gradient(90deg,rgba(22,17,4,0.84)_0%,rgba(80,66,30,0.72)_48%,rgba(146,127,70,0.28)_100%)]',
+    'absolute inset-0 bg-[linear-gradient(90deg,rgba(22,17,4,0.94)_0%,rgba(80,66,30,0.78)_22%,rgba(80,66,30,0.46)_46%,rgba(146,127,70,0.16)_68%,rgba(146,127,70,0)_100%)]',
   heroGlow: 'absolute -right-10 -top-10 h-72 w-72 rounded-full bg-yellow-200/14 blur-3xl',
   heroBackLink:
     'inline-flex items-center gap-2 rounded-full border border-amber-200/40 bg-amber-200/10 px-4 py-2 text-sm font-bold text-yellow-100 transition hover:bg-amber-200/25 hover:text-white focus-ring',

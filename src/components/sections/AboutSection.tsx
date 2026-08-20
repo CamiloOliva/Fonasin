@@ -4,7 +4,6 @@ import SectionHeading from '../ui/SectionHeading';
 type AboutItem = {
   title: string;
   content: string;
-  pending?: boolean;
 };
 
 const aboutItems: AboutItem[] = [
@@ -59,7 +58,6 @@ export default function AboutSection() {
             {aboutItems.map((item) => (
               <details
                 key={item.title}
-                open={item.title === 'Misión'}
                 className="group overflow-hidden rounded-2xl border border-fonasin-green/15 bg-white shadow-sm transition hover:border-fonasin-lime/80 hover:shadow-md"
               >
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left font-black text-fonasin-deep marker:content-none sm:px-6">

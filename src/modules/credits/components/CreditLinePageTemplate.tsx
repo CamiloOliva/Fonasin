@@ -64,6 +64,7 @@ type CreditLinePageTemplateProps = {
     description: string;
     itemsTitle: string;
     items: string[];
+    itemLayout?: 'row' | 'center';
     sideEyebrow: string;
     sideCards: InfoCard[];
     sideNote: string;
@@ -111,7 +112,7 @@ function HeroStatCard({ theme, stat }: { theme: CreditLineTheme; stat: HeroStat 
   const Icon = stat.icon;
 
   return (
-    <div className={theme.heroStatCard}>
+    <div className={`${theme.heroStatCard} h-full`}>
       <div className="flex items-center gap-3">
         <span className={theme.heroStatIcon}>
           <Icon size={20} aria-hidden="true" />
@@ -155,7 +156,7 @@ export default function CreditLinePageTemplate({
               Volver a créditos
             </Link>
 
-            <div className="mt-6 grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+            <div className="mt-6 grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
               <div className="max-w-3xl">
                 <span className={theme.heroBadge}>
                   <Sparkles size={14} aria-hidden="true" />
@@ -182,7 +183,7 @@ export default function CreditLinePageTemplate({
                 </div>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-2">
                 {hero.stats.map((stat) => (
                   <HeroStatCard key={stat.label} theme={theme} stat={stat} />
                 ))}
@@ -192,30 +193,49 @@ export default function CreditLinePageTemplate({
         </section>
 
         <section className={theme.sectionGrid}>
-          <article className={theme.softCard}>
-            <p className="text-sm font-black uppercase tracking-[.18em] text-slate-500">{overview.eyebrow}</p>
-            <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">{overview.title}</h2>
-            <p className="mt-3 max-w-3xl leading-7 text-slate-600">{overview.description}</p>
-            <p className="mt-6 text-sm font-black uppercase tracking-[.18em] text-slate-500">{overview.itemsTitle}</p>
+          <article className={`${theme.softCard} h-full`}>
+            <div className="flex h-full flex-col">
+              <p className="text-sm font-black uppercase tracking-[.18em] text-slate-500">{overview.eyebrow}</p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">{overview.title}</h2>
+              <p className="mt-3 max-w-3xl leading-7 text-slate-600">{overview.description}</p>
+              <p className="mt-6 text-sm font-black uppercase tracking-[.18em] text-slate-500">{overview.itemsTitle}</p>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {overview.items.map((item) => (
-                <div
-                  key={item}
-                  className="flex min-h-[70px] items-start gap-3 rounded-2xl border border-slate-200 bg-white/80 p-4 text-sm font-semibold leading-6 text-slate-700"
-                >
-                  <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-slate-950/10 text-slate-700">
-                    <Check size={14} strokeWidth={3} aria-hidden="true" />
-                  </span>
-                  <span>{item}</span>
-                </div>
-              ))}
+              <div className="mt-6 grid flex-1 content-start gap-3 sm:grid-cols-2 xl:grid-cols-3 auto-rows-fr">
+                {overview.items.map((item) => {
+                  if (overview.itemLayout === 'center') {
+                    return (
+                      <div
+                        key={item}
+                        className="flex h-full flex-col items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white/80 p-4 text-center text-sm font-semibold leading-6 text-slate-700"
+                      >
+                        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-slate-950/10 text-slate-700">
+                          <Check size={14} strokeWidth={3} aria-hidden="true" />
+                        </span>
+                        <span className="max-w-[18ch]">{item}</span>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={item}
+                      className="flex h-full items-start gap-3 rounded-2xl border border-slate-200 bg-white/80 p-4 text-sm font-semibold leading-6 text-slate-700"
+                    >
+                      <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-slate-950/10 text-slate-700">
+                        <Check size={14} strokeWidth={3} aria-hidden="true" />
+                      </span>
+                      <span>{item}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </article>
 
-          <aside className={theme.darkCard}>
-            <p className="text-sm font-black uppercase tracking-[.18em] text-current/75">{overview.sideEyebrow}</p>
-            <div className="mt-5 space-y-3">
+          <aside className={`${theme.darkCard} h-full`}>
+            <div className="flex h-full flex-col">
+              <p className="text-sm font-black uppercase tracking-[.18em] text-current/75">{overview.sideEyebrow}</p>
+              <div className="mt-5 space-y-3">
               {overview.sideCards.map((card) => (
                 <div key={card.label} className="rounded-2xl border border-current/15 bg-white/10 p-4 backdrop-blur-sm">
                   <p className="text-xs font-black uppercase tracking-[.16em] text-current/65">{card.label}</p>
@@ -223,8 +243,9 @@ export default function CreditLinePageTemplate({
                 </div>
               ))}
             </div>
-            <div className="mt-5 rounded-2xl border border-current/15 bg-black/15 p-4">
-              <p className="text-sm font-medium leading-6 text-current/75">{overview.sideNote}</p>
+              <div className="mt-5 rounded-2xl border border-current/15 bg-black/15 p-4">
+                <p className="text-sm font-medium leading-6 text-current/75">{overview.sideNote}</p>
+              </div>
             </div>
           </aside>
         </section>
@@ -239,7 +260,13 @@ export default function CreditLinePageTemplate({
               <p className="text-sm text-slate-500">{amounts.subtitle}</p>
             </div>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <div
+              className={`mt-6 grid gap-4 ${
+                amounts.rows.length === 1
+                  ? 'mx-auto max-w-xl grid-cols-1'
+                  : '[grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]'
+              }`}
+            >
               {amounts.rows.map((row) => (
                 <div key={row.tier} className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white/80 p-5">
                   <div className="absolute left-0 top-0 h-1.5 w-full bg-slate-200" />
@@ -330,7 +357,15 @@ export default function CreditLinePageTemplate({
               </div>
             </div>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <div
+              className={`mt-6 grid gap-3 ${
+                summary.cards.length === 1
+                  ? 'mx-auto max-w-2xl grid-cols-1'
+                  : summary.cards.length === 2
+                    ? 'mx-auto max-w-3xl grid-cols-1 sm:grid-cols-2'
+                    : '[grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]'
+              }`}
+            >
               {summary.cards.map((card) => (
                 <div key={card.label} className="rounded-2xl border border-slate-200 bg-white/80 p-5">
                   <p className="text-xs font-black uppercase tracking-[.15em] text-slate-400">{card.label}</p>

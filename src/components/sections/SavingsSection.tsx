@@ -1,1 +1,32 @@
-import BenefitCard from '../cards/BenefitCard';import SectionHeading from '../ui/SectionHeading';export default function SavingsSection(){return <section className="py-16"><div className="container-page"><SectionHeading eyebrow="Ahorros" title="Opciones para construir tus metas" text="Información basada en los datos proporcionados para esta versión del frontend." center/><div className="grid md:grid-cols-2 gap-6 mt-10"><BenefitCard title="Ahorro permanente" accent="green"><ul className="space-y-3 list-disc pl-5"><li>Corresponde al 30% del descuento mensual.</li><li>El asociado puede solicitar voluntariamente el retiro de hasta el 20% una vez al año.</li></ul></BenefitCard><BenefitCard title="Ahorro voluntario" accent="lime"><ul className="space-y-3 list-disc pl-5"><li>El asociado elige cuánto ahorrar.</li><li>Puede proyectarlo para vacaciones, Navidad o aniversario.</li><li>Puede disponer del dinero cuando lo desee.</li></ul></BenefitCard></div></div></section>}
+import BenefitCard from '../cards/BenefitCard';
+import SectionHeading from '../ui/SectionHeading';
+
+export default function SavingsSection() {
+  return (
+    <section className="py-16">
+      <div className="container-page">
+        <SectionHeading
+          eyebrow="Ahorros"
+          title="Opciones para construir tus metas"
+          text="Consulta una visión general de esta línea y accede a la vista dedicada para conocer sus detalles."
+          center
+        />
+
+        <div className="mt-10 grid gap-6 md:grid-cols-2">
+          <BenefitCard title="Planeación de metas" accent="green">
+            <p>
+              Un espacio pensado para acompañar tus proyectos personales, familiares y de largo plazo.
+            </p>
+          </BenefitCard>
+
+          <BenefitCard title="Más detalles en la vista dedicada" accent="lime">
+            <p>
+              Allí encontrarás la información específica de esta línea, con las condiciones y opciones
+              disponibles.
+            </p>
+          </BenefitCard>
+        </div>
+      </div>
+    </section>
+  );
+}

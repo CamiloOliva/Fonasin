@@ -17,18 +17,17 @@ const usageItems = [
 const amountRows = [
   {
     tier: 'Cupo total',
-    amount: 'Hasta el 100% de aportes y ahorros',
-    description:
-      'Monto sujeto a saldos disponibles, obligaciones vigentes y reglas de compensación en FONASIN.',
+    amount: 'Hasta el valor de aportes y ahorros permanentes',
+    description: 'El monto debe considerar saldos disponibles, obligaciones vigentes y reglas de compensación.',
   },
 ];
 
 const rateRows = [
-  { term: '1 – 18 meses', ea: '15.39%', na: '14.40%', monthly: '1.2%' },
-  { term: '19 – 24 meses', ea: '16.77%', na: '15.60%', monthly: '1.3%' },
-  { term: '25 – 36 meses', ea: '18.16%', na: '16.80%', monthly: '1.4%' },
-  { term: '37 – 48 meses', ea: '19.56%', na: '18.00%', monthly: '1.5%' },
-  { term: '49 – 60 meses', ea: '20.98%', na: '19.20%', monthly: '1.6%' },
+  { term: '01 - 18 meses', ea: '15.39%', na: '14.40%', monthly: '1.2%' },
+  { term: '19 - 24 meses', ea: '16.77%', na: '15.60%', monthly: '1.3%' },
+  { term: '25 - 36 meses', ea: '18.16%', na: '16.80%', monthly: '1.4%' },
+  { term: '37 - 48 meses', ea: '19.56%', na: '18.00%', monthly: '1.5%' },
+  { term: '49 - 60 meses', ea: '20.98%', na: '19.20%', monthly: '1.6%' },
 ];
 
 function ComingSoon({ title }: { title: string }) {
@@ -44,9 +43,7 @@ function ComingSoon({ title }: { title: string }) {
 
           <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl">{title}</h1>
 
-          <p className="mt-4 max-w-2xl text-amber-100/80">
-            Esta línea todavía no tiene su ficha completa publicada.
-          </p>
+          <p className="mt-4 max-w-2xl text-amber-100/80">Esta línea todavía no tiene su ficha completa publicada.</p>
 
           <div className="mt-8">
             <Link
@@ -105,7 +102,7 @@ export default function CreditLinePage() {
           { label: 'Destino', value: 'Necesidades personales, familiares y liquidez general' },
         ],
         sideNote:
-          'Sin consulta a centrales de riesgo: cuando el monto solicitado es menor o igual al acumulado en aportes y ahorros permanentes, no se consulta centrales de riesgo.',
+          'Para esta línea no se realiza consulta a centrales de riesgo cuando el monto solicitado es igual al monto de aportes sociales y ahorros permanentes.',
       }}
       amounts={{
         eyebrow: 'Monto y garantías',

@@ -18,11 +18,11 @@ const amountRows = [
   {
     tier: 'Cupo único',
     amount: 'Hasta $1.500.000',
-    description: 'Límite según capacidad de pago y disponibilidad de cupo asignado.',
+    description: 'Límite según capacidad de pago, buen comportamiento interno y disponibilidad del cupo aprobado.',
   },
 ];
 
-const rateRows = [{ term: '1 – 12 meses', ea: '18.16%', na: '16.80%', monthly: '1.4%' }];
+const rateRows = [{ term: '01 - 12 meses', ea: '19.56%', na: '18.00%', monthly: '1.5%' }];
 
 function ComingSoon({ title }: { title: string }) {
   return (
@@ -37,9 +37,7 @@ function ComingSoon({ title }: { title: string }) {
 
           <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl">{title}</h1>
 
-          <p className="mt-4 max-w-2xl text-white/80">
-            Esta línea todavía no tiene su ficha completa publicada.
-          </p>
+          <p className="mt-4 max-w-2xl text-white/80">Esta línea todavía no tiene su ficha completa publicada.</p>
 
           <div className="mt-8">
             <Link
@@ -75,42 +73,43 @@ export default function CreditLinePage() {
         eyebrow: 'Línea de crédito',
         title: line.name,
         description:
-          'Cupo de crédito rotativo de corto plazo diseñado para brindar liquidez inmediata frente a imprevistos o gastos emergentes del asociado.',
+          'Línea de crédito bajo modalidad de cupo rotativo controlado de corto plazo, destinada a cubrir necesidades inmediatas de liquidez del asociado, permitiendo atender gastos personales, familiares, emergencias o eventualidades lícitas.',
         chips: ['Liquidez inmediata', 'Hasta $1.500.000', 'Hasta 12 meses'],
         stats: [
           { icon: Banknote, label: 'Monto', value: 'Hasta $1.500.000' },
           { icon: CalendarRange, label: 'Plazo', value: 'Hasta 12 meses' },
-          { icon: Banknote, label: 'Amortización', value: 'Mensual' },
-          { icon: ShieldCheck, label: 'Garantía', value: 'Aportes y Ahorros' },
+          { icon: Banknote, label: 'Amortización', value: 'Descuento por nómina' },
+          { icon: ShieldCheck, label: 'Garantía', value: 'Pagaré, libranza o autorización de descuento' },
         ],
       }}
       overview={{
         eyebrow: '¿Qué es?',
         title: 'Un cupo ágil para imprevistos y liquidez rápida',
         description:
-          'FONAROTATIVO funciona como una solución de financiamiento express para el asociado, permitiéndole resolver compromisos de corto plazo o emergencias con facilidad y sin trámites complejos.',
+          'FONAROTATIVO funciona como un cupo interno rotativo y controlado para el asociado. Los valores abonados a capital liberan nuevamente disponibilidad dentro del cupo aprobado, siempre que se mantenga buen comportamiento de pago, ausencia de mora y cumplimiento de las condiciones establecidas por FONASIN.',
         itemsTitle: '¿En qué lo puedes usar?',
         items: usageItems,
         sideEyebrow: 'Condiciones clave',
         sideCards: [
-          { label: 'Amortización capital', value: 'Mensual' },
+          { label: 'Amortización capital', value: 'Descuento por nómina' },
           { label: 'Amortización intereses', value: 'Mensual' },
           { label: 'Destino', value: 'Liquidez inmediata y emergencias' },
         ],
         sideNote:
-          'La disponibilidad del cupo rotativo depende de la capacidad de pago y del estado actual de tus aportes y ahorros en FONASIN.',
+          'La disponibilidad del cupo rotativo depende de la capacidad de pago, del buen comportamiento de pago y de la ausencia de mora en las obligaciones vigentes.',
       }}
       amounts={{
         eyebrow: 'Monto y garantías',
         title: 'Garantía respaldada en tus aportes',
         subtitle: 'Condiciones establecidas para FONAROTATIVO',
         rows: amountRows,
-        note: 'El cupo otorgado estará sujeto a tu capacidad de endeudamiento y capacidad de pago.',
+        note:
+          'El cupo otorgado estará sujeto a capacidad de endeudamiento, capacidad de pago, buen comportamiento interno y disponibilidad de recursos.',
       }}
       rates={{
         eyebrow: 'Plazos y tasas',
         title: 'Tasa y plazo del cupo rotativo',
-        badge: '1.4% mensual',
+        badge: '1.5% mensual',
         rows: rateRows,
         noteTitle: 'Importante',
         note:
@@ -123,12 +122,12 @@ export default function CreditLinePage() {
           {
             label: 'Cupo aprobado',
             title: 'Hasta $1.500.000',
-            description: 'Respaldo automático con tus ahorros/aportes vigentes y capacidad de pago.',
+            description: 'Respaldo con aportes y ahorros vigentes, además de la capacidad de pago del asociado.',
           },
           {
             label: 'Condición general',
-            title: 'Capacidad de pago',
-            description: 'Las condiciones del cupo están sujetas a la verificación del cupo disponible y normatividad de FONASIN.',
+            title: 'Buen comportamiento',
+            description: 'Las renovaciones, aumentos de cupo o reutilizaciones dependen del comportamiento de pago y la disponibilidad de recursos.',
           },
         ],
       }}

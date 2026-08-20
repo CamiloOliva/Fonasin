@@ -13,7 +13,7 @@ export default function Estatutos() {
         </div>
       </section>
 
-      <DocumentsSection />
+      <DocumentsSection variant="estatutos" />
     </>
   );
 }

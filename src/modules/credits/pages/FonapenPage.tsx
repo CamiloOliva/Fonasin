@@ -1,4 +1,4 @@
-import { Banknote, CalendarRange, Coins, HeartHandshake, ShieldCheck, Sparkles } from 'lucide-react';
+import { Banknote, CalendarRange, Coins, ShieldCheck, Sparkles } from 'lucide-react';
 import { WHATSAPP_URL } from '../../../data/siteConfig';
 import { getCreditLineBySlug } from '../data/creditLines';
 import CreditLinePageTemplate from '../components/CreditLinePageTemplate';
@@ -52,20 +52,20 @@ export default function FonapenPage() {
         eyebrow: 'Línea especial para pensionados',
         title: line.name,
         description:
-          'Crédito preferencial diseñado para asociados pensionados, ofreciendo liquidez financiera, tasas especiales y cómodos plazos con deducción directa de su mesada pensional.',
-        chips: ['Deducción por mesada', 'Hasta $40.000.000', 'Hasta 72 meses'],
+          'Línea orientada a asociados pensionados, destinada a financiar necesidades de libre destinación y apoyo económico, sujeta a evaluación de capacidad de pago, nivel de endeudamiento, fuente de pensión y políticas de riesgo definidas por FONASIN.',
+        chips: ['Mesada pensional', 'Hasta 10 SMMLV', 'Hasta 60 meses'],
         stats: [
-          { icon: Coins, label: 'Monto máximo', value: 'Hasta $40.000.000' },
-          { icon: CalendarRange, label: 'Plazo máximo', value: 'Hasta 72 meses' },
+          { icon: Coins, label: 'Monto máximo', value: 'Hasta 10 SMMLV' },
+          { icon: CalendarRange, label: 'Plazo máximo', value: 'Hasta 60 meses' },
           { icon: Banknote, label: 'Amortización', value: 'Cuota fija mensual' },
-          { icon: ShieldCheck, label: 'Garantía', value: 'Pagaré + Libranza / Mesada pensional' },
+          { icon: ShieldCheck, label: 'Garantía', value: 'Pagaré + libranza o autorización de descuento' },
         ],
       }}
       overview={{
         eyebrow: '¿Qué es?',
         title: 'Tranquilidad y respaldo para disfrutar tu retiro laboral',
         description:
-          'FONAPEN es una línea de crédito preferencial enfocada exclusivamente en brindar apoyo financiero, estabilidad y bienestar a los asociados en etapa de jubilación o pensión. Su descuento por libranza o débito automático garantiza una gestión sin complicaciones ni desplazamientos.',
+          'FONAPEN está diseñada para brindar apoyo financiero a los asociados en etapa de jubilación o pensión, con descuento por la fuente de pago que corresponda y análisis de riesgo acorde con la capacidad real del pensionado.',
         itemsTitle: 'Destinos del crédito',
         items: [
           'Libre inversión y gastos personales para el bienestar del pensionado.',
@@ -77,64 +77,65 @@ export default function FonapenPage() {
         ],
         sideEyebrow: 'Atención preferencial',
         sideCards: [
-          { label: 'Beneficiarios', value: 'Asociados Pensionados' },
-          { label: 'Forma de pago', value: 'Deducción de mesada pensional' },
-          { label: 'Agilidad', value: 'Trámite ágil y acompañamiento personalizado' },
+          { label: 'Beneficiarios', value: 'Asociados pensionados' },
+          { label: 'Forma de pago', value: 'Deducción por mesada pensional' },
+          { label: 'Evaluación', value: 'Capacidad de pago, edad y asegurabilidad' },
         ],
         sideNote:
           'Sujeto al cupo de endeudamiento disponible y a la capacidad legal de afectación sobre la mesada pensional del asociado.',
       }}
       amounts={{
         eyebrow: 'Cupos de financiación',
-        title: 'Monto máximo asignado según mesada pensional',
+        title: 'Monto máximo según aportes y ahorros',
         subtitle: 'Condiciones oficiales FONAPEN',
         rows: [
           {
-            tier: 'Hasta 2 SMMLV de pensión',
-            amount: 'Hasta $15.000.000',
-            description: 'Monto máximo otorgado a asociados con mesada pensional de hasta 2 SMMLV.',
+            tier: 'Hasta el valor de aportes y ahorros',
+            amount: 'Según saldo disponible',
+            description: 'Sujeto a capacidad de pago y fuente de pensión.',
           },
           {
-            tier: 'De 2 a 4 SMMLV de pensión',
-            amount: 'Hasta $25.000.000',
-            description: 'Monto otorgado para asociados con mesada pensional entre 2 y 4 SMMLV.',
-          },
-          {
-            tier: 'Más de 4 SMMLV de pensión',
-            amount: 'Hasta $40.000.000',
-            description: 'Aplica para asociados con mesadas superiores a 4 SMMLV según capacidad de pago.',
+            tier: 'Doble de aportes y ahorros hasta 10 SMMLV',
+            amount: 'Hasta 10 SMMLV',
+            description: 'Aportes, ahorros y un codeudor o garantía adicional según el perfil de riesgo.',
           },
         ],
         note:
-          'El monto definitivo dependerá de la capacidad de pago libre en tu comprobante de pago de pensión y de tu historial crediticio dentro de la entidad.',
+          'El monto definitivo dependerá de la capacidad de pago libre en tu comprobante de pensión, de la fuente de pago y de tu historial crediticio dentro de la entidad.',
       }}
       rates={{
         eyebrow: 'Plazos y tasas',
         title: 'Tasas de interés preferenciales',
-        badge: 'Desde 1.3% mensual',
+        badge: 'Desde 1.4% mensual',
         noteTitle: 'Importante',
         rows: [
-          { term: '1 – 24 meses', ea: '16.80%', na: '15.60%', monthly: '1.3%' },
-          { term: '25 – 48 meses', ea: '18.16%', na: '16.80%', monthly: '1.4%' },
-          { term: '49 – 72 meses', ea: '19.56%', na: '18.00%', monthly: '1.5%' },
+          { term: '01 - 18 meses', ea: '18.16%', na: '16.80%', monthly: '1.4%' },
+          { term: '19 - 24 meses', ea: '19.56%', na: '18.00%', monthly: '1.5%' },
+          { term: '25 - 36 meses', ea: '20.98%', na: '19.20%', monthly: '1.6%' },
+          { term: '37 - 48 meses', ea: '22.42%', na: '20.40%', monthly: '1.7%' },
+          { term: '49 - 60 meses', ea: '23.87%', na: '21.60%', monthly: '1.8%' },
         ],
         note:
-          'Modalidad de pago única a capital: durante el tiempo del crédito solo pagas la cuota mensual de intereses. El valor total del capital prestado se descuenta o cancela en un solo pago directo al recibo de la prima.',
+          'Solo los créditos de 10 SMMLV podrán tener un plazo de 60 meses, a la tasa estipulada en las condiciones financieras. La edad, asegurabilidad y estabilidad de la fuente de pago deberán hacer parte del análisis de riesgo.',
       }}
       summary={{
-        eyebrow: 'Garantías y Requisitos',
+        eyebrow: 'Garantías y requisitos',
         title: 'Resumen de respaldo del crédito',
         cards: [
           {
             label: 'Documentación requerida',
-            title: 'Comprobantes de pago de pensión',
-            description:
-              'Últimos 2 o 3 desprendibles de pago pensional y fotocopia de la cédula de ciudadanía del asociado.',
+            title: 'Soporte de pensión',
+            description: 'Soporte de pensión o desprendible de pago de mesada pensional.',
           },
           {
             label: 'Garantía del crédito',
-            title: 'Pagaré y Libranza',
-            description: 'Firma de pagaré con cartas de instrucciones y autorización de descuento automático sobre la mesada.',
+            title: 'Pagaré y libranza',
+            description: 'Firma de pagaré con cartas de instrucciones y autorización de descuento sobre la mesada cuando aplique.',
+          },
+          {
+            label: 'Evaluación de riesgo',
+            title: 'Fuente y asegurabilidad',
+            description: 'La edad, la asegurabilidad y la estabilidad de la fuente de pago forman parte del estudio.',
           },
         ],
       }}

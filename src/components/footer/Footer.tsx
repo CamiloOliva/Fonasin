@@ -10,10 +10,10 @@ const navigationLinks = [
   ['FPQRS', '/fpqrs'],
 ];
 
-const pendingLegalDocuments = [
-  'Estatutos',
-  'Reglamentos',
-  'Política de tratamiento de datos',
+const legalDocuments = [
+  { label: 'Estatutos', status: 'Disponible' },
+  { label: 'Reglamentos', status: 'Pendiente de publicación' },
+  { label: 'Política de tratamiento de datos', status: 'Disponible' },
 ];
 
 export default function Footer() {
@@ -60,10 +60,10 @@ export default function Footer() {
           <div>
             <h2 className="text-lg font-bold text-fonasin-lime">Legal</h2>
             <ul className="mt-4 space-y-3 text-white/80">
-              {pendingLegalDocuments.map((document) => (
-                <li key={document}>
-                  <span className="block">{document}</span>
-                  <span className="text-xs text-white/55">Pendiente de publicación</span>
+              {legalDocuments.map((document) => (
+                <li key={document.label}>
+                  <span className="block">{document.label}</span>
+                  <span className="text-xs text-white/55">{document.status}</span>
                 </li>
               ))}
             </ul>

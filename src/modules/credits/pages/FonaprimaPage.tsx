@@ -52,12 +52,12 @@ export default function FonaprimaPage() {
         eyebrow: 'Línea de crédito',
         title: line.name,
         description:
-          'Anticipo diseñado para brindar liquidez inmediata al asociado con respaldo directo en su prima de servicios (junio/diciembre) o prima de antigüedad (enero).',
+          'Línea destinada a otorgar apoyo financiero anticipado sobre la prima legal o de servicios (junio, diciembre) y la prima de antigüedad (enero) del asociado, con el fin de atender necesidades personales, familiares, pago de obligaciones o requerimientos temporales de liquidez.',
         chips: ['Anticipo de prima', 'Hasta 90% de tu prima', 'Hasta 12 meses'],
         stats: [
-          { icon: Coins, label: 'Monto', value: '70% al 90% de la prima' },
+          { icon: Coins, label: 'Monto', value: 'Hasta el 90% de la prima' },
           { icon: CalendarRange, label: 'Plazo', value: '1 a 12 meses' },
-          { icon: Banknote, label: 'Amortización capital', value: '1 solo pago al vencimiento' },
+          { icon: Banknote, label: 'Amortización capital', value: 'Un solo pago al vencimiento' },
           { icon: ShieldCheck, label: 'Amortización intereses', value: 'Mensual' },
         ],
       }}
@@ -65,7 +65,7 @@ export default function FonaprimaPage() {
         eyebrow: '¿Qué es?',
         title: 'Anticipa el valor de tu prima antes de la fecha de pago',
         description:
-          'FONAPRIMA te permite disfrutar del dinero de tu prima de servicios o de antigüedad de manera anticipada. Pagas los intereses mes a mes y cancelas la totalidad del capital en un único pago directo cuando recibas tu prima.',
+          'FONAPRIMA te permite acceder anticipadamente al valor de tu prima. El asociado puede optar por el pago anticipado de intereses o por el pago mensual de los mismos, mientras el capital se cancela en un único pago al vencimiento del crédito.',
         itemsTitle: 'Destinos del crédito',
         items: [
           'Anticipo de prima de servicios de mitad de año (junio).',
@@ -78,11 +78,11 @@ export default function FonaprimaPage() {
         sideEyebrow: 'Condiciones clave',
         sideCards: [
           { label: 'Amortización capital', value: 'Un solo pago al vencimiento' },
-          { label: 'Amortización intereses', value: 'Mensual' },
+          { label: 'Amortización intereses', value: 'Mensual o anticipada' },
           { label: 'Destino', value: 'Anticipo sobre primas reglamentarias' },
         ],
         sideNote:
-          'La fecha límite de vencimiento de este crédito coincide directamente con la fecha de pago de la prima correspondiente por parte del patrono.',
+          'La fecha límite de vencimiento de este crédito coincide con la fecha de pago de la prima correspondiente y el capital se cancela en un único pago al vencimiento.',
       }}
       amounts={{
         eyebrow: 'Monto y garantías',
@@ -90,17 +90,17 @@ export default function FonaprimaPage() {
         subtitle: 'Condiciones establecidas para FONAPRIMA',
         rows: [
           {
-            tier: 'Hasta 2 SMMLV de sueldo',
+            tier: 'Hasta 2 SMMLV',
             percentage: 'Hasta el 90%',
             description: 'Aplica para asociados con ingresos de hasta 2 Salarios Mínimos Mensuales Legales Vigentes.',
           },
           {
-            tier: 'De 2 a 3 SMMLV de sueldo',
+            tier: 'Mayor a 2 SMMLV y menor a 3 SMMLV',
             percentage: 'Hasta el 80%',
-            description: 'Aplica para asociados con ingresos superiores a 2 y hasta 3 SMMLV.',
+            description: 'Aplica para asociados con ingresos superiores a 2 y menores a 3 SMMLV.',
           },
           {
-            tier: 'De 3 a 4 SMMLV de sueldo',
+            tier: 'Mayor a 3 SMMLV y hasta 4 SMMLV',
             percentage: 'Hasta el 70%',
             description: 'Aplica para asociados con ingresos superiores a 3 y hasta 4 SMMLV.',
           },
@@ -114,11 +114,11 @@ export default function FonaprimaPage() {
         badge: 'Desde 1.4% mensual',
         noteTitle: 'Importante',
         rows: [
-          { term: '1 – 6 meses', ea: '18.16%', na: '16.80%', monthly: '1.4%' },
-          { term: '7 – 12 meses', ea: '19.56%', na: '18.00%', monthly: '1.5%' },
+          { term: '01 - 06 meses', ea: '18.16%', na: '16.80%', monthly: '1.4%' },
+          { term: '07 - 12 meses', ea: '19.56%', na: '18.00%', monthly: '1.5%' },
         ],
         note:
-          'Modalidad de pago única a capital: durante el tiempo del crédito solo pagas la cuota mensual de intereses. El valor total del capital prestado se descuenta o cancela en un solo pago directo al recibo de la prima.',
+          'Debe existir autorización de descuento de la prima o mecanismo de recaudo equivalente. El capital se cancela mediante un único pago al vencimiento del crédito.',
       }}
       summary={{
         eyebrow: 'Garantías',

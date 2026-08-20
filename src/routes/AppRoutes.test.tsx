@@ -1,7 +1,16 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import AppRoutes from './AppRoutes';
+
+vi.mock('../components/sections/StatutesBookViewer', () => ({
+  default: () => (
+    <div role="region" aria-label="visor de lectura">
+      <button type="button">Siguiente</button>
+    </div>
+  ),
+}));
 
 function renderRoute(path: string) {
   return render(
@@ -22,6 +31,23 @@ describe('AppRoutes', () => {
     renderRoute('/estatutos');
 
     expect(screen.getByRole('heading', { level: 1, name: /estatutos/i })).toBeInTheDocument();
+  });
+
+  it('opens the estatutos viewer with a download action', async () => {
+    const user = userEvent.setup();
+
+    renderRoute('/estatutos');
+
+    await user.click(screen.getByRole('button', { name: /ver en la pagina/i }));
+
+    const dialog = screen.getByRole('dialog', { name: /estatutos/i });
+
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByRole('link', { name: /descargar/i })).toHaveAttribute(
+      'href',
+      expect.stringContaining('ESTATUTOS%20DEFINITIVOS%202024.pdf'),
+    );
+    expect(within(dialog).getByRole('button', { name: /siguiente/i })).toBeInTheDocument();
   });
 
   it('renders the FONALIBRE detail route', () => {
