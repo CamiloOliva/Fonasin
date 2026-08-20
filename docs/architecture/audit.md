@@ -1,0 +1,81 @@
+# Auditoria y trazabilidad
+
+## Objetivo
+
+Registrar quien hizo una accion, sobre que registro, cuando ocurrio y cual fue el resultado. La auditoria apoya investigacion operativa y no reemplaza una politica legal de retencion.
+
+## Tablas
+
+### `audit_events`
+
+| Campo | Tipo | Descripcion |
+|---|---|---|
+| `id` | UUID | identificador del evento |
+| `occurred_at` | timestamptz | fecha y hora UTC |
+| `actor_user_id` | UUID nullable | usuario que realizo la accion; null si fue sistema |
+| `actor_type` | varchar(20) | `user` o `system` |
+| `module` | varchar(40) | `identity`, `affiliation`, `credits`, `portal`, `content`, `fpqrs` |
+| `action` | varchar(80) | accion semantica registrada |
+| `subject_type` | varchar(80) | tipo del recurso afectado |
+| `subject_id` | UUID | recurso afectado |
+| `correlation_id` | UUID nullable | agrupa eventos de una misma operacion |
+| `ip_hash` | char(64) nullable | referencia tecnica minimizada |
+| `metadata` | jsonb | solo metadatos permitidos y valores redactados |
+
+### `auth_events`
+
+| Campo | Tipo | Descripcion |
+|---|---|---|
+| `id` | UUID | identificador del evento |
+| `occurred_at` | timestamptz | fecha y hora UTC |
+| `user_id` | UUID nullable | usuario relacionado; null cuando no se identifica una cuenta |
+| `event_type` | varchar(80) | tipo semantico del evento de autenticacion |
+| `email_hash` | char(64) nullable | referencia minimizada para correlacionar intentos sin guardar el correo |
+| `ip_hash` | char(64) nullable | referencia tecnica minimizada |
+| `user_agent_hash` | char(64) nullable | huella minimizada del cliente |
+| `correlation_id` | UUID nullable | agrupa eventos de una misma operacion |
+| `metadata` | jsonb | solo contexto tecnico permitido y valores redactados |
+
+`event_type` registra `login_succeeded`, `login_failed`, `logout`, `password_reset_requested`, `password_reset_completed`, `account_blocked` y cambios de segundo factor. La primera implementacion reusable para autenticacion es `App\Application\Identity\UseCases\RecordAuthEvent`.
+
+## Eventos obligatorios
+
+- envio, aprobacion, rechazo y cancelacion de una afiliacion;
+- carga, aceptacion, rechazo y descarga de documentos;
+- creacion, modificacion y archivado de creditos;
+- acceso del asociado a datos de sus creditos;
+- cambios de roles, usuarios y permisos;
+- publicacion o retiro de imagenes del carrusel;
+- eventos de autenticacion.
+
+## Reglas de seguridad
+
+- Los eventos son solo de insercion desde la aplicacion; no se editan ni eliminan desde Filament.
+- No se incluyen contrasenas, tokens, valores financieros completos, numeros de documento, contenido SARLAFT, archivos ni mensajes completos de FPQRS.
+- `auth_events` no conserva correos, direcciones IP ni agentes de usuario en texto claro.
+- Los cambios se almacenan como resumen redactado, por ejemplo `status: submitted -> under_review`.
+- Las transacciones de negocio y su evento de auditoria se guardan juntas; si una falla, ninguna queda persistida.
+- Para acciones administrativas criticas se exige `actor_user_id` y `correlation_id`.
+
+## Patron de implementacion
+
+1. El caso de uso inicia una transaccion.
+2. Realiza el cambio de negocio autorizado.
+3. Inserta el evento de auditoria con una accion semantica.
+4. Confirma la transaccion.
+
+Si el cambio o la auditoria fallan, se revierte todo. No registrar diffs completos de registros sensibles: usar campos permitidos y valores redactados.
+
+La primera implementacion reutilizable es `App\Application\Audit\UseCases\RecordAuditEvent`. Los casos de uso sensibles deben invocarla dentro de su propia transaccion de negocio. El envio de afiliacion registra `application.submitted` con metadatos redactados de cambio de estado y version de politica. Las acciones de backoffice de afiliacion registran `application.review_started`, `application.correction_requested`, `application.approved` y `application.rejected` sin guardar razones completas en `metadata`. FPQRS registra `submission.received`, `delivery.sent` o `delivery.failed` sin guardar correo, mensaje completo ni contenido del adjunto en auditoria.
+
+## Consulta operativa
+
+Las vistas administrativas deben filtrar eventos por modulo, recurso, actor, accion y rango de fechas. El detalle se trata como evidencia operativa y es de solo lectura.
+
+## Retencion
+
+El periodo de retencion se definira con FONASIN y su asesoria juridica. Hasta contar con esa decision, los agentes no deben implementar eliminacion automatica de auditoria, documentos ni solicitudes.
+
+## Evolucion
+
+La primera version usa auditoria desde la aplicacion. Si se habilitan integraciones, acceso SQL de terceros o requerimientos de inmutabilidad reforzada, se evaluan triggers PostgreSQL, exportacion a almacenamiento inmutable y alertas.
