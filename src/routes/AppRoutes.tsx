@@ -5,6 +5,7 @@ import FonapenPage from '../modules/credits/pages/FonapenPage';
 import FonaprimaPage from '../modules/credits/pages/FonaprimaPage';
 import FONAROTATIVO from '../modules/credits/pages/FONAROTATIVO';
 import FonaPortesPage from '../modules/credits/pages/FonaPortesPage';
+import SimuladorFonasin from '../modules/credits/pages/SimuladorFonasin.jsx';
 import Afiliacion from '../pages/AfiliacionPlaceholder/AfiliacionPlaceholder';
 import Convenios from '../pages/Convenios/Convenios';
 import FPQRS from '../pages/FPQRS/FPQRS';
@@ -26,6 +27,7 @@ export default function AppRoutes() {
       <Route path="/creditos/fonaprima" element={<FonaprimaPage />} />
       <Route path="/creditos/fonarotativo" element={<FONAROTATIVO />} />
       <Route path="/creditos/fonaportes" element={<FonaPortesPage />} />
+      <Route path="/creditos/simulador-fonasin" element={<SimuladorFonasin />} />
       <Route path="/creditos/:slug" element={<CreditLinePage />} />
       <Route path="/convenios" element={<Convenios />} />
       <Route path="/fpqrs" element={<FPQRS />} />

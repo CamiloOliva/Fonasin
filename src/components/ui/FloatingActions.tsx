@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calculator, ChevronLeft, ClipboardPenLine, Landmark, X } from 'lucide-react';
 
 const actions = [
   { label: 'Actualizar datos', icon: ClipboardPenLine },
-  { label: 'Simulador', icon: Calculator },
+  { label: 'Simulador', icon: Calculator, to: '/creditos/simulador-fonasin' },
   { label: 'Transacciones', icon: Landmark },
 ];
 
@@ -12,24 +13,32 @@ type ActionListProps = {
 };
 
 function ActionList({ open }: ActionListProps) {
+  const navigate = useNavigate();
+
   return (
     <div className="flex flex-col gap-2">
-      {actions.map(({ label, icon: Icon }, index) => (
-        <div
+      {actions.map(({ label, icon: Icon, to }, index) => (
+        <button
           key={label}
+          type="button"
+          disabled={!to}
+          onClick={() => {
+            if (!to) return;
+            navigate(to);
+          }}
           style={{ transitionDelay: open ? `${index * 70}ms` : '0ms' }}
           className={`flex w-52 items-center gap-3 rounded-r-2xl bg-gradient-to-r from-fonasin-green to-fonasin-deep py-3 pl-7 pr-4 text-left text-white shadow-lg shadow-fonasin-deep/25 transition-all duration-300 ease-out lg:w-56 ${
             open ? 'translate-x-0 scale-100 opacity-100 blur-0' : 'translate-x-5 scale-95 opacity-0 blur-[1px]'
-          } [clip-path:polygon(0_50%,14%_0,100%_0,100%_100%,14%_100%)]`}
+          } ${to ? 'cursor-pointer' : 'cursor-default'} [clip-path:polygon(0_50%,14%_0,100%_0,100%_100%,14%_100%)]`}
         >
           <Icon size={20} aria-hidden="true" className="shrink-0 text-fonasin-lime" />
           <span className="min-w-0 leading-tight">
             <strong className="block text-[15px] lg:text-base">{label}</strong>
             <span className="block text-[11px] font-semibold uppercase tracking-wide text-white/70">
-              Próximamente
+              {to ? 'Abrir simulador' : 'Próximamente'}
             </span>
           </span>
-        </div>
+        </button>
       ))}
     </div>
   );
