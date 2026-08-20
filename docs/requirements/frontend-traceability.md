@@ -33,7 +33,7 @@ Solo FONASIN puede mover contenido funcional a `Aceptado`. Una PR puede proponer
 | FE-WEB-005A | Visor PDF | Pendiente | Sin visor | Mostrar PDF embebido con descarga y fallback accesible. |
 | FE-WEB-006 | Noticias | Bloqueado | Sin ruta ni datos | Recibir publicaciones iniciales aprobadas; no crear CMS general. |
 | FE-WEB-007 | Contacto | Bloqueado | WhatsApp parcial | Recibir datos, redes, mapa y horarios oficiales. |
-| FE-WEB-008 | FPQRS | En curso | Formulario visual y servicio simulado | Integrar entrega al correo mediante Backend y probar estados/error. |
+| FE-WEB-008 | FPQRS | En curso | Formulario visual y servicio simulado; Backend disponible en `POST /fpqrs-submissions` con entrega a correo institucional | Conectar frontend al endpoint real y probar estados/error. |
 | FE-WEB-009 | WhatsApp | En curso | Enlace configurable con `VITE_WHATSAPP_URL` | Confirmar numero, mensaje y comportamiento oficial. |
 | FE-WEB-010 | SEO y accesibilidad | En curso | HTML en español, description, semantica y foco parcial | Ejecutar auditoria sin errores criticos y agregar pruebas. |
 | FE-WEB-011 | Transacciones y QR | Pendiente | Acceso marcado `Proximamente` | Publicar QR, destino, concepto, instrucciones, advertencia y descarga. |

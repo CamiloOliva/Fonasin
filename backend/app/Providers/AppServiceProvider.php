@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Application\Security\Contracts\EncryptsSensitiveData;
+use App\Application\Fpqrs\Contracts\DeliversFpqrsSubmissions;
 use App\Application\Storage\Contracts\GeneratesPrivateStorageKeys;
 use App\Application\Storage\Contracts\StoresPrivateFiles;
+use App\Infrastructure\Mail\LaravelFpqrsSubmissionMailer;
 use App\Infrastructure\Security\LaravelSensitiveDataCipher;
 use App\Infrastructure\Storage\LaravelPrivateFileStorage;
 use App\Infrastructure\Storage\LaravelPrivateStorageKeyGenerator;
@@ -23,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(EncryptsSensitiveData::class, LaravelSensitiveDataCipher::class);
+        $this->app->bind(DeliversFpqrsSubmissions::class, LaravelFpqrsSubmissionMailer::class);
         $this->app->bind(GeneratesPrivateStorageKeys::class, LaravelPrivateStorageKeyGenerator::class);
         $this->app->bind(StoresPrivateFiles::class, LaravelPrivateFileStorage::class);
     }
