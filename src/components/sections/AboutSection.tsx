@@ -38,12 +38,12 @@ export default function AboutSection() {
   return (
     <section id="quienes-somos" className="py-16 sm:py-20">
       <div className="container-page grid items-center gap-12 lg:grid-cols-[.85fr_1.15fr]">
-        <div className="relative overflow-hidden rounded-3xl bg-fonasin-surface shadow-lg shadow-fonasin-deep/5">
+        <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-fonasin-surface shadow-lg shadow-fonasin-deep/5 lg:aspect-[5/4]">
           <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-fonasin-lime/30 blur-2xl" />
           <img
-            src="/images/institutional.svg"
-            alt="Imagen institucional provisional de FONASIN"
-            className="relative w-full"
+            src="/somos.png"
+            alt="Imagen institucional de FONASIN"
+            className="relative h-full w-full object-cover object-center"
           />
         </div>
 

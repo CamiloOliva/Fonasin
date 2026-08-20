@@ -38,7 +38,12 @@ describe('AppRoutes', () => {
 
     renderRoute('/estatutos');
 
-    await user.click(screen.getByRole('button', { name: /ver en la pagina/i }));
+    const estatutosHeading = screen.getByRole('heading', { level: 3, name: /^estatutos$/i });
+    const estatutosCard = estatutosHeading.closest('article');
+
+    expect(estatutosCard).not.toBeNull();
+
+    await user.click(within(estatutosCard as HTMLElement).getByRole('button', { name: /ver en la pagina/i }));
 
     const dialog = screen.getByRole('dialog', { name: /estatutos/i });
 

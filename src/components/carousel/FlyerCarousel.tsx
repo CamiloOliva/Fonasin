@@ -17,7 +17,13 @@ export default function FlyerCarousel() {
   return (
     <section className="bg-fonasin-deep" aria-label="Comunicaciones destacadas">
       <div className="relative isolate overflow-hidden">
-        <img src={flyer.image} alt={flyer.title} className="block h-auto w-full object-contain" />
+        <div className="relative h-[clamp(240px,34vw,520px)] overflow-hidden">
+          <img
+            src={flyer.image}
+            alt={flyer.title}
+            className="block h-full w-full object-cover object-center"
+          />
+        </div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-fonasin-deep/25 to-transparent" />
         <button onClick={previous} aria-label="Flyer anterior" className="absolute left-4 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/30 bg-white/90 text-fonasin-deep shadow-lg transition hover:scale-105 hover:bg-white focus-ring sm:left-6 sm:h-12 sm:w-12">
           <ChevronLeft size={22} />
