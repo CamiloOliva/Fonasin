@@ -8,7 +8,8 @@ use DateTimeImmutable;
 
 class AffiliationSectionPayloadValidator
 {
-    private const MAX_MONEY_VALUE = 99999999999;
+    private const MIN_MONTHLY_SALARY = 1750905;
+    private const MAX_MONEY_VALUE = 100000000;
 
     /**
      * @param  array<string, mixed>  $data
@@ -46,6 +47,9 @@ class AffiliationSectionPayloadValidator
             'department',
             'mobile',
             'email',
+            'educationLevel',
+            'profession',
+            'hasDependents',
         ]);
 
         if (! filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
@@ -95,8 +99,7 @@ class AffiliationSectionPayloadValidator
             'monthlySalary',
         ]);
 
-        $this->requirePositiveNumber($section, $data, 'monthlySalary');
-        $this->requireMoneyLimit($section, $data, 'monthlySalary');
+        $this->requireMoneyRange($section, $data, 'monthlySalary', self::MIN_MONTHLY_SALARY, self::MAX_MONEY_VALUE);
         $this->requirePastOrTodayDate($section, $data, 'hireDate');
         $this->requireMaxLengths($section, $data, [
             'employer' => 160,
@@ -178,8 +181,6 @@ class AffiliationSectionPayloadValidator
             throw CannotSaveApplicationSection::invalidField($section->value, 'beneficiaries', 'no puede contener mas de cinco beneficiarios');
         }
 
-        $totalPercentage = 0.0;
-
         foreach ($data['beneficiaries'] as $index => $beneficiary) {
             if (! is_array($beneficiary)) {
                 throw CannotSaveApplicationSection::invalidField($section->value, "beneficiaries.{$index}", 'debe ser un objeto');
@@ -192,17 +193,7 @@ class AffiliationSectionPayloadValidator
                 'relationship',
                 'birthDate',
                 'phone',
-                'percentage',
             ], "beneficiaries.{$index}.");
-
-            $this->requirePositiveNumber($section, $beneficiary, 'percentage', "beneficiaries.{$index}.percentage");
-            $percentage = $this->numberValue($beneficiary['percentage']);
-
-            if ($percentage === null || $percentage > 100) {
-                throw CannotSaveApplicationSection::invalidField($section->value, "beneficiaries.{$index}.percentage", 'debe estar entre 1 y 100');
-            }
-
-            $totalPercentage += $percentage;
 
             $this->requireDocumentNumber($section, $beneficiary, 'documentNumber', "beneficiaries.{$index}.documentNumber");
             $this->requirePhone($section, $beneficiary, 'phone', "beneficiaries.{$index}.phone");
@@ -213,12 +204,7 @@ class AffiliationSectionPayloadValidator
                 'fullName' => 160,
                 'relationship' => 80,
                 'phone' => 30,
-                'percentage' => 6,
             ], "beneficiaries.{$index}.");
-        }
-
-        if (round($totalPercentage, 2) !== 100.0) {
-            throw CannotSaveApplicationSection::invalidField($section->value, 'beneficiaries.percentage', 'la suma total debe ser 100');
         }
 
         if (! is_array($data['emergencyContact'])) {
@@ -378,6 +364,22 @@ class AffiliationSectionPayloadValidator
 
         if ($value === null || $value > self::MAX_MONEY_VALUE) {
             throw CannotSaveApplicationSection::invalidField($section->value, $field, 'supera el limite de monto permitido');
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function requireMoneyRange(AffiliationApplicationStep $section, array $data, string $field, int $minimum, int $maximum): void
+    {
+        $value = $this->numberValue($data[$field] ?? null);
+
+        if ($value === null || $value < $minimum || $value > $maximum) {
+            throw CannotSaveApplicationSection::invalidField(
+                $section->value,
+                $field,
+                'debe estar entre $'.number_format($minimum, 0, ',', '.').' y $'.number_format($maximum, 0, ',', '.'),
+            );
         }
     }
 

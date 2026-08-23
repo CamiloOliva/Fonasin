@@ -214,6 +214,24 @@ class AffiliationApplicationHttpTest extends TestCase
             ->assertJsonFragment(['message' => 'La seccion [personal] no se puede completar porque faltan campos obligatorios: correo electronico.']);
     }
 
+    public function test_it_rejects_monthly_salary_outside_allowed_range_over_http(): void
+    {
+        $application = AffiliationApplication::query()->forceCreate([
+            'status' => AffiliationApplicationStatus::Draft->value,
+            'current_step' => AffiliationApplicationStep::Employment->value,
+        ]);
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Employment);
+        $data['monthlySalary'] = '1000000';
+
+        $this->postJson($this->signedSectionUrl($application, AffiliationApplicationStep::Employment), [
+            'schema_version' => 1,
+            'data' => $data,
+            'completed' => true,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonFragment(['message' => 'La seccion [employment] tiene un campo invalido [salario mensual]: debe estar entre $1.750.905 y $100.000.000.']);
+    }
+
     public function test_it_completes_the_public_affiliation_flow_over_http(): void
     {
         Storage::fake('local');

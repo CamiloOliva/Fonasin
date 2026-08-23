@@ -164,7 +164,23 @@ type FieldConfig = {
 const POLICY_VERSION = 'afiliacion-v1';
 const NAME_MAX_LENGTH = 35;
 const TEXT_MAX_LENGTH = 120;
-const MONEY_MAX_LENGTH = 12;
+const MIN_MONTHLY_SALARY = 1750905;
+const MONEY_MAX_VALUE = 100000000;
+const MONEY_MAX_DIGITS = String(MONEY_MAX_VALUE).length;
+const MONEY_MAX_DISPLAY_LENGTH = '100.000.000'.length;
+const currencyFieldKeys = new Set([
+  'monthlySalary',
+  'principalIncome',
+  'otherIncome',
+  'totalIncome',
+  'monthlyExpenses',
+  'financialObligations',
+  'totalExpenses',
+  'assetsValue',
+  'liabilitiesValue',
+  'equityValue',
+  'voluntarySavingsValue',
+]);
 const stepLabels: Array<{ key: StepKey; label: string; title: string; description: string }> = [
   { key: 'personal', label: '1', title: 'Datos personales', description: 'Identificacion, contacto y base del asociado.' },
   { key: 'employment', label: '2', title: 'Informacion laboral', description: 'Empresa, cargo, contrato y ciudad de trabajo.' },
@@ -369,6 +385,10 @@ function validateCurrentStep(step: number, state: SectionState): string | null {
     if (missing.length > 0) {
       return `Faltan campos obligatorios: ${friendlyList(missing.map((key) => requiredLabels[key] ?? key))}.`;
     }
+    const monthlySalary = Number(state.employment.monthlySalary || '0');
+    if (monthlySalary < MIN_MONTHLY_SALARY || monthlySalary > MONEY_MAX_VALUE) {
+      return `El salario mensual debe estar entre ${moneyLabel(MIN_MONTHLY_SALARY)} y ${moneyLabel(MONEY_MAX_VALUE)}.`;
+    }
   }
 
   if (step === 2) {
@@ -441,6 +461,27 @@ function currencyOnly(value: string): string {
   return value.replace(/[^\d]/g, '');
 }
 
+function formatCurrency(value: string): string {
+  const digits = currencyOnly(value);
+
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function moneyLabel(value: number): string {
+  return `$${formatCurrency(String(value))}`;
+}
+
+function limitedCurrency(value: string): string {
+  const digits = currencyOnly(value).slice(0, MONEY_MAX_DIGITS);
+  const amount = Number(digits || '0');
+
+  if (amount > MONEY_MAX_VALUE) {
+    return String(MONEY_MAX_VALUE);
+  }
+
+  return digits;
+}
+
 function isBlank(value: unknown): boolean {
   return typeof value !== 'string' || value.trim() === '';
 }
@@ -456,20 +497,27 @@ function friendlyList(items: string[]): string {
 }
 
 const requiredLabels: Record<string, string> = {
+  documentType: 'tipo de documento',
   documentNumber: 'numero de documento',
   issueDate: 'fecha de expedicion',
   issuePlace: 'lugar de expedicion',
   firstName: 'primer nombre',
   lastName: 'primer apellido',
   birthDate: 'fecha de nacimiento',
+  nationality: 'nacionalidad',
+  residenceCountry: 'pais de residencia',
   maritalStatus: 'estado civil',
   residenceAddress: 'direccion de residencia',
   city: 'ciudad',
   department: 'departamento',
   mobile: 'celular',
   email: 'correo electronico',
+  educationLevel: 'nivel educativo',
+  profession: 'profesion',
+  hasDependents: 'personas a cargo',
   employer: 'empresa donde trabaja',
   position: 'cargo',
+  departmentArea: 'area o dependencia',
   contractType: 'tipo de contrato',
   hireDate: 'fecha de ingreso',
   workCity: 'ciudad donde trabaja',
@@ -482,6 +530,7 @@ const requiredLabels: Record<string, string> = {
   liabilitiesValue: 'pasivos',
   equityValue: 'patrimonio',
   incomeBand: 'rango de ingresos',
+  voluntarySavings: 'ahorro voluntario',
   voluntarySavingsValue: 'valor mensual del ahorro voluntario',
   economicActivity: 'actividad economica',
   incomeSource: 'fuente de ingresos',
@@ -493,20 +542,26 @@ const requiredLabels: Record<string, string> = {
 
 const requiredBySection: Record<AffiliationSectionKey, string[]> = {
   personal: [
+    'documentType',
     'documentNumber',
     'issueDate',
     'issuePlace',
     'firstName',
     'lastName',
     'birthDate',
+    'nationality',
+    'residenceCountry',
     'maritalStatus',
     'residenceAddress',
     'city',
     'department',
     'mobile',
     'email',
+    'educationLevel',
+    'profession',
+    'hasDependents',
   ],
-  employment: ['employer', 'position', 'contractType', 'hireDate', 'workCity', 'monthlySalary'],
+  employment: ['employer', 'position', 'departmentArea', 'contractType', 'hireDate', 'workCity', 'monthlySalary'],
   financial: [
     'principalIncome',
     'totalIncome',
@@ -516,6 +571,7 @@ const requiredBySection: Record<AffiliationSectionKey, string[]> = {
     'liabilitiesValue',
     'equityValue',
     'incomeBand',
+    'voluntarySavings',
   ],
   beneficiaries: [],
   sarlaft: ['economicActivity', 'incomeSource', 'resourceOrigin', 'expectedOperations'],
@@ -523,7 +579,8 @@ const requiredBySection: Record<AffiliationSectionKey, string[]> = {
 
 function fieldMaxLength(field: FieldConfig): number | undefined {
   if (field.maxLength) return field.maxLength;
-  if (field.inputMode === 'numeric') return MONEY_MAX_LENGTH;
+  if (currencyFieldKeys.has(field.key)) return MONEY_MAX_DISPLAY_LENGTH;
+  if (field.inputMode === 'numeric') return MONEY_MAX_DIGITS;
   if (field.type === 'email') return TEXT_MAX_LENGTH;
   if (field.type === 'text' || !field.type) return TEXT_MAX_LENGTH;
 
@@ -654,8 +711,13 @@ function renderFields(
               type={field.type ?? 'text'}
               inputMode={field.inputMode as any}
               maxLength={fieldMaxLength(field)}
-              value={values[field.key] ?? ''}
-              onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}
+              value={currencyFieldKeys.has(field.key) ? formatCurrency(values[field.key] ?? '') : values[field.key] ?? ''}
+              onChange={(event) =>
+                setValues({
+                  ...values,
+                  [field.key]: currencyFieldKeys.has(field.key) ? limitedCurrency(event.target.value) : event.target.value,
+                })
+              }
             />
           )}
         </Field>
@@ -771,8 +833,7 @@ export default function AffiliationForm() {
       setStep((current) => Math.min(current + 1, stepLabels.length - 1));
     } catch (caught) {
       if (backendMode === 'ready') {
-        setBackendMode('local');
-        setBackendMessage('No se pudo sincronizar con Laravel en este momento. La vista sigue en modo local.');
+        setBackendMessage('Laravel rechazo la sincronizacion. Corrige la seccion y vuelve a intentar.');
       }
       setError(caught instanceof Error ? caught.message : 'No pudimos continuar con esta seccion.');
     } finally {
@@ -880,14 +941,14 @@ export default function AffiliationForm() {
           <Field label="Valor mensual del ahorro voluntario" required>
             <TextInput
               inputMode="numeric"
-              maxLength={MONEY_MAX_LENGTH}
-              value={state.financial.voluntarySavingsValue}
+              maxLength={MONEY_MAX_DISPLAY_LENGTH}
+              value={formatCurrency(state.financial.voluntarySavingsValue)}
               onChange={(event) =>
                 setState((current) => ({
                   ...current,
                   financial: {
                     ...current.financial,
-                    voluntarySavingsValue: currencyOnly(event.target.value),
+                    voluntarySavingsValue: limitedCurrency(event.target.value),
                   },
                 }))
               }
@@ -959,9 +1020,8 @@ export default function AffiliationForm() {
                   { key: 'relationship', label: 'Parentesco', type: 'select', options: relationshipOptions },
                   { key: 'birthDate', label: 'Fecha de nacimiento', type: 'date' },
                   { key: 'phone', label: 'Telefono' },
-                  { key: 'percentage', label: 'Porcentaje, si aplica', inputMode: 'numeric' },
                 ].map((field) => (
-                  <Field key={field.key} label={field.label} required={field.key !== 'percentage'}>
+                  <Field key={field.key} label={field.label} required>
                     {field.type === 'select' ? (
                       <SelectInput
                         value={beneficiary[field.key as keyof BeneficiaryData]}
@@ -985,7 +1045,7 @@ export default function AffiliationForm() {
                       <TextInput
                         type={field.type === 'date' ? 'date' : 'text'}
                         inputMode={field.inputMode as any}
-                        maxLength={field.key === 'fullName' ? TEXT_MAX_LENGTH : field.inputMode === 'numeric' ? MONEY_MAX_LENGTH : TEXT_MAX_LENGTH}
+                        maxLength={field.key === 'fullName' ? TEXT_MAX_LENGTH : field.inputMode === 'numeric' ? 3 : TEXT_MAX_LENGTH}
                         value={beneficiary[field.key as keyof BeneficiaryData] as string}
                         onChange={(event) =>
                           setState((current) => ({
