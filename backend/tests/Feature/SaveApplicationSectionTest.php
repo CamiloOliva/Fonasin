@@ -172,22 +172,22 @@ class SaveApplicationSectionTest extends TestCase
         );
     }
 
-    public function test_it_rejects_beneficiaries_when_percentages_do_not_total_one_hundred(): void
+    public function test_it_allows_beneficiaries_without_percentage(): void
     {
         $application = app(CreateAffiliationDraft::class)();
         $data = $this->validSectionPayload(AffiliationApplicationStep::Beneficiaries);
-        $data['beneficiaries'][0]['percentage'] = '80';
+        unset($data['beneficiaries'][0]['percentage']);
 
-        $this->expectException(CannotSaveApplicationSection::class);
-        $this->expectExceptionMessage('la suma total debe ser 100');
-
-        app(SaveApplicationSection::class)(
+        $section = app(SaveApplicationSection::class)(
             application: $application,
             section: AffiliationApplicationStep::Beneficiaries,
             schemaVersion: 1,
             data: $data,
             completedAt: now(),
         );
+
+        $this->assertSame(AffiliationApplicationStep::Beneficiaries->value, $section->section);
+        $this->assertNotNull($section->completed_at);
     }
 
     public function test_it_rejects_completed_sections_with_overlong_values(): void
