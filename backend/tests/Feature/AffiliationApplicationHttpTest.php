@@ -28,6 +28,11 @@ class AffiliationApplicationHttpTest extends TestCase
             ->assertJsonPath('data.status', AffiliationApplicationStatus::Draft->value)
             ->assertJsonPath('data.current_step', AffiliationApplicationStep::Personal->value);
 
+        $this->assertStringStartsWith('/affiliation-applications/', $response->json('data.links.sections.personal'));
+        $this->assertStringStartsWith('/affiliation-applications/', $response->json('data.links.documents'));
+        $this->assertStringStartsWith('/affiliation-applications/', $response->json('data.links.consents'));
+        $this->assertStringStartsWith('/affiliation-applications/', $response->json('data.links.submit'));
+
         $this->assertDatabaseHas('affiliation_applications', [
             'id' => $response->json('data.id'),
             'status' => AffiliationApplicationStatus::Draft->value,
@@ -226,27 +231,27 @@ class AffiliationApplicationHttpTest extends TestCase
         return URL::temporarySignedRoute('affiliation-applications.sections.store', now()->addHour(), [
             'application' => $application,
             'section' => $section->value,
-        ]);
+        ], false);
     }
 
     private function signedDocumentUrl(AffiliationApplication $application): string
     {
         return URL::temporarySignedRoute('affiliation-applications.documents.store', now()->addHour(), [
             'application' => $application,
-        ]);
+        ], false);
     }
 
     private function signedConsentUrl(AffiliationApplication $application): string
     {
         return URL::temporarySignedRoute('affiliation-applications.consents.store', now()->addHour(), [
             'application' => $application,
-        ]);
+        ], false);
     }
 
     private function signedSubmitUrl(AffiliationApplication $application): string
     {
         return URL::temporarySignedRoute('affiliation-applications.submit', now()->addHour(), [
             'application' => $application,
-        ]);
+        ], false);
     }
 }

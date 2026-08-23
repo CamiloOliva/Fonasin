@@ -12,6 +12,7 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 - Un asociado solo puede leer recursos relacionados con su propio `associate_id` resuelto en el servidor.
 - Acciones administrativas sensibles requieren usuario identificado y registro de auditoria.
 - El flujo publico de afiliacion protege las mutaciones de una solicitud mediante URLs temporales firmadas por Laravel. El UUID de la solicitud por si solo no autoriza guardar secciones, documentos, consentimientos ni enviar.
+- Las rutas publicas iniciales de afiliacion y FPQRS no usan sesion de usuario; por eso se excluyen de CSRF y deben mantener validacion estricta, URLs firmadas cuando corresponde, storage privado y auditoria.
 
 ## Datos sensibles
 

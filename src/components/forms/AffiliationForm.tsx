@@ -1478,6 +1478,19 @@ export default function AffiliationForm() {
           </div>
         </div>
 
+        <div
+          className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${
+            backendMode === 'ready'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+              : backendMode === 'loading'
+                ? 'border-slate-200 bg-slate-50 text-slate-600'
+                : 'border-amber-200 bg-amber-50 text-amber-900'
+          }`}
+          role="status"
+        >
+          {backendMessage}
+        </div>
+
         <div className="grid gap-4 xl:grid-cols-[.78fr_1.22fr]">
           <aside className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
             <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Secciones</p>

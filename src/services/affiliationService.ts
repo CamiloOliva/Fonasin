@@ -43,6 +43,12 @@ const backendBaseUrl = import.meta.env.VITE_BACKEND_BASE_URL?.trim().replace(/\/
 
 function buildUrl(path: string): string {
   if (path.startsWith('http://') || path.startsWith('https://')) {
+    if (!backendBaseUrl) {
+      const url = new URL(path);
+
+      return `${url.pathname}${url.search}`;
+    }
+
     return path;
   }
 

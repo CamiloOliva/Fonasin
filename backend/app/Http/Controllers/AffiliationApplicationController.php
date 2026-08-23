@@ -241,6 +241,7 @@ class AffiliationApplicationController extends Controller
                             'application' => $application,
                             'section' => $section->value,
                         ],
+                        false,
                     ),
                 ])
                 ->all(),
@@ -248,16 +249,19 @@ class AffiliationApplicationController extends Controller
                 'affiliation-applications.documents.store',
                 $expiresAt,
                 ['application' => $application],
+                false,
             ),
             'consents' => URL::temporarySignedRoute(
                 'affiliation-applications.consents.store',
                 $expiresAt,
                 ['application' => $application],
+                false,
             ),
             'submit' => URL::temporarySignedRoute(
                 'affiliation-applications.submit',
                 $expiresAt,
                 ['application' => $application],
+                false,
             ),
         ];
     }
