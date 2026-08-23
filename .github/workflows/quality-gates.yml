@@ -142,3 +142,79 @@ jobs:
           test -f dist/.htaccess
           test -f backend/public/.htaccess
           grep -q "RewriteRule" dist/.htaccess
+
+      - name: Package Apache frontend artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: tar -czf dist.tar.gz -C dist .
+
+      - name: Upload Apache frontend artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: fonasin-dist-${{ github.sha }}
+          path: dist.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy-cpanel:
+    name: Deploy frontend to cPanel Apache
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CPANEL_DEPLOY_ENABLED == 'true'
+    needs:
+      - backend
+      - backend-postgres
+      - frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    steps:
+      - name: Download approved frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: fonasin-dist-${{ github.sha }}
+
+      - name: Prepare remote release directory
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DEPLOY_PATH: ${{ secrets.CPANEL_DEPLOY_PATH }}
+          RELEASE_ID: ${{ github.sha }}
+        with:
+          host: ${{ secrets.CPANEL_SSH_HOST }}
+          port: ${{ secrets.CPANEL_SSH_PORT }}
+          username: ${{ secrets.CPANEL_SSH_USER }}
+          key: ${{ secrets.CPANEL_SSH_KEY }}
+          envs: DEPLOY_PATH,RELEASE_ID
+          script: |
+            set -eu
+            test -n "$DEPLOY_PATH"
+            release="$DEPLOY_PATH/.deploy/$RELEASE_ID"
+            mkdir -p "$release"
+
+      - name: Upload frontend artifact to cPanel
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.CPANEL_SSH_HOST }}
+          port: ${{ secrets.CPANEL_SSH_PORT }}
+          username: ${{ secrets.CPANEL_SSH_USER }}
+          key: ${{ secrets.CPANEL_SSH_KEY }}
+          source: dist.tar.gz
+          target: ${{ secrets.CPANEL_DEPLOY_PATH }}/.deploy/${{ github.sha }}
+
+      - name: Publish frontend on Apache document root
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DEPLOY_PATH: ${{ secrets.CPANEL_DEPLOY_PATH }}
+          RELEASE_ID: ${{ github.sha }}
+        with:
+          host: ${{ secrets.CPANEL_SSH_HOST }}
+          port: ${{ secrets.CPANEL_SSH_PORT }}
+          username: ${{ secrets.CPANEL_SSH_USER }}
+          key: ${{ secrets.CPANEL_SSH_KEY }}
+          envs: DEPLOY_PATH,RELEASE_ID
+          script: |
+            set -eu
+            release="$DEPLOY_PATH/.deploy/$RELEASE_ID"
+            test -f "$release/dist.tar.gz"
+            tar -xzf "$release/dist.tar.gz" -C "$release"
+            rm -f "$release/dist.tar.gz"
+            cp -a "$release/." "$DEPLOY_PATH/"
+            rm -rf "$release"
