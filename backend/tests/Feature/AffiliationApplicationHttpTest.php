@@ -201,7 +201,7 @@ class AffiliationApplicationHttpTest extends TestCase
             'completed' => true,
         ])
             ->assertUnprocessable()
-            ->assertJsonFragment(['message' => 'The [personal] section cannot be completed because required fields are missing: email.']);
+            ->assertJsonFragment(['message' => 'La seccion [personal] no se puede completar porque faltan campos obligatorios: correo electronico.']);
     }
 
     public function test_it_completes_the_public_affiliation_flow_over_http(): void

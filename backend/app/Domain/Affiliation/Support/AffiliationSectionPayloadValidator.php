@@ -49,7 +49,7 @@ class AffiliationSectionPayloadValidator
         ]);
 
         if (! filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            throw CannotSaveApplicationSection::invalidField($section->value, 'email', 'it must be a valid email address');
+            throw CannotSaveApplicationSection::invalidField($section->value, 'email', 'debe ser un correo electronico valido');
         }
 
         $this->requireDocumentNumber($section, $data, 'documentNumber');
@@ -175,14 +175,14 @@ class AffiliationSectionPayloadValidator
         }
 
         if (count($data['beneficiaries']) > 5) {
-            throw CannotSaveApplicationSection::invalidField($section->value, 'beneficiaries', 'it cannot contain more than five beneficiaries');
+            throw CannotSaveApplicationSection::invalidField($section->value, 'beneficiaries', 'no puede contener mas de cinco beneficiarios');
         }
 
         $totalPercentage = 0.0;
 
         foreach ($data['beneficiaries'] as $index => $beneficiary) {
             if (! is_array($beneficiary)) {
-                throw CannotSaveApplicationSection::invalidField($section->value, "beneficiaries.{$index}", 'it must be an object');
+                throw CannotSaveApplicationSection::invalidField($section->value, "beneficiaries.{$index}", 'debe ser un objeto');
             }
 
             $this->requireFields($section, $beneficiary, [
@@ -199,7 +199,7 @@ class AffiliationSectionPayloadValidator
             $percentage = $this->numberValue($beneficiary['percentage']);
 
             if ($percentage === null || $percentage > 100) {
-                throw CannotSaveApplicationSection::invalidField($section->value, "beneficiaries.{$index}.percentage", 'it must be between 1 and 100');
+                throw CannotSaveApplicationSection::invalidField($section->value, "beneficiaries.{$index}.percentage", 'debe estar entre 1 y 100');
             }
 
             $totalPercentage += $percentage;
@@ -218,11 +218,11 @@ class AffiliationSectionPayloadValidator
         }
 
         if (round($totalPercentage, 2) !== 100.0) {
-            throw CannotSaveApplicationSection::invalidField($section->value, 'beneficiaries.percentage', 'the total percentage must be 100');
+            throw CannotSaveApplicationSection::invalidField($section->value, 'beneficiaries.percentage', 'la suma total debe ser 100');
         }
 
         if (! is_array($data['emergencyContact'])) {
-            throw CannotSaveApplicationSection::invalidField($section->value, 'emergencyContact', 'it must be an object');
+            throw CannotSaveApplicationSection::invalidField($section->value, 'emergencyContact', 'debe ser un objeto');
         }
 
         $this->requireFields($section, $data['emergencyContact'], [
@@ -262,7 +262,7 @@ class AffiliationSectionPayloadValidator
             }
 
             if (count($data[$field]) > 10) {
-                throw CannotSaveApplicationSection::invalidField($section->value, $field, 'it cannot contain more than ten values');
+                throw CannotSaveApplicationSection::invalidField($section->value, $field, 'no puede contener mas de diez valores');
             }
         }
 
@@ -353,7 +353,7 @@ class AffiliationSectionPayloadValidator
         $value = $this->numberValue($data[$field] ?? null);
 
         if ($value === null || $value <= 0) {
-            throw CannotSaveApplicationSection::invalidField($section->value, $displayField ?? $field, 'it must be greater than zero');
+            throw CannotSaveApplicationSection::invalidField($section->value, $displayField ?? $field, 'debe ser mayor que cero');
         }
     }
 
@@ -365,7 +365,7 @@ class AffiliationSectionPayloadValidator
         $value = $this->numberValue($data[$field] ?? null);
 
         if ($value === null || $value < 0) {
-            throw CannotSaveApplicationSection::invalidField($section->value, $field, 'it must be zero or greater');
+            throw CannotSaveApplicationSection::invalidField($section->value, $field, 'debe ser mayor o igual a cero');
         }
     }
 
@@ -377,7 +377,7 @@ class AffiliationSectionPayloadValidator
         $value = $this->numberValue($data[$field] ?? null);
 
         if ($value === null || $value > self::MAX_MONEY_VALUE) {
-            throw CannotSaveApplicationSection::invalidField($section->value, $field, 'it exceeds the supported amount limit');
+            throw CannotSaveApplicationSection::invalidField($section->value, $field, 'supera el limite de monto permitido');
         }
     }
 
@@ -400,7 +400,7 @@ class AffiliationSectionPayloadValidator
                 throw CannotSaveApplicationSection::invalidField(
                     $section->value,
                     $prefix.$field,
-                    "it cannot be longer than {$limit} characters",
+                    "no puede tener mas de {$limit} caracteres",
                 );
             }
         }
@@ -421,7 +421,7 @@ class AffiliationSectionPayloadValidator
             throw CannotSaveApplicationSection::invalidField(
                 $section->value,
                 $displayField ?? $field,
-                'it must contain 5 to 30 letters, numbers, dots or hyphens',
+                'debe contener entre 5 y 30 letras, numeros, puntos o guiones',
             );
         }
     }
@@ -438,7 +438,7 @@ class AffiliationSectionPayloadValidator
         $value = $data[$field] ?? null;
 
         if (! is_string($value)) {
-            throw CannotSaveApplicationSection::invalidField($section->value, $displayField ?? $field, 'it must be a phone number');
+            throw CannotSaveApplicationSection::invalidField($section->value, $displayField ?? $field, 'debe ser un telefono valido');
         }
 
         $digits = preg_replace('/\D/', '', $value) ?? '';
@@ -447,7 +447,7 @@ class AffiliationSectionPayloadValidator
             throw CannotSaveApplicationSection::invalidField(
                 $section->value,
                 $displayField ?? $field,
-                'it must contain between 7 and 15 digits',
+                'debe contener entre 7 y 15 digitos',
             );
         }
     }
@@ -464,19 +464,19 @@ class AffiliationSectionPayloadValidator
         $value = $data[$field] ?? null;
 
         if (! is_string($value)) {
-            throw CannotSaveApplicationSection::invalidField($section->value, $displayField ?? $field, 'it must be a valid date');
+            throw CannotSaveApplicationSection::invalidField($section->value, $displayField ?? $field, 'debe ser una fecha valida');
         }
 
         $date = DateTimeImmutable::createFromFormat('!Y-m-d', $value);
 
         if (! $date || $date->format('Y-m-d') !== $value) {
-            throw CannotSaveApplicationSection::invalidField($section->value, $displayField ?? $field, 'it must use YYYY-MM-DD format');
+            throw CannotSaveApplicationSection::invalidField($section->value, $displayField ?? $field, 'debe usar el formato AAAA-MM-DD');
         }
 
         $today = new DateTimeImmutable('today');
 
         if ($date > $today) {
-            throw CannotSaveApplicationSection::invalidField($section->value, $displayField ?? $field, 'it cannot be in the future');
+            throw CannotSaveApplicationSection::invalidField($section->value, $displayField ?? $field, 'no puede estar en el futuro');
         }
     }
 

@@ -92,7 +92,7 @@ class SaveApplicationSectionTest extends TestCase
         $data['documentNumber'] = '';
 
         $this->expectException(CannotSaveApplicationSection::class);
-        $this->expectExceptionMessage('documentNumber');
+        $this->expectExceptionMessage('numero de documento');
 
         app(SaveApplicationSection::class)(
             application: $application,
@@ -125,7 +125,7 @@ class SaveApplicationSectionTest extends TestCase
         $data['foreignAccounts'] = 'Si';
 
         $this->expectException(CannotSaveApplicationSection::class);
-        $this->expectExceptionMessage('foreignAccountCountry');
+        $this->expectExceptionMessage('pais de cuenta en el exterior');
 
         app(SaveApplicationSection::class)(
             application: $application,
@@ -143,7 +143,7 @@ class SaveApplicationSectionTest extends TestCase
         $data['hireDate'] = now()->addDay()->format('Y-m-d');
 
         $this->expectException(CannotSaveApplicationSection::class);
-        $this->expectExceptionMessage('hireDate');
+        $this->expectExceptionMessage('fecha de ingreso');
 
         app(SaveApplicationSection::class)(
             application: $application,
@@ -161,7 +161,7 @@ class SaveApplicationSectionTest extends TestCase
         $data['beneficiaries'] = array_fill(0, 6, $data['beneficiaries'][0]);
 
         $this->expectException(CannotSaveApplicationSection::class);
-        $this->expectExceptionMessage('more than five');
+        $this->expectExceptionMessage('mas de cinco beneficiarios');
 
         app(SaveApplicationSection::class)(
             application: $application,
@@ -179,7 +179,7 @@ class SaveApplicationSectionTest extends TestCase
         $data['beneficiaries'][0]['percentage'] = '80';
 
         $this->expectException(CannotSaveApplicationSection::class);
-        $this->expectExceptionMessage('total percentage must be 100');
+        $this->expectExceptionMessage('la suma total debe ser 100');
 
         app(SaveApplicationSection::class)(
             application: $application,
@@ -197,7 +197,7 @@ class SaveApplicationSectionTest extends TestCase
         $data['firstName'] = str_repeat('A', 81);
 
         $this->expectException(CannotSaveApplicationSection::class);
-        $this->expectExceptionMessage('firstName');
+        $this->expectExceptionMessage('primer nombre');
 
         app(SaveApplicationSection::class)(
             application: $application,
