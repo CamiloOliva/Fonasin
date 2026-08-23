@@ -10,4 +10,5 @@ enum AffiliationAuditAction: string
     case ApplicationApproved = 'application.approved';
     case ApplicationRejected = 'application.rejected';
     case DocumentUploaded = 'document.uploaded';
+    case DocumentGenerated = 'document.generated';
 }

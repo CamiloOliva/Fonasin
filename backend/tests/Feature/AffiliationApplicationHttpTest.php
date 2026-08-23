@@ -124,6 +124,7 @@ class AffiliationApplicationHttpTest extends TestCase
 
     public function test_it_submits_a_complete_application_over_http(): void
     {
+        Storage::fake('local');
         $application = AffiliationApplication::query()->forceCreate([
             'status' => AffiliationApplicationStatus::Draft->value,
             'current_step' => AffiliationApplicationStep::Personal->value,
@@ -140,6 +141,15 @@ class AffiliationApplicationHttpTest extends TestCase
             ->assertJsonPath('data.id', $application->id)
             ->assertJsonPath('data.status', AffiliationApplicationStatus::Submitted->value)
             ->assertJsonPath('data.current_step', AffiliationApplicationStep::Summary->value);
+
+        $this->assertDatabaseHas('application_documents', [
+            'application_id' => $application->id,
+            'document_type' => ApplicationDocumentType::AffiliationSummary->value,
+        ]);
+        $this->assertDatabaseHas('application_documents', [
+            'application_id' => $application->id,
+            'document_type' => ApplicationDocumentType::PayrollAuthorization->value,
+        ]);
     }
 
     public function test_it_returns_domain_error_when_submit_is_incomplete(): void
@@ -248,7 +258,7 @@ class AffiliationApplicationHttpTest extends TestCase
         $application = AffiliationApplication::query()->findOrFail($draft['id']);
 
         $this->assertSame(5, $application->sections()->whereNotNull('completed_at')->count());
-        $this->assertSame(1, $application->documents()->count());
+        $this->assertSame(3, $application->documents()->count());
         $this->assertSame(2, $application->consentRecords()->count());
         $this->assertDatabaseHas('audit_events', [
             'subject_type' => 'affiliation_application',
@@ -256,9 +266,9 @@ class AffiliationApplicationHttpTest extends TestCase
             'action' => 'application.submitted',
         ]);
 
-        Storage::disk('local')->assertExists(
-            $application->documents()->firstOrFail()->getAttribute('storage_key')
-        );
+        foreach ($application->documents as $document) {
+            Storage::disk('local')->assertExists($document->getAttribute('storage_key'));
+        }
     }
 
     private function completeSections(AffiliationApplication $application): void

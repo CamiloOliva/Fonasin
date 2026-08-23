@@ -5,6 +5,8 @@ namespace App\Domain\Affiliation\Enums;
 enum ApplicationDocumentType: string
 {
     case Identity = 'identity';
+    case AffiliationSummary = 'affiliation_summary';
+    case PayrollAuthorization = 'payroll_authorization';
 
     /**
      * @return list<self>

@@ -19,7 +19,10 @@ class RegisterApplicationDocumentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'document_type' => ['required', Rule::enum(ApplicationDocumentType::class)],
+            'document_type' => ['required', Rule::in(array_map(
+                fn (ApplicationDocumentType $documentType): string => $documentType->value,
+                ApplicationDocumentType::requiredForSubmission(),
+            ))],
             'file' => ['required', 'file', 'max:5120', 'mimetypes:application/pdf,image/jpeg,image/png'],
         ];
     }
