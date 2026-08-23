@@ -8,6 +8,10 @@ import FonaPortesPage from '../modules/credits/pages/FonaPortesPage';
 import SimuladorFonasin from '../modules/credits/pages/SimuladorFonasin.jsx';
 import Afiliacion from '../pages/AfiliacionPlaceholder/AfiliacionPlaceholder';
 import Convenios from '../pages/Convenios/Convenios';
+import ConvenioEmi from '../modules/convenios/ConvenioEmi.jsx';
+import ConvenioLosOlivos from '../modules/convenios/ConvenioLosOlivos.jsx';
+import ConvenioSanitas from '../modules/convenios/ConvenioSanitas.jsx';
+import ConvenioCapillasDeLaFe from '../modules/convenios/ConvenioCapillasDeLaFe.jsx';
 import FPQRS from '../pages/FPQRS/FPQRS';
 import Home from '../pages/Home/Home';
 import MiFondo from '../pages/MiFondo/MiFondo';
@@ -30,6 +34,10 @@ export default function AppRoutes() {
       <Route path="/creditos/simulador-fonasin" element={<SimuladorFonasin />} />
       <Route path="/creditos/:slug" element={<CreditLinePage />} />
       <Route path="/convenios" element={<Convenios />} />
+      <Route path="/convenios/emi" element={<ConvenioEmi />} />
+      <Route path="/convenios/los-olivos" element={<ConvenioLosOlivos />} />
+      <Route path="/convenios/sanitas" element={<ConvenioSanitas />} />
+      <Route path="/convenios/capillas-de-la-fe" element={<ConvenioCapillasDeLaFe />} />
       <Route path="/fpqrs" element={<FPQRS />} />
       <Route path="/afiliacion" element={<Afiliacion />} />
       <Route path="/portal-asociado" element={<Portal />} />
