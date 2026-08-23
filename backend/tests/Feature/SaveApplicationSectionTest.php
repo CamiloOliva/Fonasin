@@ -7,21 +7,20 @@ use App\Application\Affiliation\UseCases\CreateAffiliationDraft;
 use App\Application\Affiliation\UseCases\SaveApplicationSection;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
+use Tests\Support\AffiliationSectionPayloads;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class SaveApplicationSectionTest extends TestCase
 {
     use RefreshDatabase;
+    use AffiliationSectionPayloads;
 
     public function test_it_encrypts_plain_application_section_data_before_persisting_it(): void
     {
         $application = app(CreateAffiliationDraft::class)();
         $completedAt = now()->startOfSecond();
-        $plainData = [
-            'document_number' => '123456789',
-            'full_name' => 'Synthetic Test Person',
-        ];
+        $plainData = $this->validSectionPayload(AffiliationApplicationStep::Personal);
 
         $section = app(SaveApplicationSection::class)(
             application: $application,
@@ -35,7 +34,7 @@ class SaveApplicationSectionTest extends TestCase
         $this->assertSame(AffiliationApplicationStep::Personal->value, $section->section);
         $this->assertSame(1, $section->schema_version);
         $this->assertNotSame(json_encode($plainData), $section->getAttribute('data_encrypted'));
-        $this->assertStringNotContainsString('123456789', $section->getAttribute('data_encrypted'));
+        $this->assertStringNotContainsString($plainData['documentNumber'], $section->getAttribute('data_encrypted'));
         $this->assertSame($plainData, app(EncryptsSensitiveData::class)->decryptArray($section->getAttribute('data_encrypted')));
         $this->assertTrue($completedAt->equalTo($section->completed_at));
         $this->assertSame(AffiliationApplicationStep::Personal->value, $application->refresh()->current_step);
@@ -83,6 +82,129 @@ class SaveApplicationSectionTest extends TestCase
             section: AffiliationApplicationStep::Documents,
             schemaVersion: 1,
             data: ['document' => 'not-a-section'],
+        );
+    }
+
+    public function test_it_rejects_completed_sections_with_missing_required_fields(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Personal);
+        $data['documentNumber'] = '';
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('numero de documento');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Personal,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
+    public function test_it_allows_partial_sections_when_they_are_not_marked_completed(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+
+        $section = app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Personal,
+            schemaVersion: 1,
+            data: ['documentNumber' => '123456789'],
+        );
+
+        $this->assertNull($section->completed_at);
+        $this->assertSame(['documentNumber' => '123456789'], app(EncryptsSensitiveData::class)->decryptArray($section->getAttribute('data_encrypted')));
+    }
+
+    public function test_it_rejects_invalid_completed_sarlaft_conditionals(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Sarlaft);
+        $data['foreignAccounts'] = 'Si';
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('pais de cuenta en el exterior');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Sarlaft,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
+    public function test_it_rejects_completed_sections_with_future_dates(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Employment);
+        $data['hireDate'] = now()->addDay()->format('Y-m-d');
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('fecha de ingreso');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Employment,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
+    public function test_it_rejects_more_than_five_beneficiaries(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Beneficiaries);
+        $data['beneficiaries'] = array_fill(0, 6, $data['beneficiaries'][0]);
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('mas de cinco beneficiarios');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Beneficiaries,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
+    public function test_it_allows_beneficiaries_without_percentage(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Beneficiaries);
+        unset($data['beneficiaries'][0]['percentage']);
+
+        $section = app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Beneficiaries,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+
+        $this->assertSame(AffiliationApplicationStep::Beneficiaries->value, $section->section);
+        $this->assertNotNull($section->completed_at);
+    }
+
+    public function test_it_rejects_completed_sections_with_overlong_values(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Personal);
+        $data['firstName'] = str_repeat('A', 81);
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('primer nombre');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Personal,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
         );
     }
 }

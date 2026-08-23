@@ -7,6 +7,20 @@ export type AffiliationDraftLinks = {
   submit: string;
 };
 
+export type GeneratedAffiliationDocument = {
+  id: string;
+  application_id: string;
+  document_type: 'affiliation_summary' | 'payroll_authorization';
+  original_filename: string;
+  mime_type: string;
+  byte_size: number;
+  status: string;
+  uploaded_at: string | null;
+  links: {
+    download: string;
+  };
+};
+
 export type AffiliationDraft = {
   id: string;
   status: string;
@@ -14,6 +28,7 @@ export type AffiliationDraft = {
   submitted_at: string | null;
   reviewed_by_user_id: string | null;
   reviewed_at: string | null;
+  generated_documents?: GeneratedAffiliationDocument[];
   links: AffiliationDraftLinks;
 };
 
@@ -43,6 +58,12 @@ const backendBaseUrl = import.meta.env.VITE_BACKEND_BASE_URL?.trim().replace(/\/
 
 function buildUrl(path: string): string {
   if (path.startsWith('http://') || path.startsWith('https://')) {
+    if (!backendBaseUrl) {
+      const url = new URL(path);
+
+      return `${url.pathname}${url.search}`;
+    }
+
     return path;
   }
 
@@ -67,7 +88,16 @@ async function requestJson<T>(path: string, options: AffiliationRequestOptions =
   });
 
   if (!response.ok) {
-    const message = await response.text().catch(() => '');
+    const rawMessage = await response.text().catch(() => '');
+    let message = rawMessage;
+
+    try {
+      const payload = JSON.parse(rawMessage) as { message?: string };
+      message = payload.message ?? rawMessage;
+    } catch {
+      message = rawMessage;
+    }
+
     throw new Error(message || `Request failed with status ${response.status}`);
   }
 
@@ -78,6 +108,10 @@ async function requestJson<T>(path: string, options: AffiliationRequestOptions =
   }
 
   return payload.data;
+}
+
+export function affiliationDownloadUrl(path: string): string {
+  return buildUrl(path);
 }
 
 export async function createAffiliationDraft(): Promise<AffiliationDraft> {
@@ -130,8 +164,8 @@ export async function acceptAffiliationConsent(
 export async function submitAffiliationApplication(
   submitUrl: string,
   policyVersion: string,
-): Promise<void> {
-  await requestJson(submitUrl, {
+): Promise<AffiliationDraft> {
+  return requestJson<AffiliationDraft>(submitUrl, {
     method: 'POST',
     body: JSON.stringify({
       policy_version: policyVersion,

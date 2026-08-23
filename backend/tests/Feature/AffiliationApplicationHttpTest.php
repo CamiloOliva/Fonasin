@@ -14,11 +14,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
+use Tests\Support\AffiliationSectionPayloads;
 use Tests\TestCase;
 
 class AffiliationApplicationHttpTest extends TestCase
 {
     use RefreshDatabase;
+    use AffiliationSectionPayloads;
 
     public function test_it_creates_affiliation_draft_over_http(): void
     {
@@ -27,6 +29,11 @@ class AffiliationApplicationHttpTest extends TestCase
         $response->assertCreated()
             ->assertJsonPath('data.status', AffiliationApplicationStatus::Draft->value)
             ->assertJsonPath('data.current_step', AffiliationApplicationStep::Personal->value);
+
+        $this->assertStringStartsWith('/affiliation-applications/', $response->json('data.links.sections.personal'));
+        $this->assertStringStartsWith('/affiliation-applications/', $response->json('data.links.documents'));
+        $this->assertStringStartsWith('/affiliation-applications/', $response->json('data.links.consents'));
+        $this->assertStringStartsWith('/affiliation-applications/', $response->json('data.links.submit'));
 
         $this->assertDatabaseHas('affiliation_applications', [
             'id' => $response->json('data.id'),
@@ -43,10 +50,7 @@ class AffiliationApplicationHttpTest extends TestCase
 
         $response = $this->postJson($this->signedSectionUrl($application, AffiliationApplicationStep::Personal), [
             'schema_version' => 1,
-            'data' => [
-                'document_number' => '123456789',
-                'full_name' => 'Synthetic Test Person',
-            ],
+            'data' => $this->validSectionPayload(AffiliationApplicationStep::Personal),
         ]);
 
         $response->assertOk()
@@ -120,6 +124,7 @@ class AffiliationApplicationHttpTest extends TestCase
 
     public function test_it_submits_a_complete_application_over_http(): void
     {
+        Storage::fake('local');
         $application = AffiliationApplication::query()->forceCreate([
             'status' => AffiliationApplicationStatus::Draft->value,
             'current_step' => AffiliationApplicationStep::Personal->value,
@@ -136,6 +141,15 @@ class AffiliationApplicationHttpTest extends TestCase
             ->assertJsonPath('data.id', $application->id)
             ->assertJsonPath('data.status', AffiliationApplicationStatus::Submitted->value)
             ->assertJsonPath('data.current_step', AffiliationApplicationStep::Summary->value);
+
+        $this->assertDatabaseHas('application_documents', [
+            'application_id' => $application->id,
+            'document_type' => ApplicationDocumentType::AffiliationSummary->value,
+        ]);
+        $this->assertDatabaseHas('application_documents', [
+            'application_id' => $application->id,
+            'document_type' => ApplicationDocumentType::PayrollAuthorization->value,
+        ]);
     }
 
     public function test_it_returns_domain_error_when_submit_is_incomplete(): void
@@ -159,7 +173,7 @@ class AffiliationApplicationHttpTest extends TestCase
 
         $this->postJson("/affiliation-applications/{$application->id}/sections/personal", [
             'schema_version' => 1,
-            'data' => ['section' => 'personal'],
+            'data' => $this->validSectionPayload(AffiliationApplicationStep::Personal),
         ])->assertForbidden();
     }
 
@@ -178,8 +192,151 @@ class AffiliationApplicationHttpTest extends TestCase
 
         $this->postJson($tamperedUrl, [
             'schema_version' => 1,
-            'data' => ['section' => 'personal'],
+            'data' => $this->validSectionPayload(AffiliationApplicationStep::Personal),
         ])->assertForbidden();
+    }
+
+    public function test_it_rejects_completed_section_payloads_with_missing_required_fields_over_http(): void
+    {
+        $application = AffiliationApplication::query()->forceCreate([
+            'status' => AffiliationApplicationStatus::Draft->value,
+            'current_step' => AffiliationApplicationStep::Personal->value,
+        ]);
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Personal);
+        $data['email'] = '';
+
+        $this->postJson($this->signedSectionUrl($application, AffiliationApplicationStep::Personal), [
+            'schema_version' => 1,
+            'data' => $data,
+            'completed' => true,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonFragment(['message' => 'La seccion [personal] no se puede completar porque faltan campos obligatorios: correo electronico.']);
+    }
+
+    public function test_it_rejects_monthly_salary_outside_allowed_range_over_http(): void
+    {
+        $application = AffiliationApplication::query()->forceCreate([
+            'status' => AffiliationApplicationStatus::Draft->value,
+            'current_step' => AffiliationApplicationStep::Employment->value,
+        ]);
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Employment);
+        $data['monthlySalary'] = '1000000';
+
+        $this->postJson($this->signedSectionUrl($application, AffiliationApplicationStep::Employment), [
+            'schema_version' => 1,
+            'data' => $data,
+            'completed' => true,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonFragment(['message' => 'La seccion [employment] tiene un campo invalido [salario mensual]: debe estar entre $1.750.905 y $100.000.000.']);
+    }
+
+    public function test_it_completes_the_public_affiliation_flow_over_http(): void
+    {
+        Storage::fake('local');
+
+        $draft = $this->postJson('/affiliation-applications')
+            ->assertCreated()
+            ->json('data');
+
+        foreach (AffiliationApplicationStep::formSections() as $section) {
+            $this->postJson($draft['links']['sections'][$section->value], [
+                'schema_version' => 1,
+                'data' => $this->validSectionPayload($section),
+                'completed' => true,
+            ])->assertOk()
+                ->assertJsonPath('data.section', $section->value);
+        }
+
+        $this->post($draft['links']['documents'], [
+            'document_type' => ApplicationDocumentType::Identity->value,
+            'file' => UploadedFile::fake()->create('identity.pdf', 64, 'application/pdf'),
+        ], ['Accept' => 'application/json'])
+            ->assertCreated()
+            ->assertJsonPath('data.document_type', ApplicationDocumentType::Identity->value);
+
+        foreach (ConsentType::requiredForSubmission() as $consentType) {
+            $this->postJson($draft['links']['consents'], [
+                'consent_type' => $consentType->value,
+                'policy_version' => '2026-01',
+            ])->assertCreated()
+                ->assertJsonPath('data.consent_type', $consentType->value);
+        }
+
+        $this->postJson($draft['links']['submit'], [
+            'policy_version' => '2026-01',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.id', $draft['id'])
+            ->assertJsonPath('data.status', AffiliationApplicationStatus::Submitted->value)
+            ->assertJsonPath('data.current_step', AffiliationApplicationStep::Summary->value)
+            ->assertJsonPath('data.submitted_at', fn (?string $submittedAt): bool => $submittedAt !== null)
+            ->assertJsonCount(2, 'data.generated_documents')
+            ->assertJsonMissingPath('data.generated_documents.0.storage_key')
+            ->assertJsonPath('data.generated_documents.0.links.download', fn (string $downloadUrl): bool => str_starts_with($downloadUrl, '/affiliation-applications/'));
+
+        $application = AffiliationApplication::query()->findOrFail($draft['id']);
+
+        $this->assertSame(5, $application->sections()->whereNotNull('completed_at')->count());
+        $this->assertSame(3, $application->documents()->count());
+        $this->assertSame(2, $application->consentRecords()->count());
+        $this->assertDatabaseHas('audit_events', [
+            'subject_type' => 'affiliation_application',
+            'subject_id' => $application->id,
+            'action' => 'application.submitted',
+        ]);
+
+        foreach ($application->documents as $document) {
+            Storage::disk('local')->assertExists($document->getAttribute('storage_key'));
+        }
+    }
+
+    public function test_it_downloads_generated_document_with_signed_url_and_audits_it(): void
+    {
+        Storage::fake('local');
+
+        $draft = $this->postJson('/affiliation-applications')
+            ->assertCreated()
+            ->json('data');
+
+        foreach (AffiliationApplicationStep::formSections() as $section) {
+            $this->postJson($draft['links']['sections'][$section->value], [
+                'schema_version' => 1,
+                'data' => $this->validSectionPayload($section),
+                'completed' => true,
+            ])->assertOk();
+        }
+
+        $this->post($draft['links']['documents'], [
+            'document_type' => ApplicationDocumentType::Identity->value,
+            'file' => UploadedFile::fake()->create('identity.pdf', 64, 'application/pdf'),
+        ], ['Accept' => 'application/json'])->assertCreated();
+
+        foreach (ConsentType::requiredForSubmission() as $consentType) {
+            $this->postJson($draft['links']['consents'], [
+                'consent_type' => $consentType->value,
+                'policy_version' => '2026-01',
+            ])->assertCreated();
+        }
+
+        $submitted = $this->postJson($draft['links']['submit'], [
+            'policy_version' => '2026-01',
+        ])
+            ->assertOk()
+            ->json('data');
+
+        $downloadUrl = $submitted['generated_documents'][0]['links']['download'];
+
+        $this->get($downloadUrl)
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+
+        $this->assertDatabaseHas('audit_events', [
+            'subject_type' => 'application_document',
+            'subject_id' => $submitted['generated_documents'][0]['id'],
+            'action' => 'document.downloaded',
+        ]);
     }
 
     private function completeSections(AffiliationApplication $application): void
@@ -191,7 +348,7 @@ class AffiliationApplicationHttpTest extends TestCase
                 application: $application,
                 section: $section,
                 schemaVersion: 1,
-                data: ['section' => $section->value],
+                data: $this->validSectionPayload($section),
                 completedAt: now()->startOfSecond(),
             );
         }
@@ -226,27 +383,27 @@ class AffiliationApplicationHttpTest extends TestCase
         return URL::temporarySignedRoute('affiliation-applications.sections.store', now()->addHour(), [
             'application' => $application,
             'section' => $section->value,
-        ]);
+        ], false);
     }
 
     private function signedDocumentUrl(AffiliationApplication $application): string
     {
         return URL::temporarySignedRoute('affiliation-applications.documents.store', now()->addHour(), [
             'application' => $application,
-        ]);
+        ], false);
     }
 
     private function signedConsentUrl(AffiliationApplication $application): string
     {
         return URL::temporarySignedRoute('affiliation-applications.consents.store', now()->addHour(), [
             'application' => $application,
-        ]);
+        ], false);
     }
 
     private function signedSubmitUrl(AffiliationApplication $application): string
     {
         return URL::temporarySignedRoute('affiliation-applications.submit', now()->addHour(), [
             'application' => $application,
-        ]);
+        ], false);
     }
 }

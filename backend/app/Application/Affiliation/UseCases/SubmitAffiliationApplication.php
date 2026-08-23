@@ -23,6 +23,7 @@ class SubmitAffiliationApplication
         private readonly VerifyRequiredSections $verifyRequiredSections,
         private readonly VerifyRequiredDocuments $verifyRequiredDocuments,
         private readonly VerifyRequiredConsents $verifyRequiredConsents,
+        private readonly GenerateAffiliationSubmissionDocuments $generateDocuments,
         private readonly RecordAuditEvent $recordAuditEvent,
     ) {}
 
@@ -63,6 +64,14 @@ class SubmitAffiliationApplication
 
             $submittedAt ??= now();
             $correlationId ??= (string) Str::uuid();
+
+            ($this->generateDocuments)(
+                application: $application,
+                actor: $actor,
+                correlationId: $correlationId,
+                ipHash: $ipHash,
+                generatedAt: $submittedAt,
+            );
 
             $application->forceFill([
                 'status' => $toStatus->value,

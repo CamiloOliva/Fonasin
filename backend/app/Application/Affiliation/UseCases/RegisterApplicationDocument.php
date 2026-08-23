@@ -46,6 +46,7 @@ class RegisterApplicationDocument
         ?string $ipHash = null,
         ?Carbon $uploadedAt = null,
         ?string $fileContents = null,
+        string $auditAction = AffiliationAuditAction::DocumentUploaded->value,
     ): ApplicationDocument {
         if ($byteSize <= 0) {
             throw CannotRegisterApplicationDocument::invalidByteSize($byteSize);
@@ -55,7 +56,7 @@ class RegisterApplicationDocument
             throw CannotRegisterApplicationDocument::invalidMimeType($mimeType);
         }
 
-        return DB::transaction(function () use ($application, $documentType, $originalFilename, $mimeType, $byteSize, $actor, $correlationId, $ipHash, $uploadedAt, $fileContents) {
+        return DB::transaction(function () use ($application, $documentType, $originalFilename, $mimeType, $byteSize, $actor, $correlationId, $ipHash, $uploadedAt, $fileContents, $auditAction) {
             $uploadedAt ??= now();
             $correlationId ??= (string) Str::uuid();
 
@@ -81,7 +82,7 @@ class RegisterApplicationDocument
 
             ($this->recordAuditEvent)(
                 module: AuditModule::Affiliation,
-                action: AffiliationAuditAction::DocumentUploaded->value,
+                action: $auditAction,
                 subjectType: 'application_document',
                 subjectId: $document->id,
                 actor: $actor,

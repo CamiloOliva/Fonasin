@@ -35,6 +35,21 @@ npm run preview
 
 Usar `npm run preview` para revisar el bundle creado, no solo el servidor de desarrollo. Una pagina que funciona con `npm run dev` puede fallar en produccion por rutas, variables de entorno o recursos ausentes.
 
+## Conexion local con Laravel
+
+El frontend Vite puede probar los formularios publicos contra Laravel local sin exponer una API publica versionada. En desarrollo, `vite.config.ts` reenvia estas rutas al backend:
+
+- `/affiliation-applications`
+- `/fpqrs-submissions`
+
+Por defecto el proxy apunta a `http://127.0.0.1:8000`. Si se necesita otro puerto, definir:
+
+```env
+VITE_BACKEND_DEV_PROXY_TARGET=http://127.0.0.1:8000
+```
+
+`VITE_BACKEND_BASE_URL` debe permanecer vacio durante el desarrollo con proxy. Solo usarlo si el frontend necesita llamar explicitamente a otro origen aprobado.
+
 ## Estructura del frontend
 
 ```text
@@ -74,13 +89,14 @@ El hosting debe tener `mod_rewrite` y permitir `.htaccess` en el document root. 
 
 ```text
 .env
-VITE_API_BASE_URL=
+VITE_BACKEND_BASE_URL=
+VITE_BACKEND_DEV_PROXY_TARGET=http://127.0.0.1:8000
 VITE_WHATSAPP_URL=
 ```
 
 - `.env` nunca se sube a Git.
 - Solo publicar con `VITE_*` valores seguros para cualquier visitante.
-- En produccion, `VITE_API_BASE_URL` debe usar HTTPS y el dominio aprobado.
+- En produccion, `VITE_BACKEND_BASE_URL` debe quedar vacio si Laravel y React comparten dominio, o usar HTTPS y el dominio aprobado si se autoriza otro origen.
 - Los secretos permanecen en `backend/.env` y nunca pasan al build React.
 
 ## Flujo de version y publicacion

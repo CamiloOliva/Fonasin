@@ -5,6 +5,7 @@ import {
   Banknote,
   Briefcase,
   CheckCircle2,
+  Download,
   FileText,
   HeartHandshake,
   MapPin,
@@ -16,11 +17,13 @@ import {
 } from 'lucide-react';
 import {
   acceptAffiliationConsent,
+  affiliationDownloadUrl,
   createAffiliationDraft,
   saveAffiliationSection,
   submitAffiliationApplication,
   uploadAffiliationDocument,
   type AffiliationDraft,
+  type GeneratedAffiliationDocument,
   type AffiliationSectionKey,
 } from '../../services/affiliationService';
 
@@ -155,9 +158,29 @@ type FieldConfig = {
   options?: string[];
   helper?: string;
   inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+  maxLength?: number;
 };
 
 const POLICY_VERSION = 'afiliacion-v1';
+const NAME_MAX_LENGTH = 35;
+const TEXT_MAX_LENGTH = 120;
+const MIN_MONTHLY_SALARY = 1750905;
+const MONEY_MAX_VALUE = 100000000;
+const MONEY_MAX_DIGITS = String(MONEY_MAX_VALUE).length;
+const MONEY_MAX_DISPLAY_LENGTH = '100.000.000'.length;
+const currencyFieldKeys = new Set([
+  'monthlySalary',
+  'principalIncome',
+  'otherIncome',
+  'totalIncome',
+  'monthlyExpenses',
+  'financialObligations',
+  'totalExpenses',
+  'assetsValue',
+  'liabilitiesValue',
+  'equityValue',
+  'voluntarySavingsValue',
+]);
 const stepLabels: Array<{ key: StepKey; label: string; title: string; description: string }> = [
   { key: 'personal', label: '1', title: 'Datos personales', description: 'Identificacion, contacto y base del asociado.' },
   { key: 'employment', label: '2', title: 'Informacion laboral', description: 'Empresa, cargo, contrato y ciudad de trabajo.' },
@@ -185,10 +208,10 @@ const personalFields: FieldConfig[] = [
   { key: 'documentNumber', label: 'Numero de documento', inputMode: 'numeric' },
   { key: 'issueDate', label: 'Fecha de expedicion', type: 'date' },
   { key: 'issuePlace', label: 'Lugar de expedicion' },
-  { key: 'firstName', label: 'Primer nombre' },
-  { key: 'middleName', label: 'Segundo nombre' },
-  { key: 'lastName', label: 'Primer apellido' },
-  { key: 'secondLastName', label: 'Segundo apellido' },
+  { key: 'firstName', label: 'Primer nombre', maxLength: NAME_MAX_LENGTH },
+  { key: 'middleName', label: 'Segundo nombre', maxLength: NAME_MAX_LENGTH },
+  { key: 'lastName', label: 'Primer apellido', maxLength: NAME_MAX_LENGTH },
+  { key: 'secondLastName', label: 'Segundo apellido', maxLength: NAME_MAX_LENGTH },
   { key: 'birthDate', label: 'Fecha de nacimiento', type: 'date' },
   { key: 'nationality', label: 'Nacionalidad' },
   { key: 'residenceCountry', label: 'Pais de residencia' },
@@ -312,7 +335,7 @@ function createInitialState(): SectionState {
       foreignAccountEntity: '',
       foreignAccountType: '',
       foreignAccountOrigin: '',
-      actsOnBehalfOfThirdParties: 'Si',
+      actsOnBehalfOfThirdParties: 'No',
       thirdPartyName: '',
       thirdPartyId: '',
       thirdPartyRelation: '',
@@ -340,8 +363,251 @@ function createInitialState(): SectionState {
   };
 }
 
+function validateCurrentStep(step: number, state: SectionState): string | null {
+  if (step === 0) {
+    const missing = missingFields(state.personal as unknown as Record<string, unknown>, requiredBySection.personal);
+    if (missing.length > 0) {
+      return `Faltan campos obligatorios: ${friendlyList(missing.map((key) => requiredLabels[key] ?? key))}.`;
+    }
+    if (!isValidEmail(state.personal.email)) {
+      return 'El correo electronico debe tener un formato valido.';
+    }
+    if (state.personal.firstName.length > NAME_MAX_LENGTH || state.personal.lastName.length > NAME_MAX_LENGTH) {
+      return `Los nombres y apellidos principales no deben superar ${NAME_MAX_LENGTH} caracteres.`;
+    }
+    if (state.personal.hasDependents === 'Si' && isBlank(state.personal.dependentsCount)) {
+      return 'Indica cuantas personas tienes a cargo.';
+    }
+  }
+
+  if (step === 1) {
+    const missing = missingFields(state.employment as unknown as Record<string, unknown>, requiredBySection.employment);
+    if (missing.length > 0) {
+      return `Faltan campos obligatorios: ${friendlyList(missing.map((key) => requiredLabels[key] ?? key))}.`;
+    }
+    const monthlySalary = Number(state.employment.monthlySalary || '0');
+    if (monthlySalary < MIN_MONTHLY_SALARY || monthlySalary > MONEY_MAX_VALUE) {
+      return `El salario mensual debe estar entre ${moneyLabel(MIN_MONTHLY_SALARY)} y ${moneyLabel(MONEY_MAX_VALUE)}.`;
+    }
+  }
+
+  if (step === 2) {
+    const missing = missingFields(state.financial as unknown as Record<string, unknown>, requiredBySection.financial);
+    if (missing.length > 0) {
+      return `Faltan campos obligatorios: ${friendlyList(missing.map((key) => requiredLabels[key] ?? key))}.`;
+    }
+    if (state.financial.voluntarySavings === 'Si' && isBlank(state.financial.voluntarySavingsValue)) {
+      return 'Indica el valor mensual del ahorro voluntario.';
+    }
+  }
+
+  if (step === 3) {
+    const incompleteBeneficiaries = state.beneficiaries.some((beneficiary) =>
+      ['documentNumber', 'fullName', 'relationship', 'birthDate', 'phone'].some((key) => isBlank(beneficiary[key as keyof BeneficiaryData])),
+    );
+    if (incompleteBeneficiaries) {
+      return 'Cada beneficiario debe tener documento, nombre, parentesco, fecha de nacimiento y telefono.';
+    }
+    const emergencyMissing = missingFields(state.emergencyContact as unknown as Record<string, unknown>, ['fullName', 'relationship', 'phone']);
+    if (emergencyMissing.length > 0) {
+      return `Faltan datos del contacto de emergencia: ${friendlyList(emergencyMissing.map((key) => requiredLabels[key] ?? key))}.`;
+    }
+  }
+
+  if (step === 4) {
+    const missing = missingFields(state.sarlaft as unknown as Record<string, unknown>, requiredBySection.sarlaft);
+    if (missing.length > 0) {
+      return `Faltan campos obligatorios: ${friendlyList(missing.map((key) => requiredLabels[key] ?? key))}.`;
+    }
+    if (state.sarlaft.pep === 'Si') {
+      const pepMissing = missingFields(state.sarlaft as unknown as Record<string, unknown>, ['pepType', 'pepPosition', 'pepEntity']);
+      if (pepMissing.length > 0) {
+        return 'Completa el detalle PEP antes de continuar.';
+      }
+    }
+    if (state.sarlaft.foreignAccounts === 'Si') {
+      const foreignAccountMissing = missingFields(state.sarlaft as unknown as Record<string, unknown>, [
+        'foreignAccountCountry',
+        'foreignAccountEntity',
+        'foreignAccountType',
+        'foreignAccountOrigin',
+      ]);
+      if (foreignAccountMissing.length > 0) {
+        return 'Completa los datos de la cuenta financiera en el exterior.';
+      }
+    }
+    if (state.sarlaft.actsOnBehalfOfThirdParties === 'Si') {
+      const thirdPartyMissing = missingFields(state.sarlaft as unknown as Record<string, unknown>, [
+        'thirdPartyName',
+        'thirdPartyId',
+        'thirdPartyRelation',
+        'thirdPartyOrigin',
+      ]);
+      if (thirdPartyMissing.length > 0) {
+        return 'Completa los datos del tercero por cuenta de quien actuas.';
+      }
+    }
+  }
+
+  if (step === 5) {
+    if (!state.finalStep.documentFile) {
+      return 'Debes adjuntar el documento de identidad antes de enviar.';
+    }
+    if (state.finalStep.documentFile.size > 5 * 1024 * 1024) {
+      return 'El documento de identidad no debe superar 5MB.';
+    }
+    if (isBlank(state.finalStep.signatureCity) || isBlank(state.finalStep.signatureDate)) {
+      return 'Completa ciudad y fecha de firma.';
+    }
+    const unchecked = Object.values(state.finalStep.declarations).some((checked) => !checked);
+    if (unchecked) {
+      return 'Debes aceptar todas las declaraciones y autorizaciones para enviar la solicitud.';
+    }
+  }
+
+  return null;
+}
+
 function currencyOnly(value: string): string {
   return value.replace(/[^\d]/g, '');
+}
+
+function formatCurrency(value: string): string {
+  const digits = currencyOnly(value);
+
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function moneyLabel(value: number): string {
+  return `$${formatCurrency(String(value))}`;
+}
+
+function limitedCurrency(value: string): string {
+  const digits = currencyOnly(value).slice(0, MONEY_MAX_DIGITS);
+  const amount = Number(digits || '0');
+
+  if (amount > MONEY_MAX_VALUE) {
+    return String(MONEY_MAX_VALUE);
+  }
+
+  return digits;
+}
+
+function isBlank(value: unknown): boolean {
+  return typeof value !== 'string' || value.trim() === '';
+}
+
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function friendlyList(items: string[]): string {
+  if (items.length <= 1) return items.join('');
+
+  return `${items.slice(0, -1).join(', ')} y ${items[items.length - 1]}`;
+}
+
+const requiredLabels: Record<string, string> = {
+  documentType: 'tipo de documento',
+  documentNumber: 'numero de documento',
+  issueDate: 'fecha de expedicion',
+  issuePlace: 'lugar de expedicion',
+  firstName: 'primer nombre',
+  lastName: 'primer apellido',
+  birthDate: 'fecha de nacimiento',
+  nationality: 'nacionalidad',
+  residenceCountry: 'pais de residencia',
+  maritalStatus: 'estado civil',
+  residenceAddress: 'direccion de residencia',
+  city: 'ciudad',
+  department: 'departamento',
+  mobile: 'celular',
+  email: 'correo electronico',
+  educationLevel: 'nivel educativo',
+  profession: 'profesion',
+  hasDependents: 'personas a cargo',
+  employer: 'empresa donde trabaja',
+  position: 'cargo',
+  departmentArea: 'area o dependencia',
+  contractType: 'tipo de contrato',
+  hireDate: 'fecha de ingreso',
+  workCity: 'ciudad donde trabaja',
+  monthlySalary: 'salario mensual',
+  principalIncome: 'ingreso mensual principal',
+  totalIncome: 'total de ingresos',
+  monthlyExpenses: 'gastos mensuales',
+  totalExpenses: 'total de egresos',
+  assetsValue: 'activos',
+  liabilitiesValue: 'pasivos',
+  equityValue: 'patrimonio',
+  incomeBand: 'rango de ingresos',
+  voluntarySavings: 'ahorro voluntario',
+  voluntarySavingsValue: 'valor mensual del ahorro voluntario',
+  economicActivity: 'actividad economica',
+  incomeSource: 'fuente de ingresos',
+  resourceOrigin: 'origen de recursos',
+  expectedOperations: 'operaciones esperadas',
+  signatureCity: 'ciudad de firma',
+  signatureDate: 'fecha de firma',
+};
+
+const requiredBySection: Record<AffiliationSectionKey, string[]> = {
+  personal: [
+    'documentType',
+    'documentNumber',
+    'issueDate',
+    'issuePlace',
+    'firstName',
+    'lastName',
+    'birthDate',
+    'nationality',
+    'residenceCountry',
+    'maritalStatus',
+    'residenceAddress',
+    'city',
+    'department',
+    'mobile',
+    'email',
+    'educationLevel',
+    'profession',
+    'hasDependents',
+  ],
+  employment: ['employer', 'position', 'departmentArea', 'contractType', 'hireDate', 'workCity', 'monthlySalary'],
+  financial: [
+    'principalIncome',
+    'totalIncome',
+    'monthlyExpenses',
+    'totalExpenses',
+    'assetsValue',
+    'liabilitiesValue',
+    'equityValue',
+    'incomeBand',
+    'voluntarySavings',
+  ],
+  beneficiaries: [],
+  sarlaft: ['economicActivity', 'incomeSource', 'resourceOrigin', 'expectedOperations'],
+};
+
+function fieldMaxLength(field: FieldConfig): number | undefined {
+  if (field.maxLength) return field.maxLength;
+  if (currencyFieldKeys.has(field.key)) return MONEY_MAX_DISPLAY_LENGTH;
+  if (field.inputMode === 'numeric') return MONEY_MAX_DIGITS;
+  if (field.type === 'email') return TEXT_MAX_LENGTH;
+  if (field.type === 'text' || !field.type) return TEXT_MAX_LENGTH;
+
+  return undefined;
+}
+
+function isRequiredField(section: AffiliationSectionKey, key: string): boolean {
+  return requiredBySection[section].includes(key);
+}
+
+function missingFields(values: Record<string, unknown>, keys: string[]): string[] {
+  return keys.filter((key) => {
+    const value = values[key];
+
+    return Array.isArray(value) ? value.length === 0 : isBlank(value);
+  });
 }
 
 function toggleValue(values: string[], value: string): string[] {
@@ -351,15 +617,20 @@ function toggleValue(values: string[], value: string): string[] {
 function Field({
   label,
   helper,
+  required,
   children,
 }: {
   label: string;
   helper?: string;
+  required?: boolean;
   children: ReactNode;
 }) {
   return (
     <label className="block">
-      <span className="text-sm font-bold text-slate-800">{label}</span>
+      <span className="text-sm font-bold text-slate-800">
+        {label}
+        {required ? <span className="ml-1 text-red-500" aria-label="obligatorio">*</span> : null}
+      </span>
       {helper ? <span className="mt-1 block text-xs leading-5 text-slate-500">{helper}</span> : null}
       <div className="mt-2">{children}</div>
     </label>
@@ -422,11 +693,12 @@ function renderFields(
   fields: FieldConfig[],
   values: Record<string, string>,
   setValues: (next: Record<string, string>) => void,
+  section?: AffiliationSectionKey,
 ) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
       {fields.map((field) => (
-        <Field key={field.key} label={field.label} helper={field.helper}>
+        <Field key={field.key} label={field.label} helper={field.helper} required={section ? isRequiredField(section, field.key) : false}>
           {field.type === 'select' ? (
             <SelectInput
               value={values[field.key] ?? ''}
@@ -449,8 +721,14 @@ function renderFields(
             <TextInput
               type={field.type ?? 'text'}
               inputMode={field.inputMode as any}
-              value={values[field.key] ?? ''}
-              onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}
+              maxLength={fieldMaxLength(field)}
+              value={currencyFieldKeys.has(field.key) ? formatCurrency(values[field.key] ?? '') : values[field.key] ?? ''}
+              onChange={(event) =>
+                setValues({
+                  ...values,
+                  [field.key]: currencyFieldKeys.has(field.key) ? limitedCurrency(event.target.value) : event.target.value,
+                })
+              }
             />
           )}
         </Field>
@@ -468,6 +746,7 @@ export default function AffiliationForm() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [generatedDocuments, setGeneratedDocuments] = useState<GeneratedAffiliationDocument[]>([]);
   const [state, setState] = useState<SectionState>(createInitialState);
 
   const progress = useMemo(() => Math.round(((step + 1) / stepLabels.length) * 100), [step]);
@@ -507,6 +786,13 @@ export default function AffiliationForm() {
     setMessage(null);
     setSaving(true);
 
+    const validationMessage = validateCurrentStep(step, state);
+    if (validationMessage) {
+      setError(validationMessage);
+      setSaving(false);
+      return;
+    }
+
     try {
       if (step === 0) {
         await syncSection('personal', state.personal);
@@ -545,19 +831,20 @@ export default function AffiliationForm() {
             consentType: 'bylaws',
             policyVersion: POLICY_VERSION,
           });
-          await submitAffiliationApplication(draft.links.submit, POLICY_VERSION);
+          const submittedDraft = await submitAffiliationApplication(draft.links.submit, POLICY_VERSION);
+          setDraft(submittedDraft);
+          setGeneratedDocuments(submittedDraft.generated_documents ?? []);
         }
 
         setSubmitted(true);
-        setMessage('Solicitud preparada para el backend.');
+        setMessage('Solicitud enviada al backend.');
         return;
       }
 
       setStep((current) => Math.min(current + 1, stepLabels.length - 1));
     } catch (caught) {
       if (backendMode === 'ready') {
-        setBackendMode('local');
-        setBackendMessage('No se pudo sincronizar con Laravel en este momento. La vista sigue en modo local.');
+        setBackendMessage('Laravel rechazo la sincronizacion. Corrige la seccion y vuelve a intentar.');
       }
       setError(caught instanceof Error ? caught.message : 'No pudimos continuar con esta seccion.');
     } finally {
@@ -582,9 +869,9 @@ export default function AffiliationForm() {
               ...next,
             },
           })),
-        )}
+        'personal')}
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Numero de personas a cargo" helper="Solo visible si el asociado indica que si tiene personas a cargo.">
+          <Field label="Numero de personas a cargo" helper="Solo visible si el asociado indica que si tiene personas a cargo." required={state.personal.hasDependents === 'Si'}>
             {state.personal.hasDependents === 'Si' ? (
               <TextInput
                 inputMode="numeric"
@@ -629,7 +916,7 @@ export default function AffiliationForm() {
               monthlySalary: next.monthlySalary ? currencyOnly(next.monthlySalary) : current.employment.monthlySalary,
             },
           })),
-        )}
+        'employment')}
       </div>
     );
   }
@@ -660,18 +947,19 @@ export default function AffiliationForm() {
               equityValue: next.equityValue ? currencyOnly(next.equityValue) : current.financial.equityValue,
             },
           })),
-        )}
+        'financial')}
         {state.financial.voluntarySavings === 'Si' ? (
-          <Field label="Valor mensual del ahorro voluntario">
+          <Field label="Valor mensual del ahorro voluntario" required>
             <TextInput
               inputMode="numeric"
-              value={state.financial.voluntarySavingsValue}
+              maxLength={MONEY_MAX_DISPLAY_LENGTH}
+              value={formatCurrency(state.financial.voluntarySavingsValue)}
               onChange={(event) =>
                 setState((current) => ({
                   ...current,
                   financial: {
                     ...current.financial,
-                    voluntarySavingsValue: currencyOnly(event.target.value),
+                    voluntarySavingsValue: limitedCurrency(event.target.value),
                   },
                 }))
               }
@@ -735,7 +1023,7 @@ export default function AffiliationForm() {
                 </button>
               </div>
 
-              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="mt-4 grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
                 {[
                   { key: 'documentType', label: 'Tipo de documento', type: 'select', options: documentTypes },
                   { key: 'documentNumber', label: 'Numero de documento' },
@@ -743,9 +1031,8 @@ export default function AffiliationForm() {
                   { key: 'relationship', label: 'Parentesco', type: 'select', options: relationshipOptions },
                   { key: 'birthDate', label: 'Fecha de nacimiento', type: 'date' },
                   { key: 'phone', label: 'Telefono' },
-                  { key: 'percentage', label: 'Porcentaje, si aplica', inputMode: 'numeric' },
                 ].map((field) => (
-                  <Field key={field.key} label={field.label}>
+                  <Field key={field.key} label={field.label} required>
                     {field.type === 'select' ? (
                       <SelectInput
                         value={beneficiary[field.key as keyof BeneficiaryData]}
@@ -768,7 +1055,8 @@ export default function AffiliationForm() {
                     ) : (
                       <TextInput
                         type={field.type === 'date' ? 'date' : 'text'}
-                        inputMode={field.inputMode as any}
+                        inputMode={'inputMode' in field ? (field.inputMode as any) : undefined}
+                        maxLength={field.key === 'fullName' ? TEXT_MAX_LENGTH : 'inputMode' in field && field.inputMode === 'numeric' ? 3 : TEXT_MAX_LENGTH}
                         value={beneficiary[field.key as keyof BeneficiaryData] as string}
                         onChange={(event) =>
                           setState((current) => ({
@@ -804,8 +1092,9 @@ export default function AffiliationForm() {
               { key: 'relationship', label: 'Parentesco' },
               { key: 'phone', label: 'Celular' },
             ].map((field) => (
-              <Field key={field.key} label={field.label}>
+              <Field key={field.key} label={field.label} required>
                 <TextInput
+                  maxLength={field.key === 'fullName' ? TEXT_MAX_LENGTH : 80}
                   value={state.emergencyContact[field.key as keyof EmergencyContactData]}
                   onChange={(event) =>
                     setState((current) => ({
@@ -833,8 +1122,9 @@ export default function AffiliationForm() {
         />
 
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Actividad economica principal">
+          <Field label="Actividad economica principal" required>
             <TextInput
+              maxLength={TEXT_MAX_LENGTH}
               value={state.sarlaft.economicActivity}
               onChange={(event) =>
                 setState((current) => ({
@@ -846,7 +1136,7 @@ export default function AffiliationForm() {
           </Field>
 
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm font-bold text-slate-800">Fuente principal de ingresos</p>
+            <p className="text-sm font-bold text-slate-800">Fuente principal de ingresos <span className="text-red-500">*</span></p>
             <div className="mt-3 grid gap-2">
               {incomeSources.map((option) => (
                 <label
@@ -876,7 +1166,7 @@ export default function AffiliationForm() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm font-bold text-slate-800">Origen de los recursos</p>
+            <p className="text-sm font-bold text-slate-800">Origen de los recursos <span className="text-red-500">*</span></p>
             <div className="mt-3 grid gap-2">
               {resourceOrigins.map((option) => (
                 <label
@@ -923,7 +1213,7 @@ export default function AffiliationForm() {
           <div className="rounded-[1.6rem] border border-amber-200 bg-amber-50 p-4">
             <p className="text-xs font-black uppercase tracking-[0.22em] text-amber-800">Detalle PEP</p>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <Field label="Tipo de PEP">
+              <Field label="Tipo de PEP" required>
                 <SelectInput
                   value={state.sarlaft.pepType}
                   onChange={(event) =>
@@ -941,8 +1231,9 @@ export default function AffiliationForm() {
                   ))}
                 </SelectInput>
               </Field>
-              <Field label="Cargo o funcion">
+              <Field label="Cargo o funcion" required>
                 <TextInput
+                  maxLength={TEXT_MAX_LENGTH}
                   value={state.sarlaft.pepPosition}
                   onChange={(event) =>
                     setState((current) => ({
@@ -952,8 +1243,9 @@ export default function AffiliationForm() {
                   }
                 />
               </Field>
-              <Field label="Entidad">
+              <Field label="Entidad" required>
                 <TextInput
+                  maxLength={TEXT_MAX_LENGTH}
                   value={state.sarlaft.pepEntity}
                   onChange={(event) =>
                     setState((current) => ({
@@ -1028,7 +1320,7 @@ export default function AffiliationForm() {
               <option value="Si">Si</option>
             </SelectInput>
           </Field>
-          <Field label="Actua por cuenta propia">
+          <Field label="Actua por cuenta de terceros">
             <SelectInput
               value={state.sarlaft.actsOnBehalfOfThirdParties}
               onChange={(event) =>
@@ -1038,8 +1330,8 @@ export default function AffiliationForm() {
                 }))
               }
             >
-              <option value="Si">Si</option>
               <option value="No">No</option>
+              <option value="Si">Si</option>
             </SelectInput>
           </Field>
         </div>
@@ -1048,8 +1340,9 @@ export default function AffiliationForm() {
           <div className="rounded-[1.6rem] border border-sky-200 bg-sky-50 p-4">
             <p className="text-xs font-black uppercase tracking-[0.22em] text-sky-800">Cuentas en el exterior</p>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <Field label="Pais">
+              <Field label="Pais" required>
                 <TextInput
+                  maxLength={80}
                   value={state.sarlaft.foreignAccountCountry}
                   onChange={(event) =>
                     setState((current) => ({
@@ -1059,8 +1352,9 @@ export default function AffiliationForm() {
                   }
                 />
               </Field>
-              <Field label="Entidad financiera">
+              <Field label="Entidad financiera" required>
                 <TextInput
+                  maxLength={TEXT_MAX_LENGTH}
                   value={state.sarlaft.foreignAccountEntity}
                   onChange={(event) =>
                     setState((current) => ({
@@ -1070,7 +1364,7 @@ export default function AffiliationForm() {
                   }
                 />
               </Field>
-              <Field label="Tipo de cuenta">
+              <Field label="Tipo de cuenta" required>
                 <SelectInput
                   value={state.sarlaft.foreignAccountType}
                   onChange={(event) =>
@@ -1088,8 +1382,9 @@ export default function AffiliationForm() {
                   ))}
                 </SelectInput>
               </Field>
-              <Field label="Origen de los recursos">
+              <Field label="Origen de los recursos" required>
                 <TextInput
+                  maxLength={TEXT_MAX_LENGTH}
                   value={state.sarlaft.foreignAccountOrigin}
                   onChange={(event) =>
                     setState((current) => ({
@@ -1103,12 +1398,13 @@ export default function AffiliationForm() {
           </div>
         ) : null}
 
-        {state.sarlaft.actsOnBehalfOfThirdParties === 'No' ? (
+        {state.sarlaft.actsOnBehalfOfThirdParties === 'Si' ? (
           <div className="rounded-[1.6rem] border border-violet-200 bg-violet-50 p-4">
             <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-800">Actuacion por terceros</p>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <Field label="Nombre del tercero">
+              <Field label="Nombre del tercero" required>
                 <TextInput
+                  maxLength={TEXT_MAX_LENGTH}
                   value={state.sarlaft.thirdPartyName}
                   onChange={(event) =>
                     setState((current) => ({
@@ -1118,8 +1414,9 @@ export default function AffiliationForm() {
                   }
                 />
               </Field>
-              <Field label="Identificacion">
+              <Field label="Identificacion" required>
                 <TextInput
+                  maxLength={35}
                   value={state.sarlaft.thirdPartyId}
                   onChange={(event) =>
                     setState((current) => ({
@@ -1129,8 +1426,9 @@ export default function AffiliationForm() {
                   }
                 />
               </Field>
-              <Field label="Relacion con el tercero">
+              <Field label="Relacion con el tercero" required>
                 <TextInput
+                  maxLength={80}
                   value={state.sarlaft.thirdPartyRelation}
                   onChange={(event) =>
                     setState((current) => ({
@@ -1140,8 +1438,9 @@ export default function AffiliationForm() {
                   }
                 />
               </Field>
-              <Field label="Origen de los recursos">
+              <Field label="Origen de los recursos" required>
                 <TextInput
+                  maxLength={TEXT_MAX_LENGTH}
                   value={state.sarlaft.thirdPartyOrigin}
                   onChange={(event) =>
                     setState((current) => ({
@@ -1156,8 +1455,9 @@ export default function AffiliationForm() {
         ) : null}
 
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Pais de residencia fiscal">
+          <Field label="Pais de residencia fiscal" required>
             <TextInput
+              maxLength={80}
               value={state.sarlaft.taxResidenceCountry}
               onChange={(event) =>
                 setState((current) => ({
@@ -1182,8 +1482,9 @@ export default function AffiliationForm() {
             </SelectInput>
           </Field>
           {state.sarlaft.hasForeignTaxObligations === 'Si' ? (
-            <Field label="Identificacion tributaria extranjera">
+            <Field label="Identificacion tributaria extranjera" required>
               <TextInput
+                maxLength={35}
                 value={state.sarlaft.foreignTaxId}
                 onChange={(event) =>
                   setState((current) => ({
@@ -1201,7 +1502,7 @@ export default function AffiliationForm() {
         </div>
 
         <div className="rounded-[1.6rem] border border-slate-200 bg-slate-50 p-4">
-          <p className="text-sm font-bold text-slate-800">Operaciones esperadas con el Fondo</p>
+          <p className="text-sm font-bold text-slate-800">Operaciones esperadas con el Fondo <span className="text-red-500">*</span></p>
           <div className="mt-3 flex flex-wrap gap-3">
             {expectedOperations.map((option) => {
               const selected = state.sarlaft.expectedOperations.includes(option);
@@ -1270,7 +1571,7 @@ export default function AffiliationForm() {
                 </div>
               </div>
               <label className="mt-4 block">
-                <span className="text-sm font-bold text-slate-800">Adjuntar documento</span>
+                <span className="text-sm font-bold text-slate-800">Adjuntar documento <span className="text-red-500">*</span></span>
                 <div className="mt-2 rounded-2xl border border-dashed border-emerald-300 bg-white px-4 py-5">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="text-sm text-slate-600">
@@ -1351,8 +1652,9 @@ export default function AffiliationForm() {
             <div className="rounded-[1.6rem] border border-slate-200 bg-white p-4 shadow-sm">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Firma / autenticacion</p>
               <div className="mt-4 grid gap-4">
-                <Field label="Ciudad">
+                <Field label="Ciudad" required>
                   <TextInput
+                    maxLength={80}
                     value={state.finalStep.signatureCity}
                     onChange={(event) =>
                       setState((current) => ({
@@ -1362,7 +1664,7 @@ export default function AffiliationForm() {
                     }
                   />
                 </Field>
-                <Field label="Fecha">
+                <Field label="Fecha" required>
                   <TextInput
                     type="date"
                     value={state.finalStep.signatureDate}
@@ -1419,6 +1721,23 @@ export default function AffiliationForm() {
           El formulario quedo listo para revision. Si el entorno esta conectado, las secciones, documentos y
           autorizaciones se sincronizaran en el siguiente paso.
         </p>
+        {generatedDocuments.length > 0 ? (
+          <div className="mx-auto mt-6 max-w-xl rounded-[1.5rem] border border-emerald-100 bg-emerald-50 p-4 text-left">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Documentos generados</p>
+            <div className="mt-3 grid gap-3">
+              {generatedDocuments.map((document) => (
+                <a
+                  key={document.id}
+                  href={affiliationDownloadUrl(document.links.download)}
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-100 bg-white px-4 py-3 text-sm font-bold text-emerald-800 transition hover:bg-emerald-50"
+                >
+                  <span>{document.original_filename}</span>
+                  <Download size={16} />
+                </a>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <button
             type="button"
@@ -1434,6 +1753,7 @@ export default function AffiliationForm() {
             type="button"
             onClick={() => {
               setState(createInitialState());
+              setGeneratedDocuments([]);
               setStep(0);
               setSubmitted(false);
             }}
@@ -1447,7 +1767,7 @@ export default function AffiliationForm() {
   }
 
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+    <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
       <div className="space-y-6">
         <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-5 py-5 sm:px-6 sm:py-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -1478,7 +1798,20 @@ export default function AffiliationForm() {
           </div>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[.78fr_1.22fr]">
+        <div
+          className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${
+            backendMode === 'ready'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+              : backendMode === 'loading'
+                ? 'border-slate-200 bg-slate-50 text-slate-600'
+                : 'border-amber-200 bg-amber-50 text-amber-900'
+          }`}
+          role="status"
+        >
+          {backendMessage}
+        </div>
+
+        <div className="grid gap-5 xl:grid-cols-[.7fr_1.3fr]">
           <aside className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
             <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Secciones</p>
             <ol className="mt-4 space-y-2">
@@ -1523,7 +1856,7 @@ export default function AffiliationForm() {
             </div>
           </aside>
 
-          <form onSubmit={handleSubmit} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 sm:p-6">
+          <form onSubmit={handleSubmit} className="rounded-[1.5rem] border border-slate-200 bg-white p-6 sm:p-8">
             {step === 0 ? renderPersonalSection() : null}
             {step === 1 ? renderEmploymentSection() : null}
             {step === 2 ? renderFinancialSection() : null}

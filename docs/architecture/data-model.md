@@ -82,7 +82,7 @@ Una fila por etapa de formulario: `personal`, `employment`, `financial`, `benefi
 
 Esta tabla permite ajustar campos pendientes sin romper solicitudes creadas con una version anterior. Los campos finales que necesiten reportes se normalizaran despues de su aprobacion funcional.
 
-El caso de uso de guardado recibe datos estructurados y delega el cifrado a `App\Infrastructure\Security`; no debe aceptar payloads cifrados desde capas externas ni persistir datos en texto plano.
+El caso de uso de guardado recibe datos estructurados y delega el cifrado a `App\Infrastructure\Security`; no debe aceptar payloads cifrados desde capas externas ni persistir datos en texto plano. Una seccion solo puede marcarse como completada cuando el backend valida sus campos minimos; las secciones parciales pueden guardarse sin `completed_at`.
 
 ### `application_documents`
 
@@ -99,6 +99,8 @@ El caso de uso de guardado recibe datos estructurados y delega el cifrado a `App
 | `uploaded_at` | timestamptz | fecha de carga |
 
 La carga de documentos registra metadatos, genera una `storage_key` privada desde `App\Infrastructure\Storage` y persiste el archivo en el disco privado `local`. La aplicacion no acepta rutas publicas ni claves de almacenamiento enviadas por el navegador. Al reemplazar un documento del mismo tipo, el anterior se archiva y se conserva como historial. Para envio inicial se exige el documento `identity` en estado `uploaded`.
+
+Al enviar una afiliacion, el backend genera dos documentos PDF privados adicionales: `affiliation_summary` y `payroll_authorization`. Estos documentos se crean desde datos descifrados solo dentro del caso de uso de envio, se guardan con `storage_key` privada y se auditan como `document.generated`. El mes y ano de inicio de descuentos queda pendiente de captura explicita en el formulario.
 
 ### `consent_records`
 
@@ -161,8 +163,8 @@ El caso de uso inicial de envio exige las secciones de formulario completas, los
 ## Decisiones funcionales pendientes
 
 1. Momento exacto en que se crea `users` para un asociado.
-2. Campos definitivos y obligatorios de cada etapa de afiliacion.
-3. Catalogo de documentos obligatorios y sus limites de archivo.
+2. Ajustes finales de campos obligatorios de cada etapa de afiliacion cuando el formulario sea aprobado por negocio.
+3. Catalogo final de documentos obligatorios y sus limites de archivo.
 4. Regla de correccion, archivo y vigencia de un credito.
 5. Retencion aprobada para solicitudes, documentos y eventos de auditoria.
 6. Catalogos definitivos y si su integridad se aplica solo en dominio o tambien mediante restricciones de base de datos.

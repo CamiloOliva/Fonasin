@@ -17,15 +17,19 @@ use App\Domain\Audit\Enums\AuditModule;
 use App\Models\AffiliationApplication;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Tests\Support\AffiliationSectionPayloads;
 use Tests\TestCase;
 
 class SubmitAffiliationApplicationTest extends TestCase
 {
     use RefreshDatabase;
+    use AffiliationSectionPayloads;
 
     public function test_it_submits_a_complete_application_and_records_audit_event(): void
     {
+        Storage::fake('local');
         $application = app(CreateAffiliationDraft::class)();
         $actor = User::factory()->create();
         $submittedAt = now('UTC')->startOfSecond();
@@ -49,12 +53,34 @@ class SubmitAffiliationApplicationTest extends TestCase
         $this->assertSame(AffiliationApplicationStep::Summary->value, $submitted->current_step);
         $this->assertSame($submittedAt->format('Y-m-d H:i:s'), $submitted->submitted_at->format('Y-m-d H:i:s'));
 
+        $generatedDocuments = $application->documents()
+            ->whereIn('document_type', [
+                ApplicationDocumentType::AffiliationSummary->value,
+                ApplicationDocumentType::PayrollAuthorization->value,
+            ])
+            ->get();
+
+        $this->assertCount(2, $generatedDocuments);
+
+        foreach ($generatedDocuments as $document) {
+            Storage::disk('local')->assertExists($document->storage_key);
+            $this->assertStringStartsWith('%PDF', Storage::disk('local')->get($document->storage_key));
+        }
+
         $this->assertDatabaseHas('audit_events', [
             'actor_user_id' => $actor->id,
             'module' => AuditModule::Affiliation->value,
             'action' => AffiliationAuditAction::ApplicationSubmitted->value,
             'subject_type' => 'affiliation_application',
             'subject_id' => $application->id,
+            'correlation_id' => $correlationId,
+            'ip_hash' => $ipHash,
+        ]);
+
+        $this->assertDatabaseHas('audit_events', [
+            'module' => AuditModule::Affiliation->value,
+            'action' => AffiliationAuditAction::DocumentGenerated->value,
+            'subject_type' => 'application_document',
             'correlation_id' => $correlationId,
             'ip_hash' => $ipHash,
         ]);
@@ -117,7 +143,7 @@ class SubmitAffiliationApplicationTest extends TestCase
                 application: $application,
                 section: $section,
                 schemaVersion: 1,
-                data: ['section' => $section->value],
+                data: $this->validSectionPayload($section),
                 completedAt: now()->startOfSecond(),
             );
         }
