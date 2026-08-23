@@ -27,6 +27,9 @@ Route::prefix('affiliation-applications')->group(function (): void {
     Route::post('/{application}/documents', [AffiliationApplicationController::class, 'storeDocument'])
         ->middleware('signed:relative')
         ->name('affiliation-applications.documents.store');
+    Route::get('/{application}/documents/{document}/download', [AffiliationApplicationController::class, 'downloadDocument'])
+        ->middleware('signed:relative')
+        ->name('affiliation-applications.documents.download');
     Route::post('/{application}/consents', [AffiliationApplicationController::class, 'storeConsent'])
         ->middleware('signed:relative')
         ->name('affiliation-applications.consents.store');

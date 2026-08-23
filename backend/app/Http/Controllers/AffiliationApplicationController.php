@@ -11,9 +11,13 @@ use App\Application\Affiliation\UseCases\RequestAffiliationCorrection;
 use App\Application\Affiliation\UseCases\SaveApplicationSection;
 use App\Application\Affiliation\UseCases\StartAffiliationReview;
 use App\Application\Affiliation\UseCases\SubmitAffiliationApplication;
+use App\Application\Audit\UseCases\RecordAuditEvent;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
+use App\Domain\Affiliation\Enums\AffiliationAuditAction;
 use App\Domain\Affiliation\Enums\ApplicationDocumentType;
 use App\Domain\Affiliation\Enums\ConsentType;
+use App\Domain\Audit\Enums\AuditActorType;
+use App\Domain\Audit\Enums\AuditModule;
 use App\Http\Requests\Affiliation\AcceptApplicationConsentRequest;
 use App\Http\Requests\Affiliation\RegisterApplicationDocumentRequest;
 use App\Http\Requests\Affiliation\RejectApplicationRequest;
@@ -27,7 +31,9 @@ use App\Models\ConsentRecord;
 use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AffiliationApplicationController extends Controller
 {
@@ -104,6 +110,39 @@ class AffiliationApplicationController extends Controller
         return response()->json([
             'data' => $this->consentPayload($consent),
         ], $consent->wasRecentlyCreated ? 201 : 200);
+    }
+
+    public function downloadDocument(
+        Request $request,
+        AffiliationApplication $application,
+        ApplicationDocument $document,
+        RecordAuditEvent $recordAuditEvent,
+    ): StreamedResponse {
+        abort_unless($document->application_id === $application->id, 404);
+
+        $storageKey = $document->getAttribute('storage_key');
+        abort_unless(is_string($storageKey) && Storage::disk('local')->exists($storageKey), 404);
+
+        $recordAuditEvent(
+            module: AuditModule::Affiliation,
+            action: AffiliationAuditAction::DocumentDownloaded->value,
+            subjectType: 'application_document',
+            subjectId: $document->id,
+            actorType: AuditActorType::System,
+            ipHash: $this->ipHash($request),
+            metadata: [
+                'application_id' => $application->id,
+                'document_type' => $document->document_type,
+                'mime_type' => $document->mime_type,
+                'byte_size' => $document->byte_size,
+            ],
+        );
+
+        return Storage::disk('local')->download(
+            $storageKey,
+            $document->original_filename,
+            ['Content-Type' => $document->mime_type],
+        );
     }
 
     public function submit(
@@ -220,6 +259,15 @@ class AffiliationApplicationController extends Controller
             'submitted_at' => $application->submitted_at?->toJSON(),
             'reviewed_by_user_id' => $application->reviewed_by_user_id,
             'reviewed_at' => $application->reviewed_at?->toJSON(),
+            'generated_documents' => $application->documents()
+                ->whereIn('document_type', [
+                    ApplicationDocumentType::AffiliationSummary->value,
+                    ApplicationDocumentType::PayrollAuthorization->value,
+                ])
+                ->oldest('created_at')
+                ->get()
+                ->map(fn (ApplicationDocument $document): array => $this->documentPayload($document))
+                ->all(),
             'links' => $this->applicationSignedLinks($application),
         ];
     }
@@ -294,6 +342,17 @@ class AffiliationApplicationController extends Controller
             'byte_size' => $document->byte_size,
             'status' => $document->status,
             'uploaded_at' => $document->uploaded_at?->toJSON(),
+            'links' => [
+                'download' => URL::temporarySignedRoute(
+                    'affiliation-applications.documents.download',
+                    now()->addHours(24),
+                    [
+                        'application' => $document->application_id,
+                        'document' => $document,
+                    ],
+                    false,
+                ),
+            ],
         ];
     }
 
