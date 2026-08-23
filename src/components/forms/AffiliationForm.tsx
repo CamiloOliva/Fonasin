@@ -1044,8 +1044,8 @@ export default function AffiliationForm() {
                     ) : (
                       <TextInput
                         type={field.type === 'date' ? 'date' : 'text'}
-                        inputMode={field.inputMode as any}
-                        maxLength={field.key === 'fullName' ? TEXT_MAX_LENGTH : field.inputMode === 'numeric' ? 3 : TEXT_MAX_LENGTH}
+                        inputMode={'inputMode' in field ? (field.inputMode as any) : undefined}
+                        maxLength={field.key === 'fullName' ? TEXT_MAX_LENGTH : 'inputMode' in field && field.inputMode === 'numeric' ? 3 : TEXT_MAX_LENGTH}
                         value={beneficiary[field.key as keyof BeneficiaryData] as string}
                         onChange={(event) =>
                           setState((current) => ({
