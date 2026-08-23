@@ -335,7 +335,7 @@ function createInitialState(): SectionState {
       foreignAccountEntity: '',
       foreignAccountType: '',
       foreignAccountOrigin: '',
-      actsOnBehalfOfThirdParties: 'Si',
+      actsOnBehalfOfThirdParties: 'No',
       thirdPartyName: '',
       thirdPartyId: '',
       thirdPartyRelation: '',
@@ -434,6 +434,17 @@ function validateCurrentStep(step: number, state: SectionState): string | null {
       ]);
       if (foreignAccountMissing.length > 0) {
         return 'Completa los datos de la cuenta financiera en el exterior.';
+      }
+    }
+    if (state.sarlaft.actsOnBehalfOfThirdParties === 'Si') {
+      const thirdPartyMissing = missingFields(state.sarlaft as unknown as Record<string, unknown>, [
+        'thirdPartyName',
+        'thirdPartyId',
+        'thirdPartyRelation',
+        'thirdPartyOrigin',
+      ]);
+      if (thirdPartyMissing.length > 0) {
+        return 'Completa los datos del tercero por cuenta de quien actuas.';
       }
     }
   }
@@ -1309,7 +1320,7 @@ export default function AffiliationForm() {
               <option value="Si">Si</option>
             </SelectInput>
           </Field>
-          <Field label="Actua por cuenta propia">
+          <Field label="Actua por cuenta de terceros">
             <SelectInput
               value={state.sarlaft.actsOnBehalfOfThirdParties}
               onChange={(event) =>
@@ -1319,8 +1330,8 @@ export default function AffiliationForm() {
                 }))
               }
             >
-              <option value="Si">Si</option>
               <option value="No">No</option>
+              <option value="Si">Si</option>
             </SelectInput>
           </Field>
         </div>
@@ -1387,7 +1398,7 @@ export default function AffiliationForm() {
           </div>
         ) : null}
 
-        {state.sarlaft.actsOnBehalfOfThirdParties === 'No' ? (
+        {state.sarlaft.actsOnBehalfOfThirdParties === 'Si' ? (
           <div className="rounded-[1.6rem] border border-violet-200 bg-violet-50 p-4">
             <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-800">Actuacion por terceros</p>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
