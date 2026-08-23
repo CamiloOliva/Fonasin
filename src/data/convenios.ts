@@ -3,7 +3,7 @@ export type Convenio={id:number;name:string;category:ConvenioCategory;descriptio
 export const convenios: Convenio[] = [
  {id:1,name:'EMI',category:'Salud y bienestar',description:'Atención médica 24/7 en casa con tarifa especial para asociados FONASIN.',logo:'/images/logo-placeholder.svg'},
  {id:9,name:'Sanitas',category:'Salud y bienestar',description:'Plan Premium de salud con beneficios exclusivos para asociados FONASIN.',logo:'/images/logo-placeholder.svg'},
- {id:10,name:'Capillas de la Fe',category:'Funerarios',description:'Plan de previsión exequial con cobertura nacional, protección familiar y asistencia para mascotas.',logo:'/images/logo-placeholder.svg'},
+
  {id:2,name:'Emermédica',category:'Salud y bienestar',description:'Convenio de salud y bienestar. Información detallada por confirmar.',logo:'/images/logo-placeholder.svg'},
  {id:3,name:'Fundación Empresol',category:'Salud y bienestar',description:'Convenio de salud y bienestar. Información detallada por confirmar.',logo:'/images/logo-placeholder.svg'},
  {id:4,name:'Gimnasios',category:'Salud y bienestar',description:'Beneficios en gimnasios. Proveedores y condiciones por confirmar.',logo:'/images/logo-placeholder.svg'},

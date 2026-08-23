@@ -148,8 +148,14 @@ export default function ConvenioCapillasDeLaFe() {
                 </h1>
 
                 <p className="text-emerald-100/90 text-sm font-bold tracking-wide uppercase">
-                  En convenio con Capillas de la Fe & Coorserpark
+                  En convenio con Coorserpark
                 </p>
+
+                {/* VALOR MENSUAL DESTACADO */}
+                <div className="inline-flex items-center space-x-3 bg-emerald-500/20 border border-emerald-400/50 backdrop-blur-md px-5 py-2.5 rounded-2xl shadow-inner mt-2">
+                  <span className="text-xs font-extrabold uppercase text-emerald-300 tracking-wider">Aporte Mensual:</span>
+                  <span className="text-xl sm:text-2xl font-black text-white">$12.700 <span className="text-xs font-bold text-emerald-200">COP</span></span>
+                </div>
               </div>
 
               {/* Coberturas Rápidas */}
@@ -325,12 +331,7 @@ export default function ConvenioCapillasDeLaFe() {
 
         {/* Footer */}
         <footer className="text-center text-xs text-slate-600 space-y-3 pt-4 border-t border-emerald-200/80">
-          <div className="flex flex-wrap items-center justify-center gap-6 text-slate-700 font-semibold">
-            <span className="flex items-center space-x-1.5">
-              <Globe className="w-3.5 h-3.5 text-emerald-700" />
-              <span>www.capillasdelafe.com</span>
-            </span>
-            <span className="flex items-center space-x-1.5">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-slate-700 font-semibold"><span className="flex items-center space-x-1.5">
               <Globe className="w-3.5 h-3.5 text-emerald-700" />
               <span>www.coorserpark.com</span>
             </span>

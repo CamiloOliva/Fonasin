@@ -6,7 +6,7 @@ import FonaprimaPage from '../modules/credits/pages/FonaprimaPage';
 import FONAROTATIVO from '../modules/credits/pages/FONAROTATIVO';
 import FonaPortesPage from '../modules/credits/pages/FonaPortesPage';
 import SimuladorFonasin from '../modules/credits/pages/SimuladorFonasin.jsx';
-import Afiliacion from '../pages/AfiliacionPlaceholder/AfiliacionPlaceholder';
+import Afiliacion from '../pages/Afiliacion/Afiliacion';
 import Convenios from '../pages/Convenios/Convenios';
 import ConvenioEmi from '../modules/convenios/ConvenioEmi.jsx';
 import ConvenioLosOlivos from '../modules/convenios/ConvenioLosOlivos.jsx';
@@ -37,6 +37,8 @@ export default function AppRoutes() {
       <Route path="/convenios/emi" element={<ConvenioEmi />} />
       <Route path="/convenios/los-olivos" element={<ConvenioLosOlivos />} />
       <Route path="/convenios/sanitas" element={<ConvenioSanitas />} />
+      <Route path="/convenios/coorserpark" element={<ConvenioCapillasDeLaFe />} />
+      <Route path="/convenios/cooserpark" element={<ConvenioCapillasDeLaFe />} />
       <Route path="/convenios/capillas-de-la-fe" element={<ConvenioCapillasDeLaFe />} />
       <Route path="/fpqrs" element={<FPQRS />} />
       <Route path="/afiliacion" element={<Afiliacion />} />
