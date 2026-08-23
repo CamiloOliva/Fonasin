@@ -5,6 +5,7 @@ namespace App\Application\Affiliation\UseCases;
 use App\Application\Affiliation\Exceptions\CannotSaveApplicationSection;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
+use App\Domain\Affiliation\Support\AffiliationSectionPayloadValidator;
 use App\Models\AffiliationApplication;
 use App\Models\ApplicationSection;
 use Illuminate\Support\Carbon;
@@ -14,6 +15,7 @@ class SaveApplicationSection
 {
     public function __construct(
         private readonly EncryptsSensitiveData $cipher,
+        private readonly AffiliationSectionPayloadValidator $validator,
     ) {}
 
     /**
@@ -28,6 +30,10 @@ class SaveApplicationSection
     ): ApplicationSection {
         if (! $section->isFormSection()) {
             throw CannotSaveApplicationSection::unsupportedSection($section->value);
+        }
+
+        if ($completedAt !== null) {
+            $this->validator->validateCompleted($section, $data);
         }
 
         return DB::transaction(function () use ($application, $section, $schemaVersion, $data, $completedAt) {

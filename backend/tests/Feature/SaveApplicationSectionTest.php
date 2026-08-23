@@ -7,21 +7,20 @@ use App\Application\Affiliation\UseCases\CreateAffiliationDraft;
 use App\Application\Affiliation\UseCases\SaveApplicationSection;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
+use Tests\Support\AffiliationSectionPayloads;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class SaveApplicationSectionTest extends TestCase
 {
     use RefreshDatabase;
+    use AffiliationSectionPayloads;
 
     public function test_it_encrypts_plain_application_section_data_before_persisting_it(): void
     {
         $application = app(CreateAffiliationDraft::class)();
         $completedAt = now()->startOfSecond();
-        $plainData = [
-            'document_number' => '123456789',
-            'full_name' => 'Synthetic Test Person',
-        ];
+        $plainData = $this->validSectionPayload(AffiliationApplicationStep::Personal);
 
         $section = app(SaveApplicationSection::class)(
             application: $application,
@@ -35,7 +34,7 @@ class SaveApplicationSectionTest extends TestCase
         $this->assertSame(AffiliationApplicationStep::Personal->value, $section->section);
         $this->assertSame(1, $section->schema_version);
         $this->assertNotSame(json_encode($plainData), $section->getAttribute('data_encrypted'));
-        $this->assertStringNotContainsString('123456789', $section->getAttribute('data_encrypted'));
+        $this->assertStringNotContainsString($plainData['documentNumber'], $section->getAttribute('data_encrypted'));
         $this->assertSame($plainData, app(EncryptsSensitiveData::class)->decryptArray($section->getAttribute('data_encrypted')));
         $this->assertTrue($completedAt->equalTo($section->completed_at));
         $this->assertSame(AffiliationApplicationStep::Personal->value, $application->refresh()->current_step);
@@ -83,6 +82,57 @@ class SaveApplicationSectionTest extends TestCase
             section: AffiliationApplicationStep::Documents,
             schemaVersion: 1,
             data: ['document' => 'not-a-section'],
+        );
+    }
+
+    public function test_it_rejects_completed_sections_with_missing_required_fields(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Personal);
+        $data['documentNumber'] = '';
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('documentNumber');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Personal,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
+    public function test_it_allows_partial_sections_when_they_are_not_marked_completed(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+
+        $section = app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Personal,
+            schemaVersion: 1,
+            data: ['documentNumber' => '123456789'],
+        );
+
+        $this->assertNull($section->completed_at);
+        $this->assertSame(['documentNumber' => '123456789'], app(EncryptsSensitiveData::class)->decryptArray($section->getAttribute('data_encrypted')));
+    }
+
+    public function test_it_rejects_invalid_completed_sarlaft_conditionals(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Sarlaft);
+        $data['foreignAccounts'] = 'Si';
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('foreignAccountCountry');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Sarlaft,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
         );
     }
 }

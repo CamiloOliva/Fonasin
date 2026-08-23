@@ -18,11 +18,13 @@ use App\Models\AffiliationApplication;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use Tests\Support\AffiliationSectionPayloads;
 use Tests\TestCase;
 
 class SubmitAffiliationApplicationTest extends TestCase
 {
     use RefreshDatabase;
+    use AffiliationSectionPayloads;
 
     public function test_it_submits_a_complete_application_and_records_audit_event(): void
     {
@@ -117,7 +119,7 @@ class SubmitAffiliationApplicationTest extends TestCase
                 application: $application,
                 section: $section,
                 schemaVersion: 1,
-                data: ['section' => $section->value],
+                data: $this->validSectionPayload($section),
                 completedAt: now()->startOfSecond(),
             );
         }
