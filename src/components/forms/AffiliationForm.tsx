@@ -6,6 +6,7 @@ import {
   Briefcase,
   CheckCircle2,
   Download,
+  ExternalLink,
   FileText,
   HeartHandshake,
   MapPin,
@@ -202,6 +203,20 @@ const expectedOperations = ['Aportes', 'Ahorros', 'Credito', 'Otros servicios'];
 const signatureMechanisms = ['Firma manuscrita', 'Firma electronica', 'Validacion interna'];
 const incomeBands = ['Hasta $2 millones', '$2 a $5 millones', '$5 a $10 millones', 'Mas de $10 millones'];
 const relationshipOptions = ['Padre', 'Madre', 'Hijo/a', 'Conyuge', 'Hermano/a', 'Otro'];
+const legalDocuments = [
+  {
+    key: 'data-policy',
+    title: 'Politica de tratamiento de datos',
+    description: 'Documento que soporta la autorizacion de datos personales.',
+    url: '/Politica_Tratamiento_Datos_Personales_FONASIN_2026.pdf',
+  },
+  {
+    key: 'bylaws',
+    title: 'Estatutos definitivos 2024',
+    description: 'Reglamento base que el solicitante declara conocer y aceptar.',
+    url: '/ESTATUTOS%20DEFINITIVOS%202024.pdf',
+  },
+] as const;
 
 const personalFields: FieldConfig[] = [
   { key: 'documentType', label: 'Tipo de documento', type: 'select', options: documentTypes },
@@ -747,6 +762,7 @@ export default function AffiliationForm() {
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [generatedDocuments, setGeneratedDocuments] = useState<GeneratedAffiliationDocument[]>([]);
+  const [selectedLegalDocument, setSelectedLegalDocument] = useState<(typeof legalDocuments)[number]>(legalDocuments[0]);
   const [state, setState] = useState<SectionState>(createInitialState);
 
   const progress = useMemo(() => Math.round(((step + 1) / stepLabels.length) * 100), [step]);
@@ -1543,10 +1559,10 @@ export default function AffiliationForm() {
       ['pepDeclaration', 'Declaro la informacion relacionada con mi condicion de PEP, si aplica.'],
     ];
 
-    const consentItems: Array<[keyof FinalStepData['declarations'], string]> = [
-      ['dataProcessing', 'Autorizo el tratamiento de mis datos personales.'],
-      ['consultations', 'Autorizo las consultas y verificaciones necesarias.'],
-      ['bylaws', 'Declaro conocer y aceptar estatutos y reglamentos.'],
+    const consentItems: Array<[keyof FinalStepData['declarations'], string, (typeof legalDocuments)[number] | null]> = [
+      ['dataProcessing', 'Autorizo el tratamiento de mis datos personales.', legalDocuments[0]],
+      ['consultations', 'Autorizo las consultas y verificaciones necesarias.', null],
+      ['bylaws', 'Declaro conocer y aceptar estatutos y reglamentos.', legalDocuments[1]],
     ];
 
     return (
@@ -1558,7 +1574,7 @@ export default function AffiliationForm() {
           description="El documento separa esta parte del formulario principal. Aqui quedan el cierre y la firma."
         />
 
-        <div className="grid gap-4 lg:grid-cols-[1.05fr_.95fr]">
+        <div className="grid gap-5 xl:grid-cols-[1.05fr_.95fr]">
           <div className="space-y-4">
             <div className="rounded-[1.6rem] border border-emerald-100 bg-emerald-50 p-4">
               <div className="flex items-center gap-3">
@@ -1599,6 +1615,57 @@ export default function AffiliationForm() {
               </label>
             </div>
 
+            <div className="rounded-[1.6rem] border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Documentos legales</p>
+                  <h4 className="mt-1 text-lg font-black text-slate-950">Revise antes de aceptar</h4>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    Estos documentos respaldan las autorizaciones y declaraciones del cierre.
+                  </p>
+                </div>
+                <a
+                  href={selectedLegalDocument.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100"
+                >
+                  Abrir PDF <ExternalLink size={15} />
+                </a>
+              </div>
+
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                {legalDocuments.map((document) => {
+                  const active = selectedLegalDocument.key === document.key;
+
+                  return (
+                    <button
+                      key={document.key}
+                      type="button"
+                      onClick={() => setSelectedLegalDocument(document)}
+                      className={`rounded-2xl border px-4 py-3 text-left transition ${
+                        active
+                          ? 'border-emerald-300 bg-emerald-50 text-emerald-950'
+                          : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-emerald-200 hover:bg-white'
+                      }`}
+                    >
+                      <span className="block text-sm font-black">{document.title}</span>
+                      <span className="mt-1 block text-xs leading-5 text-slate-500">{document.description}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                <iframe
+                  key={selectedLegalDocument.key}
+                  title={selectedLegalDocument.title}
+                  src={selectedLegalDocument.url}
+                  className="h-[24rem] w-full bg-white"
+                />
+              </div>
+            </div>
+
             <div className="rounded-[1.6rem] border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Declaraciones del asociado</p>
               <div className="mt-4 space-y-3">
@@ -1628,7 +1695,7 @@ export default function AffiliationForm() {
             <div className="rounded-[1.6rem] border border-sky-100 bg-sky-50 p-4">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-sky-700">Autorizaciones obligatorias</p>
               <div className="mt-4 space-y-3">
-                {consentItems.map(([key, text]) => (
+                {consentItems.map(([key, text, document]) => (
                   <label key={String(key)} className="flex gap-3 rounded-2xl border border-sky-100 bg-white p-4 text-sm text-slate-700">
                     <input
                       type="checkbox"
@@ -1643,7 +1710,21 @@ export default function AffiliationForm() {
                         }))
                       }
                     />
-                    <span>{text}</span>
+                    <span>
+                      {text}
+                      {document ? (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            setSelectedLegalDocument(document);
+                          }}
+                          className="ml-1 font-bold text-emerald-700 underline-offset-4 hover:underline"
+                        >
+                          Ver documento.
+                        </button>
+                      ) : null}
+                    </span>
                   </label>
                 ))}
               </div>
