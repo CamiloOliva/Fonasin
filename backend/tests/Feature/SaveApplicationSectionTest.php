@@ -135,4 +135,76 @@ class SaveApplicationSectionTest extends TestCase
             completedAt: now(),
         );
     }
+
+    public function test_it_rejects_completed_sections_with_future_dates(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Employment);
+        $data['hireDate'] = now()->addDay()->format('Y-m-d');
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('hireDate');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Employment,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
+    public function test_it_rejects_more_than_five_beneficiaries(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Beneficiaries);
+        $data['beneficiaries'] = array_fill(0, 6, $data['beneficiaries'][0]);
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('more than five');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Beneficiaries,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
+    public function test_it_rejects_beneficiaries_when_percentages_do_not_total_one_hundred(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Beneficiaries);
+        $data['beneficiaries'][0]['percentage'] = '80';
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('total percentage must be 100');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Beneficiaries,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
+    public function test_it_rejects_completed_sections_with_overlong_values(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Personal);
+        $data['firstName'] = str_repeat('A', 81);
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('firstName');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Personal,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
 }

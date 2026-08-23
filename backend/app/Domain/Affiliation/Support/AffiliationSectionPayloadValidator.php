@@ -4,9 +4,12 @@ namespace App\Domain\Affiliation\Support;
 
 use App\Application\Affiliation\Exceptions\CannotSaveApplicationSection;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
+use DateTimeImmutable;
 
 class AffiliationSectionPayloadValidator
 {
+    private const MAX_MONEY_VALUE = 99999999999;
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -48,6 +51,33 @@ class AffiliationSectionPayloadValidator
         if (! filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             throw CannotSaveApplicationSection::invalidField($section->value, 'email', 'it must be a valid email address');
         }
+
+        $this->requireDocumentNumber($section, $data, 'documentNumber');
+        $this->requirePhone($section, $data, 'mobile');
+        $this->requirePastOrTodayDate($section, $data, 'issueDate');
+        $this->requirePastOrTodayDate($section, $data, 'birthDate');
+        $this->requireMaxLengths($section, $data, [
+            'documentType' => 20,
+            'documentNumber' => 30,
+            'issuePlace' => 120,
+            'firstName' => 80,
+            'middleName' => 80,
+            'lastName' => 80,
+            'secondLastName' => 80,
+            'nationality' => 80,
+            'residenceCountry' => 80,
+            'maritalStatus' => 60,
+            'residenceAddress' => 180,
+            'city' => 120,
+            'department' => 120,
+            'neighborhood' => 120,
+            'mobile' => 30,
+            'email' => 254,
+            'educationLevel' => 80,
+            'profession' => 120,
+            'hasDependents' => 10,
+            'dependentsCount' => 3,
+        ]);
     }
 
     /**
@@ -66,6 +96,16 @@ class AffiliationSectionPayloadValidator
         ]);
 
         $this->requirePositiveNumber($section, $data, 'monthlySalary');
+        $this->requireMoneyLimit($section, $data, 'monthlySalary');
+        $this->requirePastOrTodayDate($section, $data, 'hireDate');
+        $this->requireMaxLengths($section, $data, [
+            'employer' => 160,
+            'position' => 120,
+            'departmentArea' => 120,
+            'contractType' => 80,
+            'workCity' => 120,
+            'monthlySalary' => 20,
+        ]);
     }
 
     /**
@@ -95,11 +135,32 @@ class AffiliationSectionPayloadValidator
             'equityValue',
         ] as $field) {
             $this->requireNonNegativeNumber($section, $data, $field);
+            $this->requireMoneyLimit($section, $data, $field);
         }
 
         if ($this->isYes($data['voluntarySavings']) && $this->isBlank($data['voluntarySavingsValue'] ?? null)) {
             throw CannotSaveApplicationSection::missingRequiredFields($section->value, ['voluntarySavingsValue']);
         }
+
+        if (! $this->isBlank($data['voluntarySavingsValue'] ?? null)) {
+            $this->requireNonNegativeNumber($section, $data, 'voluntarySavingsValue');
+            $this->requireMoneyLimit($section, $data, 'voluntarySavingsValue');
+        }
+
+        $this->requireMaxLengths($section, $data, [
+            'principalIncome' => 20,
+            'otherIncome' => 20,
+            'totalIncome' => 20,
+            'monthlyExpenses' => 20,
+            'financialObligations' => 20,
+            'totalExpenses' => 20,
+            'assetsValue' => 20,
+            'liabilitiesValue' => 20,
+            'equityValue' => 20,
+            'incomeBand' => 80,
+            'voluntarySavings' => 10,
+            'voluntarySavingsValue' => 20,
+        ]);
     }
 
     /**
@@ -112,6 +173,12 @@ class AffiliationSectionPayloadValidator
         if (! is_array($data['beneficiaries']) || $data['beneficiaries'] === []) {
             throw CannotSaveApplicationSection::missingRequiredFields($section->value, ['beneficiaries']);
         }
+
+        if (count($data['beneficiaries']) > 5) {
+            throw CannotSaveApplicationSection::invalidField($section->value, 'beneficiaries', 'it cannot contain more than five beneficiaries');
+        }
+
+        $totalPercentage = 0.0;
 
         foreach ($data['beneficiaries'] as $index => $beneficiary) {
             if (! is_array($beneficiary)) {
@@ -129,6 +196,29 @@ class AffiliationSectionPayloadValidator
             ], "beneficiaries.{$index}.");
 
             $this->requirePositiveNumber($section, $beneficiary, 'percentage', "beneficiaries.{$index}.percentage");
+            $percentage = $this->numberValue($beneficiary['percentage']);
+
+            if ($percentage === null || $percentage > 100) {
+                throw CannotSaveApplicationSection::invalidField($section->value, "beneficiaries.{$index}.percentage", 'it must be between 1 and 100');
+            }
+
+            $totalPercentage += $percentage;
+
+            $this->requireDocumentNumber($section, $beneficiary, 'documentNumber', "beneficiaries.{$index}.documentNumber");
+            $this->requirePhone($section, $beneficiary, 'phone', "beneficiaries.{$index}.phone");
+            $this->requirePastOrTodayDate($section, $beneficiary, 'birthDate', "beneficiaries.{$index}.birthDate");
+            $this->requireMaxLengths($section, $beneficiary, [
+                'documentType' => 20,
+                'documentNumber' => 30,
+                'fullName' => 160,
+                'relationship' => 80,
+                'phone' => 30,
+                'percentage' => 6,
+            ], "beneficiaries.{$index}.");
+        }
+
+        if (round($totalPercentage, 2) !== 100.0) {
+            throw CannotSaveApplicationSection::invalidField($section->value, 'beneficiaries.percentage', 'the total percentage must be 100');
         }
 
         if (! is_array($data['emergencyContact'])) {
@@ -139,6 +229,13 @@ class AffiliationSectionPayloadValidator
             'fullName',
             'relationship',
             'phone',
+        ], 'emergencyContact.');
+
+        $this->requirePhone($section, $data['emergencyContact'], 'phone', 'emergencyContact.phone');
+        $this->requireMaxLengths($section, $data['emergencyContact'], [
+            'fullName' => 160,
+            'relationship' => 80,
+            'phone' => 30,
         ], 'emergencyContact.');
     }
 
@@ -162,6 +259,10 @@ class AffiliationSectionPayloadValidator
         foreach (['incomeSource', 'resourceOrigin', 'expectedOperations'] as $field) {
             if (! is_array($data[$field]) || $data[$field] === []) {
                 throw CannotSaveApplicationSection::missingRequiredFields($section->value, [$field]);
+            }
+
+            if (count($data[$field]) > 10) {
+                throw CannotSaveApplicationSection::invalidField($section->value, $field, 'it cannot contain more than ten values');
             }
         }
 
@@ -189,6 +290,35 @@ class AffiliationSectionPayloadValidator
 
         if ($this->isYes($data['hasForeignTaxObligations'])) {
             $this->requireFields($section, $data, ['foreignTaxId']);
+        }
+
+        $this->requireMaxLengths($section, $data, [
+            'economicActivity' => 160,
+            'pep' => 10,
+            'pepType' => 120,
+            'pepPosition' => 160,
+            'pepEntity' => 160,
+            'relatedPepName' => 160,
+            'relatedPepRelation' => 80,
+            'foreignAccounts' => 10,
+            'foreignAccountCountry' => 80,
+            'foreignAccountEntity' => 160,
+            'foreignAccountType' => 80,
+            'foreignAccountOrigin' => 160,
+            'actsOnBehalfOfThirdParties' => 10,
+            'thirdPartyName' => 160,
+            'thirdPartyId' => 40,
+            'thirdPartyRelation' => 80,
+            'thirdPartyOrigin' => 160,
+            'taxResidenceCountry' => 80,
+            'hasForeignTaxObligations' => 10,
+            'foreignTaxId' => 80,
+        ]);
+
+        foreach (['pepLinkDate', 'pepUnlinkDate'] as $field) {
+            if (! $this->isBlank($data[$field] ?? null)) {
+                $this->requirePastOrTodayDate($section, $data, $field);
+            }
         }
     }
 
@@ -236,6 +366,117 @@ class AffiliationSectionPayloadValidator
 
         if ($value === null || $value < 0) {
             throw CannotSaveApplicationSection::invalidField($section->value, $field, 'it must be zero or greater');
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function requireMoneyLimit(AffiliationApplicationStep $section, array $data, string $field): void
+    {
+        $value = $this->numberValue($data[$field] ?? null);
+
+        if ($value === null || $value > self::MAX_MONEY_VALUE) {
+            throw CannotSaveApplicationSection::invalidField($section->value, $field, 'it exceeds the supported amount limit');
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<string, int>  $limits
+     */
+    private function requireMaxLengths(AffiliationApplicationStep $section, array $data, array $limits, string $prefix = ''): void
+    {
+        foreach ($limits as $field => $limit) {
+            if (! array_key_exists($field, $data) || $this->isBlank($data[$field])) {
+                continue;
+            }
+
+            if (! is_string($data[$field])) {
+                continue;
+            }
+
+            if (mb_strlen(trim($data[$field])) > $limit) {
+                throw CannotSaveApplicationSection::invalidField(
+                    $section->value,
+                    $prefix.$field,
+                    "it cannot be longer than {$limit} characters",
+                );
+            }
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function requireDocumentNumber(
+        AffiliationApplicationStep $section,
+        array $data,
+        string $field,
+        ?string $displayField = null,
+    ): void {
+        $value = $data[$field] ?? null;
+
+        if (! is_string($value) || ! preg_match('/^[A-Za-z0-9.-]{5,30}$/', trim($value))) {
+            throw CannotSaveApplicationSection::invalidField(
+                $section->value,
+                $displayField ?? $field,
+                'it must contain 5 to 30 letters, numbers, dots or hyphens',
+            );
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function requirePhone(
+        AffiliationApplicationStep $section,
+        array $data,
+        string $field,
+        ?string $displayField = null,
+    ): void {
+        $value = $data[$field] ?? null;
+
+        if (! is_string($value)) {
+            throw CannotSaveApplicationSection::invalidField($section->value, $displayField ?? $field, 'it must be a phone number');
+        }
+
+        $digits = preg_replace('/\D/', '', $value) ?? '';
+
+        if (strlen($digits) < 7 || strlen($digits) > 15) {
+            throw CannotSaveApplicationSection::invalidField(
+                $section->value,
+                $displayField ?? $field,
+                'it must contain between 7 and 15 digits',
+            );
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function requirePastOrTodayDate(
+        AffiliationApplicationStep $section,
+        array $data,
+        string $field,
+        ?string $displayField = null,
+    ): void {
+        $value = $data[$field] ?? null;
+
+        if (! is_string($value)) {
+            throw CannotSaveApplicationSection::invalidField($section->value, $displayField ?? $field, 'it must be a valid date');
+        }
+
+        $date = DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+
+        if (! $date || $date->format('Y-m-d') !== $value) {
+            throw CannotSaveApplicationSection::invalidField($section->value, $displayField ?? $field, 'it must use YYYY-MM-DD format');
+        }
+
+        $today = new DateTimeImmutable('today');
+
+        if ($date > $today) {
+            throw CannotSaveApplicationSection::invalidField($section->value, $displayField ?? $field, 'it cannot be in the future');
         }
     }
 
