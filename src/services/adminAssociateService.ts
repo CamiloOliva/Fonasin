@@ -9,6 +9,7 @@ export type AdminAssociate = {
     email: string;
     status: string;
   } | null;
+  temporary_password?: string | null;
   affiliation_applications_count: number;
   credit_accounts_count: number;
   created_at: string | null;
@@ -19,6 +20,8 @@ export type CreateAssociatePayload = {
   document_type: string;
   document_number: string;
   full_name: string;
+  email: string;
+  password?: string;
   status?: string;
 };
 

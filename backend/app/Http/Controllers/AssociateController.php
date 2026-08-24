@@ -30,7 +30,7 @@ class AssociateController extends Controller
         CreateAssociateManually $createAssociate,
     ): JsonResponse {
         try {
-            $associate = $createAssociate(
+            $result = $createAssociate(
                 data: $request->validated(),
                 actor: $request->user(),
                 ipHash: $this->ipHash($request),
@@ -39,8 +39,13 @@ class AssociateController extends Controller
             return $this->domainError($exception);
         }
 
+        $associate = $result['associate'];
+
         return response()->json([
-            'data' => $this->associatePayload($associate->load('user')->loadCount(['affiliationApplications', 'creditAccounts'])),
+            'data' => [
+                ...$this->associatePayload($associate->load('user')->loadCount(['affiliationApplications', 'creditAccounts'])),
+                'temporary_password' => $result['temporary_password'],
+            ],
         ], 201);
     }
 

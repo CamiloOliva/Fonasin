@@ -85,6 +85,20 @@ class CreditAccountHttpTest extends TestCase
         ]);
     }
 
+    public function test_it_rejects_credit_registration_for_inactive_associate(): void
+    {
+        $associate = $this->createAssociate(['status' => 'inactive']);
+        $reviewer = $this->userWithRole('reviewer');
+
+        $this->actingAs($reviewer)
+            ->postJson('/admin/credits', [
+                'associate_id' => $associate->id,
+                ...$this->creditData(),
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Solo se pueden registrar creditos para asociados activos.');
+    }
+
     public function test_admin_can_update_credit_over_http(): void
     {
         $admin = $this->userWithRole('admin');
