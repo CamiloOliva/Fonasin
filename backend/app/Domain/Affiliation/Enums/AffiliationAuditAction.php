@@ -14,4 +14,7 @@ enum AffiliationAuditAction: string
     case DocumentGenerated = 'document.generated';
     case DocumentViewed = 'document.viewed';
     case DocumentDownloaded = 'document.downloaded';
+    case AssociateCreated = 'associate.created';
+    case AssociateActivated = 'associate.activated';
+    case AssociateDeactivated = 'associate.deactivated';
 }

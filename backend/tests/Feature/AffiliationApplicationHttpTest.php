@@ -31,6 +31,7 @@ class AffiliationApplicationHttpTest extends TestCase
             ->assertJsonPath('data.current_step', AffiliationApplicationStep::Personal->value);
 
         $this->assertStringStartsWith('/affiliation-applications/', $response->json('data.links.sections.personal'));
+        $this->assertStringStartsWith('/affiliation-applications/', $response->json('data.links.read'));
         $this->assertStringStartsWith('/affiliation-applications/', $response->json('data.links.documents'));
         $this->assertStringStartsWith('/affiliation-applications/', $response->json('data.links.consents'));
         $this->assertStringStartsWith('/affiliation-applications/', $response->json('data.links.submit'));
@@ -122,6 +123,43 @@ class AffiliationApplicationHttpTest extends TestCase
             ->assertJsonMissingPath('data.ip_hash');
     }
 
+    public function test_it_reads_a_saved_draft_with_decrypted_sections_and_uploaded_documents(): void
+    {
+        Storage::fake('local');
+
+        $draft = $this->postJson('/affiliation-applications')
+            ->assertCreated()
+            ->json('data');
+
+        $this->postJson($draft['links']['sections']['personal'], [
+            'schema_version' => 1,
+            'data' => $this->validSectionPayload(AffiliationApplicationStep::Personal),
+            'completed' => true,
+        ])->assertOk();
+
+        $this->post($draft['links']['documents'], [
+            'document_type' => ApplicationDocumentType::Identity->value,
+            'file' => UploadedFile::fake()->create('identity.pdf', 64, 'application/pdf'),
+        ], ['Accept' => 'application/json'])->assertCreated();
+
+        $this->postJson($draft['links']['consents'], [
+            'consent_type' => ConsentType::DataProcessing->value,
+            'policy_version' => '2026-01',
+        ])->assertCreated();
+
+        $this->getJson($draft['links']['read'])
+            ->assertOk()
+            ->assertJsonPath('data.id', $draft['id'])
+            ->assertJsonPath('data.status', AffiliationApplicationStatus::Draft->value)
+            ->assertJsonPath('data.sections.0.section', AffiliationApplicationStep::Personal->value)
+            ->assertJsonPath('data.sections.0.data.documentType', 'CC')
+            ->assertJsonPath('data.documents.0.document_type', ApplicationDocumentType::Identity->value)
+            ->assertJsonPath('data.documents.0.original_filename', 'identity.pdf')
+            ->assertJsonPath('data.consents.0.consent_type', ConsentType::DataProcessing->value)
+            ->assertJsonMissingPath('data.sections.0.data_encrypted')
+            ->assertJsonMissingPath('data.documents.0.storage_key');
+    }
+
     public function test_it_submits_a_complete_application_over_http(): void
     {
         Storage::fake('local');
@@ -150,6 +188,26 @@ class AffiliationApplicationHttpTest extends TestCase
             'application_id' => $application->id,
             'document_type' => ApplicationDocumentType::PayrollAuthorization->value,
         ]);
+    }
+
+    public function test_it_does_not_read_a_submitted_application_as_a_recoverable_draft(): void
+    {
+        Storage::fake('local');
+        $application = AffiliationApplication::query()->forceCreate([
+            'status' => AffiliationApplicationStatus::Draft->value,
+            'current_step' => AffiliationApplicationStep::Personal->value,
+        ]);
+        $this->completeSections($application);
+        $this->uploadRequiredDocuments($application);
+        $this->acceptRequiredConsents($application, '2026-01');
+
+        $this->postJson($this->signedSubmitUrl($application), [
+            'policy_version' => '2026-01',
+        ])->assertOk();
+
+        $this->getJson($this->signedReadUrl($application))
+            ->assertConflict()
+            ->assertJsonPath('message', 'La solicitud ya fue enviada o cerrada.');
     }
 
     public function test_it_returns_domain_error_when_submit_is_incomplete(): void
@@ -453,6 +511,13 @@ class AffiliationApplicationHttpTest extends TestCase
     private function signedDocumentUrl(AffiliationApplication $application): string
     {
         return URL::temporarySignedRoute('affiliation-applications.documents.store', now()->addHour(), [
+            'application' => $application,
+        ], false);
+    }
+
+    private function signedReadUrl(AffiliationApplication $application): string
+    {
+        return URL::temporarySignedRoute('affiliation-applications.read', now()->addHour(), [
             'application' => $application,
         ], false);
     }

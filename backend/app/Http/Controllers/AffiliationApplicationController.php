@@ -15,6 +15,7 @@ use App\Application\Affiliation\UseCases\SubmitAffiliationApplication;
 use App\Application\Audit\UseCases\RecordAuditEvent;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
+use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
 use App\Domain\Affiliation\Enums\ApplicationDocumentStatus;
 use App\Domain\Affiliation\Enums\ApplicationDocumentType;
@@ -87,6 +88,47 @@ class AffiliationApplicationController extends Controller
         return response()->json([
             'data' => $this->applicationPayload($application),
         ], 201);
+    }
+
+    public function readDraft(
+        AffiliationApplication $application,
+        EncryptsSensitiveData $cipher,
+    ): JsonResponse {
+        if ($application->status !== AffiliationApplicationStatus::Draft->value) {
+            return response()->json([
+                'message' => 'La solicitud ya fue enviada o cerrada.',
+            ], 409);
+        }
+
+        $application->load([
+            'sections' => fn ($query) => $query->oldest('section'),
+            'documents' => fn ($query) => $query
+                ->where('status', ApplicationDocumentStatus::Uploaded->value)
+                ->whereIn('document_type', array_map(
+                    static fn (ApplicationDocumentType $documentType): string => $documentType->value,
+                    ApplicationDocumentType::requiredForSubmission(),
+                ))
+                ->oldest('created_at'),
+            'consentRecords' => fn ($query) => $query->oldest('accepted_at'),
+        ]);
+
+        return response()->json([
+            'data' => [
+                ...$this->applicationPayload($application),
+                'sections' => $application->sections
+                    ->map(fn (ApplicationSection $section): array => $this->adminSectionPayload($section, $cipher))
+                    ->values()
+                    ->all(),
+                'documents' => $application->documents
+                    ->map(fn (ApplicationDocument $document): array => $this->documentPayload($document))
+                    ->values()
+                    ->all(),
+                'consents' => $application->consentRecords
+                    ->map(fn (ConsentRecord $consent): array => $this->consentPayload($consent))
+                    ->values()
+                    ->all(),
+            ],
+        ]);
     }
 
     public function storeSection(
@@ -485,6 +527,12 @@ class AffiliationApplicationController extends Controller
         $expiresAt = now()->addHours(24);
 
         return [
+            'read' => URL::temporarySignedRoute(
+                'affiliation-applications.read',
+                $expiresAt,
+                ['application' => $application],
+                false,
+            ),
             'sections' => collect(AffiliationApplicationStep::formSections())
                 ->mapWithKeys(fn (AffiliationApplicationStep $section): array => [
                     $section->value => URL::temporarySignedRoute(
