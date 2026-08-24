@@ -16,6 +16,7 @@ use App\Application\Audit\UseCases\RecordAuditEvent;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
+use App\Domain\Affiliation\Enums\ApplicationDocumentStatus;
 use App\Domain\Affiliation\Enums\ApplicationDocumentType;
 use App\Domain\Affiliation\Enums\ConsentType;
 use App\Domain\Audit\Enums\AuditActorType;
@@ -44,7 +45,11 @@ class AffiliationApplicationController extends Controller
     {
         $applications = AffiliationApplication::query()
             ->with(['reviewer'])
-            ->withCount(['sections', 'documents', 'consentRecords'])
+            ->withCount([
+                'sections',
+                'documents' => fn ($query) => $query->where('status', ApplicationDocumentStatus::Uploaded->value),
+                'consentRecords',
+            ])
             ->latest('updated_at')
             ->limit(100)
             ->get();
@@ -64,7 +69,9 @@ class AffiliationApplicationController extends Controller
         $application->load([
             'reviewer',
             'sections' => fn ($query) => $query->oldest('section'),
-            'documents' => fn ($query) => $query->oldest('created_at'),
+            'documents' => fn ($query) => $query
+                ->where('status', ApplicationDocumentStatus::Uploaded->value)
+                ->oldest('created_at'),
             'consentRecords' => fn ($query) => $query->oldest('accepted_at'),
         ]);
 
@@ -182,6 +189,7 @@ class AffiliationApplicationController extends Controller
         RecordAuditEvent $recordAuditEvent,
     ): StreamedResponse {
         abort_unless($document->application_id === $application->id, 404);
+        abort_unless($document->status === ApplicationDocumentStatus::Uploaded->value, 404);
 
         $storageKey = $document->getAttribute('storage_key');
         abort_unless(is_string($storageKey) && Storage::disk('local')->exists($storageKey), 404);
@@ -215,6 +223,7 @@ class AffiliationApplicationController extends Controller
         RecordAuditEvent $recordAuditEvent,
     ): StreamedResponse {
         abort_unless($document->application_id === $application->id, 404);
+        abort_unless($document->status === ApplicationDocumentStatus::Uploaded->value, 404);
 
         $storageKey = $document->getAttribute('storage_key');
         abort_unless(is_string($storageKey) && Storage::disk('local')->exists($storageKey), 404);
@@ -396,6 +405,7 @@ class AffiliationApplicationController extends Controller
                     ApplicationDocumentType::AffiliationSummary->value,
                     ApplicationDocumentType::PayrollAuthorization->value,
                 ])
+                ->where('status', ApplicationDocumentStatus::Uploaded->value)
                 ->oldest('created_at')
                 ->get()
                 ->map(fn (ApplicationDocument $document): array => $this->documentPayload($document))

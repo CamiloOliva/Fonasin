@@ -23,7 +23,7 @@ class RegisterApplicationDocumentRequest extends FormRequest
                 fn (ApplicationDocumentType $documentType): string => $documentType->value,
                 ApplicationDocumentType::requiredForSubmission(),
             ))],
-            'file' => ['required', 'file', 'max:5120', 'mimetypes:application/pdf,image/jpeg,image/png'],
+            'file' => ['required', 'file', 'max:5120', 'mimetypes:application/pdf'],
         ];
     }
 }

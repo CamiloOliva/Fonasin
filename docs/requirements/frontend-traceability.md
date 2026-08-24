@@ -52,7 +52,7 @@ El carrusel estatico de tres imagenes existe, pero permanece `En curso` hasta re
 | FE-AFI-005 | Informacion financiera | Bloqueado | Campos y reglas aprobados. |
 | FE-AFI-006 | Beneficiarios | Bloqueado | Campos condicionales aprobados. |
 | FE-AFI-006A | SARLAFT | Bloqueado | Declaraciones, campos y tratamiento aprobados. |
-| FE-AFI-007 | Documentos | Pendiente | Tipos, tamanos y rutas temporales Backend. |
+| FE-AFI-007 | Documentos | Implementado | Formulario exige PDF de identidad por ambos lados y certificado laboral; Backend valida PDF privado de hasta 5MB por documento. Falta validacion visual final con FONASIN. |
 | FE-AFI-008 | Documentos generados | Pendiente | Contrato de generacion y descarga PDF. |
 | FE-AFI-009 | Consentimientos | Bloqueado | Versiones oficiales de politica y estatutos. |
 | FE-AFI-010 | Resumen | Pendiente | Depende de las etapas anteriores. |

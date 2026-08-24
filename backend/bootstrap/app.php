@@ -12,8 +12,6 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: [
-            'login',
-            'logout',
             'affiliation-applications',
             'affiliation-applications/*',
             'fpqrs-submissions',

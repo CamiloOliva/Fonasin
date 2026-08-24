@@ -25,8 +25,6 @@ class RegisterApplicationDocument
      */
     private const ALLOWED_MIME_TYPES = [
         'application/pdf',
-        'image/jpeg',
-        'image/png',
     ];
 
     public function __construct(

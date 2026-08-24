@@ -56,6 +56,7 @@ const sectionLabels: Record<string, string> = {
 
 const documentLabels: Record<string, string> = {
   identity: 'Documento de identidad',
+  employment_certificate: 'Certificado laboral',
   affiliation_summary: 'Formulario de afiliacion generado',
   payroll_authorization: 'Libranza generada',
   signed_payroll_authorization: 'Libranza firmada externa',
@@ -507,7 +508,9 @@ function ApplicationDetail({
   const generatedDocuments = application.documents.filter((document) =>
     ['affiliation_summary', 'payroll_authorization'].includes(document.document_type),
   );
-  const uploadedDocuments = application.documents.filter((document) => document.document_type === 'identity');
+  const uploadedDocuments = application.documents.filter((document) =>
+    ['identity', 'employment_certificate'].includes(document.document_type),
+  );
   const signedPayrollDocuments = application.documents.filter((document) => document.document_type === 'signed_payroll_authorization');
   const canUploadSignedPayroll = application.status === 'approved';
   const canEnable = application.status === 'approved' && signedPayrollDocuments.length > 0;
