@@ -5,7 +5,6 @@ import {
   Banknote,
   Briefcase,
   CheckCircle2,
-  Download,
   ExternalLink,
   FileText,
   HeartHandshake,
@@ -18,13 +17,11 @@ import {
 } from 'lucide-react';
 import {
   acceptAffiliationConsent,
-  affiliationDownloadUrl,
   createAffiliationDraft,
   saveAffiliationSection,
   submitAffiliationApplication,
   uploadAffiliationDocument,
   type AffiliationDraft,
-  type GeneratedAffiliationDocument,
   type AffiliationSectionKey,
 } from '../../services/affiliationService';
 import colombiaDepartmentsCatalog from '../../data/catalogs/colombia_departamentos_municipios.json';
@@ -33,7 +30,7 @@ import nationalitiesCatalog from '../../data/catalogs/nacionalidades.json';
 import countriesCatalog from '../../data/catalogs/paises.json';
 
 type BackendMode = 'loading' | 'ready' | 'local';
-type StepKey = 'personal' | 'employment' | 'financial' | 'beneficiaries' | 'sarlaft' | 'final';
+type StepKey = 'personal' | 'employment' | 'financial' | 'beneficiaries' | 'sarlaft' | 'final' | 'review';
 
 type PersonalData = {
   documentType: string;
@@ -235,6 +232,7 @@ const stepLabels: Array<{ key: StepKey; label: string; title: string; descriptio
   { key: 'beneficiaries', label: '4', title: 'Beneficiarios', description: 'Hasta 5 beneficiarios y un contacto de emergencia.' },
   { key: 'sarlaft', label: '5', title: 'SARLAFT', description: 'Actividad economica, origen de recursos y condiciones especiales.' },
   { key: 'final', label: '6', title: 'Documentos y cierre', description: 'Declaraciones, autorizaciones, documento y firma.' },
+  { key: 'review', label: '7', title: 'Revision y envio', description: 'Verificacion final de la informacion antes de enviar.' },
 ];
 
 const documentTypes = ['CC', 'CE', 'Pasaporte', 'TI'];
@@ -282,7 +280,7 @@ const legalDocuments = [
 
 const personalFields: FieldConfig[] = [
   { key: 'documentType', label: 'Tipo de documento', type: 'select', options: documentTypes },
-  { key: 'documentNumber', label: 'Numero de documento', inputMode: 'numeric' },
+  { key: 'documentNumber', label: 'Numero de documento' },
   { key: 'issueDate', label: 'Fecha de expedicion', type: 'date' },
   { key: 'issuePlace', label: 'Lugar de expedicion' },
   { key: 'firstName', label: 'Primer nombre', maxLength: NAME_MAX_LENGTH },
@@ -464,6 +462,9 @@ function validateCurrentStep(step: number, state: SectionState): string | null {
     if (state.personal.hasDependents === 'Si' && isBlank(state.personal.dependentsCount)) {
       return 'Indica cuantas personas tienes a cargo.';
     }
+    if (state.personal.hasDependents === 'Si' && !/^[1-9]\d{0,2}$/.test(state.personal.dependentsCount)) {
+      return 'El numero de personas a cargo debe estar entre 1 y 999.';
+    }
   }
 
   if (step === 1) {
@@ -506,9 +507,16 @@ function validateCurrentStep(step: number, state: SectionState): string | null {
     if (beneficiaryWithoutOtherDetail) {
       return otherDetailMessage('el parentesco del beneficiario');
     }
+    const invalidBeneficiaryPhone = state.beneficiaries.some((beneficiary) => !/^\d{7,10}$/.test(beneficiary.phone));
+    if (invalidBeneficiaryPhone) {
+      return 'El telefono de cada beneficiario debe tener entre 7 y 10 digitos.';
+    }
     const emergencyMissing = missingFields(state.emergencyContact as unknown as Record<string, unknown>, ['fullName', 'relationship', 'phone']);
     if (emergencyMissing.length > 0) {
       return `Faltan datos del contacto de emergencia: ${friendlyList(emergencyMissing.map((key) => requiredLabels[key] ?? key))}.`;
+    }
+    if (!/^3\d{9}$/.test(state.emergencyContact.phone)) {
+      return 'El celular de la persona de apoyo inmediato debe tener 10 digitos e iniciar por 3.';
     }
   }
 
@@ -709,6 +717,27 @@ function normalizeMobile(value: string): string {
   return value.replace(/[^\d]/g, '').slice(0, 10);
 }
 
+function normalizePhone(value: string): string {
+  return value.replace(/[^\d]/g, '').slice(0, 10);
+}
+
+function documentNumberMaxLength(documentType: string): number {
+  if (documentType === 'CC') return 10;
+  if (documentType === 'TI') return 11;
+  if (documentType === 'CE') return 7;
+  if (documentType === 'Pasaporte') return 16;
+
+  return 16;
+}
+
+function normalizeDocumentNumber(value: string, documentType: string): string {
+  const normalized = documentType === 'CC' || documentType === 'TI'
+    ? value.replace(/[^\d]/g, '')
+    : value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+
+  return normalized.slice(0, documentNumberMaxLength(documentType));
+}
+
 function normalizeEconomicActivity(value: string): string {
   const exactOption = economicActivityOptions.find((activity) => activity.label === value || activity.value === value);
 
@@ -754,6 +783,10 @@ function normalizePersonalData(current: PersonalData, next: Record<string, strin
     merged.mobile = normalizeMobile(next.mobile);
   }
 
+  if ('documentNumber' in next || 'documentType' in next) {
+    merged.documentNumber = normalizeDocumentNumber(merged.documentNumber, merged.documentType);
+  }
+
   return merged;
 }
 
@@ -762,7 +795,7 @@ function fieldMaxLength(field: FieldConfig): number | undefined {
   if (currencyFieldKeys.has(field.key)) return MONEY_MAX_DISPLAY_LENGTH;
   if (field.key === 'mobile') return 10;
   if (field.key === 'email') return 254;
-  if (field.key === 'documentNumber') return 30;
+  if (field.key === 'documentNumber') return 16;
   if (field.key === 'dependentsCount') return 3;
   if (field.inputMode === 'numeric') return 30;
   if (field.type === 'email') return TEXT_MAX_LENGTH;
@@ -963,7 +996,7 @@ function renderFields(
               <ComboInput
                 id={`affiliation-${field.key}-options`}
                 options={selectOptions}
-                maxLength={fieldMaxLength(field)}
+                maxLength={field.key === 'documentNumber' ? documentNumberMaxLength(values.documentType) : fieldMaxLength(field)}
                 disabled={options.disabledKeys?.has(field.key)}
                 placeholder={options.placeholders?.[field.key]}
                 value={values[field.key] ?? ''}
@@ -986,7 +1019,11 @@ function renderFields(
                 onChange={(event) =>
                   setValues({
                     ...values,
-                    [field.key]: currencyFieldKeys.has(field.key) ? limitedCurrency(event.target.value) : event.target.value,
+                    [field.key]: currencyFieldKeys.has(field.key)
+                      ? limitedCurrency(event.target.value)
+                      : field.key === 'documentNumber'
+                        ? normalizeDocumentNumber(event.target.value, values.documentType)
+                        : event.target.value,
                   })
                 }
               />
@@ -1007,7 +1044,6 @@ export default function AffiliationForm() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
-  const [generatedDocuments, setGeneratedDocuments] = useState<GeneratedAffiliationDocument[]>([]);
   const [selectedLegalDocument, setSelectedLegalDocument] = useState<(typeof legalDocuments)[number]>(legalDocuments[0]);
   const [state, setState] = useState<SectionState>(createInitialState);
 
@@ -1077,6 +1113,12 @@ export default function AffiliationForm() {
           economicActivity: normalizeEconomicActivity(state.sarlaft.economicActivity),
         });
         setMessage('Seccion SARLAFT guardada.');
+      } else if (step === 5) {
+        if (!state.finalStep.documentFile) {
+          throw new Error('Debes adjuntar el documento de identidad antes de enviar.');
+        }
+
+        setMessage('Documentos, declaraciones y autorizaciones listos para revision.');
       } else {
         if (!state.finalStep.documentFile) {
           throw new Error('Debes adjuntar el documento de identidad antes de enviar.');
@@ -1098,7 +1140,6 @@ export default function AffiliationForm() {
           });
           const submittedDraft = await submitAffiliationApplication(draft.links.submit, POLICY_VERSION);
           setDraft(submittedDraft);
-          setGeneratedDocuments(submittedDraft.generated_documents ?? []);
         }
 
         setSubmitted(true);
@@ -1161,11 +1202,12 @@ export default function AffiliationForm() {
             {state.personal.hasDependents === 'Si' ? (
               <TextInput
                 inputMode="numeric"
+                maxLength={3}
                 value={state.personal.dependentsCount}
                 onChange={(event) =>
                   setState((current) => ({
                     ...current,
-                    personal: { ...current.personal, dependentsCount: event.target.value },
+                    personal: { ...current.personal, dependentsCount: event.target.value.replace(/[^\d]/g, '').slice(0, 3) },
                   }))
                 }
               />
@@ -1336,7 +1378,7 @@ export default function AffiliationForm() {
                   { key: 'fullName', label: 'Nombre completo' },
                   { key: 'relationship', label: 'Parentesco', type: 'select', options: relationshipOptions },
                   { key: 'birthDate', label: 'Fecha de nacimiento', type: 'date' },
-                  { key: 'phone', label: 'Telefono' },
+                  { key: 'phone', label: 'Telefono', inputMode: 'numeric', maxLength: 10 },
                 ].map((field) => (
                   <Field key={field.key} label={field.label} required>
                     {field.type === 'select' ? (
@@ -1350,6 +1392,10 @@ export default function AffiliationForm() {
                                 ? {
                                     ...item,
                                     [field.key]: event.target.value,
+                                    documentNumber:
+                                      field.key === 'documentType'
+                                        ? normalizeDocumentNumber(item.documentNumber, event.target.value)
+                                        : item.documentNumber,
                                     relationshipOther:
                                       field.key === 'relationship' && event.target.value !== 'Otro' ? '' : item.relationshipOther,
                                   }
@@ -1369,13 +1415,27 @@ export default function AffiliationForm() {
                       <TextInput
                         type={field.type === 'date' ? 'date' : 'text'}
                         inputMode={'inputMode' in field ? (field.inputMode as any) : undefined}
-                        maxLength={field.key === 'fullName' ? TEXT_MAX_LENGTH : 'inputMode' in field && field.inputMode === 'numeric' ? 3 : TEXT_MAX_LENGTH}
+                        maxLength={
+                          field.key === 'documentNumber'
+                            ? documentNumberMaxLength(beneficiary.documentType)
+                            : field.maxLength ?? (field.key === 'fullName' ? TEXT_MAX_LENGTH : TEXT_MAX_LENGTH)
+                        }
                         value={beneficiary[field.key as keyof BeneficiaryData] as string}
                         onChange={(event) =>
                           setState((current) => ({
                             ...current,
                             beneficiaries: current.beneficiaries.map((item, itemIndex) =>
-                              itemIndex === index ? { ...item, [field.key]: event.target.value } : item,
+                              itemIndex === index
+                                ? {
+                                    ...item,
+                                    [field.key]:
+                                      field.key === 'phone'
+                                        ? normalizePhone(event.target.value)
+                                        : field.key === 'documentNumber'
+                                          ? normalizeDocumentNumber(event.target.value, beneficiary.documentType)
+                                          : event.target.value,
+                                  }
+                                : item,
                             ),
                           }))
                         }
@@ -1425,12 +1485,16 @@ export default function AffiliationForm() {
             ].map((field) => (
               <Field key={field.key} label={field.label} required>
                 <TextInput
-                  maxLength={field.key === 'fullName' ? TEXT_MAX_LENGTH : 80}
+                  inputMode={field.key === 'phone' ? 'numeric' : undefined}
+                  maxLength={field.key === 'fullName' ? TEXT_MAX_LENGTH : field.key === 'phone' ? 10 : 80}
                   value={state.emergencyContact[field.key as keyof EmergencyContactData]}
                   onChange={(event) =>
                     setState((current) => ({
                       ...current,
-                      emergencyContact: { ...current.emergencyContact, [field.key]: event.target.value },
+                      emergencyContact: {
+                        ...current.emergencyContact,
+                        [field.key]: field.key === 'phone' ? normalizeMobile(event.target.value) : event.target.value,
+                      },
                     }))
                   }
                 />
@@ -1657,6 +1721,7 @@ export default function AffiliationForm() {
               </Field>
               <Field label="PEP relacionada">
                 <TextInput
+                  maxLength={160}
                   value={state.sarlaft.relatedPepName}
                   onChange={(event) =>
                     setState((current) => ({
@@ -1668,6 +1733,7 @@ export default function AffiliationForm() {
               </Field>
               <Field label="Tipo de relacion">
                 <TextInput
+                  maxLength={80}
                   value={state.sarlaft.relatedPepRelation}
                   onChange={(event) =>
                     setState((current) => ({
@@ -1949,6 +2015,136 @@ export default function AffiliationForm() {
     );
   }
 
+  function renderReviewSection() {
+    const economicActivityLabel =
+      economicActivityOptions.find((activity) => activity.value === normalizeEconomicActivity(state.sarlaft.economicActivity))?.label ??
+      state.sarlaft.economicActivity;
+
+    const reviewCard = (title: string, items: Array<[string, ReactNode]>) => (
+      <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+        <h4 className="text-base font-black text-slate-950">{title}</h4>
+        <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+          {items.map(([label, value]) => (
+            <div key={label} className="rounded-2xl bg-slate-50 px-4 py-3">
+              <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">{label}</dt>
+              <dd className="mt-1 text-sm font-semibold text-slate-800">{value || 'No registra'}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    );
+
+    return (
+      <div className="space-y-6">
+        <SectionHeader
+          icon={<CheckCircle2 size={22} />}
+          eyebrow="Bloque 7"
+          title="Revision y envio"
+          description="Verifique la informacion diligenciada antes de enviar la solicitud a FONASIN."
+        />
+
+        <div className="rounded-[1.5rem] border border-emerald-100 bg-emerald-50 p-4 text-sm leading-6 text-emerald-950">
+          Revise con calma. Al enviar, Laravel registrara la solicitud, guardara el documento privado, aceptara los
+          consentimientos y generara los formatos internos sin descarga para el solicitante.
+        </div>
+
+        {reviewCard('Datos personales', [
+          ['Documento', `${state.personal.documentType} ${state.personal.documentNumber}`],
+          ['Nombre completo', [state.personal.firstName, state.personal.middleName, state.personal.lastName, state.personal.secondLastName].filter(Boolean).join(' ')],
+          ['Fecha de nacimiento', state.personal.birthDate],
+          ['Expedicion', `${state.personal.issuePlace} - ${state.personal.issueDate}`],
+          ['Ubicacion', `${state.personal.city}, ${state.personal.department}`],
+          ['Residencia', `${state.personal.residenceAddress}${state.personal.neighborhood ? `, ${state.personal.neighborhood}` : ''}`],
+          ['Pais / nacionalidad', `${state.personal.residenceCountry} / ${state.personal.nationality}`],
+          ['Contacto', `${state.personal.mobile} - ${state.personal.email}`],
+          ['Nivel / profesion', `${state.personal.educationLevel} - ${state.personal.profession}`],
+          ['Personas a cargo', state.personal.hasDependents === 'Si' ? state.personal.dependentsCount : 'No'],
+        ])}
+
+        {reviewCard('Informacion laboral', [
+          ['Empresa', state.employment.employer],
+          ['Cargo', state.employment.position],
+          ['Area', state.employment.departmentArea],
+          ['Contrato', state.employment.contractType === 'Otro' ? `Otro: ${state.employment.contractTypeOther}` : state.employment.contractType],
+          ['Fecha de ingreso', state.employment.hireDate],
+          ['Ciudad de trabajo', state.employment.workCity],
+          ['Salario mensual', moneyLabel(Number(state.employment.monthlySalary || '0'))],
+        ])}
+
+        {reviewCard('Informacion economica', [
+          ['Ingreso principal', moneyLabel(Number(state.financial.principalIncome || '0'))],
+          ['Otros ingresos', moneyLabel(Number(state.financial.otherIncome || '0'))],
+          ['Total ingresos', moneyLabel(Number(state.financial.totalIncome || '0'))],
+          ['Gastos mensuales', moneyLabel(Number(state.financial.monthlyExpenses || '0'))],
+          ['Obligaciones', moneyLabel(Number(state.financial.financialObligations || '0'))],
+          ['Total egresos', moneyLabel(Number(state.financial.totalExpenses || '0'))],
+          ['Activos', moneyLabel(Number(state.financial.assetsValue || '0'))],
+          ['Pasivos', moneyLabel(Number(state.financial.liabilitiesValue || '0'))],
+          ['Patrimonio', moneyLabel(Number(state.financial.equityValue || '0'))],
+          ['Ahorro voluntario', state.financial.voluntarySavings === 'Si' ? moneyLabel(Number(state.financial.voluntarySavingsValue || '0')) : 'No'],
+        ])}
+
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+          <h4 className="text-base font-black text-slate-950">Beneficiarios y contacto</h4>
+          <div className="mt-4 grid gap-3">
+            {state.beneficiaries.map((beneficiary, index) => (
+              <div key={`${beneficiary.documentNumber}-${index}`} className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                <p className="font-black text-slate-950">Beneficiario {index + 1}</p>
+                <p className="mt-1 font-semibold">
+                  {beneficiary.fullName} - {beneficiary.documentType} {beneficiary.documentNumber}
+                </p>
+                <p className="mt-1">
+                  {beneficiary.relationship === 'Otro' ? `Otro parentesco: ${beneficiary.relationshipOther}` : beneficiary.relationship}
+                  {' · '}
+                  {beneficiary.birthDate}
+                  {' · '}
+                  {beneficiary.phone}
+                </p>
+              </div>
+            ))}
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
+              <p className="font-black">Contacto de emergencia</p>
+              <p className="mt-1 font-semibold">
+                {state.emergencyContact.fullName} - {state.emergencyContact.relationship} - {state.emergencyContact.phone}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {reviewCard('SARLAFT', [
+          ['Actividad economica', economicActivityLabel],
+          ['Fuente de ingresos', state.sarlaft.incomeSource.includes('Otro') ? `${state.sarlaft.incomeSource.join(', ')}: ${state.sarlaft.incomeSourceOther}` : state.sarlaft.incomeSource.join(', ')],
+          ['Origen de recursos', state.sarlaft.resourceOrigin.includes('Otro') ? `${state.sarlaft.resourceOrigin.join(', ')}: ${state.sarlaft.resourceOriginOther}` : state.sarlaft.resourceOrigin.join(', ')],
+          ['PEP', state.sarlaft.pep],
+          ['Cuentas en exterior', state.sarlaft.foreignAccounts],
+          ['Actua por terceros', state.sarlaft.actsOnBehalfOfThirdParties],
+          ['Residencia fiscal', state.sarlaft.taxResidenceCountry],
+          ['Operaciones esperadas', state.sarlaft.expectedOperations.includes('Otros servicios') ? `${state.sarlaft.expectedOperations.join(', ')}: ${state.sarlaft.expectedOperationsOther}` : state.sarlaft.expectedOperations.join(', ')],
+        ])}
+
+        {reviewCard('Documentos y autorizaciones', [
+          ['Documento adjunto', state.finalStep.documentFile?.name ?? 'No registra'],
+          ['Firma', `${state.finalStep.signatureCity} - ${state.finalStep.signatureDate}`],
+          ['Mecanismo', state.finalStep.signatureMechanism],
+          ['Declaraciones', 'Aceptadas'],
+          ['Autorizaciones', 'Tratamiento de datos, consultas y estatutos aceptados'],
+        ])}
+
+        <div className="rounded-[1.5rem] border border-slate-950 bg-slate-950 p-4 text-white">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-200">Formatos internos</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {['Formulario de afiliacion completo', 'Autorizacion de descuento por nomina'].map((document) => (
+              <div key={document} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-100">
+                {document}
+                <p className="mt-1 text-xs font-normal leading-5 text-slate-300">Se genera para revision interna. No se descarga desde este formulario.</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function renderFinalSection() {
     const declarationItems: Array<[keyof FinalStepData['declarations'], string]> = [
       ['truthful', 'Declaro que la informacion suministrada es verdadera, completa y verificable.'],
@@ -1989,7 +2185,7 @@ export default function AffiliationForm() {
                 <div className="mt-2 rounded-2xl border border-dashed border-emerald-300 bg-white px-4 py-5">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="text-sm text-slate-600">
-                      <p className="font-semibold text-slate-900">
+                      <p className="max-w-full truncate font-semibold text-slate-900 sm:max-w-48">
                         {state.finalStep.documentFile ? state.finalStep.documentFile.name : 'Seleccionar PDF, JPG o PNG'}
                       </p>
                       <p className="mt-1 text-xs leading-5 text-slate-500">El backend acepta PDF, JPG y PNG hasta 5MB.</p>
@@ -2197,26 +2393,16 @@ export default function AffiliationForm() {
         </div>
         <h2 className="mt-5 text-3xl font-black text-slate-950">Solicitud preparada</h2>
         <p className="mt-3 text-sm leading-6 text-slate-600">
-          El formulario quedo listo para revision. Si el entorno esta conectado, las secciones, documentos y
-          autorizaciones se sincronizaran en el siguiente paso.
+          La solicitud fue enviada para revision interna. Los documentos generados quedan protegidos en el backend y
+          no se descargan desde este formulario.
         </p>
-        {generatedDocuments.length > 0 ? (
-          <div className="mx-auto mt-6 max-w-xl rounded-[1.5rem] border border-emerald-100 bg-emerald-50 p-4 text-left">
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Documentos generados</p>
-            <div className="mt-3 grid gap-3">
-              {generatedDocuments.map((document) => (
-                <a
-                  key={document.id}
-                  href={affiliationDownloadUrl(document.links.download)}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-100 bg-white px-4 py-3 text-sm font-bold text-emerald-800 transition hover:bg-emerald-50"
-                >
-                  <span>{document.original_filename}</span>
-                  <Download size={16} />
-                </a>
-              ))}
-            </div>
-          </div>
-        ) : null}
+        <div className="mx-auto mt-6 max-w-xl rounded-[1.5rem] border border-emerald-100 bg-emerald-50 p-4 text-left">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Documentos internos</p>
+          <p className="mt-2 text-sm leading-6 text-emerald-900">
+            FONASIN recibira el formulario de afiliacion completo y la autorizacion de descuento por nomina para su
+            revision administrativa.
+          </p>
+        </div>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <button
             type="button"
@@ -2232,7 +2418,6 @@ export default function AffiliationForm() {
             type="button"
             onClick={() => {
               setState(createInitialState());
-              setGeneratedDocuments([]);
               setStep(0);
               setSubmitted(false);
             }}
@@ -2342,6 +2527,7 @@ export default function AffiliationForm() {
             {step === 3 ? renderBeneficiariesSection() : null}
             {step === 4 ? renderSarlaftSection() : null}
             {step === 5 ? renderFinalSection() : null}
+            {step === 6 ? renderReviewSection() : null}
 
             <div className="mt-8 border-t border-slate-100 pt-5">
               {error ? (
@@ -2370,7 +2556,7 @@ export default function AffiliationForm() {
                   disabled={saving}
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {saving ? 'Guardando...' : step === stepLabels.length - 1 ? 'Enviar solicitud' : 'Guardar y continuar'}
+                  {saving ? 'Guardando...' : step === stepLabels.length - 1 ? 'Enviar solicitud' : step === 5 ? 'Ir a revision' : 'Guardar y continuar'}
                   <ArrowRight size={16} />
                 </button>
               </div>
