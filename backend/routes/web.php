@@ -28,6 +28,9 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 Route::prefix('affiliation-applications')->group(function (): void {
     Route::post('/', [AffiliationApplicationController::class, 'store'])
         ->name('affiliation-applications.store');
+    Route::get('/{application}', [AffiliationApplicationController::class, 'readDraft'])
+        ->middleware('signed:relative')
+        ->name('affiliation-applications.read');
     Route::post('/{application}/sections/{section}', [AffiliationApplicationController::class, 'storeSection'])
         ->middleware('signed:relative')
         ->name('affiliation-applications.sections.store');

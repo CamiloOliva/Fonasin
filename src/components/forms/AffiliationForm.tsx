@@ -19,6 +19,7 @@ import StatutesBookViewer from '../sections/StatutesBookViewer';
 import {
   acceptAffiliationConsent,
   createAffiliationDraft,
+  readAffiliationDraft,
   saveAffiliationSection,
   submitAffiliationApplication,
   uploadAffiliationDocument,
@@ -33,6 +34,7 @@ import countriesCatalog from '../../data/catalogs/paises.json';
 
 type BackendMode = 'loading' | 'ready' | 'local';
 type StepKey = 'personal' | 'employment' | 'financial' | 'beneficiaries' | 'sarlaft' | 'final' | 'review';
+type RequiredDocumentType = 'identity' | 'employment_certificate';
 
 type PersonalData = {
   documentType: string;
@@ -310,7 +312,7 @@ function readStoredDraft(): AffiliationDraft | null {
     if (!raw) return null;
 
     const stored = JSON.parse(raw) as StoredAffiliationDraft;
-    if (!stored?.draft?.id || Date.now() - stored.savedAt > DRAFT_STORAGE_TTL_MS) {
+    if (!stored?.draft?.id || !stored.draft.links?.read || Date.now() - stored.savedAt > DRAFT_STORAGE_TTL_MS) {
       window.localStorage.removeItem(DRAFT_STORAGE_KEY);
       return null;
     }
@@ -340,6 +342,154 @@ function clearStoredDraft(): void {
   } catch {
     // No hay accion necesaria si el navegador bloquea storage local.
   }
+}
+
+function stringValue(data: Record<string, unknown>, key: string, fallback = ''): string {
+  const value = data[key];
+
+  return typeof value === 'string' ? value : fallback;
+}
+
+function stringArrayValue(data: Record<string, unknown>, key: string): string[] {
+  const value = data[key];
+
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+}
+
+function beneficiariesValue(value: unknown): BeneficiaryData[] {
+  if (!Array.isArray(value)) return [createBeneficiary()];
+
+  const beneficiaries = value
+    .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+    .map((item): BeneficiaryData => ({
+      documentType: stringValue(item, 'documentType', 'CC'),
+      documentNumber: stringValue(item, 'documentNumber'),
+      fullName: stringValue(item, 'fullName'),
+      relationship: stringValue(item, 'relationship'),
+      relationshipOther: stringValue(item, 'relationshipOther'),
+      birthDate: stringValue(item, 'birthDate'),
+      phone: stringValue(item, 'phone'),
+      percentage: stringValue(item, 'percentage'),
+    }));
+
+  return beneficiaries.length > 0 ? beneficiaries : [createBeneficiary()];
+}
+
+function stateFromDraft(draft: AffiliationDraft): SectionState {
+  const next = createInitialState();
+
+  for (const section of draft.sections ?? []) {
+    const data = section.data;
+
+    if (section.section === 'personal') {
+      next.personal = {
+        ...next.personal,
+        documentType: stringValue(data, 'documentType', next.personal.documentType),
+        documentNumber: stringValue(data, 'documentNumber'),
+        issueDate: stringValue(data, 'issueDate'),
+        issuePlace: stringValue(data, 'issuePlace'),
+        firstName: stringValue(data, 'firstName'),
+        middleName: stringValue(data, 'middleName'),
+        lastName: stringValue(data, 'lastName'),
+        secondLastName: stringValue(data, 'secondLastName'),
+        birthDate: stringValue(data, 'birthDate'),
+        nationality: stringValue(data, 'nationality', next.personal.nationality),
+        residenceCountry: stringValue(data, 'residenceCountry', next.personal.residenceCountry),
+        maritalStatus: stringValue(data, 'maritalStatus'),
+        residenceAddress: stringValue(data, 'residenceAddress'),
+        city: stringValue(data, 'city'),
+        department: stringValue(data, 'department'),
+        neighborhood: stringValue(data, 'neighborhood'),
+        mobile: stringValue(data, 'mobile'),
+        email: stringValue(data, 'email'),
+        educationLevel: stringValue(data, 'educationLevel'),
+        profession: stringValue(data, 'profession'),
+        hasDependents: stringValue(data, 'hasDependents', next.personal.hasDependents),
+        dependentsCount: stringValue(data, 'dependentsCount'),
+      };
+    }
+
+    if (section.section === 'employment') {
+      next.employment = {
+        ...next.employment,
+        employer: stringValue(data, 'employer'),
+        position: stringValue(data, 'position'),
+        departmentArea: stringValue(data, 'departmentArea'),
+        contractType: stringValue(data, 'contractType'),
+        contractTypeOther: stringValue(data, 'contractTypeOther'),
+        hireDate: stringValue(data, 'hireDate'),
+        workCity: stringValue(data, 'workCity'),
+        monthlySalary: stringValue(data, 'monthlySalary'),
+      };
+    }
+
+    if (section.section === 'financial') {
+      next.financial = {
+        ...next.financial,
+        principalIncome: stringValue(data, 'principalIncome'),
+        otherIncome: stringValue(data, 'otherIncome'),
+        totalIncome: stringValue(data, 'totalIncome'),
+        monthlyExpenses: stringValue(data, 'monthlyExpenses'),
+        financialObligations: stringValue(data, 'financialObligations'),
+        totalExpenses: stringValue(data, 'totalExpenses'),
+        assetsValue: stringValue(data, 'assetsValue'),
+        liabilitiesValue: stringValue(data, 'liabilitiesValue'),
+        equityValue: stringValue(data, 'equityValue'),
+        incomeBand: stringValue(data, 'incomeBand'),
+        voluntarySavings: stringValue(data, 'voluntarySavings', next.financial.voluntarySavings),
+        voluntarySavingsValue: stringValue(data, 'voluntarySavingsValue'),
+      };
+    }
+
+    if (section.section === 'beneficiaries') {
+      next.beneficiaries = beneficiariesValue(data.beneficiaries);
+      const emergencyContact = typeof data.emergencyContact === 'object' && data.emergencyContact !== null
+        ? data.emergencyContact as Record<string, unknown>
+        : {};
+      next.emergencyContact = {
+        fullName: stringValue(emergencyContact, 'fullName'),
+        relationship: stringValue(emergencyContact, 'relationship'),
+        phone: stringValue(emergencyContact, 'phone'),
+      };
+    }
+
+    if (section.section === 'sarlaft') {
+      next.sarlaft = {
+        ...next.sarlaft,
+        economicActivity: stringValue(data, 'economicActivity'),
+        incomeSource: stringArrayValue(data, 'incomeSource'),
+        incomeSourceOther: stringValue(data, 'incomeSourceOther'),
+        resourceOrigin: stringArrayValue(data, 'resourceOrigin'),
+        resourceOriginOther: stringValue(data, 'resourceOriginOther'),
+        pep: stringValue(data, 'pep', next.sarlaft.pep),
+        pepType: stringValue(data, 'pepType'),
+        pepPosition: stringValue(data, 'pepPosition'),
+        pepEntity: stringValue(data, 'pepEntity'),
+        pepLinkDate: stringValue(data, 'pepLinkDate'),
+        pepUnlinkDate: stringValue(data, 'pepUnlinkDate'),
+        relatedPepName: stringValue(data, 'relatedPepName'),
+        relatedPepRelation: stringValue(data, 'relatedPepRelation'),
+        foreignAccounts: stringValue(data, 'foreignAccounts', next.sarlaft.foreignAccounts),
+        foreignAccountCountry: stringValue(data, 'foreignAccountCountry'),
+        foreignAccountEntity: stringValue(data, 'foreignAccountEntity'),
+        foreignAccountType: stringValue(data, 'foreignAccountType'),
+        foreignAccountTypeOther: stringValue(data, 'foreignAccountTypeOther'),
+        foreignAccountOrigin: stringValue(data, 'foreignAccountOrigin'),
+        actsOnBehalfOfThirdParties: stringValue(data, 'actsOnBehalfOfThirdParties', next.sarlaft.actsOnBehalfOfThirdParties),
+        thirdPartyName: stringValue(data, 'thirdPartyName'),
+        thirdPartyId: stringValue(data, 'thirdPartyId'),
+        thirdPartyRelation: stringValue(data, 'thirdPartyRelation'),
+        thirdPartyOrigin: stringValue(data, 'thirdPartyOrigin'),
+        taxResidenceCountry: stringValue(data, 'taxResidenceCountry', next.sarlaft.taxResidenceCountry),
+        hasForeignTaxObligations: stringValue(data, 'hasForeignTaxObligations', next.sarlaft.hasForeignTaxObligations),
+        foreignTaxId: stringValue(data, 'foreignTaxId'),
+        expectedOperations: stringArrayValue(data, 'expectedOperations'),
+        expectedOperationsOther: stringValue(data, 'expectedOperationsOther'),
+      };
+    }
+  }
+
+  return next;
 }
 
 const personalFields: FieldConfig[] = [
@@ -509,7 +659,7 @@ function createInitialState(): SectionState {
   };
 }
 
-function validateCurrentStep(step: number, state: SectionState): string | null {
+function validateCurrentStep(step: number, state: SectionState, uploadedDocumentTypes = new Set<RequiredDocumentType>()): string | null {
   if (step === 0) {
     const missing = missingFields(state.personal as unknown as Record<string, unknown>, requiredBySection.personal);
     if (missing.length > 0) {
@@ -636,22 +786,25 @@ function validateCurrentStep(step: number, state: SectionState): string | null {
   }
 
   if (step === 5) {
-    if (!state.finalStep.identityDocumentFile) {
+    const hasIdentityDocument = Boolean(state.finalStep.identityDocumentFile) || uploadedDocumentTypes.has('identity');
+    const hasEmploymentCertificate = Boolean(state.finalStep.employmentCertificateFile) || uploadedDocumentTypes.has('employment_certificate');
+
+    if (!hasIdentityDocument) {
       return 'Debes adjuntar el documento de identidad por ambos lados en PDF.';
     }
-    if (!state.finalStep.employmentCertificateFile) {
+    if (!hasEmploymentCertificate) {
       return 'Debes adjuntar el certificado laboral en PDF.';
     }
-    if (state.finalStep.identityDocumentFile.type !== 'application/pdf') {
+    if (state.finalStep.identityDocumentFile && state.finalStep.identityDocumentFile.type !== 'application/pdf') {
       return 'El documento de identidad debe estar en formato PDF.';
     }
-    if (state.finalStep.employmentCertificateFile.type !== 'application/pdf') {
+    if (state.finalStep.employmentCertificateFile && state.finalStep.employmentCertificateFile.type !== 'application/pdf') {
       return 'El certificado laboral debe estar en formato PDF.';
     }
-    if (state.finalStep.identityDocumentFile.size > 5 * 1024 * 1024) {
+    if (state.finalStep.identityDocumentFile && state.finalStep.identityDocumentFile.size > 5 * 1024 * 1024) {
       return 'El documento de identidad no debe superar 5MB.';
     }
-    if (state.finalStep.employmentCertificateFile.size > 5 * 1024 * 1024) {
+    if (state.finalStep.employmentCertificateFile && state.finalStep.employmentCertificateFile.size > 5 * 1024 * 1024) {
       return 'El certificado laboral no debe superar 5MB.';
     }
     if (isBlank(state.finalStep.signatureCity) || isBlank(state.finalStep.signatureDate)) {
@@ -1121,10 +1274,14 @@ export default function AffiliationForm() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [uploadedDocumentTypes, setUploadedDocumentTypes] = useState<Set<RequiredDocumentType>>(new Set());
   const [selectedLegalDocument, setSelectedLegalDocument] = useState<(typeof legalDocuments)[number]>(legalDocuments[0]);
   const [state, setState] = useState<SectionState>(createInitialState);
 
   const progress = useMemo(() => Math.round(((step + 1) / stepLabels.length) * 100), [step]);
+  const uploadedDocumentNames = useMemo(() => new Map(
+    (draft?.documents ?? []).map((document) => [document.document_type, document.original_filename]),
+  ), [draft]);
 
   useEffect(() => {
     let active = true;
@@ -1132,11 +1289,25 @@ export default function AffiliationForm() {
       try {
         const storedDraft = readStoredDraft();
         if (storedDraft) {
-          if (!active) return;
-          setDraft(storedDraft);
-          setBackendMode('ready');
-          setBackendMessage(`Borrador ${storedDraft.id} recuperado en este navegador.`);
-          return;
+          try {
+            const recoveredDraft = await readAffiliationDraft(storedDraft.links.read);
+            if (!active) return;
+            setDraft(recoveredDraft);
+            storeDraft(recoveredDraft);
+            setState(stateFromDraft(recoveredDraft));
+            setUploadedDocumentTypes(new Set(
+              (recoveredDraft.documents ?? [])
+                .map((document) => document.document_type)
+                .filter((documentType): documentType is RequiredDocumentType =>
+                  documentType === 'identity' || documentType === 'employment_certificate',
+                ),
+            ));
+            setBackendMode('ready');
+            setBackendMessage(`Borrador ${recoveredDraft.id} recuperado en este navegador.`);
+            return;
+          } catch {
+            clearStoredDraft();
+          }
         }
 
         const response = await createAffiliationDraft();
@@ -1171,7 +1342,7 @@ export default function AffiliationForm() {
     setMessage(null);
     setSaving(true);
 
-    const validationMessage = validateCurrentStep(step, state);
+    const validationMessage = validateCurrentStep(step, state, uploadedDocumentTypes);
     if (validationMessage) {
       setError(validationMessage);
       setSaving(false);
@@ -1201,25 +1372,35 @@ export default function AffiliationForm() {
         });
         setMessage('Seccion SARLAFT guardada.');
       } else if (step === 5) {
-        if (!state.finalStep.identityDocumentFile || !state.finalStep.employmentCertificateFile) {
+        if (
+          (!state.finalStep.identityDocumentFile && !uploadedDocumentTypes.has('identity'))
+          || (!state.finalStep.employmentCertificateFile && !uploadedDocumentTypes.has('employment_certificate'))
+        ) {
           throw new Error('Debes adjuntar documento de identidad y certificado laboral en PDF.');
         }
 
         setMessage('Documentos, declaraciones y autorizaciones listos para revision.');
       } else {
-        if (!state.finalStep.identityDocumentFile || !state.finalStep.employmentCertificateFile) {
+        if (
+          (!state.finalStep.identityDocumentFile && !uploadedDocumentTypes.has('identity'))
+          || (!state.finalStep.employmentCertificateFile && !uploadedDocumentTypes.has('employment_certificate'))
+        ) {
           throw new Error('Debes adjuntar documento de identidad y certificado laboral en PDF.');
         }
 
         if (draft && backendMode === 'ready') {
-          await uploadAffiliationDocument(draft.links.documents, {
-            documentType: 'identity',
-            file: state.finalStep.identityDocumentFile,
-          });
-          await uploadAffiliationDocument(draft.links.documents, {
-            documentType: 'employment_certificate',
-            file: state.finalStep.employmentCertificateFile,
-          });
+          if (state.finalStep.identityDocumentFile) {
+            await uploadAffiliationDocument(draft.links.documents, {
+              documentType: 'identity',
+              file: state.finalStep.identityDocumentFile,
+            });
+          }
+          if (state.finalStep.employmentCertificateFile) {
+            await uploadAffiliationDocument(draft.links.documents, {
+              documentType: 'employment_certificate',
+              file: state.finalStep.employmentCertificateFile,
+            });
+          }
 
           await acceptAffiliationConsent(draft.links.consents, {
             consentType: 'data_processing',
@@ -1232,6 +1413,7 @@ export default function AffiliationForm() {
           const submittedDraft = await submitAffiliationApplication(draft.links.submit, POLICY_VERSION);
           setDraft(submittedDraft);
           clearStoredDraft();
+          setUploadedDocumentTypes(new Set());
         }
 
         setSubmitted(true);
@@ -2279,6 +2461,7 @@ export default function AffiliationForm() {
                 title: 'Documento de identidad',
                 helper: 'Incluye ambos lados en un solo PDF. Maximo 5MB.',
                 file: state.finalStep.identityDocumentFile,
+                uploadedName: uploadedDocumentNames.get('identity'),
               },
               {
                 key: 'employmentCertificateFile' as const,
@@ -2286,6 +2469,7 @@ export default function AffiliationForm() {
                 title: 'Certificado laboral',
                 helper: 'Adjunta certificado laboral en PDF. Maximo 5MB.',
                 file: state.finalStep.employmentCertificateFile,
+                uploadedName: uploadedDocumentNames.get('employment_certificate'),
               },
             ].map((document) => (
               <div key={document.key} className="rounded-[1.6rem] border border-emerald-100 bg-emerald-50 p-4">
@@ -2304,9 +2488,11 @@ export default function AffiliationForm() {
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="min-w-0 text-sm text-slate-600">
                         <p className="max-w-full truncate font-semibold text-slate-900 sm:max-w-56">
-                          {document.file ? document.file.name : 'Seleccionar PDF'}
+                          {document.file?.name ?? document.uploadedName ?? 'Seleccionar PDF'}
                         </p>
-                        <p className="mt-1 text-xs leading-5 text-slate-500">{document.helper}</p>
+                        <p className="mt-1 text-xs leading-5 text-slate-500">
+                          {document.file || !document.uploadedName ? document.helper : 'PDF cargado previamente en este borrador.'}
+                        </p>
                       </div>
                       <span className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white">
                         <Upload size={16} /> Cargar archivo

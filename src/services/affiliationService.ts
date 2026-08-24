@@ -1,6 +1,7 @@
 export type AffiliationSectionKey = 'personal' | 'employment' | 'financial' | 'beneficiaries' | 'sarlaft';
 
 export type AffiliationDraftLinks = {
+  read: string;
   sections: Record<AffiliationSectionKey, string>;
   documents: string;
   consents: string;
@@ -30,6 +31,35 @@ export type AffiliationDraft = {
   reviewed_by_user_id: string | null;
   reviewed_at: string | null;
   generated_documents?: GeneratedAffiliationDocument[];
+  sections?: Array<{
+    id: string;
+    application_id: string;
+    section: AffiliationSectionKey;
+    schema_version: number;
+    completed_at: string | null;
+    data: Record<string, unknown>;
+  }>;
+  documents?: Array<{
+    id: string;
+    application_id: string;
+    document_type: 'identity' | 'employment_certificate';
+    original_filename: string;
+    mime_type: string;
+    byte_size: number;
+    status: string;
+    uploaded_at: string | null;
+    links: {
+      download: string;
+      preview: string;
+    };
+  }>;
+  consents?: Array<{
+    id: string;
+    application_id: string;
+    consent_type: 'data_processing' | 'bylaws';
+    policy_version: string;
+    accepted_at: string | null;
+  }>;
   links: AffiliationDraftLinks;
 };
 
@@ -50,7 +80,7 @@ export type AffiliationConsentPayload = {
 };
 
 type AffiliationRequestOptions = {
-  method?: 'POST' | 'PUT' | 'PATCH';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH';
   body?: BodyInit | null;
   headers?: HeadersInit;
 };
@@ -118,6 +148,12 @@ export function affiliationDownloadUrl(path: string): string {
 export async function createAffiliationDraft(): Promise<AffiliationDraft> {
   return requestJson<AffiliationDraft>('/affiliation-applications', {
     method: 'POST',
+  });
+}
+
+export async function readAffiliationDraft(readUrl: string): Promise<AffiliationDraft> {
+  return requestJson<AffiliationDraft>(readUrl, {
+    method: 'GET',
   });
 }
 
