@@ -1,0 +1,4565 @@
+[
+  {
+    "code": "0010",
+    "name": "Asalariados",
+    "type": "DIAN_SPECIAL",
+    "sectionCode": null,
+    "section": null,
+    "division": null,
+    "group": null
+  },
+  {
+    "code": "0020",
+    "name": "Pensionados",
+    "type": "DIAN_SPECIAL",
+    "sectionCode": null,
+    "section": null,
+    "division": null,
+    "group": null
+  },
+  {
+    "code": "0081",
+    "name": "Personas naturales y sucesiones ilíquidas sin actividad económica",
+    "type": "DIAN_SPECIAL",
+    "sectionCode": null,
+    "section": null,
+    "division": null,
+    "group": null
+  },
+  {
+    "code": "0082",
+    "name": "Personas naturales subsidiadas por terceros",
+    "type": "DIAN_SPECIAL",
+    "sectionCode": null,
+    "section": null,
+    "division": null,
+    "group": null
+  },
+  {
+    "code": "0090",
+    "name": "Rentistas de Capital, solo para personas naturales y sucesiones ilíquidas",
+    "type": "DIAN_SPECIAL",
+    "sectionCode": null,
+    "section": null,
+    "division": null,
+    "group": null
+  },
+  {
+    "code": "0111",
+    "name": "Cultivo de cereales (excepto arroz), legumbres y semillas oleaginosas",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "011"
+  },
+  {
+    "code": "0112",
+    "name": "Cultivo de arroz",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "011"
+  },
+  {
+    "code": "0113",
+    "name": "Cultivo de hortalizas, raíces y tubérculos",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "011"
+  },
+  {
+    "code": "0114",
+    "name": "Cultivo de tabaco",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "011"
+  },
+  {
+    "code": "0115",
+    "name": "Cultivo de plantas textiles",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "011"
+  },
+  {
+    "code": "0119",
+    "name": "Otros cultivos transitorios n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "011"
+  },
+  {
+    "code": "0121",
+    "name": "Cultivo de frutas tropicales y subtropicales",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "012"
+  },
+  {
+    "code": "0122",
+    "name": "Cultivo de plátano y banano",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "012"
+  },
+  {
+    "code": "0123",
+    "name": "Cultivo de café",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "012"
+  },
+  {
+    "code": "0124",
+    "name": "Cultivo de caña de azúcar",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "012"
+  },
+  {
+    "code": "0125",
+    "name": "Cultivo de flor de corte",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "012"
+  },
+  {
+    "code": "0126",
+    "name": "Cultivo de palma para aceite (palma africana) y otros frutos oleaginosos",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "012"
+  },
+  {
+    "code": "0127",
+    "name": "Cultivo de plantas con las que se preparan bebidas",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "012"
+  },
+  {
+    "code": "0128",
+    "name": "Cultivo de especias y de plantas aromáticas y medicinales",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "012"
+  },
+  {
+    "code": "0129",
+    "name": "Otros cultivos permanentes n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "012"
+  },
+  {
+    "code": "0130",
+    "name": "Propagación de plantas (actividades de los viveros, excepto viveros forestales)",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "013"
+  },
+  {
+    "code": "0141",
+    "name": "Cría de ganado bovino y bufalino",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "014"
+  },
+  {
+    "code": "0142",
+    "name": "Cría de caballos y otros equinos",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "014"
+  },
+  {
+    "code": "0143",
+    "name": "Cría de ovejas y cabras",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "014"
+  },
+  {
+    "code": "0144",
+    "name": "Cría de ganado porcino",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "014"
+  },
+  {
+    "code": "0145",
+    "name": "Cría de aves de corral",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "014"
+  },
+  {
+    "code": "0149",
+    "name": "Cría de otros animales n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "014"
+  },
+  {
+    "code": "0150",
+    "name": "Explotación mixta (agrícola y pecuaria)",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "015"
+  },
+  {
+    "code": "0161",
+    "name": "Actividades de apoyo a la agricultura",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "016"
+  },
+  {
+    "code": "0162",
+    "name": "Actividades de apoyo a la ganadería",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "016"
+  },
+  {
+    "code": "0163",
+    "name": "Actividades posteriores a la cosecha",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "016"
+  },
+  {
+    "code": "0164",
+    "name": "Tratamiento de semillas para propagación",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "016"
+  },
+  {
+    "code": "0170",
+    "name": "Caza ordinaria y mediante trampas y actividades de servicios conexas",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "01",
+    "group": "017"
+  },
+  {
+    "code": "0210",
+    "name": "Silvicultura y otras actividades forestales",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "02",
+    "group": "021"
+  },
+  {
+    "code": "0220",
+    "name": "Extracción de madera",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "02",
+    "group": "022"
+  },
+  {
+    "code": "0230",
+    "name": "Recolección de productos forestales diferentes a la madera",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "02",
+    "group": "023"
+  },
+  {
+    "code": "0240",
+    "name": "Servicios de apoyo a la silvicultura",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "02",
+    "group": "024"
+  },
+  {
+    "code": "0311",
+    "name": "Pesca marítima",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "03",
+    "group": "031"
+  },
+  {
+    "code": "0312",
+    "name": "Pesca de agua dulce",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "03",
+    "group": "031"
+  },
+  {
+    "code": "0321",
+    "name": "Acuicultura marítima",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "03",
+    "group": "032"
+  },
+  {
+    "code": "0322",
+    "name": "Acuicultura de agua dulce",
+    "type": "CIIU",
+    "sectionCode": "A",
+    "section": "AGRICULTURA, GANADERÍA, CAZA, SILVICULTURA Y PESCA",
+    "division": "03",
+    "group": "032"
+  },
+  {
+    "code": "0510",
+    "name": "Extracción de hulla (carbón de piedra)",
+    "type": "CIIU",
+    "sectionCode": "B",
+    "section": "EXPLOTACIÓN DE MINAS Y CANTERAS",
+    "division": "05",
+    "group": "051"
+  },
+  {
+    "code": "0520",
+    "name": "Extracción de carbón lignito",
+    "type": "CIIU",
+    "sectionCode": "B",
+    "section": "EXPLOTACIÓN DE MINAS Y CANTERAS",
+    "division": "05",
+    "group": "052"
+  },
+  {
+    "code": "0610",
+    "name": "Extracción de petróleo crudo",
+    "type": "CIIU",
+    "sectionCode": "B",
+    "section": "EXPLOTACIÓN DE MINAS Y CANTERAS",
+    "division": "06",
+    "group": "061"
+  },
+  {
+    "code": "0620",
+    "name": "Extracción de gas natural",
+    "type": "CIIU",
+    "sectionCode": "B",
+    "section": "EXPLOTACIÓN DE MINAS Y CANTERAS",
+    "division": "06",
+    "group": "062"
+  },
+  {
+    "code": "0710",
+    "name": "Extracción de minerales de hierro",
+    "type": "CIIU",
+    "sectionCode": "B",
+    "section": "EXPLOTACIÓN DE MINAS Y CANTERAS",
+    "division": "07",
+    "group": "071"
+  },
+  {
+    "code": "0721",
+    "name": "Extracción de minerales de uranio y de torio",
+    "type": "CIIU",
+    "sectionCode": "B",
+    "section": "EXPLOTACIÓN DE MINAS Y CANTERAS",
+    "division": "07",
+    "group": "072"
+  },
+  {
+    "code": "0722",
+    "name": "Extracción de oro y otros metales preciosos",
+    "type": "CIIU",
+    "sectionCode": "B",
+    "section": "EXPLOTACIÓN DE MINAS Y CANTERAS",
+    "division": "07",
+    "group": "072"
+  },
+  {
+    "code": "0723",
+    "name": "Extracción de minerales de níquel",
+    "type": "CIIU",
+    "sectionCode": "B",
+    "section": "EXPLOTACIÓN DE MINAS Y CANTERAS",
+    "division": "07",
+    "group": "072"
+  },
+  {
+    "code": "0729",
+    "name": "Extracción de otros minerales metalíferos no ferrosos n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "B",
+    "section": "EXPLOTACIÓN DE MINAS Y CANTERAS",
+    "division": "07",
+    "group": "072"
+  },
+  {
+    "code": "0811",
+    "name": "Extracción de piedra, arena, arcillas comunes, yeso y anhidrita",
+    "type": "CIIU",
+    "sectionCode": "B",
+    "section": "EXPLOTACIÓN DE MINAS Y CANTERAS",
+    "division": "08",
+    "group": "081"
+  },
+  {
+    "code": "0812",
+    "name": "Extracción de arcillas de uso industrial, caliza, caolín y bentonitas",
+    "type": "CIIU",
+    "sectionCode": "B",
+    "section": "EXPLOTACIÓN DE MINAS Y CANTERAS",
+    "division": "08",
+    "group": "081"
+  },
+  {
+    "code": "0820",
+    "name": "Extracción de esmeraldas, piedras preciosas y semipreciosas",
+    "type": "CIIU",
+    "sectionCode": "B",
+    "section": "EXPLOTACIÓN DE MINAS Y CANTERAS",
+    "division": "08",
+    "group": "082"
+  },
+  {
+    "code": "0891",
+    "name": "Extracción de minerales para la fabricación de abonos y productos químicos",
+    "type": "CIIU",
+    "sectionCode": "B",
+    "section": "EXPLOTACIÓN DE MINAS Y CANTERAS",
+    "division": "08",
+    "group": "089"
+  },
+  {
+    "code": "0892",
+    "name": "Extracción de halita (sal)",
+    "type": "CIIU",
+    "sectionCode": "B",
+    "section": "EXPLOTACIÓN DE MINAS Y CANTERAS",
+    "division": "08",
+    "group": "089"
+  },
+  {
+    "code": "0899",
+    "name": "Extracción de otros minerales no metálicos n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "B",
+    "section": "EXPLOTACIÓN DE MINAS Y CANTERAS",
+    "division": "08",
+    "group": "089"
+  },
+  {
+    "code": "0910",
+    "name": "Actividades de apoyo para la extracción de petróleo y de gas natural",
+    "type": "CIIU",
+    "sectionCode": "B",
+    "section": "EXPLOTACIÓN DE MINAS Y CANTERAS",
+    "division": "09",
+    "group": "091"
+  },
+  {
+    "code": "0990",
+    "name": "Actividades de apoyo para otras actividades de explotación de minas y canteras",
+    "type": "CIIU",
+    "sectionCode": "B",
+    "section": "EXPLOTACIÓN DE MINAS Y CANTERAS",
+    "division": "09",
+    "group": "099"
+  },
+  {
+    "code": "1011",
+    "name": "Procesamiento y conservación de carne y productos cárnicos",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "101"
+  },
+  {
+    "code": "1012",
+    "name": "Procesamiento y conservación de pescados, crustáceos y moluscos",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "101"
+  },
+  {
+    "code": "1020",
+    "name": "Procesamiento y conservación de frutas, legumbres, hortalizas y tubérculos",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "102"
+  },
+  {
+    "code": "1031",
+    "name": "Extracción de aceites de origen vegetal crudos",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "103"
+  },
+  {
+    "code": "1032",
+    "name": "Elaboración de aceites y grasas de origen vegetal refinados",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "103"
+  },
+  {
+    "code": "1033",
+    "name": "Elaboración de aceites y grasas de origen animal",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "103"
+  },
+  {
+    "code": "1040",
+    "name": "Elaboración de productos lácteos",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "104"
+  },
+  {
+    "code": "1051",
+    "name": "Elaboración de productos de molinería",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "105"
+  },
+  {
+    "code": "1052",
+    "name": "Elaboración de almidones y productos derivados del almidón",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "105"
+  },
+  {
+    "code": "1061",
+    "name": "Trilla de café",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "106"
+  },
+  {
+    "code": "1062",
+    "name": "Descafeinado, tostión y molienda del café",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "106"
+  },
+  {
+    "code": "1063",
+    "name": "Otros derivados del café",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "106"
+  },
+  {
+    "code": "1071",
+    "name": "Elaboración y refinación de azúcar",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "107"
+  },
+  {
+    "code": "1072",
+    "name": "Elaboración de panela",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "107"
+  },
+  {
+    "code": "1081",
+    "name": "Elaboración de productos de panadería",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "108"
+  },
+  {
+    "code": "1082",
+    "name": "Elaboración de cacao, chocolate y productos de confitería",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "108"
+  },
+  {
+    "code": "1083",
+    "name": "Elaboración de macarrones, fideos, alcuzcuz y productos farináceos similares",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "108"
+  },
+  {
+    "code": "1084",
+    "name": "Elaboración de comidas y platos preparados",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "108"
+  },
+  {
+    "code": "1089",
+    "name": "Elaboración de otros productos alimenticios n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "108"
+  },
+  {
+    "code": "1090",
+    "name": "Elaboración de alimentos preparados para animales",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "10",
+    "group": "109"
+  },
+  {
+    "code": "1101",
+    "name": "Destilación, rectificación y mezcla de bebidas alcohólicas",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "11",
+    "group": "110"
+  },
+  {
+    "code": "1102",
+    "name": "Elaboración de bebidas fermentadas no destiladas",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "11",
+    "group": "110"
+  },
+  {
+    "code": "1103",
+    "name": "Producción de malta, elaboración de cervezas y otras bebidas malteadas",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "11",
+    "group": "110"
+  },
+  {
+    "code": "1104",
+    "name": "Elaboración de bebidas no alcohólicas, producción de aguas minerales y otras aguas embotelladas",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "11",
+    "group": "110"
+  },
+  {
+    "code": "1200",
+    "name": "Elaboración de productos de tabaco",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "12",
+    "group": "120"
+  },
+  {
+    "code": "1311",
+    "name": "Preparación e hilatura de fibras textiles",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "13",
+    "group": "131"
+  },
+  {
+    "code": "1312",
+    "name": "Tejeduría de productos textiles",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "13",
+    "group": "131"
+  },
+  {
+    "code": "1313",
+    "name": "Acabado de productos textiles",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "13",
+    "group": "131"
+  },
+  {
+    "code": "1391",
+    "name": "Fabricación de tejidos de punto y ganchillo",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "13",
+    "group": "139"
+  },
+  {
+    "code": "1392",
+    "name": "Confección de artículos con materiales textiles, excepto prendas de vestir",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "13",
+    "group": "139"
+  },
+  {
+    "code": "1393",
+    "name": "Fabricación de tapetes y alfombras para pisos",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "13",
+    "group": "139"
+  },
+  {
+    "code": "1394",
+    "name": "Fabricación de cuerdas, cordeles, cables, bramantes y redes",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "13",
+    "group": "139"
+  },
+  {
+    "code": "1399",
+    "name": "Fabricación de otros artículos textiles n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "13",
+    "group": "139"
+  },
+  {
+    "code": "1410",
+    "name": "Confección de prendas de vestir, excepto prendas de piel",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "14",
+    "group": "141"
+  },
+  {
+    "code": "1420",
+    "name": "Fabricación de artículos de piel",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "14",
+    "group": "142"
+  },
+  {
+    "code": "1430",
+    "name": "Fabricación de artículos de punto y ganchillo",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "14",
+    "group": "143"
+  },
+  {
+    "code": "1511",
+    "name": "Curtido y recurtido de cueros; recurtido y teñido de pieles",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "15",
+    "group": "151"
+  },
+  {
+    "code": "1512",
+    "name": "Fabricación de artículos de viaje, bolsos de mano y artículos similares elaborados en cuero, y fabricación de artículos de talabartería y guarnicionería",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "15",
+    "group": "151"
+  },
+  {
+    "code": "1513",
+    "name": "Fabricación de artículos de viaje, bolsos de mano y artículos similares; artículos de talabartería y guarnicionería elaborados en otros materiales",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "15",
+    "group": "151"
+  },
+  {
+    "code": "1521",
+    "name": "Fabricación de calzado de cuero y piel, con cualquier tipo de suela",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "15",
+    "group": "152"
+  },
+  {
+    "code": "1522",
+    "name": "Fabricación de otros tipos de calzado, excepto calzado de cuero y piel",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "15",
+    "group": "152"
+  },
+  {
+    "code": "1523",
+    "name": "Fabricación de partes del calzado",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "15",
+    "group": "152"
+  },
+  {
+    "code": "1610",
+    "name": "Aserrado, acepillado e impregnación de la madera",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "16",
+    "group": "161"
+  },
+  {
+    "code": "1620",
+    "name": "Fabricación de hojas de madera para enchapado; fabricación de tableros contrachapados, tableros laminados, tableros de partículas y otros tableros y paneles",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "16",
+    "group": "162"
+  },
+  {
+    "code": "1630",
+    "name": "Fabricación de partes y piezas de madera, de carpintería y ebanistería para la construcción",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "16",
+    "group": "163"
+  },
+  {
+    "code": "1640",
+    "name": "Fabricación de recipientes de madera",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "16",
+    "group": "164"
+  },
+  {
+    "code": "1690",
+    "name": "Fabricación de otros productos de madera; fabricación de artículos de corcho, cestería y espartería",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "16",
+    "group": "169"
+  },
+  {
+    "code": "1701",
+    "name": "Fabricación de pulpas (pastas) celulósicas; papel y cartón",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "17",
+    "group": "170"
+  },
+  {
+    "code": "1702",
+    "name": "Fabricación de papel y cartón ondulado (corrugado); fabricación de envases, empaques y de embalajes de papel y cartón",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "17",
+    "group": "170"
+  },
+  {
+    "code": "1709",
+    "name": "Fabricación de otros artículos de papel y cartón",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "17",
+    "group": "170"
+  },
+  {
+    "code": "1811",
+    "name": "Actividades de impresión",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "18",
+    "group": "181"
+  },
+  {
+    "code": "1812",
+    "name": "Actividades de servicios relacionados con la impresión",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "18",
+    "group": "181"
+  },
+  {
+    "code": "1820",
+    "name": "Producción de copias a partir de grabaciones originales",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "18",
+    "group": "182"
+  },
+  {
+    "code": "1910",
+    "name": "Fabricación de productos de hornos de coque",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "19",
+    "group": "191"
+  },
+  {
+    "code": "1921",
+    "name": "Fabricación de productos de la refinación del petróleo",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "19",
+    "group": "192"
+  },
+  {
+    "code": "1922",
+    "name": "Actividad de mezcla de combustibles",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "19",
+    "group": "192"
+  },
+  {
+    "code": "2011",
+    "name": "Fabricación de sustancias y productos químicos básicos",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "20",
+    "group": "201"
+  },
+  {
+    "code": "2012",
+    "name": "Fabricación de abonos y compuestos inorgánicos nitrogenados",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "20",
+    "group": "201"
+  },
+  {
+    "code": "2013",
+    "name": "Fabricación de plásticos en formas primarias",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "20",
+    "group": "201"
+  },
+  {
+    "code": "2014",
+    "name": "Fabricación de caucho sintético en formas primarias",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "20",
+    "group": "201"
+  },
+  {
+    "code": "2021",
+    "name": "Fabricación de plaguicidas y otros productos químicos de uso agropecuario",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "20",
+    "group": "202"
+  },
+  {
+    "code": "2022",
+    "name": "Fabricación de pinturas, barnices y revestimientos similares, tintas para impresión y masillas",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "20",
+    "group": "202"
+  },
+  {
+    "code": "2023",
+    "name": "Fabricación de jabones y detergentes, preparados para limpiar y pulir; perfumes y preparados de tocador",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "20",
+    "group": "202"
+  },
+  {
+    "code": "2029",
+    "name": "Fabricación de otros productos químicos n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "20",
+    "group": "202"
+  },
+  {
+    "code": "2030",
+    "name": "Fabricación de fibras sintéticas y artificiales",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "20",
+    "group": "203"
+  },
+  {
+    "code": "2100",
+    "name": "Fabricación de productos farmacéuticos, sustancias químicas medicinales y productos botánicos de uso farmacéutico",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "21",
+    "group": "210"
+  },
+  {
+    "code": "2211",
+    "name": "Fabricación de llantas y neumáticos de caucho",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "22",
+    "group": "221"
+  },
+  {
+    "code": "2212",
+    "name": "Reencauche de llantas usadas",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "22",
+    "group": "221"
+  },
+  {
+    "code": "2219",
+    "name": "Fabricación de formas básicas de caucho y otros productos de caucho n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "22",
+    "group": "221"
+  },
+  {
+    "code": "2221",
+    "name": "Fabricación de formas básicas de plástico",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "22",
+    "group": "222"
+  },
+  {
+    "code": "2229",
+    "name": "Fabricación de artículos de plástico n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "22",
+    "group": "222"
+  },
+  {
+    "code": "2310",
+    "name": "Fabricación de vidrio y productos de vidrio",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "23",
+    "group": "231"
+  },
+  {
+    "code": "2391",
+    "name": "Fabricación de productos refractarios",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "23",
+    "group": "239"
+  },
+  {
+    "code": "2392",
+    "name": "Fabricación de materiales de arcilla para la construcción",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "23",
+    "group": "239"
+  },
+  {
+    "code": "2393",
+    "name": "Fabricación de otros productos de cerámica y porcelana",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "23",
+    "group": "239"
+  },
+  {
+    "code": "2394",
+    "name": "Fabricación de cemento, cal y yeso",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "23",
+    "group": "239"
+  },
+  {
+    "code": "2395",
+    "name": "Fabricación de artículos de hormigón, cemento y yeso",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "23",
+    "group": "239"
+  },
+  {
+    "code": "2396",
+    "name": "Corte, tallado y acabado de la piedra",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "23",
+    "group": "239"
+  },
+  {
+    "code": "2399",
+    "name": "Fabricación de otros productos minerales no metálicos n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "23",
+    "group": "239"
+  },
+  {
+    "code": "2410",
+    "name": "Industrias básicas de hierro y de acero",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "24",
+    "group": "241"
+  },
+  {
+    "code": "2421",
+    "name": "Industrias básicas de metales preciosos",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "24",
+    "group": "242"
+  },
+  {
+    "code": "2429",
+    "name": "Industrias básicas de otros metales no ferrosos",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "24",
+    "group": "242"
+  },
+  {
+    "code": "2431",
+    "name": "Fundición de hierro y de acero",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "24",
+    "group": "243"
+  },
+  {
+    "code": "2432",
+    "name": "Fundición de metales no ferrosos",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "24",
+    "group": "243"
+  },
+  {
+    "code": "2511",
+    "name": "Fabricación de productos metálicos para uso estructural",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "25",
+    "group": "251"
+  },
+  {
+    "code": "2512",
+    "name": "Fabricación de tanques, depósitos y recipientes de metal, excepto los utilizados para el envase o el transporte de mercancías",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "25",
+    "group": "251"
+  },
+  {
+    "code": "2513",
+    "name": "Fabricación de generadores de vapor, excepto calderas de agua caliente para calefacción central",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "25",
+    "group": "251"
+  },
+  {
+    "code": "2520",
+    "name": "Fabricación de armas y municiones",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "25",
+    "group": "252"
+  },
+  {
+    "code": "2591",
+    "name": "Forja, prensado, estampado y laminado de metal; pulvimetalurgia",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "25",
+    "group": "259"
+  },
+  {
+    "code": "2592",
+    "name": "Tratamiento y revestimiento de metales; mecanizado",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "25",
+    "group": "259"
+  },
+  {
+    "code": "2593",
+    "name": "Fabricación de artículos de cuchillería, herramientas de mano y artículos de ferretería",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "25",
+    "group": "259"
+  },
+  {
+    "code": "2599",
+    "name": "Fabricación de otros productos elaborados de metal n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "25",
+    "group": "259"
+  },
+  {
+    "code": "2610",
+    "name": "Fabricación de componentes y tableros electrónicos",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "26",
+    "group": "261"
+  },
+  {
+    "code": "2620",
+    "name": "Fabricación de computadoras y de equipo periférico",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "26",
+    "group": "262"
+  },
+  {
+    "code": "2630",
+    "name": "Fabricación de equipos de comunicación",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "26",
+    "group": "263"
+  },
+  {
+    "code": "2640",
+    "name": "Fabricación de aparatos electrónicos de consumo",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "26",
+    "group": "264"
+  },
+  {
+    "code": "2651",
+    "name": "Fabricación de equipo de medición, prueba, navegación y control",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "26",
+    "group": "265"
+  },
+  {
+    "code": "2652",
+    "name": "Fabricación de relojes",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "26",
+    "group": "265"
+  },
+  {
+    "code": "2660",
+    "name": "Fabricación de equipo de irradiación y equipo electrónico de uso médico y terapéutico",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "26",
+    "group": "266"
+  },
+  {
+    "code": "2670",
+    "name": "Fabricación de instrumentos ópticos y equipo fotográfico",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "26",
+    "group": "267"
+  },
+  {
+    "code": "2680",
+    "name": "Fabricación de medios magnéticos y ópticos para almacenamiento de datos",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "26",
+    "group": "268"
+  },
+  {
+    "code": "2711",
+    "name": "Fabricación de motores, generadores y transformadores eléctricos",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "27",
+    "group": "271"
+  },
+  {
+    "code": "2712",
+    "name": "Fabricación de aparatos de distribución y control de la energía eléctrica",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "27",
+    "group": "271"
+  },
+  {
+    "code": "2720",
+    "name": "Fabricación de pilas, baterías y acumuladores eléctricos",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "27",
+    "group": "272"
+  },
+  {
+    "code": "2731",
+    "name": "Fabricación de hilos y cables eléctricos y de fibra óptica",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "27",
+    "group": "273"
+  },
+  {
+    "code": "2732",
+    "name": "Fabricación de dispositivos de cableado",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "27",
+    "group": "273"
+  },
+  {
+    "code": "2740",
+    "name": "Fabricación de equipos eléctricos de iluminación",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "27",
+    "group": "274"
+  },
+  {
+    "code": "2750",
+    "name": "Fabricación de aparatos de uso doméstico",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "27",
+    "group": "275"
+  },
+  {
+    "code": "2790",
+    "name": "Fabricación de otros tipos de equipo eléctrico n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "27",
+    "group": "279"
+  },
+  {
+    "code": "2811",
+    "name": "Fabricación de motores, turbinas, y partes para motores de combustión interna",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "28",
+    "group": "281"
+  },
+  {
+    "code": "2812",
+    "name": "Fabricación de equipos de potencia hidráulica y neumática",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "28",
+    "group": "281"
+  },
+  {
+    "code": "2813",
+    "name": "Fabricación de otras bombas, compresores, grifos y válvulas",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "28",
+    "group": "281"
+  },
+  {
+    "code": "2814",
+    "name": "Fabricación de cojinetes, engranajes, trenes de engranajes y piezas de transmisión",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "28",
+    "group": "281"
+  },
+  {
+    "code": "2815",
+    "name": "Fabricación de hornos, hogares y quemadores industriales",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "28",
+    "group": "281"
+  },
+  {
+    "code": "2816",
+    "name": "Fabricación de equipo de elevación y manipulación",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "28",
+    "group": "281"
+  },
+  {
+    "code": "2817",
+    "name": "Fabricación de maquinaria y equipo de oficina (excepto computadoras y equipo periférico)",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "28",
+    "group": "281"
+  },
+  {
+    "code": "2818",
+    "name": "Fabricación de herramientas manuales con motor",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "28",
+    "group": "281"
+  },
+  {
+    "code": "2819",
+    "name": "Fabricación de otros tipos de maquinaria y equipo de uso general n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "28",
+    "group": "281"
+  },
+  {
+    "code": "2821",
+    "name": "Fabricación de maquinaria agropecuaria y forestal",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "28",
+    "group": "282"
+  },
+  {
+    "code": "2822",
+    "name": "Fabricación de máquinas formadoras de metal y de máquinas herramienta",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "28",
+    "group": "282"
+  },
+  {
+    "code": "2823",
+    "name": "Fabricación de maquinaria para la metalurgia",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "28",
+    "group": "282"
+  },
+  {
+    "code": "2824",
+    "name": "Fabricación de maquinaria para explotación de minas y canteras y para obras de construcción",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "28",
+    "group": "282"
+  },
+  {
+    "code": "2825",
+    "name": "Fabricación de maquinaria para la elaboración de alimentos, bebidas y tabaco",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "28",
+    "group": "282"
+  },
+  {
+    "code": "2826",
+    "name": "Fabricación de maquinaria para la elaboración de productos textiles, prendas de vestir y cueros",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "28",
+    "group": "282"
+  },
+  {
+    "code": "2829",
+    "name": "Fabricación de otros tipos de maquinaria y equipo de uso especial n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "28",
+    "group": "282"
+  },
+  {
+    "code": "2910",
+    "name": "Fabricación de vehículos automotores y sus motores",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "29",
+    "group": "291"
+  },
+  {
+    "code": "2920",
+    "name": "Fabricación de carrocerías para vehículos automotores; fabricación de remolques y semirremolques",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "29",
+    "group": "292"
+  },
+  {
+    "code": "2930",
+    "name": "Fabricación de partes, piezas (autopartes) y accesorios (lujos) para vehículos automotores",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "29",
+    "group": "293"
+  },
+  {
+    "code": "3011",
+    "name": "Construcción de barcos y de estructuras flotantes",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "30",
+    "group": "301"
+  },
+  {
+    "code": "3012",
+    "name": "Construcción de embarcaciones de recreo y deporte",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "30",
+    "group": "301"
+  },
+  {
+    "code": "3020",
+    "name": "Fabricación de locomotoras y de material rodante para ferrocarriles",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "30",
+    "group": "302"
+  },
+  {
+    "code": "3030",
+    "name": "Fabricación de aeronaves, naves espaciales y de maquinaria conexa",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "30",
+    "group": "303"
+  },
+  {
+    "code": "3040",
+    "name": "Fabricación de vehículos militares de combate",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "30",
+    "group": "304"
+  },
+  {
+    "code": "3091",
+    "name": "Fabricación de motocicletas",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "30",
+    "group": "309"
+  },
+  {
+    "code": "3092",
+    "name": "Fabricación de bicicletas y de sillas de ruedas para personas con discapacidad",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "30",
+    "group": "309"
+  },
+  {
+    "code": "3099",
+    "name": "Fabricación de otros tipos de equipo de transporte n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "30",
+    "group": "309"
+  },
+  {
+    "code": "3110",
+    "name": "Fabricación de muebles",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "31",
+    "group": "311"
+  },
+  {
+    "code": "3120",
+    "name": "Fabricación de colchones y somieres",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "31",
+    "group": "312"
+  },
+  {
+    "code": "3211",
+    "name": "Fabricación de joyas y artículos conexos",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "32",
+    "group": "321"
+  },
+  {
+    "code": "3212",
+    "name": "Fabricación de bisutería y artículos conexos",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "32",
+    "group": "321"
+  },
+  {
+    "code": "3220",
+    "name": "Fabricación de instrumentos musicales",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "32",
+    "group": "322"
+  },
+  {
+    "code": "3230",
+    "name": "Fabricación de artículos y equipo para la práctica del deporte",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "32",
+    "group": "323"
+  },
+  {
+    "code": "3240",
+    "name": "Fabricación de juegos, juguetes y rompecabezas",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "32",
+    "group": "324"
+  },
+  {
+    "code": "3250",
+    "name": "Fabricación de instrumentos, aparatos y materiales médicos y odontológicos (incluido mobiliario)",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "32",
+    "group": "325"
+  },
+  {
+    "code": "3290",
+    "name": "Otras industrias manufactureras n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "32",
+    "group": "329"
+  },
+  {
+    "code": "3311",
+    "name": "Mantenimiento y reparación especializado de productos elaborados en metal",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "33",
+    "group": "331"
+  },
+  {
+    "code": "3312",
+    "name": "Mantenimiento y reparación especializado de maquinaria y equipo",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "33",
+    "group": "331"
+  },
+  {
+    "code": "3313",
+    "name": "Mantenimiento y reparación especializado de equipo electrónico y óptico",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "33",
+    "group": "331"
+  },
+  {
+    "code": "3314",
+    "name": "Mantenimiento y reparación especializado de equipo eléctrico",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "33",
+    "group": "331"
+  },
+  {
+    "code": "3315",
+    "name": "Mantenimiento y reparación especializado de equipo de transporte, excepto los vehículos automotores, motocicletas y bicicletas",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "33",
+    "group": "331"
+  },
+  {
+    "code": "3319",
+    "name": "Mantenimiento y reparación de otros tipos de equipos y sus componentes n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "33",
+    "group": "331"
+  },
+  {
+    "code": "3320",
+    "name": "Instalación especializada de maquinaria y equipo industrial",
+    "type": "CIIU",
+    "sectionCode": "C",
+    "section": "INDUSTRIAS MANUFACTURERAS",
+    "division": "33",
+    "group": "332"
+  },
+  {
+    "code": "3511",
+    "name": "Generación de energía eléctrica",
+    "type": "CIIU",
+    "sectionCode": "D",
+    "section": "SUMINISTRO DE ELECTRICIDAD, GAS, VAPOR Y AIRE ACONDICIONADO",
+    "division": "35",
+    "group": "351"
+  },
+  {
+    "code": "3512",
+    "name": "Transmisión de energía eléctrica",
+    "type": "CIIU",
+    "sectionCode": "D",
+    "section": "SUMINISTRO DE ELECTRICIDAD, GAS, VAPOR Y AIRE ACONDICIONADO",
+    "division": "35",
+    "group": "351"
+  },
+  {
+    "code": "3513",
+    "name": "Distribución de energía eléctrica",
+    "type": "CIIU",
+    "sectionCode": "D",
+    "section": "SUMINISTRO DE ELECTRICIDAD, GAS, VAPOR Y AIRE ACONDICIONADO",
+    "division": "35",
+    "group": "351"
+  },
+  {
+    "code": "3514",
+    "name": "Comercialización de energía eléctrica",
+    "type": "CIIU",
+    "sectionCode": "D",
+    "section": "SUMINISTRO DE ELECTRICIDAD, GAS, VAPOR Y AIRE ACONDICIONADO",
+    "division": "35",
+    "group": "351"
+  },
+  {
+    "code": "3520",
+    "name": "Producción de gas; distribución de combustibles gaseosos por tuberías",
+    "type": "CIIU",
+    "sectionCode": "D",
+    "section": "SUMINISTRO DE ELECTRICIDAD, GAS, VAPOR Y AIRE ACONDICIONADO",
+    "division": "35",
+    "group": "352"
+  },
+  {
+    "code": "3530",
+    "name": "Suministro de vapor y aire acondicionado",
+    "type": "CIIU",
+    "sectionCode": "D",
+    "section": "SUMINISTRO DE ELECTRICIDAD, GAS, VAPOR Y AIRE ACONDICIONADO",
+    "division": "35",
+    "group": "353"
+  },
+  {
+    "code": "3600",
+    "name": "Captación, tratamiento y distribución de agua",
+    "type": "CIIU",
+    "sectionCode": "E",
+    "section": "DISTRIBUCIÓN DE AGUA; EVACUACIÓN Y TRATAMIENTO DE AGUAS RESIDUALES, GESTIÓN DE DESECHOS Y ACTIVIDADES DE SANEAMIENTO AMBIENTAL",
+    "division": "36",
+    "group": "360"
+  },
+  {
+    "code": "3700",
+    "name": "Evacuación y tratamiento de aguas residuales",
+    "type": "CIIU",
+    "sectionCode": "E",
+    "section": "DISTRIBUCIÓN DE AGUA; EVACUACIÓN Y TRATAMIENTO DE AGUAS RESIDUALES, GESTIÓN DE DESECHOS Y ACTIVIDADES DE SANEAMIENTO AMBIENTAL",
+    "division": "37",
+    "group": "370"
+  },
+  {
+    "code": "3811",
+    "name": "Recolección de desechos no peligrosos",
+    "type": "CIIU",
+    "sectionCode": "E",
+    "section": "DISTRIBUCIÓN DE AGUA; EVACUACIÓN Y TRATAMIENTO DE AGUAS RESIDUALES, GESTIÓN DE DESECHOS Y ACTIVIDADES DE SANEAMIENTO AMBIENTAL",
+    "division": "38",
+    "group": "381"
+  },
+  {
+    "code": "3812",
+    "name": "Recolección de desechos peligrosos",
+    "type": "CIIU",
+    "sectionCode": "E",
+    "section": "DISTRIBUCIÓN DE AGUA; EVACUACIÓN Y TRATAMIENTO DE AGUAS RESIDUALES, GESTIÓN DE DESECHOS Y ACTIVIDADES DE SANEAMIENTO AMBIENTAL",
+    "division": "38",
+    "group": "381"
+  },
+  {
+    "code": "3821",
+    "name": "Tratamiento y disposición de desechos no peligrosos",
+    "type": "CIIU",
+    "sectionCode": "E",
+    "section": "DISTRIBUCIÓN DE AGUA; EVACUACIÓN Y TRATAMIENTO DE AGUAS RESIDUALES, GESTIÓN DE DESECHOS Y ACTIVIDADES DE SANEAMIENTO AMBIENTAL",
+    "division": "38",
+    "group": "382"
+  },
+  {
+    "code": "3822",
+    "name": "Tratamiento y disposición de desechos peligrosos",
+    "type": "CIIU",
+    "sectionCode": "E",
+    "section": "DISTRIBUCIÓN DE AGUA; EVACUACIÓN Y TRATAMIENTO DE AGUAS RESIDUALES, GESTIÓN DE DESECHOS Y ACTIVIDADES DE SANEAMIENTO AMBIENTAL",
+    "division": "38",
+    "group": "382"
+  },
+  {
+    "code": "3830",
+    "name": "Recuperación de materiales",
+    "type": "CIIU",
+    "sectionCode": "E",
+    "section": "DISTRIBUCIÓN DE AGUA; EVACUACIÓN Y TRATAMIENTO DE AGUAS RESIDUALES, GESTIÓN DE DESECHOS Y ACTIVIDADES DE SANEAMIENTO AMBIENTAL",
+    "division": "38",
+    "group": "383"
+  },
+  {
+    "code": "3900",
+    "name": "Actividades de saneamiento ambiental y otros servicios de gestión de desechos",
+    "type": "CIIU",
+    "sectionCode": "E",
+    "section": "DISTRIBUCIÓN DE AGUA; EVACUACIÓN Y TRATAMIENTO DE AGUAS RESIDUALES, GESTIÓN DE DESECHOS Y ACTIVIDADES DE SANEAMIENTO AMBIENTAL",
+    "division": "39",
+    "group": "390"
+  },
+  {
+    "code": "4111",
+    "name": "Construcción de edificios residenciales",
+    "type": "CIIU",
+    "sectionCode": "F",
+    "section": "CONSTRUCCIÓN",
+    "division": "41",
+    "group": "411"
+  },
+  {
+    "code": "4112",
+    "name": "Construcción de edificios no residenciales",
+    "type": "CIIU",
+    "sectionCode": "F",
+    "section": "CONSTRUCCIÓN",
+    "division": "41",
+    "group": "411"
+  },
+  {
+    "code": "4210",
+    "name": "Construcción de carreteras y vías de ferrocarril",
+    "type": "CIIU",
+    "sectionCode": "F",
+    "section": "CONSTRUCCIÓN",
+    "division": "42",
+    "group": "421"
+  },
+  {
+    "code": "4220",
+    "name": "Construcción de proyectos de servicio público",
+    "type": "CIIU",
+    "sectionCode": "F",
+    "section": "CONSTRUCCIÓN",
+    "division": "42",
+    "group": "422"
+  },
+  {
+    "code": "4290",
+    "name": "Construcción de otras obras de ingeniería civil",
+    "type": "CIIU",
+    "sectionCode": "F",
+    "section": "CONSTRUCCIÓN",
+    "division": "42",
+    "group": "429"
+  },
+  {
+    "code": "4311",
+    "name": "Demolición",
+    "type": "CIIU",
+    "sectionCode": "F",
+    "section": "CONSTRUCCIÓN",
+    "division": "43",
+    "group": "431"
+  },
+  {
+    "code": "4312",
+    "name": "Preparación del terreno",
+    "type": "CIIU",
+    "sectionCode": "F",
+    "section": "CONSTRUCCIÓN",
+    "division": "43",
+    "group": "431"
+  },
+  {
+    "code": "4321",
+    "name": "Instalaciones eléctricas",
+    "type": "CIIU",
+    "sectionCode": "F",
+    "section": "CONSTRUCCIÓN",
+    "division": "43",
+    "group": "432"
+  },
+  {
+    "code": "4322",
+    "name": "Instalaciones de fontanería, calefacción y aire acondicionado",
+    "type": "CIIU",
+    "sectionCode": "F",
+    "section": "CONSTRUCCIÓN",
+    "division": "43",
+    "group": "432"
+  },
+  {
+    "code": "4329",
+    "name": "Otras instalaciones especializadas",
+    "type": "CIIU",
+    "sectionCode": "F",
+    "section": "CONSTRUCCIÓN",
+    "division": "43",
+    "group": "432"
+  },
+  {
+    "code": "4330",
+    "name": "Terminación y acabado de edificios y obras de ingeniería civil",
+    "type": "CIIU",
+    "sectionCode": "F",
+    "section": "CONSTRUCCIÓN",
+    "division": "43",
+    "group": "433"
+  },
+  {
+    "code": "4390",
+    "name": "Otras actividades especializadas para la construcción de edificios y obras de ingeniería civil",
+    "type": "CIIU",
+    "sectionCode": "F",
+    "section": "CONSTRUCCIÓN",
+    "division": "43",
+    "group": "439"
+  },
+  {
+    "code": "4511",
+    "name": "Comercio de vehículos automotores nuevos",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "45",
+    "group": "451"
+  },
+  {
+    "code": "4512",
+    "name": "Comercio de vehículos automotores usados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "45",
+    "group": "451"
+  },
+  {
+    "code": "4520",
+    "name": "Mantenimiento y reparación de vehículos automotores",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "45",
+    "group": "452"
+  },
+  {
+    "code": "4530",
+    "name": "Comercio de partes, piezas (autopartes) y accesorios (lujos) para vehículos automotores",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "45",
+    "group": "453"
+  },
+  {
+    "code": "4541",
+    "name": "Comercio de motocicletas y de sus partes, piezas y accesorios",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "45",
+    "group": "454"
+  },
+  {
+    "code": "4542",
+    "name": "Mantenimiento y reparación de motocicletas y de sus partes y piezas",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "45",
+    "group": "454"
+  },
+  {
+    "code": "4610",
+    "name": "Comercio al por mayor a cambio de una retribución o por contrata",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "461"
+  },
+  {
+    "code": "4620",
+    "name": "Comercio al por mayor de materias primas agropecuarias; animales vivos",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "462"
+  },
+  {
+    "code": "4631",
+    "name": "Comercio al por mayor de productos alimenticios",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "463"
+  },
+  {
+    "code": "4632",
+    "name": "Comercio al por mayor de bebidas y tabaco",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "463"
+  },
+  {
+    "code": "4641",
+    "name": "Comercio al por mayor de productos textiles, productos confeccionados para uso doméstico",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "464"
+  },
+  {
+    "code": "4642",
+    "name": "Comercio al por mayor de prendas de vestir",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "464"
+  },
+  {
+    "code": "4643",
+    "name": "Comercio al por mayor de calzado",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "464"
+  },
+  {
+    "code": "4644",
+    "name": "Comercio al por mayor de aparatos y equipo de uso doméstico",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "464"
+  },
+  {
+    "code": "4645",
+    "name": "Comercio al por mayor de productos farmacéuticos, medicinales, cosméticos y de tocador",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "464"
+  },
+  {
+    "code": "4649",
+    "name": "Comercio al por mayor de otros utensilios domésticos n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "464"
+  },
+  {
+    "code": "4651",
+    "name": "Comercio al por mayor de computadores, equipo periférico y programas de informática",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "465"
+  },
+  {
+    "code": "4652",
+    "name": "Comercio al por mayor de equipo, partes y piezas electrónicos y de telecomunicaciones",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "465"
+  },
+  {
+    "code": "4653",
+    "name": "Comercio al por mayor de maquinaria y equipo agropecuarios",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "465"
+  },
+  {
+    "code": "4659",
+    "name": "Comercio al por mayor de otros tipos de maquinaria y equipo n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "465"
+  },
+  {
+    "code": "4661",
+    "name": "Comercio al por mayor de combustibles sólidos, líquidos, gaseosos y productos conexos",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "466"
+  },
+  {
+    "code": "4662",
+    "name": "Comercio al por mayor de metales y productos metalíferos",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "466"
+  },
+  {
+    "code": "4663",
+    "name": "Comercio al por mayor de materiales de construcción, artículos de ferretería, pinturas, productos de vidrio, equipo y materiales de fontanería y calefacción",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "466"
+  },
+  {
+    "code": "4664",
+    "name": "Comercio al por mayor de productos químicos básicos, cauchos y plásticos en formas primarias y productos químicos de uso agropecuario",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "466"
+  },
+  {
+    "code": "4665",
+    "name": "Comercio al por mayor de desperdicios, desechos y chatarra",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "466"
+  },
+  {
+    "code": "4669",
+    "name": "Comercio al por mayor de otros productos n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "466"
+  },
+  {
+    "code": "4690",
+    "name": "Comercio al por mayor no especializado",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "46",
+    "group": "469"
+  },
+  {
+    "code": "4711",
+    "name": "Comercio al por menor en establecimientos no especializados con surtido compuesto principalmente por alimentos, bebidas (alcohólicas y no alcohólicas) o tabaco",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "471"
+  },
+  {
+    "code": "4719",
+    "name": "Comercio al por menor en establecimientos no especializados, con surtido compuesto principalmente por productos diferentes de alimentos (víveres en general), bebidas (alcohólicas y no alcohólicas) y tabaco",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "471"
+  },
+  {
+    "code": "4721",
+    "name": "Comercio al por menor de productos agrícolas para el consumo en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "472"
+  },
+  {
+    "code": "4722",
+    "name": "Comercio al por menor de leche, productos lácteos y huevos, en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "472"
+  },
+  {
+    "code": "4723",
+    "name": "Comercio al por menor de carnes (incluye aves de corral), productos cárnicos, pescados y productos de mar, en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "472"
+  },
+  {
+    "code": "4724",
+    "name": "Comercio al por menor de bebidas y productos del tabaco, en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "472"
+  },
+  {
+    "code": "4729",
+    "name": "Comercio al por menor de otros productos alimenticios n.c.p., en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "472"
+  },
+  {
+    "code": "4731",
+    "name": "Comercio al por menor de combustible para automotores",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "473"
+  },
+  {
+    "code": "4732",
+    "name": "Comercio al por menor de lubricantes (aceites, grasas), aditivos y productos de limpieza para vehículos automotores",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "473"
+  },
+  {
+    "code": "4741",
+    "name": "Comercio al por menor de computadores, equipos periféricos, programas de informática y equipos de telecomunicaciones en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "474"
+  },
+  {
+    "code": "4742",
+    "name": "Comercio al por menor de equipos y aparatos de sonido y de video, en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "474"
+  },
+  {
+    "code": "4751",
+    "name": "Comercio al por menor de productos textiles en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "475"
+  },
+  {
+    "code": "4752",
+    "name": "Comercio al por menor de artículos de ferretería, pinturas y productos de vidrio en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "475"
+  },
+  {
+    "code": "4753",
+    "name": "Comercio al por menor de tapices, alfombras y recubrimientos para paredes y pisos en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "475"
+  },
+  {
+    "code": "4754",
+    "name": "Comercio al por menor de electrodomésticos y gasodomésticos, muebles y equipos de iluminación en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "475"
+  },
+  {
+    "code": "4755",
+    "name": "Comercio al por menor de artículos y utensilios de uso doméstico en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "475"
+  },
+  {
+    "code": "4759",
+    "name": "Comercio al por menor de otros artículos domésticos en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "475"
+  },
+  {
+    "code": "4761",
+    "name": "Comercio al por menor de libros, periódicos, materiales y artículos de papelería y escritorio, en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "476"
+  },
+  {
+    "code": "4762",
+    "name": "Comercio al por menor de artículos deportivos, en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "476"
+  },
+  {
+    "code": "4769",
+    "name": "Comercio al por menor de otros artículos culturales y de entretenimiento n.c.p. en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "476"
+  },
+  {
+    "code": "4771",
+    "name": "Comercio al por menor de prendas de vestir y sus accesorios (incluye artículos de piel) en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "477"
+  },
+  {
+    "code": "4772",
+    "name": "Comercio al por menor de todo tipo de calzado y artículos de cuero y sucedáneos del cuero en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "477"
+  },
+  {
+    "code": "4773",
+    "name": "Comercio al por menor de productos farmacéuticos y medicinales, cosméticos y artículos de tocador en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "477"
+  },
+  {
+    "code": "4774",
+    "name": "Comercio al por menor de otros productos nuevos en establecimientos especializados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "477"
+  },
+  {
+    "code": "4775",
+    "name": "Comercio al por menor de artículos de segunda mano",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "477"
+  },
+  {
+    "code": "4781",
+    "name": "Comercio al por menor de alimentos, bebidas y tabaco, en puestos de venta móviles",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "478"
+  },
+  {
+    "code": "4782",
+    "name": "Comercio al por menor de productos textiles, prendas de vestir y calzado, en puestos de venta móviles",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "478"
+  },
+  {
+    "code": "4789",
+    "name": "Comercio al por menor de otros productos en puestos de venta móviles",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "478"
+  },
+  {
+    "code": "4791",
+    "name": "Comercio al por menor realizado a través de internet",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "479"
+  },
+  {
+    "code": "4792",
+    "name": "Comercio al por menor realizado a través de casas de venta o por correo",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "479"
+  },
+  {
+    "code": "4799",
+    "name": "Otros tipos de comercio al por menor no realizado en establecimientos, puestos de venta o mercados",
+    "type": "CIIU",
+    "sectionCode": "G",
+    "section": "COMERCIO AL POR MAYOR Y AL POR MENOR; REPARACIÓN DE VEHÍCULOS AUTOMOTORES Y MOTOCICLETAS",
+    "division": "47",
+    "group": "479"
+  },
+  {
+    "code": "4911",
+    "name": "Transporte férreo de pasajeros",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "49",
+    "group": "491"
+  },
+  {
+    "code": "4912",
+    "name": "Transporte férreo de carga",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "49",
+    "group": "491"
+  },
+  {
+    "code": "4921",
+    "name": "Transporte de pasajeros",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "49",
+    "group": "492"
+  },
+  {
+    "code": "4922",
+    "name": "Transporte mixto",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "49",
+    "group": "492"
+  },
+  {
+    "code": "4923",
+    "name": "Transporte de carga por carretera",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "49",
+    "group": "492"
+  },
+  {
+    "code": "4930",
+    "name": "Transporte por tuberías",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "49",
+    "group": "493"
+  },
+  {
+    "code": "5011",
+    "name": "Transporte de pasajeros marítimo y de cabotaje",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "50",
+    "group": "501"
+  },
+  {
+    "code": "5012",
+    "name": "Transporte de carga marítimo y de cabotaje",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "50",
+    "group": "501"
+  },
+  {
+    "code": "5021",
+    "name": "Transporte fluvial de pasajeros",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "50",
+    "group": "502"
+  },
+  {
+    "code": "5022",
+    "name": "Transporte fluvial de carga",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "50",
+    "group": "502"
+  },
+  {
+    "code": "5111",
+    "name": "Transporte aéreo nacional de pasajeros",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "51",
+    "group": "511"
+  },
+  {
+    "code": "5112",
+    "name": "Transporte aéreo internacional de pasajeros",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "51",
+    "group": "511"
+  },
+  {
+    "code": "5121",
+    "name": "Transporte aéreo nacional de carga",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "51",
+    "group": "512"
+  },
+  {
+    "code": "5122",
+    "name": "Transporte aéreo internacional de carga",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "51",
+    "group": "512"
+  },
+  {
+    "code": "5210",
+    "name": "Almacenamiento y depósito",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "52",
+    "group": "521"
+  },
+  {
+    "code": "5221",
+    "name": "Actividades de estaciones, vías y servicios complementarios para el transporte terrestre",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "52",
+    "group": "522"
+  },
+  {
+    "code": "5222",
+    "name": "Actividades de puertos y servicios complementarios para el transporte acuático",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "52",
+    "group": "522"
+  },
+  {
+    "code": "5223",
+    "name": "Actividades de aeropuertos, servicios de navegación aérea y demás actividades conexas al transporte aéreo",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "52",
+    "group": "522"
+  },
+  {
+    "code": "5224",
+    "name": "Manipulación de carga",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "52",
+    "group": "522"
+  },
+  {
+    "code": "5229",
+    "name": "Otras actividades complementarias al transporte",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "52",
+    "group": "522"
+  },
+  {
+    "code": "5310",
+    "name": "Actividades postales nacionales",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "53",
+    "group": "531"
+  },
+  {
+    "code": "5320",
+    "name": "Actividades de mensajería",
+    "type": "CIIU",
+    "sectionCode": "H",
+    "section": "TRANSPORTE Y ALMACENAMIENTO",
+    "division": "53",
+    "group": "532"
+  },
+  {
+    "code": "5511",
+    "name": "Alojamiento en hoteles",
+    "type": "CIIU",
+    "sectionCode": "I",
+    "section": "ALOJAMIENTO Y SERVICIOS DE COMIDA",
+    "division": "55",
+    "group": "551"
+  },
+  {
+    "code": "5512",
+    "name": "Alojamiento en apartahoteles",
+    "type": "CIIU",
+    "sectionCode": "I",
+    "section": "ALOJAMIENTO Y SERVICIOS DE COMIDA",
+    "division": "55",
+    "group": "551"
+  },
+  {
+    "code": "5513",
+    "name": "Alojamiento en centros vacacionales",
+    "type": "CIIU",
+    "sectionCode": "I",
+    "section": "ALOJAMIENTO Y SERVICIOS DE COMIDA",
+    "division": "55",
+    "group": "551"
+  },
+  {
+    "code": "5514",
+    "name": "Alojamiento rural",
+    "type": "CIIU",
+    "sectionCode": "I",
+    "section": "ALOJAMIENTO Y SERVICIOS DE COMIDA",
+    "division": "55",
+    "group": "551"
+  },
+  {
+    "code": "5519",
+    "name": "Otros tipos de alojamiento para visitantes",
+    "type": "CIIU",
+    "sectionCode": "I",
+    "section": "ALOJAMIENTO Y SERVICIOS DE COMIDA",
+    "division": "55",
+    "group": "551"
+  },
+  {
+    "code": "5520",
+    "name": "Actividades de zonas de camping y parques para vehículos recreacionales",
+    "type": "CIIU",
+    "sectionCode": "I",
+    "section": "ALOJAMIENTO Y SERVICIOS DE COMIDA",
+    "division": "55",
+    "group": "552"
+  },
+  {
+    "code": "5530",
+    "name": "Servicio de estancia por horas",
+    "type": "CIIU",
+    "sectionCode": "I",
+    "section": "ALOJAMIENTO Y SERVICIOS DE COMIDA",
+    "division": "55",
+    "group": "553"
+  },
+  {
+    "code": "5590",
+    "name": "Otros tipos de alojamiento n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "I",
+    "section": "ALOJAMIENTO Y SERVICIOS DE COMIDA",
+    "division": "55",
+    "group": "559"
+  },
+  {
+    "code": "5611",
+    "name": "Expendio a la mesa de comidas preparadas",
+    "type": "CIIU",
+    "sectionCode": "I",
+    "section": "ALOJAMIENTO Y SERVICIOS DE COMIDA",
+    "division": "56",
+    "group": "561"
+  },
+  {
+    "code": "5612",
+    "name": "Expendio por autoservicio de comidas preparadas",
+    "type": "CIIU",
+    "sectionCode": "I",
+    "section": "ALOJAMIENTO Y SERVICIOS DE COMIDA",
+    "division": "56",
+    "group": "561"
+  },
+  {
+    "code": "5613",
+    "name": "Expendio de comidas preparadas en cafeterías",
+    "type": "CIIU",
+    "sectionCode": "I",
+    "section": "ALOJAMIENTO Y SERVICIOS DE COMIDA",
+    "division": "56",
+    "group": "561"
+  },
+  {
+    "code": "5619",
+    "name": "Otros tipos de expendio de comidas preparadas n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "I",
+    "section": "ALOJAMIENTO Y SERVICIOS DE COMIDA",
+    "division": "56",
+    "group": "561"
+  },
+  {
+    "code": "5621",
+    "name": "Catering para eventos",
+    "type": "CIIU",
+    "sectionCode": "I",
+    "section": "ALOJAMIENTO Y SERVICIOS DE COMIDA",
+    "division": "56",
+    "group": "562"
+  },
+  {
+    "code": "5629",
+    "name": "Actividades de otros servicios de comidas",
+    "type": "CIIU",
+    "sectionCode": "I",
+    "section": "ALOJAMIENTO Y SERVICIOS DE COMIDA",
+    "division": "56",
+    "group": "562"
+  },
+  {
+    "code": "5630",
+    "name": "Expendio de bebidas alcohólicas para el consumo dentro del establecimiento",
+    "type": "CIIU",
+    "sectionCode": "I",
+    "section": "ALOJAMIENTO Y SERVICIOS DE COMIDA",
+    "division": "56",
+    "group": "563"
+  },
+  {
+    "code": "5811",
+    "name": "Edición de libros",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "58",
+    "group": "581"
+  },
+  {
+    "code": "5812",
+    "name": "Edición de directorios y listas de correo",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "58",
+    "group": "581"
+  },
+  {
+    "code": "5813",
+    "name": "Edición de periódicos, revistas y otras publicaciones periódicas",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "58",
+    "group": "581"
+  },
+  {
+    "code": "5819",
+    "name": "Otros trabajos de edición",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "58",
+    "group": "581"
+  },
+  {
+    "code": "5820",
+    "name": "Edición de programas de informática (software)",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "58",
+    "group": "582"
+  },
+  {
+    "code": "5911",
+    "name": "Actividades de producción de películas cinematográficas, videos, programas, anuncios y comerciales de televisión",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "59",
+    "group": "591"
+  },
+  {
+    "code": "5912",
+    "name": "Actividades de postproducción de películas cinematográficas, videos, programas, anuncios y comerciales de televisión",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "59",
+    "group": "591"
+  },
+  {
+    "code": "5913",
+    "name": "Actividades de distribución de películas cinematográficas, videos, programas, anuncios y comerciales de televisión",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "59",
+    "group": "591"
+  },
+  {
+    "code": "5914",
+    "name": "Actividades de exhibición de películas cinematográficas y videos",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "59",
+    "group": "591"
+  },
+  {
+    "code": "5920",
+    "name": "Actividades de grabación de sonido y edición de música",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "59",
+    "group": "592"
+  },
+  {
+    "code": "6010",
+    "name": "Actividades de programación y transmisión en el servicio de radiodifusión sonora",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "60",
+    "group": "601"
+  },
+  {
+    "code": "6020",
+    "name": "Actividades de programación y transmisión de televisión",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "60",
+    "group": "602"
+  },
+  {
+    "code": "6110",
+    "name": "Actividades de telecomunicaciones alámbricas",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "61",
+    "group": "611"
+  },
+  {
+    "code": "6120",
+    "name": "Actividades de telecomunicaciones inalámbricas",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "61",
+    "group": "612"
+  },
+  {
+    "code": "6130",
+    "name": "Actividades de telecomunicación satelital",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "61",
+    "group": "613"
+  },
+  {
+    "code": "6190",
+    "name": "Otras actividades de telecomunicaciones",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "61",
+    "group": "619"
+  },
+  {
+    "code": "6201",
+    "name": "Actividades de desarrollo de sistemas informáticos (planificación, análisis, diseño, programación, pruebas)",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "62",
+    "group": "620"
+  },
+  {
+    "code": "6202",
+    "name": "Actividades de consultoría informática y actividades de administración de instalaciones informáticas",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "62",
+    "group": "620"
+  },
+  {
+    "code": "6209",
+    "name": "Otras actividades de tecnologías de información y actividades de servicios informáticos",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "62",
+    "group": "620"
+  },
+  {
+    "code": "6311",
+    "name": "Procesamiento de datos, alojamiento (hosting) y actividades relacionadas",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "63",
+    "group": "631"
+  },
+  {
+    "code": "6312",
+    "name": "Portales web",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "63",
+    "group": "631"
+  },
+  {
+    "code": "6391",
+    "name": "Actividades de agencias de noticias",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "63",
+    "group": "639"
+  },
+  {
+    "code": "6399",
+    "name": "Otras actividades de servicios de información n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "J",
+    "section": "INFORMACIÓN Y COMUNICACIONES",
+    "division": "63",
+    "group": "639"
+  },
+  {
+    "code": "6411",
+    "name": "Banco Central",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "64",
+    "group": "641"
+  },
+  {
+    "code": "6412",
+    "name": "Bancos comerciales",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "64",
+    "group": "641"
+  },
+  {
+    "code": "6421",
+    "name": "Actividades de las corporaciones financieras",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "64",
+    "group": "642"
+  },
+  {
+    "code": "6422",
+    "name": "Actividades de las compañías de financiamiento",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "64",
+    "group": "642"
+  },
+  {
+    "code": "6423",
+    "name": "Banca de segundo piso",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "64",
+    "group": "642"
+  },
+  {
+    "code": "6424",
+    "name": "Actividades de las cooperativas financieras",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "64",
+    "group": "642"
+  },
+  {
+    "code": "6431",
+    "name": "Fideicomisos, fondos y entidades financieras similares",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "64",
+    "group": "643"
+  },
+  {
+    "code": "6432",
+    "name": "Fondos de cesantías",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "64",
+    "group": "643"
+  },
+  {
+    "code": "6491",
+    "name": "Leasing financiero (arrendamiento financiero)",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "64",
+    "group": "649"
+  },
+  {
+    "code": "6492",
+    "name": "Actividades financieras de fondos de empleados y otras formas asociativas del sector solidario",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "64",
+    "group": "649"
+  },
+  {
+    "code": "6493",
+    "name": "Actividades de compra de cartera o factoring",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "64",
+    "group": "649"
+  },
+  {
+    "code": "6494",
+    "name": "Otras actividades de distribución de fondos",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "64",
+    "group": "649"
+  },
+  {
+    "code": "6495",
+    "name": "Instituciones especiales oficiales",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "64",
+    "group": "649"
+  },
+  {
+    "code": "6496",
+    "name": "Capitalización",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "64",
+    "group": "649"
+  },
+  {
+    "code": "6499",
+    "name": "Otras actividades de servicio financiero, excepto las de seguros y pensiones n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "64",
+    "group": "649"
+  },
+  {
+    "code": "6511",
+    "name": "Seguros generales",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "65",
+    "group": "651"
+  },
+  {
+    "code": "6512",
+    "name": "Seguros de vida",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "65",
+    "group": "651"
+  },
+  {
+    "code": "6513",
+    "name": "Reaseguros",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "65",
+    "group": "651"
+  },
+  {
+    "code": "6515",
+    "name": "Seguros de salud",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "65",
+    "group": "651"
+  },
+  {
+    "code": "6521",
+    "name": "Servicios de seguros sociales de salud",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "65",
+    "group": "652"
+  },
+  {
+    "code": "6522",
+    "name": "Servicios de seguros sociales en riesgos laborales",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "65",
+    "group": "652"
+  },
+  {
+    "code": "6523",
+    "name": "Servicios de seguros sociales en riesgos familia",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "65",
+    "group": "652"
+  },
+  {
+    "code": "6531",
+    "name": "Régimen de prima media con prestación definida (RPM)",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "65",
+    "group": "653"
+  },
+  {
+    "code": "6532",
+    "name": "Régimen de ahorro individual con solidaridad (RAIS)",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "65",
+    "group": "653"
+  },
+  {
+    "code": "6611",
+    "name": "Administración de mercados financieros",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "66",
+    "group": "661"
+  },
+  {
+    "code": "6612",
+    "name": "Corretaje de valores y de contratos de productos básicos",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "66",
+    "group": "661"
+  },
+  {
+    "code": "6613",
+    "name": "Otras actividades relacionadas con el mercado de valores",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "66",
+    "group": "661"
+  },
+  {
+    "code": "6614",
+    "name": "Actividades de las sociedades de intermediación cambiaria y de servicios financieros especiales",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "66",
+    "group": "661"
+  },
+  {
+    "code": "6615",
+    "name": "Actividades de los profesionales de compra y venta de divisas",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "66",
+    "group": "661"
+  },
+  {
+    "code": "6619",
+    "name": "Otras actividades auxiliares de las actividades de servicios financieros n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "66",
+    "group": "661"
+  },
+  {
+    "code": "6621",
+    "name": "Actividades de agentes y corredores de seguros",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "66",
+    "group": "662"
+  },
+  {
+    "code": "6629",
+    "name": "Evaluación de riesgos y daños, y otras actividades de servicios auxiliares",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "66",
+    "group": "662"
+  },
+  {
+    "code": "6630",
+    "name": "Actividades de administración de fondos",
+    "type": "CIIU",
+    "sectionCode": "K",
+    "section": "ACTIVIDADES FINANCIERAS Y DE SEGUROS",
+    "division": "66",
+    "group": "663"
+  },
+  {
+    "code": "6810",
+    "name": "Actividades inmobiliarias realizadas con bienes propios o arrendados",
+    "type": "CIIU",
+    "sectionCode": "L",
+    "section": "ACTIVIDADES INMOBILIARIAS",
+    "division": "68",
+    "group": "681"
+  },
+  {
+    "code": "6820",
+    "name": "Actividades inmobiliarias realizadas a cambio de una retribución o por contrata",
+    "type": "CIIU",
+    "sectionCode": "L",
+    "section": "ACTIVIDADES INMOBILIARIAS",
+    "division": "68",
+    "group": "682"
+  },
+  {
+    "code": "6910",
+    "name": "Actividades jurídicas",
+    "type": "CIIU",
+    "sectionCode": "M",
+    "section": "ACTIVIDADES PROFESIONALES, CIENTÍFICAS Y TÉCNICAS",
+    "division": "69",
+    "group": "691"
+  },
+  {
+    "code": "6920",
+    "name": "Actividades de contabilidad, teneduría de libros, auditoría financiera y asesoría tributaria",
+    "type": "CIIU",
+    "sectionCode": "M",
+    "section": "ACTIVIDADES PROFESIONALES, CIENTÍFICAS Y TÉCNICAS",
+    "division": "69",
+    "group": "692"
+  },
+  {
+    "code": "7010",
+    "name": "Actividades de administración empresarial",
+    "type": "CIIU",
+    "sectionCode": "M",
+    "section": "ACTIVIDADES PROFESIONALES, CIENTÍFICAS Y TÉCNICAS",
+    "division": "70",
+    "group": "701"
+  },
+  {
+    "code": "7020",
+    "name": "Actividades de consultoría de gestión",
+    "type": "CIIU",
+    "sectionCode": "M",
+    "section": "ACTIVIDADES PROFESIONALES, CIENTÍFICAS Y TÉCNICAS",
+    "division": "70",
+    "group": "702"
+  },
+  {
+    "code": "7111",
+    "name": "Actividades de arquitectura",
+    "type": "CIIU",
+    "sectionCode": "M",
+    "section": "ACTIVIDADES PROFESIONALES, CIENTÍFICAS Y TÉCNICAS",
+    "division": "71",
+    "group": "711"
+  },
+  {
+    "code": "7112",
+    "name": "Actividades de ingeniería y otras actividades conexas de consultoría técnica",
+    "type": "CIIU",
+    "sectionCode": "M",
+    "section": "ACTIVIDADES PROFESIONALES, CIENTÍFICAS Y TÉCNICAS",
+    "division": "71",
+    "group": "711"
+  },
+  {
+    "code": "7120",
+    "name": "Ensayos y análisis técnicos",
+    "type": "CIIU",
+    "sectionCode": "M",
+    "section": "ACTIVIDADES PROFESIONALES, CIENTÍFICAS Y TÉCNICAS",
+    "division": "71",
+    "group": "712"
+  },
+  {
+    "code": "7210",
+    "name": "Investigaciones y desarrollo experimental en el campo de las ciencias naturales y la ingeniería",
+    "type": "CIIU",
+    "sectionCode": "M",
+    "section": "ACTIVIDADES PROFESIONALES, CIENTÍFICAS Y TÉCNICAS",
+    "division": "72",
+    "group": "721"
+  },
+  {
+    "code": "7220",
+    "name": "Investigaciones y desarrollo experimental en el campo de las ciencias sociales y las humanidades",
+    "type": "CIIU",
+    "sectionCode": "M",
+    "section": "ACTIVIDADES PROFESIONALES, CIENTÍFICAS Y TÉCNICAS",
+    "division": "72",
+    "group": "722"
+  },
+  {
+    "code": "7310",
+    "name": "Publicidad",
+    "type": "CIIU",
+    "sectionCode": "M",
+    "section": "ACTIVIDADES PROFESIONALES, CIENTÍFICAS Y TÉCNICAS",
+    "division": "73",
+    "group": "731"
+  },
+  {
+    "code": "7320",
+    "name": "Estudios de mercado y realización de encuestas de opinión pública",
+    "type": "CIIU",
+    "sectionCode": "M",
+    "section": "ACTIVIDADES PROFESIONALES, CIENTÍFICAS Y TÉCNICAS",
+    "division": "73",
+    "group": "732"
+  },
+  {
+    "code": "7410",
+    "name": "Actividades especializadas de diseño",
+    "type": "CIIU",
+    "sectionCode": "M",
+    "section": "ACTIVIDADES PROFESIONALES, CIENTÍFICAS Y TÉCNICAS",
+    "division": "74",
+    "group": "741"
+  },
+  {
+    "code": "7420",
+    "name": "Actividades de fotografía",
+    "type": "CIIU",
+    "sectionCode": "M",
+    "section": "ACTIVIDADES PROFESIONALES, CIENTÍFICAS Y TÉCNICAS",
+    "division": "74",
+    "group": "742"
+  },
+  {
+    "code": "7490",
+    "name": "Otras actividades profesionales, científicas y técnicas n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "M",
+    "section": "ACTIVIDADES PROFESIONALES, CIENTÍFICAS Y TÉCNICAS",
+    "division": "74",
+    "group": "749"
+  },
+  {
+    "code": "7500",
+    "name": "Actividades veterinarias",
+    "type": "CIIU",
+    "sectionCode": "M",
+    "section": "ACTIVIDADES PROFESIONALES, CIENTÍFICAS Y TÉCNICAS",
+    "division": "75",
+    "group": "750"
+  },
+  {
+    "code": "7710",
+    "name": "Alquiler y arrendamiento de vehículos automotores",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "77",
+    "group": "771"
+  },
+  {
+    "code": "7721",
+    "name": "Alquiler y arrendamiento de equipo recreativo y deportivo",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "77",
+    "group": "772"
+  },
+  {
+    "code": "7722",
+    "name": "Alquiler de videos y discos",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "77",
+    "group": "772"
+  },
+  {
+    "code": "7729",
+    "name": "Alquiler y arrendamiento de otros efectos personales y enseres domésticos n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "77",
+    "group": "772"
+  },
+  {
+    "code": "7730",
+    "name": "Alquiler y arrendamiento de otros tipos de maquinaria, equipo y bienes tangibles n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "77",
+    "group": "773"
+  },
+  {
+    "code": "7740",
+    "name": "Arrendamiento de propiedad intelectual y productos similares, excepto obras protegidas por derechos de autor",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "77",
+    "group": "774"
+  },
+  {
+    "code": "7810",
+    "name": "Actividades de agencias de gestión y colocación de empleo",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "78",
+    "group": "781"
+  },
+  {
+    "code": "7820",
+    "name": "Actividades de empresas de servicios temporales",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "78",
+    "group": "782"
+  },
+  {
+    "code": "7830",
+    "name": "Otras actividades de provisión de talento humano",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "78",
+    "group": "783"
+  },
+  {
+    "code": "7911",
+    "name": "Actividades de las agencias de viaje",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "79",
+    "group": "791"
+  },
+  {
+    "code": "7912",
+    "name": "Actividades de operadores turísticos",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "79",
+    "group": "791"
+  },
+  {
+    "code": "7990",
+    "name": "Otros servicios de reserva y actividades relacionadas",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "79",
+    "group": "799"
+  },
+  {
+    "code": "8010",
+    "name": "Actividades de seguridad privada",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "80",
+    "group": "801"
+  },
+  {
+    "code": "8020",
+    "name": "Actividades de servicios de sistemas de seguridad",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "80",
+    "group": "802"
+  },
+  {
+    "code": "8030",
+    "name": "Actividades de detectives e investigadores privados",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "80",
+    "group": "803"
+  },
+  {
+    "code": "8110",
+    "name": "Actividades combinadas de apoyo a instalaciones",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "81",
+    "group": "811"
+  },
+  {
+    "code": "8121",
+    "name": "Limpieza general interior de edificios",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "81",
+    "group": "812"
+  },
+  {
+    "code": "8129",
+    "name": "Otras actividades de limpieza de edificios e instalaciones industriales",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "81",
+    "group": "812"
+  },
+  {
+    "code": "8130",
+    "name": "Actividades de paisajismo y servicios de mantenimiento conexos",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "81",
+    "group": "813"
+  },
+  {
+    "code": "8211",
+    "name": "Actividades combinadas de servicios administrativos de oficina",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "82",
+    "group": "821"
+  },
+  {
+    "code": "8219",
+    "name": "Fotocopiado, preparación de documentos y otras actividades especializadas de apoyo a oficina",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "82",
+    "group": "821"
+  },
+  {
+    "code": "8220",
+    "name": "Actividades de centros de llamadas (call center)",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "82",
+    "group": "822"
+  },
+  {
+    "code": "8230",
+    "name": "Organización de convenciones y eventos comerciales",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "82",
+    "group": "823"
+  },
+  {
+    "code": "8291",
+    "name": "Actividades de agencias de cobranza y oficinas de calificación crediticia",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "82",
+    "group": "829"
+  },
+  {
+    "code": "8292",
+    "name": "Actividades de envase y empaque",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "82",
+    "group": "829"
+  },
+  {
+    "code": "8299",
+    "name": "Otras actividades de servicio de apoyo a las empresas n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "N",
+    "section": "ACTIVIDADES DE SERVICIOS ADMINISTRATIVOS Y DE APOYO",
+    "division": "82",
+    "group": "829"
+  },
+  {
+    "code": "8411",
+    "name": "Actividades legislativas de la administración pública",
+    "type": "CIIU",
+    "sectionCode": "O",
+    "section": "ADMINISTRACIÓN PÚBLICA Y DEFENSA; PLANES DE SEGURIDAD SOCIAL DE AFILIACIÓN OBLIGATORIA",
+    "division": "84",
+    "group": "841"
+  },
+  {
+    "code": "8412",
+    "name": "Actividades ejecutivas de la administración pública",
+    "type": "CIIU",
+    "sectionCode": "O",
+    "section": "ADMINISTRACIÓN PÚBLICA Y DEFENSA; PLANES DE SEGURIDAD SOCIAL DE AFILIACIÓN OBLIGATORIA",
+    "division": "84",
+    "group": "841"
+  },
+  {
+    "code": "8413",
+    "name": "Regulación de las actividades de organismos que prestan servicios de salud, educativos, culturales y otros servicios sociales, excepto servicios de seguridad social",
+    "type": "CIIU",
+    "sectionCode": "O",
+    "section": "ADMINISTRACIÓN PÚBLICA Y DEFENSA; PLANES DE SEGURIDAD SOCIAL DE AFILIACIÓN OBLIGATORIA",
+    "division": "84",
+    "group": "841"
+  },
+  {
+    "code": "8414",
+    "name": "Actividades reguladoras y facilitadoras de la actividad económica",
+    "type": "CIIU",
+    "sectionCode": "O",
+    "section": "ADMINISTRACIÓN PÚBLICA Y DEFENSA; PLANES DE SEGURIDAD SOCIAL DE AFILIACIÓN OBLIGATORIA",
+    "division": "84",
+    "group": "841"
+  },
+  {
+    "code": "8415",
+    "name": "Actividades de los órganos de control y otras instituciones",
+    "type": "CIIU",
+    "sectionCode": "O",
+    "section": "ADMINISTRACIÓN PÚBLICA Y DEFENSA; PLANES DE SEGURIDAD SOCIAL DE AFILIACIÓN OBLIGATORIA",
+    "division": "84",
+    "group": "841"
+  },
+  {
+    "code": "8421",
+    "name": "Relaciones exteriores",
+    "type": "CIIU",
+    "sectionCode": "O",
+    "section": "ADMINISTRACIÓN PÚBLICA Y DEFENSA; PLANES DE SEGURIDAD SOCIAL DE AFILIACIÓN OBLIGATORIA",
+    "division": "84",
+    "group": "842"
+  },
+  {
+    "code": "8422",
+    "name": "Actividades de defensa",
+    "type": "CIIU",
+    "sectionCode": "O",
+    "section": "ADMINISTRACIÓN PÚBLICA Y DEFENSA; PLANES DE SEGURIDAD SOCIAL DE AFILIACIÓN OBLIGATORIA",
+    "division": "84",
+    "group": "842"
+  },
+  {
+    "code": "8423",
+    "name": "Orden público y actividades de seguridad",
+    "type": "CIIU",
+    "sectionCode": "O",
+    "section": "ADMINISTRACIÓN PÚBLICA Y DEFENSA; PLANES DE SEGURIDAD SOCIAL DE AFILIACIÓN OBLIGATORIA",
+    "division": "84",
+    "group": "842"
+  },
+  {
+    "code": "8424",
+    "name": "Administración de justicia",
+    "type": "CIIU",
+    "sectionCode": "O",
+    "section": "ADMINISTRACIÓN PÚBLICA Y DEFENSA; PLANES DE SEGURIDAD SOCIAL DE AFILIACIÓN OBLIGATORIA",
+    "division": "84",
+    "group": "842"
+  },
+  {
+    "code": "8430",
+    "name": "Actividades de planes de seguridad social de afiliación obligatoria",
+    "type": "CIIU",
+    "sectionCode": "O",
+    "section": "ADMINISTRACIÓN PÚBLICA Y DEFENSA; PLANES DE SEGURIDAD SOCIAL DE AFILIACIÓN OBLIGATORIA",
+    "division": "84",
+    "group": "843"
+  },
+  {
+    "code": "8511",
+    "name": "Educación de la primera infancia",
+    "type": "CIIU",
+    "sectionCode": "P",
+    "section": "EDUCACIÓN",
+    "division": "85",
+    "group": "851"
+  },
+  {
+    "code": "8512",
+    "name": "Educación preescolar",
+    "type": "CIIU",
+    "sectionCode": "P",
+    "section": "EDUCACIÓN",
+    "division": "85",
+    "group": "851"
+  },
+  {
+    "code": "8513",
+    "name": "Educación básica primaria",
+    "type": "CIIU",
+    "sectionCode": "P",
+    "section": "EDUCACIÓN",
+    "division": "85",
+    "group": "851"
+  },
+  {
+    "code": "8521",
+    "name": "Educación básica secundaria",
+    "type": "CIIU",
+    "sectionCode": "P",
+    "section": "EDUCACIÓN",
+    "division": "85",
+    "group": "852"
+  },
+  {
+    "code": "8522",
+    "name": "Educación media académica",
+    "type": "CIIU",
+    "sectionCode": "P",
+    "section": "EDUCACIÓN",
+    "division": "85",
+    "group": "852"
+  },
+  {
+    "code": "8523",
+    "name": "Educación media técnica",
+    "type": "CIIU",
+    "sectionCode": "P",
+    "section": "EDUCACIÓN",
+    "division": "85",
+    "group": "852"
+  },
+  {
+    "code": "8530",
+    "name": "Establecimientos que combinan diferentes niveles de educación",
+    "type": "CIIU",
+    "sectionCode": "P",
+    "section": "EDUCACIÓN",
+    "division": "85",
+    "group": "853"
+  },
+  {
+    "code": "8541",
+    "name": "Educación técnica profesional",
+    "type": "CIIU",
+    "sectionCode": "P",
+    "section": "EDUCACIÓN",
+    "division": "85",
+    "group": "854"
+  },
+  {
+    "code": "8542",
+    "name": "Educación tecnológica",
+    "type": "CIIU",
+    "sectionCode": "P",
+    "section": "EDUCACIÓN",
+    "division": "85",
+    "group": "854"
+  },
+  {
+    "code": "8543",
+    "name": "Educación de instituciones universitarias o de escuelas tecnológicas",
+    "type": "CIIU",
+    "sectionCode": "P",
+    "section": "EDUCACIÓN",
+    "division": "85",
+    "group": "854"
+  },
+  {
+    "code": "8544",
+    "name": "Educación de universidades",
+    "type": "CIIU",
+    "sectionCode": "P",
+    "section": "EDUCACIÓN",
+    "division": "85",
+    "group": "854"
+  },
+  {
+    "code": "8551",
+    "name": "Formación para el trabajo",
+    "type": "CIIU",
+    "sectionCode": "P",
+    "section": "EDUCACIÓN",
+    "division": "85",
+    "group": "855"
+  },
+  {
+    "code": "8552",
+    "name": "Enseñanza deportiva y recreativa",
+    "type": "CIIU",
+    "sectionCode": "P",
+    "section": "EDUCACIÓN",
+    "division": "85",
+    "group": "855"
+  },
+  {
+    "code": "8553",
+    "name": "Enseñanza cultural",
+    "type": "CIIU",
+    "sectionCode": "P",
+    "section": "EDUCACIÓN",
+    "division": "85",
+    "group": "855"
+  },
+  {
+    "code": "8559",
+    "name": "Otros tipos de educación n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "P",
+    "section": "EDUCACIÓN",
+    "division": "85",
+    "group": "855"
+  },
+  {
+    "code": "8560",
+    "name": "Actividades de apoyo a la educación",
+    "type": "CIIU",
+    "sectionCode": "P",
+    "section": "EDUCACIÓN",
+    "division": "85",
+    "group": "856"
+  },
+  {
+    "code": "8610",
+    "name": "Actividades de hospitales y clínicas, con internación",
+    "type": "CIIU",
+    "sectionCode": "Q",
+    "section": "ACTIVIDADES DE ATENCIÓN DE LA SALUD HUMANA Y DE ASISTENCIA SOCIAL",
+    "division": "86",
+    "group": "861"
+  },
+  {
+    "code": "8621",
+    "name": "Actividades de la práctica médica, sin internación",
+    "type": "CIIU",
+    "sectionCode": "Q",
+    "section": "ACTIVIDADES DE ATENCIÓN DE LA SALUD HUMANA Y DE ASISTENCIA SOCIAL",
+    "division": "86",
+    "group": "862"
+  },
+  {
+    "code": "8622",
+    "name": "Actividades de la práctica odontológica",
+    "type": "CIIU",
+    "sectionCode": "Q",
+    "section": "ACTIVIDADES DE ATENCIÓN DE LA SALUD HUMANA Y DE ASISTENCIA SOCIAL",
+    "division": "86",
+    "group": "862"
+  },
+  {
+    "code": "8691",
+    "name": "Actividades de apoyo diagnóstico",
+    "type": "CIIU",
+    "sectionCode": "Q",
+    "section": "ACTIVIDADES DE ATENCIÓN DE LA SALUD HUMANA Y DE ASISTENCIA SOCIAL",
+    "division": "86",
+    "group": "869"
+  },
+  {
+    "code": "8692",
+    "name": "Actividades de apoyo terapéutico",
+    "type": "CIIU",
+    "sectionCode": "Q",
+    "section": "ACTIVIDADES DE ATENCIÓN DE LA SALUD HUMANA Y DE ASISTENCIA SOCIAL",
+    "division": "86",
+    "group": "869"
+  },
+  {
+    "code": "8699",
+    "name": "Otras actividades de atención de la salud humana",
+    "type": "CIIU",
+    "sectionCode": "Q",
+    "section": "ACTIVIDADES DE ATENCIÓN DE LA SALUD HUMANA Y DE ASISTENCIA SOCIAL",
+    "division": "86",
+    "group": "869"
+  },
+  {
+    "code": "8710",
+    "name": "Actividades de atención residencial medicalizada de tipo general",
+    "type": "CIIU",
+    "sectionCode": "Q",
+    "section": "ACTIVIDADES DE ATENCIÓN DE LA SALUD HUMANA Y DE ASISTENCIA SOCIAL",
+    "division": "87",
+    "group": "871"
+  },
+  {
+    "code": "8720",
+    "name": "Actividades de atención residencial, para el cuidado de pacientes con retardo mental, enfermedad mental y consumo de sustancias psicoactivas",
+    "type": "CIIU",
+    "sectionCode": "Q",
+    "section": "ACTIVIDADES DE ATENCIÓN DE LA SALUD HUMANA Y DE ASISTENCIA SOCIAL",
+    "division": "87",
+    "group": "872"
+  },
+  {
+    "code": "8730",
+    "name": "Actividades de atención en instituciones para el cuidado de personas mayores y/o discapacitadas",
+    "type": "CIIU",
+    "sectionCode": "Q",
+    "section": "ACTIVIDADES DE ATENCIÓN DE LA SALUD HUMANA Y DE ASISTENCIA SOCIAL",
+    "division": "87",
+    "group": "873"
+  },
+  {
+    "code": "8790",
+    "name": "Otras actividades de atención en instituciones con alojamiento",
+    "type": "CIIU",
+    "sectionCode": "Q",
+    "section": "ACTIVIDADES DE ATENCIÓN DE LA SALUD HUMANA Y DE ASISTENCIA SOCIAL",
+    "division": "87",
+    "group": "879"
+  },
+  {
+    "code": "8810",
+    "name": "Actividades de asistencia social sin alojamiento para personas mayores y discapacitadas",
+    "type": "CIIU",
+    "sectionCode": "Q",
+    "section": "ACTIVIDADES DE ATENCIÓN DE LA SALUD HUMANA Y DE ASISTENCIA SOCIAL",
+    "division": "88",
+    "group": "881"
+  },
+  {
+    "code": "8891",
+    "name": "Actividades de guarderías para niños y niñas",
+    "type": "CIIU",
+    "sectionCode": "Q",
+    "section": "ACTIVIDADES DE ATENCIÓN DE LA SALUD HUMANA Y DE ASISTENCIA SOCIAL",
+    "division": "88",
+    "group": "889"
+  },
+  {
+    "code": "8899",
+    "name": "Otras actividades de asistencia social sin alojamiento n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "Q",
+    "section": "ACTIVIDADES DE ATENCIÓN DE LA SALUD HUMANA Y DE ASISTENCIA SOCIAL",
+    "division": "88",
+    "group": "889"
+  },
+  {
+    "code": "9001",
+    "name": "Creación literaria",
+    "type": "CIIU",
+    "sectionCode": "R",
+    "section": "ACTIVIDADES ARTÍSTICAS, DE ENTRETENIMIENTO Y RECREACIÓN",
+    "division": "90",
+    "group": "900"
+  },
+  {
+    "code": "9002",
+    "name": "Creación musical",
+    "type": "CIIU",
+    "sectionCode": "R",
+    "section": "ACTIVIDADES ARTÍSTICAS, DE ENTRETENIMIENTO Y RECREACIÓN",
+    "division": "90",
+    "group": "900"
+  },
+  {
+    "code": "9003",
+    "name": "Creación teatral",
+    "type": "CIIU",
+    "sectionCode": "R",
+    "section": "ACTIVIDADES ARTÍSTICAS, DE ENTRETENIMIENTO Y RECREACIÓN",
+    "division": "90",
+    "group": "900"
+  },
+  {
+    "code": "9004",
+    "name": "Creación audiovisual",
+    "type": "CIIU",
+    "sectionCode": "R",
+    "section": "ACTIVIDADES ARTÍSTICAS, DE ENTRETENIMIENTO Y RECREACIÓN",
+    "division": "90",
+    "group": "900"
+  },
+  {
+    "code": "9005",
+    "name": "Artes plásticas y visuales",
+    "type": "CIIU",
+    "sectionCode": "R",
+    "section": "ACTIVIDADES ARTÍSTICAS, DE ENTRETENIMIENTO Y RECREACIÓN",
+    "division": "90",
+    "group": "900"
+  },
+  {
+    "code": "9006",
+    "name": "Actividades teatrales",
+    "type": "CIIU",
+    "sectionCode": "R",
+    "section": "ACTIVIDADES ARTÍSTICAS, DE ENTRETENIMIENTO Y RECREACIÓN",
+    "division": "90",
+    "group": "900"
+  },
+  {
+    "code": "9007",
+    "name": "Actividades de espectáculos musicales en vivo",
+    "type": "CIIU",
+    "sectionCode": "R",
+    "section": "ACTIVIDADES ARTÍSTICAS, DE ENTRETENIMIENTO Y RECREACIÓN",
+    "division": "90",
+    "group": "900"
+  },
+  {
+    "code": "9008",
+    "name": "Otras actividades de espectáculos en vivo n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "R",
+    "section": "ACTIVIDADES ARTÍSTICAS, DE ENTRETENIMIENTO Y RECREACIÓN",
+    "division": "90",
+    "group": "900"
+  },
+  {
+    "code": "9101",
+    "name": "Actividades de bibliotecas y archivos",
+    "type": "CIIU",
+    "sectionCode": "R",
+    "section": "ACTIVIDADES ARTÍSTICAS, DE ENTRETENIMIENTO Y RECREACIÓN",
+    "division": "91",
+    "group": "910"
+  },
+  {
+    "code": "9102",
+    "name": "Actividades y funcionamiento de museos, conservación de edificios y sitios históricos",
+    "type": "CIIU",
+    "sectionCode": "R",
+    "section": "ACTIVIDADES ARTÍSTICAS, DE ENTRETENIMIENTO Y RECREACIÓN",
+    "division": "91",
+    "group": "910"
+  },
+  {
+    "code": "9103",
+    "name": "Actividades de jardines botánicos, zoológicos y reservas naturales",
+    "type": "CIIU",
+    "sectionCode": "R",
+    "section": "ACTIVIDADES ARTÍSTICAS, DE ENTRETENIMIENTO Y RECREACIÓN",
+    "division": "91",
+    "group": "910"
+  },
+  {
+    "code": "9200",
+    "name": "Actividades de juegos de azar y apuestas",
+    "type": "CIIU",
+    "sectionCode": "R",
+    "section": "ACTIVIDADES ARTÍSTICAS, DE ENTRETENIMIENTO Y RECREACIÓN",
+    "division": "92",
+    "group": "920"
+  },
+  {
+    "code": "9311",
+    "name": "Gestión de instalaciones deportivas",
+    "type": "CIIU",
+    "sectionCode": "R",
+    "section": "ACTIVIDADES ARTÍSTICAS, DE ENTRETENIMIENTO Y RECREACIÓN",
+    "division": "93",
+    "group": "931"
+  },
+  {
+    "code": "9312",
+    "name": "Actividades de clubes deportivos",
+    "type": "CIIU",
+    "sectionCode": "R",
+    "section": "ACTIVIDADES ARTÍSTICAS, DE ENTRETENIMIENTO Y RECREACIÓN",
+    "division": "93",
+    "group": "931"
+  },
+  {
+    "code": "9319",
+    "name": "Otras actividades deportivas",
+    "type": "CIIU",
+    "sectionCode": "R",
+    "section": "ACTIVIDADES ARTÍSTICAS, DE ENTRETENIMIENTO Y RECREACIÓN",
+    "division": "93",
+    "group": "931"
+  },
+  {
+    "code": "9321",
+    "name": "Actividades de parques de atracciones y parques temáticos",
+    "type": "CIIU",
+    "sectionCode": "R",
+    "section": "ACTIVIDADES ARTÍSTICAS, DE ENTRETENIMIENTO Y RECREACIÓN",
+    "division": "93",
+    "group": "932"
+  },
+  {
+    "code": "9329",
+    "name": "Otras actividades recreativas y de esparcimiento n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "R",
+    "section": "ACTIVIDADES ARTÍSTICAS, DE ENTRETENIMIENTO Y RECREACIÓN",
+    "division": "93",
+    "group": "932"
+  },
+  {
+    "code": "9411",
+    "name": "Actividades de asociaciones empresariales y de empleadores",
+    "type": "CIIU",
+    "sectionCode": "S",
+    "section": "OTRAS ACTIVIDADES DE SERVICIOS",
+    "division": "94",
+    "group": "941"
+  },
+  {
+    "code": "9412",
+    "name": "Actividades de asociaciones profesionales",
+    "type": "CIIU",
+    "sectionCode": "S",
+    "section": "OTRAS ACTIVIDADES DE SERVICIOS",
+    "division": "94",
+    "group": "941"
+  },
+  {
+    "code": "9420",
+    "name": "Actividades de sindicatos de empleados",
+    "type": "CIIU",
+    "sectionCode": "S",
+    "section": "OTRAS ACTIVIDADES DE SERVICIOS",
+    "division": "94",
+    "group": "942"
+  },
+  {
+    "code": "9491",
+    "name": "Actividades de asociaciones religiosas",
+    "type": "CIIU",
+    "sectionCode": "S",
+    "section": "OTRAS ACTIVIDADES DE SERVICIOS",
+    "division": "94",
+    "group": "949"
+  },
+  {
+    "code": "9492",
+    "name": "Actividades de asociaciones políticas",
+    "type": "CIIU",
+    "sectionCode": "S",
+    "section": "OTRAS ACTIVIDADES DE SERVICIOS",
+    "division": "94",
+    "group": "949"
+  },
+  {
+    "code": "9499",
+    "name": "Actividades de otras asociaciones n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "S",
+    "section": "OTRAS ACTIVIDADES DE SERVICIOS",
+    "division": "94",
+    "group": "949"
+  },
+  {
+    "code": "9511",
+    "name": "Mantenimiento y reparación de computadores y de equipo periférico",
+    "type": "CIIU",
+    "sectionCode": "S",
+    "section": "OTRAS ACTIVIDADES DE SERVICIOS",
+    "division": "95",
+    "group": "951"
+  },
+  {
+    "code": "9512",
+    "name": "Mantenimiento y reparación de equipos de comunicación",
+    "type": "CIIU",
+    "sectionCode": "S",
+    "section": "OTRAS ACTIVIDADES DE SERVICIOS",
+    "division": "95",
+    "group": "951"
+  },
+  {
+    "code": "9521",
+    "name": "Mantenimiento y reparación de aparatos electrónicos de consumo",
+    "type": "CIIU",
+    "sectionCode": "S",
+    "section": "OTRAS ACTIVIDADES DE SERVICIOS",
+    "division": "95",
+    "group": "952"
+  },
+  {
+    "code": "9522",
+    "name": "Mantenimiento y reparación de aparatos y equipos domésticos y de jardinería",
+    "type": "CIIU",
+    "sectionCode": "S",
+    "section": "OTRAS ACTIVIDADES DE SERVICIOS",
+    "division": "95",
+    "group": "952"
+  },
+  {
+    "code": "9523",
+    "name": "Reparación de calzado y artículos de cuero",
+    "type": "CIIU",
+    "sectionCode": "S",
+    "section": "OTRAS ACTIVIDADES DE SERVICIOS",
+    "division": "95",
+    "group": "952"
+  },
+  {
+    "code": "9524",
+    "name": "Reparación de muebles y accesorios para el hogar",
+    "type": "CIIU",
+    "sectionCode": "S",
+    "section": "OTRAS ACTIVIDADES DE SERVICIOS",
+    "division": "95",
+    "group": "952"
+  },
+  {
+    "code": "9529",
+    "name": "Mantenimiento y reparación de otros efectos personales y enseres domésticos",
+    "type": "CIIU",
+    "sectionCode": "S",
+    "section": "OTRAS ACTIVIDADES DE SERVICIOS",
+    "division": "95",
+    "group": "952"
+  },
+  {
+    "code": "9601",
+    "name": "Lavado y limpieza, incluso la limpieza en seco, de productos textiles y de piel",
+    "type": "CIIU",
+    "sectionCode": "S",
+    "section": "OTRAS ACTIVIDADES DE SERVICIOS",
+    "division": "96",
+    "group": "960"
+  },
+  {
+    "code": "9602",
+    "name": "Peluquería y otros tratamientos de belleza",
+    "type": "CIIU",
+    "sectionCode": "S",
+    "section": "OTRAS ACTIVIDADES DE SERVICIOS",
+    "division": "96",
+    "group": "960"
+  },
+  {
+    "code": "9603",
+    "name": "Pompas fúnebres y actividades relacionadas",
+    "type": "CIIU",
+    "sectionCode": "S",
+    "section": "OTRAS ACTIVIDADES DE SERVICIOS",
+    "division": "96",
+    "group": "960"
+  },
+  {
+    "code": "9609",
+    "name": "Otras actividades de servicios personales n.c.p.",
+    "type": "CIIU",
+    "sectionCode": "S",
+    "section": "OTRAS ACTIVIDADES DE SERVICIOS",
+    "division": "96",
+    "group": "960"
+  },
+  {
+    "code": "9700",
+    "name": "Actividades de los hogares individuales como empleadores de personal doméstico",
+    "type": "CIIU",
+    "sectionCode": "T",
+    "section": "ACTIVIDADES DE LOS HOGARES INDIVIDUALES EN CALIDAD DE EMPLEADORES; ACTIVIDADES NO DIFERENCIADAS DE LOS HOGARES INDIVIDUALES COMO PRODUCTORES DE BIENES Y SERVICIOS PARA USO PROPIO",
+    "division": "97",
+    "group": "970"
+  },
+  {
+    "code": "9810",
+    "name": "Actividades no diferenciadas de los hogares individuales como productores de bienes para uso propio",
+    "type": "CIIU",
+    "sectionCode": "T",
+    "section": "ACTIVIDADES DE LOS HOGARES INDIVIDUALES EN CALIDAD DE EMPLEADORES; ACTIVIDADES NO DIFERENCIADAS DE LOS HOGARES INDIVIDUALES COMO PRODUCTORES DE BIENES Y SERVICIOS PARA USO PROPIO",
+    "division": "98",
+    "group": "981"
+  },
+  {
+    "code": "9820",
+    "name": "Actividades no diferenciadas de los hogares individuales como productores de servicios para uso propio",
+    "type": "CIIU",
+    "sectionCode": "T",
+    "section": "ACTIVIDADES DE LOS HOGARES INDIVIDUALES EN CALIDAD DE EMPLEADORES; ACTIVIDADES NO DIFERENCIADAS DE LOS HOGARES INDIVIDUALES COMO PRODUCTORES DE BIENES Y SERVICIOS PARA USO PROPIO",
+    "division": "98",
+    "group": "982"
+  },
+  {
+    "code": "9900",
+    "name": "Actividades de organizaciones y entidades extraterritoriales",
+    "type": "CIIU",
+    "sectionCode": "U",
+    "section": "ACTIVIDADES DE ORGANIZACIONES Y ENTIDADES EXTRATERRITORIALES",
+    "division": "99",
+    "group": "990"
+  }
+]

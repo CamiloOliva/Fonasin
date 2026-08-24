@@ -27,6 +27,10 @@ import {
   type GeneratedAffiliationDocument,
   type AffiliationSectionKey,
 } from '../../services/affiliationService';
+import colombiaDepartmentsCatalog from '../../data/catalogs/colombia_departamentos_municipios.json';
+import economicActivitiesCatalog from '../../data/catalogs/actividades_economicas_dian.json';
+import nationalitiesCatalog from '../../data/catalogs/nacionalidades.json';
+import countriesCatalog from '../../data/catalogs/paises.json';
 
 type BackendMode = 'loading' | 'ready' | 'local';
 type StepKey = 'personal' | 'employment' | 'financial' | 'beneficiaries' | 'sarlaft' | 'final';
@@ -162,6 +166,42 @@ type FieldConfig = {
   maxLength?: number;
 };
 
+type CatalogCity = {
+  code: string;
+  name: string;
+  type: string;
+};
+
+type CatalogDepartment = {
+  code: string;
+  department: string;
+  countryCode: string;
+  cities: CatalogCity[];
+};
+
+type EconomicActivity = {
+  code: string;
+  name: string;
+  type: string;
+  sectionCode: string | null;
+  section: string | null;
+  division: string | null;
+  group: string | null;
+};
+
+type Nationality = {
+  countryCode: string;
+  country: string;
+  name: string;
+};
+
+type Country = {
+  iso2: string;
+  iso3: string;
+  numericCode: string;
+  name: string;
+};
+
 const POLICY_VERSION = 'afiliacion-v1';
 const NAME_MAX_LENGTH = 35;
 const TEXT_MAX_LENGTH = 120;
@@ -204,6 +244,17 @@ const expectedOperations = ['Aportes', 'Ahorros', 'Credito', 'Otros servicios'];
 const signatureMechanisms = ['Firma manuscrita', 'Firma electronica', 'Validacion interna'];
 const incomeBands = ['Hasta $2 millones', '$2 a $5 millones', '$5 a $10 millones', 'Mas de $10 millones'];
 const relationshipOptions = ['Padre', 'Madre', 'Hijo/a', 'Conyuge', 'Hermano/a', 'Otro'];
+const countryOptions = (countriesCatalog as Country[]).map((item) => item.name);
+const nationalityOptions = (nationalitiesCatalog as Nationality[]).map((item) => item.name);
+const colombiaDepartments = colombiaDepartmentsCatalog as CatalogDepartment[];
+const departmentOptions = colombiaDepartments.map((item) => item.department);
+const citiesByDepartment = new Map(
+  colombiaDepartments.map((item) => [item.department, item.cities.map((city) => city.name)]),
+);
+const economicActivityOptions = (economicActivitiesCatalog as EconomicActivity[]).map((activity) => ({
+  value: activity.code,
+  label: `${activity.code} - ${activity.name}`,
+}));
 const legalDocuments = [
   {
     key: 'data-policy',
@@ -229,12 +280,12 @@ const personalFields: FieldConfig[] = [
   { key: 'lastName', label: 'Primer apellido', maxLength: NAME_MAX_LENGTH },
   { key: 'secondLastName', label: 'Segundo apellido', maxLength: NAME_MAX_LENGTH },
   { key: 'birthDate', label: 'Fecha de nacimiento', type: 'date' },
-  { key: 'nationality', label: 'Nacionalidad' },
-  { key: 'residenceCountry', label: 'Pais de residencia' },
+  { key: 'nationality', label: 'Nacionalidad', type: 'select' },
+  { key: 'residenceCountry', label: 'Pais de residencia', type: 'select' },
   { key: 'maritalStatus', label: 'Estado civil', type: 'select', options: maritalStatuses },
   { key: 'residenceAddress', label: 'Direccion de residencia' },
-  { key: 'city', label: 'Ciudad / municipio' },
-  { key: 'department', label: 'Departamento' },
+  { key: 'department', label: 'Departamento', type: 'select' },
+  { key: 'city', label: 'Ciudad / municipio', type: 'select' },
   { key: 'neighborhood', label: 'Barrio' },
   { key: 'mobile', label: 'Celular', inputMode: 'numeric', helper: 'Ejemplo: 3001234567' },
   { key: 'email', label: 'Correo electronico', type: 'email', helper: 'Ejemplo: nombre@dominio.com' },
@@ -614,8 +665,18 @@ function normalizeMobile(value: string): string {
 function normalizePersonalData(current: PersonalData, next: Record<string, string>): PersonalData {
   const merged = { ...current, ...next };
 
+  if ('department' in next && next.department !== current.department) {
+    merged.city = '';
+  }
+
+  const availableCities = citiesByDepartment.get(merged.department) ?? [];
+  if (merged.city && !availableCities.includes(merged.city)) {
+    merged.city = '';
+  }
+
   if (colombianNationalityDocumentTypes.has(merged.documentType)) {
     merged.nationality = 'Colombiana';
+    merged.residenceCountry = 'Colombia';
   }
 
   if ('mobile' in next) {
@@ -737,50 +798,55 @@ function renderFields(
   section?: AffiliationSectionKey,
   options: {
     disabledKeys?: Set<string>;
+    fieldOptions?: Record<string, string[]>;
     placeholders?: Record<string, string>;
   } = {},
 ) {
   return (
     <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-      {fields.map((field) => (
-        <Field key={field.key} label={field.label} helper={field.helper} required={section ? isRequiredField(section, field.key) : false}>
-          {field.type === 'select' ? (
-            <SelectInput
-              disabled={options.disabledKeys?.has(field.key)}
-              value={values[field.key] ?? ''}
-              onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}
-            >
-              <option value="">Selecciona una opcion</option>
-              {(field.options ?? []).map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </SelectInput>
-          ) : field.type === 'textarea' ? (
-            <TextArea
-              rows={4}
-              value={values[field.key] ?? ''}
-              onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}
-            />
-          ) : (
-            <TextInput
-              type={field.type ?? 'text'}
-              inputMode={field.inputMode as any}
-              maxLength={fieldMaxLength(field)}
-              disabled={options.disabledKeys?.has(field.key)}
-              placeholder={options.placeholders?.[field.key]}
-              value={currencyFieldKeys.has(field.key) ? formatCurrency(values[field.key] ?? '') : values[field.key] ?? ''}
-              onChange={(event) =>
-                setValues({
-                  ...values,
-                  [field.key]: currencyFieldKeys.has(field.key) ? limitedCurrency(event.target.value) : event.target.value,
-                })
-              }
-            />
-          )}
-        </Field>
-      ))}
+      {fields.map((field) => {
+        const selectOptions = options.fieldOptions?.[field.key] ?? field.options ?? [];
+
+        return (
+          <Field key={field.key} label={field.label} helper={field.helper} required={section ? isRequiredField(section, field.key) : false}>
+            {field.type === 'select' ? (
+              <SelectInput
+                disabled={options.disabledKeys?.has(field.key)}
+                value={values[field.key] ?? ''}
+                onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}
+              >
+                <option value="">Selecciona una opcion</option>
+                {selectOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </SelectInput>
+            ) : field.type === 'textarea' ? (
+              <TextArea
+                rows={4}
+                value={values[field.key] ?? ''}
+                onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}
+              />
+            ) : (
+              <TextInput
+                type={field.type ?? 'text'}
+                inputMode={field.inputMode as any}
+                maxLength={fieldMaxLength(field)}
+                disabled={options.disabledKeys?.has(field.key)}
+                placeholder={options.placeholders?.[field.key]}
+                value={currencyFieldKeys.has(field.key) ? formatCurrency(values[field.key] ?? '') : values[field.key] ?? ''}
+                onChange={(event) =>
+                  setValues({
+                    ...values,
+                    [field.key]: currencyFieldKeys.has(field.key) ? limitedCurrency(event.target.value) : event.target.value,
+                  })
+                }
+              />
+            )}
+          </Field>
+        );
+      })}
     </div>
   );
 }
@@ -903,6 +969,16 @@ export default function AffiliationForm() {
 
   function renderPersonalSection() {
     const nationalityLocked = colombianNationalityDocumentTypes.has(state.personal.documentType);
+    const disabledKeys = new Set<string>();
+
+    if (nationalityLocked) {
+      disabledKeys.add('nationality');
+      disabledKeys.add('residenceCountry');
+    }
+
+    if (!state.personal.department) {
+      disabledKeys.add('city');
+    }
 
     return (
       <div className="space-y-6">
@@ -918,7 +994,13 @@ export default function AffiliationForm() {
             personal: normalizePersonalData(current.personal, next),
           })),
         'personal', {
-          disabledKeys: nationalityLocked ? new Set(['nationality']) : undefined,
+          disabledKeys,
+          fieldOptions: {
+            nationality: nationalityOptions,
+            residenceCountry: countryOptions,
+            department: departmentOptions,
+            city: citiesByDepartment.get(state.personal.department) ?? [],
+          },
           placeholders: {
             email: 'nombre@dominio.com',
             mobile: '3001234567',
@@ -1177,8 +1259,7 @@ export default function AffiliationForm() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Actividad economica principal" required>
-            <TextInput
-              maxLength={TEXT_MAX_LENGTH}
+            <SelectInput
               value={state.sarlaft.economicActivity}
               onChange={(event) =>
                 setState((current) => ({
@@ -1186,7 +1267,14 @@ export default function AffiliationForm() {
                   sarlaft: { ...current.sarlaft, economicActivity: event.target.value },
                 }))
               }
-            />
+            >
+              <option value="">Selecciona una actividad DIAN</option>
+              {economicActivityOptions.map((activity) => (
+                <option key={activity.value} value={activity.value}>
+                  {activity.label}
+                </option>
+              ))}
+            </SelectInput>
           </Field>
 
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
