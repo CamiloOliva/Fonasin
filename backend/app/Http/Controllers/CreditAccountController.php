@@ -52,12 +52,16 @@ class CreditAccountController extends Controller
     ): JsonResponse {
         $associate = Associate::query()->findOrFail($request->string('associate_id')->toString());
 
-        $credit = $registerCreditAccount(
-            associate: $associate,
-            actor: $request->user(),
-            data: $request->validated(),
-            ipHash: $this->ipHash($request),
-        );
+        try {
+            $credit = $registerCreditAccount(
+                associate: $associate,
+                actor: $request->user(),
+                data: $request->validated(),
+                ipHash: $this->ipHash($request),
+            );
+        } catch (DomainException $exception) {
+            return $this->domainError($exception);
+        }
 
         return response()->json([
             'data' => $this->creditPayload($credit),

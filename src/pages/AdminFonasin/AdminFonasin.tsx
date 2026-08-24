@@ -76,6 +76,8 @@ const documentLabels: Record<string, string> = {
   signed_payroll_authorization: 'Libranza firmada externa',
 };
 
+const creditLineOptions = ['FONALIBRE', 'FONAPEN', 'FONAPRIMA', 'FONAROTATIVO', 'FONAPORTES'];
+
 function formatDate(value: string | null): string {
   if (!value) return 'Pendiente';
 
@@ -125,8 +127,14 @@ export default function AdminFonasin() {
     document_type: 'CC',
     document_number: '',
     full_name: '',
+    email: '',
+    password: '',
     status: 'active',
   });
+  const [createdAssociateAccess, setCreatedAssociateAccess] = useState<{
+    email: string;
+    temporaryPassword: string | null;
+  } | null>(null);
   const [creditForm, setCreditForm] = useState({
     associate_id: '',
     credit_line: 'FONALIBRE',
@@ -354,12 +362,21 @@ export default function AdminFonasin() {
     setMessage(null);
 
     try {
-      await createAdminAssociate(associateForm);
+      const created = await createAdminAssociate({
+        ...associateForm,
+        password: associateForm.password.trim() || undefined,
+      });
       setAssociateForm({
         document_type: 'CC',
         document_number: '',
         full_name: '',
+        email: '',
+        password: '',
         status: 'active',
+      });
+      setCreatedAssociateAccess({
+        email: created.user?.email ?? associateForm.email,
+        temporaryPassword: created.temporary_password ?? null,
       });
       await loadAssociates();
       setMessage('Asociado creado correctamente.');
@@ -688,6 +705,7 @@ export default function AdminFonasin() {
             associates={associates}
             dataState={associateDataState}
             form={associateForm}
+            createdAccess={createdAssociateAccess}
             onFormChange={setAssociateForm}
             onCreate={handleCreateAssociate}
             onStatusChange={handleAssociateStatus}
@@ -712,6 +730,8 @@ type AssociateFormState = {
   document_type: string;
   document_number: string;
   full_name: string;
+  email: string;
+  password: string;
   status: string;
 };
 
@@ -719,6 +739,7 @@ function AssociatesPanel({
   associates,
   dataState,
   form,
+  createdAccess,
   onFormChange,
   onCreate,
   onStatusChange,
@@ -726,6 +747,7 @@ function AssociatesPanel({
   associates: AdminAssociate[];
   dataState: DataState;
   form: AssociateFormState;
+  createdAccess: { email: string; temporaryPassword: string | null } | null;
   onFormChange: (form: AssociateFormState) => void;
   onCreate: (event: FormEvent<HTMLFormElement>) => void;
   onStatusChange: (id: string, status: 'active' | 'inactive') => void;
@@ -778,7 +800,42 @@ function AssociatesPanel({
               className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
             />
           </label>
+          <label className="block">
+            <span className="text-sm font-bold text-slate-800">Correo de acceso</span>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(event) => onFormChange({ ...form, email: event.target.value })}
+              maxLength={255}
+              required
+              placeholder="correo@ejemplo.com"
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+            />
+          </label>
+          <label className="block">
+            <span className="text-sm font-bold text-slate-800">Contraseña inicial</span>
+            <input
+              type="password"
+              value={form.password}
+              onChange={(event) => onFormChange({ ...form, password: event.target.value })}
+              minLength={8}
+              maxLength={128}
+              placeholder="Opcional: generar automaticamente"
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+            />
+          </label>
         </div>
+
+        {createdAccess ? (
+          <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
+            <p className="font-black">Acceso creado para {createdAccess.email}</p>
+            <p className="mt-1 font-semibold">
+              {createdAccess.temporaryPassword
+                ? `Contraseña temporal: ${createdAccess.temporaryPassword}`
+                : 'Se uso la contraseña definida por el administrador.'}
+            </p>
+          </div>
+        ) : null}
 
         <button
           type="submit"
@@ -925,13 +982,16 @@ function CreditsPanel({
           </label>
           <label className="block">
             <span className="text-sm font-bold text-slate-800">Linea</span>
-            <input
+            <select
               value={form.credit_line}
               onChange={(event) => onFormChange({ ...form, credit_line: event.target.value })}
-              maxLength={120}
               required
               className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-            />
+            >
+              {creditLineOptions.map((line) => (
+                <option key={line} value={line}>{line}</option>
+              ))}
+            </select>
           </label>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">

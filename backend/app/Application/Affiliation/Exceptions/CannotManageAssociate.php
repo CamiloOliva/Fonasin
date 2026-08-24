@@ -15,4 +15,9 @@ class CannotManageAssociate extends DomainException
     {
         return new self("El estado de asociado [{$status}] no es valido.");
     }
+
+    public static function userAlreadyLinked(): self
+    {
+        return new self('El correo indicado ya esta vinculado a otro asociado.');
+    }
 }

@@ -7,6 +7,7 @@ use App\Models\Associate;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -50,6 +51,8 @@ class AssociateAdminHttpTest extends TestCase
                 'document_type' => 'CC',
                 'document_number' => '1234567890',
                 'full_name' => 'Persona Sintetica',
+                'email' => 'persona.sintetica@fonasin.test',
+                'password' => 'clave-segura-123',
                 'status' => 'active',
             ]);
 
@@ -57,10 +60,19 @@ class AssociateAdminHttpTest extends TestCase
             ->assertJsonPath('data.document_type', 'CC')
             ->assertJsonPath('data.full_name', 'Persona Sintetica')
             ->assertJsonPath('data.status', 'active')
+            ->assertJsonPath('data.user.email', 'persona.sintetica@fonasin.test')
+            ->assertJsonPath('data.temporary_password', null)
             ->assertJsonMissingPath('data.document_number_hash')
             ->assertJsonMissingPath('data.document_number_encrypted');
 
         $associateId = $response->json('data.id');
+        $user = User::query()->where('email', 'persona.sintetica@fonasin.test')->firstOrFail();
+        $this->assertTrue(Hash::check('clave-segura-123', $user->password));
+        $this->assertTrue($user->roles()->where('name', 'associate')->exists());
+        $this->assertDatabaseHas('associates', [
+            'id' => $associateId,
+            'user_id' => $user->id,
+        ]);
         $this->assertDatabaseHas('audit_events', [
             'actor_user_id' => $admin->id,
             'action' => AffiliationAuditAction::AssociateCreated->value,
@@ -77,6 +89,7 @@ class AssociateAdminHttpTest extends TestCase
                 'document_type' => 'CC',
                 'document_number' => '1234567890',
                 'full_name' => 'Persona Uno',
+                'email' => 'persona.uno@fonasin.test',
             ])
             ->assertCreated();
 
@@ -85,8 +98,53 @@ class AssociateAdminHttpTest extends TestCase
                 'document_type' => 'CC',
                 'document_number' => '1234567890',
                 'full_name' => 'Persona Dos',
+                'email' => 'persona.dos@fonasin.test',
             ])
             ->assertUnprocessable();
+    }
+
+    public function test_admin_can_create_associate_with_generated_portal_password(): void
+    {
+        $admin = $this->userWithRole('admin');
+
+        $response = $this->actingAs($admin)
+            ->postJson('/admin/associates', [
+                'document_type' => 'CC',
+                'document_number' => '9876543210',
+                'full_name' => 'Persona Con Acceso',
+                'email' => 'persona.acceso@fonasin.test',
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.user.email', 'persona.acceso@fonasin.test')
+            ->assertJsonStructure([
+                'data' => ['temporary_password'],
+            ]);
+
+        $temporaryPassword = $response->json('data.temporary_password');
+        $this->assertIsString($temporaryPassword);
+        $this->assertGreaterThanOrEqual(8, strlen($temporaryPassword));
+
+        $user = User::query()->where('email', 'persona.acceso@fonasin.test')->firstOrFail();
+        $this->assertTrue(Hash::check($temporaryPassword, $user->password));
+        $this->assertTrue($user->roles()->where('name', 'associate')->exists());
+    }
+
+    public function test_it_rejects_email_already_linked_to_another_associate(): void
+    {
+        $admin = $this->userWithRole('admin');
+        $linkedUser = User::factory()->create(['email' => 'vinculado@fonasin.test']);
+        $this->createAssociate(['user_id' => $linkedUser->id]);
+
+        $this->actingAs($admin)
+            ->postJson('/admin/associates', [
+                'document_type' => 'CC',
+                'document_number' => '1122334455',
+                'full_name' => 'Persona Duplicada',
+                'email' => 'vinculado@fonasin.test',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'El correo indicado ya esta vinculado a otro asociado.');
     }
 
     public function test_admin_can_deactivate_and_activate_associate(): void
@@ -126,7 +184,7 @@ class AssociateAdminHttpTest extends TestCase
         return $user;
     }
 
-    private function createAssociate(): Associate
+    private function createAssociate(array $overrides = []): Associate
     {
         $reference = (string) Str::uuid();
 
@@ -136,6 +194,7 @@ class AssociateAdminHttpTest extends TestCase
             'document_number_encrypted' => 'test-ciphertext',
             'full_name' => 'Synthetic Test Person',
             'status' => 'active',
+            ...$overrides,
         ]);
     }
 }
