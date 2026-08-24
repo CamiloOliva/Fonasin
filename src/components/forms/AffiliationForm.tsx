@@ -296,6 +296,51 @@ const legalDocuments = [
     url: '/ESTATUTOS%20DEFINITIVOS%202024.pdf',
   },
 ] as const;
+const DRAFT_STORAGE_KEY = 'fonasin.affiliation.draft.v1';
+const DRAFT_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
+
+type StoredAffiliationDraft = {
+  savedAt: number;
+  draft: AffiliationDraft;
+};
+
+function readStoredDraft(): AffiliationDraft | null {
+  try {
+    const raw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return null;
+
+    const stored = JSON.parse(raw) as StoredAffiliationDraft;
+    if (!stored?.draft?.id || Date.now() - stored.savedAt > DRAFT_STORAGE_TTL_MS) {
+      window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+      return null;
+    }
+
+    return stored.draft;
+  } catch {
+    return null;
+  }
+}
+
+function storeDraft(draft: AffiliationDraft): void {
+  if (draft.status !== 'draft') return;
+
+  try {
+    window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
+      savedAt: Date.now(),
+      draft,
+    }));
+  } catch {
+    // El formulario sigue funcionando aunque el navegador bloquee storage local.
+  }
+}
+
+function clearStoredDraft(): void {
+  try {
+    window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+  } catch {
+    // No hay accion necesaria si el navegador bloquea storage local.
+  }
+}
 
 const personalFields: FieldConfig[] = [
   { key: 'documentType', label: 'Tipo de documento', type: 'select', options: documentTypes },
@@ -1085,9 +1130,19 @@ export default function AffiliationForm() {
     let active = true;
     (async () => {
       try {
+        const storedDraft = readStoredDraft();
+        if (storedDraft) {
+          if (!active) return;
+          setDraft(storedDraft);
+          setBackendMode('ready');
+          setBackendMessage(`Borrador ${storedDraft.id} recuperado en este navegador.`);
+          return;
+        }
+
         const response = await createAffiliationDraft();
         if (!active) return;
         setDraft(response);
+        storeDraft(response);
         setBackendMode('ready');
         setBackendMessage(`Borrador ${response.id} listo para sincronizar secciones.`);
       } catch {
@@ -1176,6 +1231,7 @@ export default function AffiliationForm() {
           });
           const submittedDraft = await submitAffiliationApplication(draft.links.submit, POLICY_VERSION);
           setDraft(submittedDraft);
+          clearStoredDraft();
         }
 
         setSubmitted(true);
@@ -1272,16 +1328,25 @@ export default function AffiliationForm() {
           description="Empresa, cargo, area, contrato, ciudad de trabajo e ingreso mensual."
         />
         {renderFields(employmentFields, state.employment, (next) =>
-          setState((current) => ({
-            ...current,
-            employment: {
-              ...current.employment,
-              ...next,
-              contractTypeOther:
-                next.contractType && next.contractType !== 'Otro' ? '' : next.contractTypeOther ?? current.employment.contractTypeOther,
-              monthlySalary: next.monthlySalary ? currencyOnly(next.monthlySalary) : current.employment.monthlySalary,
-            },
-          })),
+          setState((current) => {
+            const nextMonthlySalary = next.monthlySalary ? currencyOnly(next.monthlySalary) : current.employment.monthlySalary;
+            const shouldMirrorSalary = !current.financial.principalIncome
+              || current.financial.principalIncome === current.employment.monthlySalary;
+
+            return {
+              ...current,
+              employment: {
+                ...current.employment,
+                ...next,
+                contractTypeOther:
+                  next.contractType && next.contractType !== 'Otro' ? '' : next.contractTypeOther ?? current.employment.contractTypeOther,
+                monthlySalary: nextMonthlySalary,
+              },
+              financial: shouldMirrorSalary
+                ? { ...current.financial, principalIncome: nextMonthlySalary }
+                : current.financial,
+            };
+          }),
         'employment', {
           fieldOptions: {
             workCity: colombiaCityOptions,
@@ -2205,7 +2270,7 @@ export default function AffiliationForm() {
           description="El documento separa esta parte del formulario principal. Aqui quedan el cierre y la firma."
         />
 
-        <div className="grid gap-5 xl:grid-cols-[1.05fr_.95fr]">
+        <div className="grid gap-5">
           <div className="space-y-4">
             {[
               {

@@ -66,7 +66,7 @@
     <p>Bucaramanga, <span class="line wide">&nbsp;</span></p>
 
     <p>
-        Senores<br>
+        Señores<br>
         DEPARTAMENTO NOMINA
     </p>
 

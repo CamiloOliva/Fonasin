@@ -46,14 +46,6 @@ const statusLabels: Record<string, string> = {
   cancelled: 'Cancelada',
 };
 
-const sectionLabels: Record<string, string> = {
-  personal: 'Datos personales',
-  employment: 'Informacion laboral',
-  financial: 'Informacion economica',
-  beneficiaries: 'Beneficiarios',
-  sarlaft: 'SARLAFT',
-};
-
 const documentLabels: Record<string, string> = {
   identity: 'Documento de identidad',
   employment_certificate: 'Certificado laboral',
@@ -77,19 +69,6 @@ function statusLabel(status: string): string {
 
 function documentLabel(documentType: string): string {
   return documentLabels[documentType] ?? documentType;
-}
-
-function flattenValue(value: unknown): string {
-  if (value === null || value === undefined || value === '') return 'Sin dato';
-  if (typeof value === 'boolean') return value ? 'Si' : 'No';
-  if (Array.isArray(value)) {
-    return value
-      .map((item) => (typeof item === 'object' && item !== null ? JSON.stringify(item) : String(item)))
-      .join(', ');
-  }
-  if (typeof value === 'object') return JSON.stringify(value);
-
-  return String(value);
 }
 
 function roleLabel(role: string): string {
@@ -505,6 +484,7 @@ function ApplicationDetail({
   onUploadSignedPayrollAuthorization,
   onEnable,
 }: ApplicationDetailProps) {
+  const [previewDocument, setPreviewDocument] = useState<AdminAffiliationDocument | null>(null);
   const generatedDocuments = application.documents.filter((document) =>
     ['affiliation_summary', 'payroll_authorization'].includes(document.document_type),
   );
@@ -552,8 +532,9 @@ function ApplicationDetail({
         <p className="mt-2 text-sm leading-6 text-slate-600">
           Revisa los datos guardados, el documento de identidad y los PDF generados antes de aprobar esta etapa.
         </p>
-        <DocumentList title="Archivos cargados" documents={uploadedDocuments} />
-        <DocumentList title="Documentos generados" documents={generatedDocuments} />
+        <DocumentList title="Archivos cargados" documents={uploadedDocuments} onPreview={setPreviewDocument} />
+        <DocumentList title="Documentos generados" documents={generatedDocuments} onPreview={setPreviewDocument} />
+        <DocumentPreview document={previewDocument} onClose={() => setPreviewDocument(null)} />
       </section>
 
       <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
@@ -587,7 +568,7 @@ function ApplicationDetail({
             Cargar libranza
           </button>
         </div>
-        <DocumentList title="Libranza externa registrada" documents={signedPayrollDocuments} />
+        <DocumentList title="Libranza externa registrada" documents={signedPayrollDocuments} onPreview={setPreviewDocument} />
         <button
           type="button"
           onClick={onEnable}
@@ -611,28 +592,6 @@ function ApplicationDetail({
             )}
           </div>
         ) : null}
-      </section>
-
-      <section className="space-y-3">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Formulario</p>
-          <h3 className="mt-1 text-xl font-black text-slate-950">Datos enviados por seccion</h3>
-        </div>
-        {application.sections.map((section) => (
-          <details key={section.id} open className="rounded-2xl border border-slate-200 bg-white p-4">
-            <summary className="cursor-pointer text-base font-black text-slate-950">
-              {sectionLabels[section.section] ?? section.section}
-            </summary>
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {Object.entries(section.data).map(([key, value]) => (
-                <div key={key} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-                  <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">{key}</p>
-                  <p className="mt-1 break-words text-sm font-semibold text-slate-800">{flattenValue(value)}</p>
-                </div>
-              ))}
-            </div>
-          </details>
-        ))}
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -670,7 +629,42 @@ function ApplicationDetail({
   );
 }
 
-function DocumentList({ title, documents }: { title: string; documents: AdminAffiliationDocument[] }) {
+function DocumentPreview({ document, onClose }: { document: AdminAffiliationDocument | null; onClose: () => void }) {
+  if (!document) return null;
+
+  return (
+    <div className="mt-4 rounded-2xl border border-emerald-200 bg-white p-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-black text-slate-950">{documentLabel(document.document_type)}</p>
+          <p className="text-xs font-semibold text-slate-500">{document.original_filename}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50"
+        >
+          Cerrar visor
+        </button>
+      </div>
+      <iframe
+        title={documentLabel(document.document_type)}
+        src={document.links.preview}
+        className="mt-3 h-[520px] w-full rounded-xl border border-slate-200 bg-slate-100"
+      />
+    </div>
+  );
+}
+
+function DocumentList({
+  title,
+  documents,
+  onPreview,
+}: {
+  title: string;
+  documents: AdminAffiliationDocument[];
+  onPreview: (document: AdminAffiliationDocument) => void;
+}) {
   return (
     <div className="mt-4">
       <p className="text-sm font-black text-slate-950">{title}</p>
@@ -681,19 +675,18 @@ function DocumentList({ title, documents }: { title: string; documents: AdminAff
           </p>
         ) : null}
         {documents.map((document) => (
-          <a
+          <button
             key={document.id}
-            href={document.links.preview}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm transition hover:border-emerald-200 hover:bg-emerald-50"
+            type="button"
+            onClick={() => onPreview(document)}
+            className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-left text-sm transition hover:border-emerald-200 hover:bg-emerald-50"
           >
             <FileText className="mt-0.5 shrink-0 text-emerald-700" size={18} />
             <span>
               <span className="block font-black text-slate-950">{documentLabel(document.document_type)}</span>
               <span className="mt-1 block text-xs font-semibold text-slate-500">{document.original_filename}</span>
             </span>
-          </a>
+          </button>
         ))}
       </div>
     </div>
