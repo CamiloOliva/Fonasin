@@ -7,12 +7,14 @@ import {
   LogOut,
   RefreshCw,
   ShieldCheck,
+  UploadCloud,
   UserCog,
   XCircle,
 } from 'lucide-react';
 import {
   approveAdminAffiliationApplication,
   currentAdminUser,
+  enableAdminAffiliationApplication,
   fetchAdminAffiliationApplication,
   fetchAdminAffiliationApplications,
   loginAdmin,
@@ -20,9 +22,11 @@ import {
   rejectAdminAffiliationApplication,
   requestAdminAffiliationCorrection,
   startAdminAffiliationReview,
+  uploadSignedPayrollAuthorization,
   type AdminAffiliationApplication,
   type AdminAffiliationDetail,
   type AdminAffiliationDocument,
+  type EnableAffiliationResult,
 } from '../../services/adminAffiliationService';
 import type { PortalUser } from '../../services/portalService';
 
@@ -108,6 +112,8 @@ export default function AdminFonasin() {
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
   const [reason, setReason] = useState('');
+  const [signedPayrollFile, setSignedPayrollFile] = useState<File | null>(null);
+  const [enableResult, setEnableResult] = useState<EnableAffiliationResult | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -224,9 +230,44 @@ export default function AdminFonasin() {
       setDetail(updated);
       await loadApplications(updated.id);
       setReason('');
+      setEnableResult(null);
       setMessage(successMessage);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible completar la accion.');
+    }
+  }
+
+  async function handleUploadSignedPayrollAuthorization() {
+    if (!detail || !signedPayrollFile) return;
+
+    setError(null);
+    setMessage(null);
+
+    try {
+      await uploadSignedPayrollAuthorization(detail.id, signedPayrollFile);
+      setSignedPayrollFile(null);
+      setDetail(await fetchAdminAffiliationApplication(detail.id));
+      await loadApplications(detail.id);
+      setMessage('Libranza firmada cargada correctamente.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible cargar la libranza firmada.');
+    }
+  }
+
+  async function handleEnableApplication() {
+    if (!detail) return;
+
+    setError(null);
+    setMessage(null);
+
+    try {
+      const result = await enableAdminAffiliationApplication(detail.id);
+      setEnableResult(result);
+      setDetail(await fetchAdminAffiliationApplication(detail.id));
+      await loadApplications(detail.id);
+      setMessage('Asociado habilitado correctamente.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible habilitar el asociado.');
     }
   }
 
@@ -410,11 +451,16 @@ export default function AdminFonasin() {
               <ApplicationDetail
                 application={detail}
                 reason={reason}
+                signedPayrollFile={signedPayrollFile}
+                enableResult={enableResult}
                 onReasonChange={setReason}
+                onSignedPayrollFileChange={setSignedPayrollFile}
                 onStartReview={() => runAction(() => startAdminAffiliationReview(detail.id), 'Solicitud tomada en revision.')}
                 onRequestCorrection={() => runAction(() => requestAdminAffiliationCorrection(detail.id, reason), 'Correccion solicitada.')}
                 onApprove={() => runAction(() => approveAdminAffiliationApplication(detail.id), 'Solicitud aprobada.')}
                 onReject={() => runAction(() => rejectAdminAffiliationApplication(detail.id, reason), 'Solicitud rechazada.')}
+                onUploadSignedPayrollAuthorization={handleUploadSignedPayrollAuthorization}
+                onEnable={handleEnableApplication}
               />
             ) : dataState !== 'loading' ? (
               <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-12 text-center">
@@ -432,26 +478,39 @@ export default function AdminFonasin() {
 type ApplicationDetailProps = {
   application: AdminAffiliationDetail;
   reason: string;
+  signedPayrollFile: File | null;
+  enableResult: EnableAffiliationResult | null;
   onReasonChange: (value: string) => void;
+  onSignedPayrollFileChange: (file: File | null) => void;
   onStartReview: () => void;
   onRequestCorrection: () => void;
   onApprove: () => void;
   onReject: () => void;
+  onUploadSignedPayrollAuthorization: () => void;
+  onEnable: () => void;
 };
 
 function ApplicationDetail({
   application,
   reason,
+  signedPayrollFile,
+  enableResult,
   onReasonChange,
+  onSignedPayrollFileChange,
   onStartReview,
   onRequestCorrection,
   onApprove,
   onReject,
+  onUploadSignedPayrollAuthorization,
+  onEnable,
 }: ApplicationDetailProps) {
   const generatedDocuments = application.documents.filter((document) =>
     ['affiliation_summary', 'payroll_authorization'].includes(document.document_type),
   );
   const uploadedDocuments = application.documents.filter((document) => document.document_type === 'identity');
+  const signedPayrollDocuments = application.documents.filter((document) => document.document_type === 'signed_payroll_authorization');
+  const canUploadSignedPayroll = application.status === 'approved';
+  const canEnable = application.status === 'approved' && signedPayrollDocuments.length > 0;
 
   return (
     <div className="space-y-5">
@@ -498,8 +557,57 @@ function ApplicationDetail({
         <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-700">Segunda confirmacion</p>
         <h3 className="mt-1 text-lg font-black text-slate-950">Libranza firmada por entidad externa</h3>
         <p className="mt-2 text-sm leading-6 text-amber-900">
-          Pendiente del siguiente commit: subir la libranza firmada, reemplazar/versionar el documento y habilitar la creacion del asociado.
+          Carga la libranza firmada por la entidad externa. Al habilitar, el sistema crea o vincula el asociado y su usuario de portal.
         </p>
+        <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
+          <label className="block rounded-2xl border border-dashed border-amber-300 bg-white px-4 py-4">
+            <span className="text-sm font-black text-slate-950">Archivo firmado</span>
+            <span className="mt-1 block text-xs font-semibold text-slate-500">PDF, JPG o PNG hasta 5MB.</span>
+            <input
+              type="file"
+              accept="application/pdf,image/jpeg,image/png"
+              disabled={!canUploadSignedPayroll}
+              onChange={(event) => onSignedPayrollFileChange(event.target.files?.[0] ?? null)}
+              className="mt-3 block w-full text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-emerald-50 file:px-4 file:py-2 file:text-sm file:font-black file:text-emerald-700 disabled:cursor-not-allowed"
+            />
+            {signedPayrollFile ? (
+              <span className="mt-2 block text-xs font-bold text-emerald-700">{signedPayrollFile.name}</span>
+            ) : null}
+          </label>
+          <button
+            type="button"
+            onClick={onUploadSignedPayrollAuthorization}
+            disabled={!canUploadSignedPayroll || !signedPayrollFile}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-600 px-5 py-3 text-sm font-black text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            <UploadCloud size={18} />
+            Cargar libranza
+          </button>
+        </div>
+        <DocumentList title="Libranza externa registrada" documents={signedPayrollDocuments} />
+        <button
+          type="button"
+          onClick={onEnable}
+          disabled={!canEnable}
+          className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+        >
+          <CheckCircle2 size={16} />
+          Habilitar asociado
+        </button>
+        {enableResult ? (
+          <div className="mt-4 rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-700">
+            <p className="font-black text-emerald-800">Asociado creado o vinculado</p>
+            <p className="mt-1">Nombre: {enableResult.associate.full_name}</p>
+            <p>Usuario: {enableResult.user.email}</p>
+            {enableResult.temporary_password ? (
+              <p className="mt-2 rounded-xl bg-emerald-50 px-3 py-2 font-black text-emerald-800">
+                Contrasena temporal: {enableResult.temporary_password}
+              </p>
+            ) : (
+              <p className="mt-2 font-semibold text-slate-600">El usuario ya existia; no se genero una contrasena nueva.</p>
+            )}
+          </div>
+        ) : null}
       </section>
 
       <section className="space-y-3">
@@ -588,4 +696,3 @@ function DocumentList({ title, documents }: { title: string; documents: AdminAff
     </div>
   );
 }
-

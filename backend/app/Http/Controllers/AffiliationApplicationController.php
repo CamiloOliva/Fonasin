@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Application\Affiliation\UseCases\AcceptApplicationConsent;
 use App\Application\Affiliation\UseCases\ApproveAffiliationApplication;
 use App\Application\Affiliation\UseCases\CreateAffiliationDraft;
+use App\Application\Affiliation\UseCases\EnableAffiliationApplication;
 use App\Application\Affiliation\UseCases\RegisterApplicationDocument;
 use App\Application\Affiliation\UseCases\RejectAffiliationApplication;
 use App\Application\Affiliation\UseCases\RequestAffiliationCorrection;
@@ -21,6 +22,7 @@ use App\Domain\Audit\Enums\AuditActorType;
 use App\Domain\Audit\Enums\AuditModule;
 use App\Http\Requests\Affiliation\AcceptApplicationConsentRequest;
 use App\Http\Requests\Affiliation\RegisterApplicationDocumentRequest;
+use App\Http\Requests\Affiliation\RegisterSignedPayrollAuthorizationRequest;
 use App\Http\Requests\Affiliation\RejectApplicationRequest;
 use App\Http\Requests\Affiliation\RequestApplicationCorrectionRequest;
 use App\Http\Requests\Affiliation\StoreApplicationSectionRequest;
@@ -117,6 +119,33 @@ class AffiliationApplicationController extends Controller
                 originalFilename: $file->getClientOriginalName(),
                 mimeType: $file->getMimeType() ?: 'application/octet-stream',
                 byteSize: $file->getSize() ?: 0,
+                ipHash: $this->ipHash($request),
+                fileContents: $file->get(),
+            );
+        } catch (DomainException $exception) {
+            return $this->domainError($exception);
+        }
+
+        return response()->json([
+            'data' => $this->documentPayload($document),
+        ], 201);
+    }
+
+    public function storeSignedPayrollAuthorization(
+        RegisterSignedPayrollAuthorizationRequest $request,
+        AffiliationApplication $application,
+        RegisterApplicationDocument $registerDocument,
+    ): JsonResponse {
+        $file = $request->file('file');
+
+        try {
+            $document = $registerDocument(
+                application: $application,
+                documentType: ApplicationDocumentType::SignedPayrollAuthorization,
+                originalFilename: $file->getClientOriginalName(),
+                mimeType: $file->getMimeType() ?: 'application/octet-stream',
+                byteSize: $file->getSize() ?: 0,
+                actor: $request->user(),
                 ipHash: $this->ipHash($request),
                 fileContents: $file->get(),
             );
@@ -291,6 +320,41 @@ class AffiliationApplicationController extends Controller
 
         return response()->json([
             'data' => $this->applicationPayload($approved),
+        ]);
+    }
+
+    public function enable(
+        Request $request,
+        AffiliationApplication $application,
+        EnableAffiliationApplication $enableApplication,
+    ): JsonResponse {
+        try {
+            $result = $enableApplication(
+                application: $application,
+                actor: $request->user(),
+                ipHash: $this->ipHash($request),
+            );
+        } catch (DomainException $exception) {
+            return $this->domainError($exception);
+        }
+
+        return response()->json([
+            'data' => [
+                'application' => $this->applicationPayload($result['application']),
+                'associate' => [
+                    'id' => $result['associate']->id,
+                    'full_name' => $result['associate']->full_name,
+                    'document_type' => $result['associate']->document_type,
+                    'status' => $result['associate']->status,
+                    'user_id' => $result['associate']->user_id,
+                ],
+                'user' => [
+                    'id' => $result['user']->id,
+                    'email' => $result['user']->email,
+                    'status' => $result['user']->status,
+                ],
+                'temporary_password' => $result['temporary_password'],
+            ],
         ]);
     }
 

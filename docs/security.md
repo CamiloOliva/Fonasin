@@ -13,6 +13,7 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 - Acciones administrativas sensibles requieren usuario identificado y registro de auditoria.
 - El flujo publico de afiliacion protege las mutaciones de una solicitud mediante URLs temporales firmadas por Laravel. El UUID de la solicitud por si solo no autoriza guardar secciones, documentos, consentimientos ni enviar.
 - Las rutas publicas iniciales de afiliacion y FPQRS no usan sesion de usuario; por eso se excluyen de CSRF y deben mantener validacion estricta, URLs firmadas cuando corresponde, storage privado y auditoria.
+- El panel administrativo de afiliaciones requiere sesion y rol `admin` o `reviewer`. La revision del formulario, la carga de libranza firmada externa y la habilitacion final del asociado pasan por policies y casos de uso auditados.
 
 ## Datos sensibles
 
@@ -30,6 +31,7 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 4. Descargar o visualizar solo mediante una ruta autorizada y temporal.
 5. Auditar carga, cambio de estado y descarga.
 6. No incluir archivos ni su contenido en backups de desarrollo, pruebas o ejemplos sin autorizacion.
+7. La libranza firmada por entidad externa se registra como documento privado de afiliacion y reemplaza versiones previas del mismo tipo mediante archivado logico.
 
 ## FPQRS
 

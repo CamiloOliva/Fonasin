@@ -32,6 +32,16 @@ class AffiliationApplicationPolicy
         return $this->canManageAffiliationBackoffice($user);
     }
 
+    public function uploadSignedPayrollAuthorization(User $user, AffiliationApplication $application): bool
+    {
+        return $this->canManageAffiliationBackoffice($user);
+    }
+
+    public function enable(User $user, AffiliationApplication $application): bool
+    {
+        return $this->canManageAffiliationBackoffice($user);
+    }
+
     public function reject(User $user, AffiliationApplication $application): bool
     {
         return $this->canManageAffiliationBackoffice($user);

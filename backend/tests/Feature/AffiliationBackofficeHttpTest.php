@@ -14,6 +14,8 @@ use App\Models\ApplicationSection;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class AffiliationBackofficeHttpTest extends TestCase
@@ -161,6 +163,99 @@ class AffiliationBackofficeHttpTest extends TestCase
             'action' => AffiliationAuditAction::ApplicationApproved->value,
             'subject_id' => $application->id,
         ]);
+    }
+
+    public function test_reviewer_can_upload_signed_payroll_authorization_over_http(): void
+    {
+        Storage::fake('local');
+
+        $application = $this->applicationWithStatus(AffiliationApplicationStatus::Approved);
+        $reviewer = $this->userWithRole('reviewer');
+
+        $response = $this->actingAs($reviewer)
+            ->postJson("/admin/affiliation-applications/{$application->id}/signed-payroll-authorization", [
+                'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
+                'file' => UploadedFile::fake()->create('libranza-firmada.pdf', 128, 'application/pdf'),
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.document_type', ApplicationDocumentType::SignedPayrollAuthorization->value)
+            ->assertJsonPath('data.original_filename', 'libranza-firmada.pdf');
+
+        $this->assertDatabaseHas('application_documents', [
+            'application_id' => $application->id,
+            'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
+            'status' => ApplicationDocumentStatus::Uploaded->value,
+        ]);
+    }
+
+    public function test_reviewer_can_enable_application_after_signed_payroll_authorization(): void
+    {
+        $application = $this->applicationWithStatus(AffiliationApplicationStatus::Approved);
+        $reviewer = $this->userWithRole('reviewer');
+        $cipher = app(EncryptsSensitiveData::class);
+
+        ApplicationSection::query()->forceCreate([
+            'application_id' => $application->id,
+            'section' => AffiliationApplicationStep::Personal->value,
+            'schema_version' => 1,
+            'data_encrypted' => $cipher->encryptArray([
+                'documentType' => 'CC',
+                'documentNumber' => '123456789',
+                'firstName' => 'Ana',
+                'middleName' => 'Maria',
+                'lastName' => 'Prueba',
+                'secondLastName' => 'Perez',
+                'email' => 'ana.prueba@example.test',
+            ]),
+            'completed_at' => now(),
+        ]);
+
+        ApplicationDocument::query()->forceCreate([
+            'application_id' => $application->id,
+            'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
+            'original_filename' => 'libranza-firmada.pdf',
+            'storage_key' => 'private/affiliations/demo/libranza-firmada.pdf',
+            'mime_type' => 'application/pdf',
+            'byte_size' => 128,
+            'status' => ApplicationDocumentStatus::Uploaded->value,
+            'uploaded_at' => now(),
+        ]);
+
+        $response = $this->actingAs($reviewer)
+            ->postJson("/admin/affiliation-applications/{$application->id}/enable");
+
+        $response->assertOk()
+            ->assertJsonPath('data.application.status', AffiliationApplicationStatus::Enabled->value)
+            ->assertJsonPath('data.associate.full_name', 'Ana Maria Prueba Perez')
+            ->assertJsonPath('data.user.email', 'ana.prueba@example.test');
+
+        $this->assertDatabaseHas('associates', [
+            'document_type' => 'CC',
+            'document_number_hash' => hash('sha256', '123456789'),
+            'full_name' => 'Ana Maria Prueba Perez',
+            'status' => 'active',
+        ]);
+        $this->assertDatabaseHas('affiliation_applications', [
+            'id' => $application->id,
+            'status' => AffiliationApplicationStatus::Enabled->value,
+        ]);
+        $this->assertDatabaseHas('audit_events', [
+            'actor_user_id' => $reviewer->id,
+            'action' => AffiliationAuditAction::ApplicationEnabled->value,
+            'subject_id' => $application->id,
+        ]);
+    }
+
+    public function test_application_cannot_be_enabled_without_signed_payroll_authorization(): void
+    {
+        $application = $this->applicationWithStatus(AffiliationApplicationStatus::Approved);
+        $reviewer = $this->userWithRole('reviewer');
+
+        $this->actingAs($reviewer)
+            ->postJson("/admin/affiliation-applications/{$application->id}/enable")
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Application cannot be enabled without signed payroll authorization.');
     }
 
     public function test_reviewer_can_reject_application_over_http(): void

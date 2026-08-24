@@ -64,6 +64,12 @@ Route::middleware('auth')
         Route::post('/{application}/approve', [AffiliationApplicationController::class, 'approve'])
             ->middleware('can:approve,application')
             ->name('approve');
+        Route::post('/{application}/signed-payroll-authorization', [AffiliationApplicationController::class, 'storeSignedPayrollAuthorization'])
+            ->middleware('can:uploadSignedPayrollAuthorization,application')
+            ->name('signed-payroll-authorization');
+        Route::post('/{application}/enable', [AffiliationApplicationController::class, 'enable'])
+            ->middleware('can:enable,application')
+            ->name('enable');
         Route::post('/{application}/reject', [AffiliationApplicationController::class, 'reject'])
             ->middleware('can:reject,application')
             ->name('reject');

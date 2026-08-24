@@ -65,7 +65,7 @@ La ruta actual `/afiliacion` es un aviso explicito y no se considera implementac
 
 | ID | Requisito | Estado | Bloqueador o siguiente paso |
 |---|---|---|---|
-| FE-ADM-001 a FE-ADM-009 | Gestion de afiliaciones | Pendiente | Inicializar Laravel/Filament, Identity, permisos y flujo Affiliation. |
+| FE-ADM-001 a FE-ADM-009 | Gestion de afiliaciones | En curso | `/admin-fonasin`, endpoints `GET /admin/affiliation-applications`, acciones de revision, carga de libranza externa y habilitacion de asociado. Falta validacion visual final y modulo completo de asociados. |
 | FE-ADM-010 | Importar creditos XLSX | Bloqueado | Plantilla, columnas, validaciones y contrato de importacion aprobados. |
 | FE-ADM-011 | Historial de importaciones | Pendiente | Depende del caso de uso de importacion y auditoria. |
 | FE-ADM-012 | Prohibir alta manual irregular | Pendiente | Debe imponerse con permisos y casos de uso del Backend. |

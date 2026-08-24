@@ -56,6 +56,23 @@ export type AdminAffiliationDetail = AdminAffiliationApplication & {
   consents: AdminAffiliationConsent[];
 };
 
+export type EnableAffiliationResult = {
+  application: AdminAffiliationApplication;
+  associate: {
+    id: string;
+    full_name: string;
+    document_type: string;
+    status: string;
+    user_id: string | null;
+  };
+  user: {
+    id: string;
+    email: string;
+    status: string;
+  };
+  temporary_password: string | null;
+};
+
 type RequestOptions = {
   method?: 'GET' | 'POST';
   body?: BodyInit | null;
@@ -181,3 +198,26 @@ export async function approveAdminAffiliationApplication(id: string): Promise<Ad
   return fetchAdminAffiliationApplication(response.data.id);
 }
 
+export async function uploadSignedPayrollAuthorization(id: string, file: File): Promise<AdminAffiliationDocument> {
+  const formData = new FormData();
+  formData.append('document_type', 'signed_payroll_authorization');
+  formData.append('file', file);
+
+  const response = await requestJson<{ data: AdminAffiliationDocument }>(
+    `/admin/affiliation-applications/${id}/signed-payroll-authorization`,
+    {
+      method: 'POST',
+      body: formData,
+    },
+  );
+
+  return response.data;
+}
+
+export async function enableAdminAffiliationApplication(id: string): Promise<EnableAffiliationResult> {
+  const response = await requestJson<{ data: EnableAffiliationResult }>(`/admin/affiliation-applications/${id}/enable`, {
+    method: 'POST',
+  });
+
+  return response.data;
+}
