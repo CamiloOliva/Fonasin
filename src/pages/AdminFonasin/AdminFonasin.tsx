@@ -8,7 +8,9 @@ import {
   RefreshCw,
   ShieldCheck,
   UploadCloud,
+  UserPlus,
   UserCog,
+  Users,
   XCircle,
 } from 'lucide-react';
 import {
@@ -28,10 +30,18 @@ import {
   type AdminAffiliationDocument,
   type EnableAffiliationResult,
 } from '../../services/adminAffiliationService';
+import {
+  activateAdminAssociate,
+  createAdminAssociate,
+  deactivateAdminAssociate,
+  fetchAdminAssociates,
+  type AdminAssociate,
+} from '../../services/adminAssociateService';
 import type { PortalUser } from '../../services/portalService';
 
 type SessionState = 'checking' | 'guest' | 'authenticated';
 type DataState = 'idle' | 'loading' | 'ready' | 'error';
+type AdminPanelView = 'applications' | 'associates';
 
 const statusLabels: Record<string, string> = {
   draft: 'Borrador',
@@ -44,6 +54,8 @@ const statusLabels: Record<string, string> = {
   withdrawn: 'Retirada',
   rejected: 'Rechazada',
   cancelled: 'Cancelada',
+  active: 'Activo',
+  inactive: 'Inactivo',
 };
 
 const documentLabels: Record<string, string> = {
@@ -84,8 +96,11 @@ function roleLabel(role: string): string {
 export default function AdminFonasin() {
   const [sessionState, setSessionState] = useState<SessionState>('checking');
   const [dataState, setDataState] = useState<DataState>('idle');
+  const [associateDataState, setAssociateDataState] = useState<DataState>('idle');
+  const [activeView, setActiveView] = useState<AdminPanelView>('applications');
   const [user, setUser] = useState<PortalUser | null>(null);
   const [applications, setApplications] = useState<AdminAffiliationApplication[]>([]);
+  const [associates, setAssociates] = useState<AdminAssociate[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<AdminAffiliationDetail | null>(null);
   const [email, setEmail] = useState('');
@@ -94,6 +109,12 @@ export default function AdminFonasin() {
   const [reason, setReason] = useState('');
   const [signedPayrollFile, setSignedPayrollFile] = useState<File | null>(null);
   const [enableResult, setEnableResult] = useState<EnableAffiliationResult | null>(null);
+  const [associateForm, setAssociateForm] = useState({
+    document_type: 'CC',
+    document_number: '',
+    full_name: '',
+    status: 'active',
+  });
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -141,6 +162,30 @@ export default function AdminFonasin() {
       setDetail(null);
       setError(caught instanceof Error ? caught.message : 'No fue posible cargar la solicitud.');
     }
+  }
+
+  async function loadAssociates() {
+    setAssociateDataState('loading');
+    setError(null);
+
+    try {
+      setAssociates(await fetchAdminAssociates());
+      setAssociateDataState('ready');
+    } catch (caught) {
+      setAssociateDataState('error');
+      setAssociates([]);
+      setError(caught instanceof Error ? caught.message : 'No fue posible cargar los asociados.');
+    }
+  }
+
+  async function openApplications() {
+    setActiveView('applications');
+    await loadApplications(selectedId);
+  }
+
+  async function openAssociates() {
+    setActiveView('associates');
+    await loadAssociates();
   }
 
   useEffect(() => {
@@ -194,6 +239,7 @@ export default function AdminFonasin() {
 
     setUser(null);
     setApplications([]);
+    setAssociates([]);
     setDetail(null);
     setSelectedId(null);
     setSessionState('guest');
@@ -248,6 +294,44 @@ export default function AdminFonasin() {
       setMessage('Asociado habilitado correctamente.');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible habilitar el asociado.');
+    }
+  }
+
+  async function handleCreateAssociate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setMessage(null);
+
+    try {
+      await createAdminAssociate(associateForm);
+      setAssociateForm({
+        document_type: 'CC',
+        document_number: '',
+        full_name: '',
+        status: 'active',
+      });
+      await loadAssociates();
+      setMessage('Asociado creado correctamente.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible crear el asociado.');
+    }
+  }
+
+  async function handleAssociateStatus(id: string, status: 'active' | 'inactive') {
+    setError(null);
+    setMessage(null);
+
+    try {
+      if (status === 'active') {
+        await activateAdminAssociate(id);
+      } else {
+        await deactivateAdminAssociate(id);
+      }
+
+      await loadAssociates();
+      setMessage(status === 'active' ? 'Asociado activado correctamente.' : 'Asociado desactivado correctamente.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible cambiar el estado del asociado.');
     }
   }
 
@@ -341,7 +425,9 @@ export default function AdminFonasin() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-700">Admin FONASIN</p>
-              <h1 className="mt-2 text-3xl font-black text-slate-950">Solicitudes de afiliacion</h1>
+              <h1 className="mt-2 text-3xl font-black text-slate-950">
+                {activeView === 'applications' ? 'Solicitudes de afiliacion' : 'Administracion de asociados'}
+              </h1>
               <div className="mt-3 flex flex-wrap gap-2">
                 {(user?.roles ?? []).map((role) => (
                   <span key={role} className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
@@ -353,7 +439,7 @@ export default function AdminFonasin() {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => loadApplications(selectedId)}
+                onClick={() => (activeView === 'applications' ? loadApplications(selectedId) : loadAssociates())}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100"
               >
                 <RefreshCw size={16} />
@@ -374,6 +460,34 @@ export default function AdminFonasin() {
         {message ? <p className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">{message}</p> : null}
         {error ? <p className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</p> : null}
 
+        <nav className="flex flex-wrap gap-2 rounded-[1.25rem] border border-slate-200 bg-white p-2 shadow-sm">
+          <button
+            type="button"
+            onClick={openApplications}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black transition ${
+              activeView === 'applications'
+                ? 'bg-emerald-600 text-white'
+                : 'bg-white text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <ClipboardCheck size={16} />
+            Solicitudes
+          </button>
+          <button
+            type="button"
+            onClick={openAssociates}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black transition ${
+              activeView === 'associates'
+                ? 'bg-emerald-600 text-white'
+                : 'bg-white text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <Users size={16} />
+            Asociados
+          </button>
+        </nav>
+
+        {activeView === 'applications' ? (
         <div className="grid gap-5 xl:grid-cols-[380px_1fr]">
           <aside className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
@@ -450,8 +564,163 @@ export default function AdminFonasin() {
             ) : null}
           </main>
         </div>
+        ) : (
+          <AssociatesPanel
+            associates={associates}
+            dataState={associateDataState}
+            form={associateForm}
+            onFormChange={setAssociateForm}
+            onCreate={handleCreateAssociate}
+            onStatusChange={handleAssociateStatus}
+          />
+        )}
       </div>
     </section>
+  );
+}
+
+type AssociateFormState = {
+  document_type: string;
+  document_number: string;
+  full_name: string;
+  status: string;
+};
+
+function AssociatesPanel({
+  associates,
+  dataState,
+  form,
+  onFormChange,
+  onCreate,
+  onStatusChange,
+}: {
+  associates: AdminAssociate[];
+  dataState: DataState;
+  form: AssociateFormState;
+  onFormChange: (form: AssociateFormState) => void;
+  onCreate: (event: FormEvent<HTMLFormElement>) => void;
+  onStatusChange: (id: string, status: 'active' | 'inactive') => void;
+}) {
+  return (
+    <div className="grid gap-5 xl:grid-cols-[380px_1fr]">
+      <form onSubmit={onCreate} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-100 text-emerald-700">
+            <UserPlus size={22} />
+          </div>
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Nuevo asociado</p>
+            <h2 className="text-xl font-black text-slate-950">Registro manual</h2>
+          </div>
+        </div>
+
+        <div className="mt-5 space-y-4">
+          <label className="block">
+            <span className="text-sm font-bold text-slate-800">Tipo de documento</span>
+            <select
+              value={form.document_type}
+              onChange={(event) => onFormChange({ ...form, document_type: event.target.value })}
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+            >
+              {['CC', 'CE', 'Pasaporte', 'TI'].map((type) => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-sm font-bold text-slate-800">Numero de documento</span>
+            <input
+              value={form.document_number}
+              onChange={(event) => onFormChange({ ...form, document_number: event.target.value })}
+              minLength={3}
+              maxLength={16}
+              required
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+            />
+          </label>
+          <label className="block">
+            <span className="text-sm font-bold text-slate-800">Nombre completo</span>
+            <input
+              value={form.full_name}
+              onChange={(event) => onFormChange({ ...form, full_name: event.target.value })}
+              minLength={3}
+              maxLength={255}
+              required
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+            />
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700"
+        >
+          Crear asociado
+          <UserPlus size={18} />
+        </button>
+      </form>
+
+      <section className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Asociados</p>
+            <h2 className="mt-1 text-2xl font-black text-slate-950">{associates.length} registros</h2>
+          </div>
+          <Users className="text-emerald-700" size={28} />
+        </div>
+
+        {dataState === 'loading' ? (
+          <div className="mt-5 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600">
+            <Loader2 className="animate-spin" size={18} />
+            Cargando asociados
+          </div>
+        ) : null}
+
+        <div className="mt-5 overflow-x-auto">
+          <table className="w-full min-w-[760px] text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                <th className="py-3 pr-4">Nombre</th>
+                <th className="py-3 pr-4">Documento</th>
+                <th className="py-3 pr-4">Usuario</th>
+                <th className="py-3 pr-4">Creditos</th>
+                <th className="py-3 pr-4">Estado</th>
+                <th className="py-3 text-right">Accion</th>
+              </tr>
+            </thead>
+            <tbody>
+              {associates.map((associate) => (
+                <tr key={associate.id} className="border-b border-slate-100 last:border-0">
+                  <td className="py-4 pr-4 font-black text-slate-950">{associate.full_name}</td>
+                  <td className="py-4 pr-4 text-slate-700">{associate.document_type}</td>
+                  <td className="py-4 pr-4 text-slate-700">{associate.user?.email ?? 'Sin usuario vinculado'}</td>
+                  <td className="py-4 pr-4 text-slate-700">{associate.credit_accounts_count}</td>
+                  <td className="py-4 pr-4">
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-700">
+                      {statusLabel(associate.status)}
+                    </span>
+                  </td>
+                  <td className="py-4 text-right">
+                    <button
+                      type="button"
+                      onClick={() => onStatusChange(associate.id, associate.status === 'active' ? 'inactive' : 'active')}
+                      className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50"
+                    >
+                      {associate.status === 'active' ? 'Desactivar' : 'Activar'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {associates.length === 0 && dataState !== 'loading' ? (
+            <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">
+              No hay asociados registrados.
+            </p>
+          ) : null}
+        </div>
+      </section>
+    </div>
   );
 }
 

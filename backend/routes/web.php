@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AffiliationApplicationController;
+use App\Http\Controllers\AssociateController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\CreditAccountController;
 use App\Http\Controllers\FpqrsSubmissionController;
@@ -79,6 +80,24 @@ Route::middleware('auth')
         Route::post('/{application}/reject', [AffiliationApplicationController::class, 'reject'])
             ->middleware('can:reject,application')
             ->name('reject');
+    });
+
+Route::middleware('auth')
+    ->prefix('admin/associates')
+    ->name('admin.associates.')
+    ->group(function (): void {
+        Route::get('/', [AssociateController::class, 'index'])
+            ->middleware('can:viewAny,App\Models\Associate')
+            ->name('index');
+        Route::post('/', [AssociateController::class, 'store'])
+            ->middleware('can:create,App\Models\Associate')
+            ->name('store');
+        Route::post('/{associate}/activate', [AssociateController::class, 'activate'])
+            ->middleware('can:updateStatus,associate')
+            ->name('activate');
+        Route::post('/{associate}/deactivate', [AssociateController::class, 'deactivate'])
+            ->middleware('can:updateStatus,associate')
+            ->name('deactivate');
     });
 
 Route::middleware('auth')
