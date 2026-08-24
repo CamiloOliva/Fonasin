@@ -191,7 +191,8 @@ const stepLabels: Array<{ key: StepKey; label: string; title: string; descriptio
   { key: 'final', label: '6', title: 'Documentos y cierre', description: 'Declaraciones, autorizaciones, documento y firma.' },
 ];
 
-const documentTypes = ['CC', 'CE', 'TI', 'Pasaporte', 'Registro civil', 'Otro'];
+const documentTypes = ['CC', 'CE', 'Pasaporte', 'TI'];
+const colombianNationalityDocumentTypes = new Set(['CC', 'TI']);
 const maritalStatuses = ['Soltero/a', 'Casado/a', 'Union libre', 'Divorciado/a', 'Viudo/a'];
 const educationLevels = ['Primaria', 'Bachillerato', 'Tecnico', 'Tecnologo', 'Profesional', 'Especializacion', 'Maestria', 'Doctorado'];
 const contractTypes = ['Indefinido', 'Termino fijo', 'Obra o labor', 'Prestacion de servicios', 'Otro'];
@@ -235,8 +236,8 @@ const personalFields: FieldConfig[] = [
   { key: 'city', label: 'Ciudad / municipio' },
   { key: 'department', label: 'Departamento' },
   { key: 'neighborhood', label: 'Barrio' },
-  { key: 'mobile', label: 'Celular' },
-  { key: 'email', label: 'Correo electronico', type: 'email' },
+  { key: 'mobile', label: 'Celular', inputMode: 'numeric', helper: 'Ejemplo: 3001234567' },
+  { key: 'email', label: 'Correo electronico', type: 'email', helper: 'Ejemplo: nombre@dominio.com' },
   { key: 'educationLevel', label: 'Nivel educativo', type: 'select', options: educationLevels },
   { key: 'profession', label: 'Profesion' },
   { key: 'hasDependents', label: 'Tiene personas a cargo', type: 'select', options: ['No', 'Si'] },
@@ -386,6 +387,9 @@ function validateCurrentStep(step: number, state: SectionState): string | null {
     }
     if (!isValidEmail(state.personal.email)) {
       return 'El correo electronico debe tener un formato valido.';
+    }
+    if (!/^3\d{9}$/.test(state.personal.mobile)) {
+      return 'El celular debe tener 10 digitos e iniciar por 3.';
     }
     if (state.personal.firstName.length > NAME_MAX_LENGTH || state.personal.lastName.length > NAME_MAX_LENGTH) {
       return `Los nombres y apellidos principales no deben superar ${NAME_MAX_LENGTH} caracteres.`;
@@ -603,10 +607,32 @@ const requiredBySection: Record<AffiliationSectionKey, string[]> = {
   sarlaft: ['economicActivity', 'incomeSource', 'resourceOrigin', 'expectedOperations'],
 };
 
+function normalizeMobile(value: string): string {
+  return value.replace(/[^\d]/g, '').slice(0, 10);
+}
+
+function normalizePersonalData(current: PersonalData, next: Record<string, string>): PersonalData {
+  const merged = { ...current, ...next };
+
+  if (colombianNationalityDocumentTypes.has(merged.documentType)) {
+    merged.nationality = 'Colombiana';
+  }
+
+  if ('mobile' in next) {
+    merged.mobile = normalizeMobile(next.mobile);
+  }
+
+  return merged;
+}
+
 function fieldMaxLength(field: FieldConfig): number | undefined {
   if (field.maxLength) return field.maxLength;
   if (currencyFieldKeys.has(field.key)) return MONEY_MAX_DISPLAY_LENGTH;
-  if (field.inputMode === 'numeric') return MONEY_MAX_DIGITS;
+  if (field.key === 'mobile') return 10;
+  if (field.key === 'email') return 254;
+  if (field.key === 'documentNumber') return 30;
+  if (field.key === 'dependentsCount') return 3;
+  if (field.inputMode === 'numeric') return 30;
   if (field.type === 'email') return TEXT_MAX_LENGTH;
   if (field.type === 'text' || !field.type) return TEXT_MAX_LENGTH;
 
@@ -656,7 +682,7 @@ function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className={`w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 ${props.className ?? ''}`}
+      className={`w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 ${props.className ?? ''}`}
     />
   );
 }
@@ -674,7 +700,7 @@ function SelectInput(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       {...props}
-      className={`w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-slate-900 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 ${props.className ?? ''}`}
+      className={`w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-slate-900 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 ${props.className ?? ''}`}
     />
   );
 }
@@ -709,6 +735,10 @@ function renderFields(
   values: Record<string, string>,
   setValues: (next: Record<string, string>) => void,
   section?: AffiliationSectionKey,
+  options: {
+    disabledKeys?: Set<string>;
+    placeholders?: Record<string, string>;
+  } = {},
 ) {
   return (
     <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
@@ -716,6 +746,7 @@ function renderFields(
         <Field key={field.key} label={field.label} helper={field.helper} required={section ? isRequiredField(section, field.key) : false}>
           {field.type === 'select' ? (
             <SelectInput
+              disabled={options.disabledKeys?.has(field.key)}
               value={values[field.key] ?? ''}
               onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}
             >
@@ -737,6 +768,8 @@ function renderFields(
               type={field.type ?? 'text'}
               inputMode={field.inputMode as any}
               maxLength={fieldMaxLength(field)}
+              disabled={options.disabledKeys?.has(field.key)}
+              placeholder={options.placeholders?.[field.key]}
               value={currencyFieldKeys.has(field.key) ? formatCurrency(values[field.key] ?? '') : values[field.key] ?? ''}
               onChange={(event) =>
                 setValues({
@@ -869,6 +902,8 @@ export default function AffiliationForm() {
   }
 
   function renderPersonalSection() {
+    const nationalityLocked = colombianNationalityDocumentTypes.has(state.personal.documentType);
+
     return (
       <div className="space-y-6">
         <SectionHeader
@@ -880,12 +915,15 @@ export default function AffiliationForm() {
         {renderFields(personalFields, state.personal, (next) =>
           setState((current) => ({
             ...current,
-            personal: {
-              ...current.personal,
-              ...next,
-            },
+            personal: normalizePersonalData(current.personal, next),
           })),
-        'personal')}
+        'personal', {
+          disabledKeys: nationalityLocked ? new Set(['nationality']) : undefined,
+          placeholders: {
+            email: 'nombre@dominio.com',
+            mobile: '3001234567',
+          },
+        })}
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Numero de personas a cargo" helper="Solo visible si el asociado indica que si tiene personas a cargo." required={state.personal.hasDependents === 'Si'}>
             {state.personal.hasDependents === 'Si' ? (

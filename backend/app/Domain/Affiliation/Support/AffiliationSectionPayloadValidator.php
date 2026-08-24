@@ -8,6 +8,7 @@ use DateTimeImmutable;
 
 class AffiliationSectionPayloadValidator
 {
+    private const ALLOWED_DOCUMENT_TYPES = ['CC', 'CE', 'Pasaporte', 'TI'];
     private const MIN_MONTHLY_SALARY = 1750905;
     private const MAX_MONEY_VALUE = 100000000;
 
@@ -57,6 +58,7 @@ class AffiliationSectionPayloadValidator
         }
 
         $this->requireDocumentNumber($section, $data, 'documentNumber');
+        $this->requireDocumentType($section, $data, 'documentType');
         $this->requirePhone($section, $data, 'mobile');
         $this->requirePastOrTodayDate($section, $data, 'issueDate');
         $this->requirePastOrTodayDate($section, $data, 'birthDate');
@@ -196,6 +198,7 @@ class AffiliationSectionPayloadValidator
             ], "beneficiaries.{$index}.");
 
             $this->requireDocumentNumber($section, $beneficiary, 'documentNumber', "beneficiaries.{$index}.documentNumber");
+            $this->requireDocumentType($section, $beneficiary, 'documentType', "beneficiaries.{$index}.documentType");
             $this->requirePhone($section, $beneficiary, 'phone', "beneficiaries.{$index}.phone");
             $this->requirePastOrTodayDate($section, $beneficiary, 'birthDate', "beneficiaries.{$index}.birthDate");
             $this->requireMaxLengths($section, $beneficiary, [
@@ -411,6 +414,26 @@ class AffiliationSectionPayloadValidator
     /**
      * @param  array<string, mixed>  $data
      */
+    private function requireDocumentType(
+        AffiliationApplicationStep $section,
+        array $data,
+        string $field,
+        ?string $displayField = null,
+    ): void {
+        $value = $data[$field] ?? null;
+
+        if (! is_string($value) || ! in_array(trim($value), self::ALLOWED_DOCUMENT_TYPES, true)) {
+            throw CannotSaveApplicationSection::invalidField(
+                $section->value,
+                $displayField ?? $field,
+                'debe ser CC, CE, Pasaporte o TI',
+            );
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
     private function requireDocumentNumber(
         AffiliationApplicationStep $section,
         array $data,
@@ -445,11 +468,11 @@ class AffiliationSectionPayloadValidator
 
         $digits = preg_replace('/\D/', '', $value) ?? '';
 
-        if (strlen($digits) < 7 || strlen($digits) > 15) {
+        if (! preg_match('/^3\d{9}$/', $digits)) {
             throw CannotSaveApplicationSection::invalidField(
                 $section->value,
                 $displayField ?? $field,
-                'debe contener entre 7 y 15 digitos',
+                'debe contener 10 digitos e iniciar por 3',
             );
         }
     }

@@ -103,6 +103,42 @@ class SaveApplicationSectionTest extends TestCase
         );
     }
 
+    public function test_it_rejects_invalid_document_type_on_completed_personal_section(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Personal);
+        $data['documentType'] = 'Otro';
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('tipo de documento');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Personal,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
+    public function test_it_rejects_invalid_colombian_mobile_on_completed_personal_section(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Personal);
+        $data['mobile'] = '6011234567';
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('celular');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Personal,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
     public function test_it_allows_partial_sections_when_they_are_not_marked_completed(): void
     {
         $application = app(CreateAffiliationDraft::class)();
