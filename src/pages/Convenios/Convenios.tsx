@@ -51,8 +51,10 @@ export default function Convenios() {
             const isEmi = c.name === 'EMI';
             const isLosOlivos = c.name === 'Funeraria Los Olivos';
             const isSanitas = c.name === 'Sanitas';
+            const isEmermedica = c.name === 'Emermédica';
+            const isPracticar = c.name === 'Practicar';
             const isCoorserpark = c.name === 'Coorserpark';
-            const isFeatured = isEmi || isLosOlivos || isSanitas || isCoorserpark;
+            const isFeatured = isEmi || isEmermedica || isLosOlivos || isSanitas || isPracticar || isCoorserpark;
             const card = (
               <article
                 className={`group relative h-full rounded-2xl border bg-white p-6 shadow-sm transition duration-200 ${
@@ -62,16 +64,20 @@ export default function Convenios() {
                       ? 'border-[#d4dbbe] bg-gradient-to-br from-white via-white to-[#f7f8f0] hover:-translate-y-1 hover:border-[#859f48] hover:shadow-xl hover:shadow-[#556b2f]/10'
                       : isSanitas
                         ? 'border-sky-200 bg-gradient-to-br from-white via-white to-sky-50 hover:-translate-y-1 hover:border-sky-400 hover:shadow-xl hover:shadow-sky-900/10'
-                        : isCoorserpark
+                        : isEmermedica
+                          ? 'border-blue-200 bg-gradient-to-br from-white via-white to-blue-50 hover:-translate-y-1 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-900/10'
+                          : isPracticar
+                            ? 'border-red-200 bg-gradient-to-br from-white via-white to-red-50 hover:-translate-y-1 hover:border-red-400 hover:shadow-xl hover:shadow-red-900/10'
+                            : isCoorserpark
                           ? 'border-emerald-200 bg-gradient-to-br from-white via-white to-teal-50 hover:-translate-y-1 hover:border-emerald-400 hover:shadow-xl hover:shadow-emerald-900/10'
                           : 'hover:border-fonasin-green/30 hover:shadow-md'
                 }`}
               >
                 {isFeatured && (
                   <span className={`absolute right-4 top-4 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider ${
-                    isEmi ? 'bg-red-50 text-red-600' : isSanitas ? 'bg-sky-100 text-sky-700' : isCoorserpark ? 'bg-emerald-100 text-emerald-700' : 'bg-[#fefce8] text-[#556b2f]'
+                    isEmi ? 'bg-red-50 text-red-600' : isSanitas ? 'bg-sky-100 text-sky-700' : isEmermedica ? 'bg-blue-100 text-blue-700' : isPracticar ? 'bg-red-100 text-red-700' : isCoorserpark ? 'bg-emerald-100 text-emerald-700' : 'bg-[#fefce8] text-[#556b2f]'
                   }`}>
-                    {isEmi ? 'Salud 24/7' : isSanitas ? 'Plan Premium' : isCoorserpark ? 'Previsión exequial' : 'Protección familiar'}
+                    {isEmi ? 'Salud 24/7' : isSanitas ? 'Plan Premium' : isEmermedica ? 'Atención médica' : isPracticar ? 'Formación vial' : isCoorserpark ? 'Previsión exequial' : 'Protección familiar'}
                   </span>
                 )}
                 <img
@@ -86,7 +92,7 @@ export default function Convenios() {
                 <p className="mt-2 leading-6 text-slate-600">{c.description}</p>
                 {isFeatured && (
                   <span className={`mt-5 inline-flex items-center gap-1.5 font-bold transition group-hover:gap-2.5 ${
-                    isEmi ? 'text-emerald-700' : isSanitas ? 'text-sky-700' : isCoorserpark ? 'text-emerald-700' : 'text-[#556b2f]'
+                    isEmi ? 'text-emerald-700' : isSanitas ? 'text-sky-700' : isEmermedica ? 'text-blue-700' : isPracticar ? 'text-red-700' : isCoorserpark ? 'text-emerald-700' : 'text-[#556b2f]'
                   }`}>
                     Conoce el convenio
                     <ChevronRight size={18} aria-hidden="true" />
@@ -98,7 +104,7 @@ export default function Convenios() {
             return isFeatured ? (
               <Link
                 key={c.id}
-                to={isEmi ? '/convenios/emi' : isSanitas ? '/convenios/sanitas' : isCoorserpark ? '/convenios/coorserpark' : '/convenios/los-olivos'}
+                to={isEmi ? '/convenios/emi' : isSanitas ? '/convenios/sanitas' : isEmermedica ? '/convenios/emermedica' : isPracticar ? '/convenios/practicar' : isCoorserpark ? '/convenios/coorserpark' : '/convenios/los-olivos'}
                 className="block h-full rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
               >
                 {card}
