@@ -245,7 +245,7 @@ const resourceOrigins = ['Salario', 'Ahorros', 'Actividad comercial', 'Honorario
 const pepTypes = ['Nacional', 'Extranjera', 'Organizacion internacional', 'Por vinculo'];
 const accountTypes = ['Cuenta de ahorros', 'Cuenta corriente', 'Cuenta de inversion', 'Otra'];
 const expectedOperations = ['Aportes', 'Ahorros', 'Credito', 'Otros servicios'];
-const signatureMechanisms = ['Firma manuscrita', 'Firma electronica', 'Validacion interna'];
+const SIGNATURE_MECHANISM = 'Firma electronica simple';
 const incomeBands = ['Hasta $2 millones', '$2 a $5 millones', '$5 a $10 millones', 'Mas de $10 millones'];
 const relationshipOptions = ['Padre', 'Madre', 'Hijo/a', 'Conyuge', 'Hermano/a', 'Otro'];
 const countryOptions = (countriesCatalog as Country[]).map((item) => item.name);
@@ -430,7 +430,7 @@ function createInitialState(): SectionState {
       documentFile: null,
       signatureCity: '',
       signatureDate: '',
-      signatureMechanism: 'Firma manuscrita',
+      signatureMechanism: SIGNATURE_MECHANISM,
       declarations: {
         truthful: false,
         lawfulFunds: false,
@@ -2325,7 +2325,7 @@ export default function AffiliationForm() {
             </div>
 
             <div className="rounded-[1.6rem] border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Firma / autenticacion</p>
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Firma electronica simple</p>
               <div className="mt-4 grid gap-4">
                 <Field label="Ciudad" required>
                   <TextInput
@@ -2351,23 +2351,9 @@ export default function AffiliationForm() {
                     }
                   />
                 </Field>
-                <Field label="Mecanismo de autenticacion">
-                  <SelectInput
-                    value={state.finalStep.signatureMechanism}
-                    onChange={(event) =>
-                      setState((current) => ({
-                        ...current,
-                        finalStep: { ...current.finalStep, signatureMechanism: event.target.value },
-                      }))
-                    }
-                  >
-                    {signatureMechanisms.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </SelectInput>
-                </Field>
+                <p className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900">
+                  La solicitud se cerrara mediante firma electronica simple.
+                </p>
               </div>
             </div>
 
