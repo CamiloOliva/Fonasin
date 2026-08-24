@@ -18,7 +18,7 @@ import FPQRS from "../pages/FPQRS/FPQRS";
 import Home from "../pages/Home/Home";
 import MiFondo from "../pages/MiFondo/MiFondo";
 import Estatutos from "../pages/Estatutos/Estatutos";
-import Portal from "../pages/PortalAsociadoPlaceholder/PortalAsociadoPlaceholder";
+import Portal from "../pages/PortalAsociado/PortalAsociado";
 import ProductosServicios from "../pages/ProductosServicios/ProductosServicios";
 export default function AppRoutes() {
   return (

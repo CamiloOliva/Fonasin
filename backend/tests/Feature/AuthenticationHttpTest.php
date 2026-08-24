@@ -44,6 +44,29 @@ class AuthenticationHttpTest extends TestCase
         ]);
     }
 
+    public function test_authenticated_user_can_read_current_session_payload(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'associate@example.test',
+            'status' => 'active',
+        ]);
+        $role = Role::query()->create(['name' => 'associate']);
+        $user->roles()->attach($role);
+
+        $this->actingAs($user)
+            ->getJson('/auth/user')
+            ->assertOk()
+            ->assertJsonPath('data.id', $user->id)
+            ->assertJsonPath('data.email', 'associate@example.test')
+            ->assertJsonPath('data.roles.0', 'associate')
+            ->assertJsonMissingPath('data.password');
+    }
+
+    public function test_guest_cannot_read_current_session_payload(): void
+    {
+        $this->getJson('/auth/user')->assertUnauthorized();
+    }
+
     public function test_failed_login_records_redacted_auth_event(): void
     {
         User::factory()->create([

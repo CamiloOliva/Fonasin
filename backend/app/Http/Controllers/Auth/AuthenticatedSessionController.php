@@ -16,6 +16,20 @@ use Illuminate\Support\Str;
 
 class AuthenticatedSessionController extends Controller
 {
+    public function show(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return response()->json([
+            'data' => [
+                'id' => $user->id,
+                'email' => $user->email,
+                'roles' => $user->roles()->pluck('name')->values(),
+            ],
+        ]);
+    }
+
     public function store(LoginRequest $request, RecordAuthEvent $recordAuthEvent): JsonResponse
     {
         $email = Str::lower($request->string('email')->toString());

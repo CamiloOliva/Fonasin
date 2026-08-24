@@ -9,7 +9,23 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       proxy: {
+        '/auth': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
+        '/login': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
+        '/logout': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
         '/affiliation-applications': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
+        '/portal': {
           target: backendTarget,
           changeOrigin: true,
         },

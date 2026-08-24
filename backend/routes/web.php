@@ -14,6 +14,10 @@ Route::post('/login', [AuthenticatedSessionController::class, 'store'])
     ->middleware('guest')
     ->name('login');
 
+Route::get('/auth/user', [AuthenticatedSessionController::class, 'show'])
+    ->middleware('auth')
+    ->name('auth.user');
+
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');

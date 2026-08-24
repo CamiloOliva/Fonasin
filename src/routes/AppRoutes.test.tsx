@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
@@ -10,6 +10,13 @@ vi.mock('../components/sections/StatutesBookViewer', () => ({
       <button type="button">Siguiente</button>
     </div>
   ),
+}));
+
+vi.mock('../services/portalService', () => ({
+  currentPortalUser: vi.fn().mockRejectedValue(new Error('guest')),
+  fetchPortalCredits: vi.fn().mockResolvedValue([]),
+  loginPortal: vi.fn(),
+  logoutPortal: vi.fn(),
 }));
 
 function renderRoute(path: string) {
@@ -77,6 +84,15 @@ describe('AppRoutes', () => {
     renderRoute('/creditos/fonaportes');
 
     expect(screen.getByRole('heading', { level: 1, name: /fonaportes/i })).toBeInTheDocument();
+  });
+
+  it('renders the associate portal login route', async () => {
+    renderRoute('/portal-asociado');
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument();
+    });
+    expect(screen.getByRole('heading', { name: /consulta tus creditos/i })).toBeInTheDocument();
   });
 
   it('falls back to the home page for an unknown route', () => {
