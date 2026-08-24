@@ -65,6 +65,7 @@ type EmploymentData = {
   position: string;
   departmentArea: string;
   contractType: string;
+  contractTypeOther: string;
   hireDate: string;
   workCity: string;
   monthlySalary: string;
@@ -90,6 +91,7 @@ type BeneficiaryData = {
   documentNumber: string;
   fullName: string;
   relationship: string;
+  relationshipOther: string;
   birthDate: string;
   phone: string;
   percentage: string;
@@ -104,7 +106,9 @@ type EmergencyContactData = {
 type SarlaftData = {
   economicActivity: string;
   incomeSource: string[];
+  incomeSourceOther: string;
   resourceOrigin: string[];
+  resourceOriginOther: string;
   pep: string;
   pepType: string;
   pepPosition: string;
@@ -117,6 +121,7 @@ type SarlaftData = {
   foreignAccountCountry: string;
   foreignAccountEntity: string;
   foreignAccountType: string;
+  foreignAccountTypeOther: string;
   foreignAccountOrigin: string;
   actsOnBehalfOfThirdParties: string;
   thirdPartyName: string;
@@ -127,6 +132,7 @@ type SarlaftData = {
   hasForeignTaxObligations: string;
   foreignTaxId: string;
   expectedOperations: string[];
+  expectedOperationsOther: string;
 };
 
 type FinalStepData = {
@@ -155,7 +161,7 @@ type SectionState = {
   finalStep: FinalStepData;
 };
 
-type InputType = 'text' | 'email' | 'date' | 'number' | 'textarea' | 'select';
+type InputType = 'text' | 'email' | 'date' | 'number' | 'textarea' | 'select' | 'combobox';
 type FieldConfig = {
   key: string;
   label: string;
@@ -251,10 +257,14 @@ const departmentOptions = colombiaDepartments.map((item) => item.department);
 const citiesByDepartment = new Map(
   colombiaDepartments.map((item) => [item.department, item.cities.map((city) => city.name)]),
 );
+const colombiaCityOptions = colombiaDepartments.flatMap((department) =>
+  department.cities.map((city) => `${city.name} - ${department.department}`),
+);
 const economicActivityOptions = (economicActivitiesCatalog as EconomicActivity[]).map((activity) => ({
   value: activity.code,
   label: `${activity.code} - ${activity.name}`,
 }));
+const economicActivitySearchOptions = economicActivityOptions.map((activity) => activity.label);
 const legalDocuments = [
   {
     key: 'data-policy',
@@ -300,7 +310,7 @@ const employmentFields: FieldConfig[] = [
   { key: 'departmentArea', label: 'Area / dependencia' },
   { key: 'contractType', label: 'Tipo de contrato', type: 'select', options: contractTypes },
   { key: 'hireDate', label: 'Fecha de ingreso', type: 'date' },
-  { key: 'workCity', label: 'Ciudad donde trabaja' },
+  { key: 'workCity', label: 'Ciudad donde trabaja', type: 'combobox', helper: 'Escribe para buscar municipio y departamento.' },
   { key: 'monthlySalary', label: 'Salario mensual', inputMode: 'numeric' },
 ];
 
@@ -324,6 +334,7 @@ function createBeneficiary(): BeneficiaryData {
     documentNumber: '',
     fullName: '',
     relationship: '',
+    relationshipOther: '',
     birthDate: '',
     phone: '',
     percentage: '',
@@ -361,6 +372,7 @@ function createInitialState(): SectionState {
       position: '',
       departmentArea: '',
       contractType: '',
+      contractTypeOther: '',
       hireDate: '',
       workCity: '',
       monthlySalary: '',
@@ -388,7 +400,9 @@ function createInitialState(): SectionState {
     sarlaft: {
       economicActivity: '',
       incomeSource: [],
+      incomeSourceOther: '',
       resourceOrigin: [],
+      resourceOriginOther: '',
       pep: 'No',
       pepType: '',
       pepPosition: '',
@@ -401,6 +415,7 @@ function createInitialState(): SectionState {
       foreignAccountCountry: '',
       foreignAccountEntity: '',
       foreignAccountType: '',
+      foreignAccountTypeOther: '',
       foreignAccountOrigin: '',
       actsOnBehalfOfThirdParties: 'No',
       thirdPartyName: '',
@@ -411,6 +426,7 @@ function createInitialState(): SectionState {
       hasForeignTaxObligations: 'No',
       foreignTaxId: '',
       expectedOperations: [],
+      expectedOperationsOther: '',
     },
     finalStep: {
       documentFile: null,
@@ -459,6 +475,12 @@ function validateCurrentStep(step: number, state: SectionState): string | null {
     if (monthlySalary < MIN_MONTHLY_SALARY || monthlySalary > MONEY_MAX_VALUE) {
       return `El salario mensual debe estar entre ${moneyLabel(MIN_MONTHLY_SALARY)} y ${moneyLabel(MONEY_MAX_VALUE)}.`;
     }
+    if (!isValidCatalogOption(state.employment.workCity, colombiaCityOptions)) {
+      return 'Selecciona la ciudad donde trabaja desde el catalogo.';
+    }
+    if (state.employment.contractType === 'Otro' && !isValidOtherDetail(state.employment.contractTypeOther)) {
+      return otherDetailMessage('el tipo de contrato');
+    }
   }
 
   if (step === 2) {
@@ -478,6 +500,12 @@ function validateCurrentStep(step: number, state: SectionState): string | null {
     if (incompleteBeneficiaries) {
       return 'Cada beneficiario debe tener documento, nombre, parentesco, fecha de nacimiento y telefono.';
     }
+    const beneficiaryWithoutOtherDetail = state.beneficiaries.some(
+      (beneficiary) => beneficiary.relationship === 'Otro' && !isValidOtherDetail(beneficiary.relationshipOther),
+    );
+    if (beneficiaryWithoutOtherDetail) {
+      return otherDetailMessage('el parentesco del beneficiario');
+    }
     const emergencyMissing = missingFields(state.emergencyContact as unknown as Record<string, unknown>, ['fullName', 'relationship', 'phone']);
     if (emergencyMissing.length > 0) {
       return `Faltan datos del contacto de emergencia: ${friendlyList(emergencyMissing.map((key) => requiredLabels[key] ?? key))}.`;
@@ -488,6 +516,18 @@ function validateCurrentStep(step: number, state: SectionState): string | null {
     const missing = missingFields(state.sarlaft as unknown as Record<string, unknown>, requiredBySection.sarlaft);
     if (missing.length > 0) {
       return `Faltan campos obligatorios: ${friendlyList(missing.map((key) => requiredLabels[key] ?? key))}.`;
+    }
+    if (!isValidEconomicActivity(state.sarlaft.economicActivity)) {
+      return 'Selecciona una actividad economica del catalogo DIAN.';
+    }
+    if (state.sarlaft.incomeSource.includes('Otro') && !isValidOtherDetail(state.sarlaft.incomeSourceOther)) {
+      return otherDetailMessage('la fuente de ingresos');
+    }
+    if (state.sarlaft.resourceOrigin.includes('Otro') && !isValidOtherDetail(state.sarlaft.resourceOriginOther)) {
+      return otherDetailMessage('el origen de recursos');
+    }
+    if (state.sarlaft.expectedOperations.includes('Otros servicios') && !isValidOtherDetail(state.sarlaft.expectedOperationsOther)) {
+      return otherDetailMessage('las operaciones esperadas');
     }
     if (state.sarlaft.pep === 'Si') {
       const pepMissing = missingFields(state.sarlaft as unknown as Record<string, unknown>, ['pepType', 'pepPosition', 'pepEntity']);
@@ -504,6 +544,9 @@ function validateCurrentStep(step: number, state: SectionState): string | null {
       ]);
       if (foreignAccountMissing.length > 0) {
         return 'Completa los datos de la cuenta financiera en el exterior.';
+      }
+      if (state.sarlaft.foreignAccountType === 'Otra' && !isValidOtherDetail(state.sarlaft.foreignAccountTypeOther)) {
+        return otherDetailMessage('el tipo de cuenta');
       }
     }
     if (state.sarlaft.actsOnBehalfOfThirdParties === 'Si') {
@@ -600,6 +643,7 @@ const requiredLabels: Record<string, string> = {
   position: 'cargo',
   departmentArea: 'area o dependencia',
   contractType: 'tipo de contrato',
+  contractTypeOther: 'detalle del tipo de contrato',
   hireDate: 'fecha de ingreso',
   workCity: 'ciudad donde trabaja',
   monthlySalary: 'salario mensual',
@@ -615,8 +659,11 @@ const requiredLabels: Record<string, string> = {
   voluntarySavingsValue: 'valor mensual del ahorro voluntario',
   economicActivity: 'actividad economica',
   incomeSource: 'fuente de ingresos',
+  incomeSourceOther: 'detalle de fuente de ingresos',
   resourceOrigin: 'origen de recursos',
+  resourceOriginOther: 'detalle de origen de recursos',
   expectedOperations: 'operaciones esperadas',
+  expectedOperationsOther: 'detalle de operaciones esperadas',
   signatureCity: 'ciudad de firma',
   signatureDate: 'fecha de firma',
 };
@@ -660,6 +707,30 @@ const requiredBySection: Record<AffiliationSectionKey, string[]> = {
 
 function normalizeMobile(value: string): string {
   return value.replace(/[^\d]/g, '').slice(0, 10);
+}
+
+function normalizeEconomicActivity(value: string): string {
+  const exactOption = economicActivityOptions.find((activity) => activity.label === value || activity.value === value);
+
+  return exactOption ? exactOption.value : value.trim();
+}
+
+function isValidCatalogOption(value: string, options: string[]): boolean {
+  return options.includes(value);
+}
+
+function isValidEconomicActivity(value: string): boolean {
+  return economicActivityOptions.some((activity) => activity.label === value || activity.value === value);
+}
+
+function isValidOtherDetail(value: string): boolean {
+  const normalized = value.trim();
+
+  return normalized.length >= 3 && /[\p{L}\p{N}]/u.test(normalized);
+}
+
+function otherDetailMessage(label: string): string {
+  return `Especifica ${label} con al menos 3 caracteres validos.`;
 }
 
 function normalizePersonalData(current: PersonalData, next: Record<string, string>): PersonalData {
@@ -766,6 +837,72 @@ function SelectInput(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   );
 }
 
+function ComboInput({
+  id,
+  options,
+  value,
+  onChange,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & {
+  id: string;
+  options: string[];
+}) {
+  const [open, setOpen] = useState(false);
+  const currentValue = typeof value === 'string' ? value : '';
+  const normalizedValue = currentValue.trim().toLocaleLowerCase('es-CO');
+  const visibleOptions = options
+    .filter((option) => (normalizedValue ? option.toLocaleLowerCase('es-CO').includes(normalizedValue) : true))
+    .slice(0, 8);
+
+  function selectOption(option: string) {
+    onChange?.({ target: { value: option } } as React.ChangeEvent<HTMLInputElement>);
+    setOpen(false);
+  }
+
+  function closeAndNormalize() {
+    window.setTimeout(() => {
+      if (currentValue && !options.includes(currentValue)) {
+        onChange?.({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
+      }
+      setOpen(false);
+    }, 120);
+  }
+
+  return (
+    <div className="relative">
+      <TextInput
+        {...props}
+        id={id}
+        value={value}
+        autoComplete="off"
+        onFocus={() => setOpen(true)}
+        onBlur={closeAndNormalize}
+        onChange={(event) => {
+          setOpen(true);
+          onChange?.(event);
+        }}
+      />
+      {open && visibleOptions.length > 0 ? (
+        <div className="absolute left-0 right-0 z-30 mt-2 max-h-72 overflow-y-auto rounded-2xl border border-emerald-100 bg-white p-1.5 shadow-xl shadow-slate-900/12">
+          {visibleOptions.map((option) => (
+            <button
+              key={option}
+              type="button"
+              className="block w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-900"
+              onMouseDown={(event) => {
+                event.preventDefault();
+                selectOption(option);
+              }}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function SectionHeader({
   icon,
   eyebrow,
@@ -822,6 +959,16 @@ function renderFields(
                   </option>
                 ))}
               </SelectInput>
+            ) : field.type === 'combobox' ? (
+              <ComboInput
+                id={`affiliation-${field.key}-options`}
+                options={selectOptions}
+                maxLength={fieldMaxLength(field)}
+                disabled={options.disabledKeys?.has(field.key)}
+                placeholder={options.placeholders?.[field.key]}
+                value={values[field.key] ?? ''}
+                onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}
+              />
             ) : field.type === 'textarea' ? (
               <TextArea
                 rows={4}
@@ -925,7 +1072,10 @@ export default function AffiliationForm() {
         });
         setMessage('Beneficiarios guardados.');
       } else if (step === 4) {
-        await syncSection('sarlaft', state.sarlaft);
+        await syncSection('sarlaft', {
+          ...state.sarlaft,
+          economicActivity: normalizeEconomicActivity(state.sarlaft.economicActivity),
+        });
         setMessage('Seccion SARLAFT guardada.');
       } else {
         if (!state.finalStep.documentFile) {
@@ -1049,10 +1199,30 @@ export default function AffiliationForm() {
             employment: {
               ...current.employment,
               ...next,
+              contractTypeOther:
+                next.contractType && next.contractType !== 'Otro' ? '' : next.contractTypeOther ?? current.employment.contractTypeOther,
               monthlySalary: next.monthlySalary ? currencyOnly(next.monthlySalary) : current.employment.monthlySalary,
             },
           })),
-        'employment')}
+        'employment', {
+          fieldOptions: {
+            workCity: colombiaCityOptions,
+          },
+        })}
+        {state.employment.contractType === 'Otro' ? (
+          <Field label="Especifique el tipo de contrato" required>
+            <TextInput
+              maxLength={80}
+              value={state.employment.contractTypeOther}
+              onChange={(event) =>
+                setState((current) => ({
+                  ...current,
+                  employment: { ...current.employment, contractTypeOther: event.target.value },
+                }))
+              }
+            />
+          </Field>
+        ) : null}
       </div>
     );
   }
@@ -1176,7 +1346,14 @@ export default function AffiliationForm() {
                           setState((current) => ({
                             ...current,
                             beneficiaries: current.beneficiaries.map((item, itemIndex) =>
-                              itemIndex === index ? { ...item, [field.key]: event.target.value } : item,
+                              itemIndex === index
+                                ? {
+                                    ...item,
+                                    [field.key]: event.target.value,
+                                    relationshipOther:
+                                      field.key === 'relationship' && event.target.value !== 'Otro' ? '' : item.relationshipOther,
+                                  }
+                                : item,
                             ),
                           }))
                         }
@@ -1207,6 +1384,24 @@ export default function AffiliationForm() {
                   </Field>
                 ))}
               </div>
+              {beneficiary.relationship === 'Otro' ? (
+                <div className="mt-4">
+                  <Field label="Especifique parentesco" required>
+                    <TextInput
+                      maxLength={80}
+                      value={beneficiary.relationshipOther}
+                      onChange={(event) =>
+                        setState((current) => ({
+                          ...current,
+                          beneficiaries: current.beneficiaries.map((item, itemIndex) =>
+                            itemIndex === index ? { ...item, relationshipOther: event.target.value } : item,
+                          ),
+                        }))
+                      }
+                    />
+                  </Field>
+                </div>
+              ) : null}
             </div>
           ))}
         </div>
@@ -1259,7 +1454,11 @@ export default function AffiliationForm() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Actividad economica principal" required>
-            <SelectInput
+            <ComboInput
+              id="affiliation-economic-activity-options"
+              options={economicActivitySearchOptions}
+              maxLength={240}
+              placeholder="Escribe codigo o actividad"
               value={state.sarlaft.economicActivity}
               onChange={(event) =>
                 setState((current) => ({
@@ -1267,14 +1466,7 @@ export default function AffiliationForm() {
                   sarlaft: { ...current.sarlaft, economicActivity: event.target.value },
                 }))
               }
-            >
-              <option value="">Selecciona una actividad DIAN</option>
-              {economicActivityOptions.map((activity) => (
-                <option key={activity.value} value={activity.value}>
-                  {activity.label}
-                </option>
-              ))}
-            </SelectInput>
+            />
           </Field>
 
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -1295,7 +1487,12 @@ export default function AffiliationForm() {
                     onChange={() =>
                       setState((current) => ({
                         ...current,
-                        sarlaft: { ...current.sarlaft, incomeSource: toggleValue(current.sarlaft.incomeSource, option) },
+                        sarlaft: {
+                          ...current.sarlaft,
+                          incomeSource: toggleValue(current.sarlaft.incomeSource, option),
+                          incomeSourceOther:
+                            option === 'Otro' && current.sarlaft.incomeSource.includes(option) ? '' : current.sarlaft.incomeSourceOther,
+                        },
                       }))
                     }
                   />
@@ -1303,6 +1500,22 @@ export default function AffiliationForm() {
                 </label>
               ))}
             </div>
+            {state.sarlaft.incomeSource.includes('Otro') ? (
+              <div className="mt-3">
+                <Field label="Especifique fuente de ingresos" required>
+                  <TextInput
+                    maxLength={80}
+                    value={state.sarlaft.incomeSourceOther}
+                    onChange={(event) =>
+                      setState((current) => ({
+                        ...current,
+                        sarlaft: { ...current.sarlaft, incomeSourceOther: event.target.value },
+                      }))
+                    }
+                  />
+                </Field>
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -1325,7 +1538,12 @@ export default function AffiliationForm() {
                     onChange={() =>
                       setState((current) => ({
                         ...current,
-                        sarlaft: { ...current.sarlaft, resourceOrigin: toggleValue(current.sarlaft.resourceOrigin, option) },
+                        sarlaft: {
+                          ...current.sarlaft,
+                          resourceOrigin: toggleValue(current.sarlaft.resourceOrigin, option),
+                          resourceOriginOther:
+                            option === 'Otro' && current.sarlaft.resourceOrigin.includes(option) ? '' : current.sarlaft.resourceOriginOther,
+                        },
                       }))
                     }
                   />
@@ -1333,6 +1551,22 @@ export default function AffiliationForm() {
                 </label>
               ))}
             </div>
+            {state.sarlaft.resourceOrigin.includes('Otro') ? (
+              <div className="mt-3">
+                <Field label="Especifique origen de recursos" required>
+                  <TextInput
+                    maxLength={80}
+                    value={state.sarlaft.resourceOriginOther}
+                    onChange={(event) =>
+                      setState((current) => ({
+                        ...current,
+                        sarlaft: { ...current.sarlaft, resourceOriginOther: event.target.value },
+                      }))
+                    }
+                  />
+                </Field>
+              </div>
+            ) : null}
           </div>
 
           <Field label="PEP" helper="Si marca Si, se despliegan los campos adicionales.">
@@ -1512,7 +1746,11 @@ export default function AffiliationForm() {
                   onChange={(event) =>
                     setState((current) => ({
                       ...current,
-                      sarlaft: { ...current.sarlaft, foreignAccountType: event.target.value },
+                      sarlaft: {
+                        ...current.sarlaft,
+                        foreignAccountType: event.target.value,
+                        foreignAccountTypeOther: event.target.value === 'Otra' ? current.sarlaft.foreignAccountTypeOther : '',
+                      },
                     }))
                   }
                 >
@@ -1524,6 +1762,20 @@ export default function AffiliationForm() {
                   ))}
                 </SelectInput>
               </Field>
+              {state.sarlaft.foreignAccountType === 'Otra' ? (
+                <Field label="Especifique tipo de cuenta" required>
+                  <TextInput
+                    maxLength={80}
+                    value={state.sarlaft.foreignAccountTypeOther}
+                    onChange={(event) =>
+                      setState((current) => ({
+                        ...current,
+                        sarlaft: { ...current.sarlaft, foreignAccountTypeOther: event.target.value },
+                      }))
+                    }
+                  />
+                </Field>
+              ) : null}
               <Field label="Origen de los recursos" required>
                 <TextInput
                   maxLength={TEXT_MAX_LENGTH}
@@ -1658,6 +1910,10 @@ export default function AffiliationForm() {
                       sarlaft: {
                         ...current.sarlaft,
                         expectedOperations: toggleValue(current.sarlaft.expectedOperations, option),
+                        expectedOperationsOther:
+                          option === 'Otros servicios' && current.sarlaft.expectedOperations.includes(option)
+                            ? ''
+                            : current.sarlaft.expectedOperationsOther,
                       },
                     }))
                   }
@@ -1672,6 +1928,22 @@ export default function AffiliationForm() {
               );
             })}
           </div>
+          {state.sarlaft.expectedOperations.includes('Otros servicios') ? (
+            <div className="mt-4">
+              <Field label="Especifique otros servicios" required>
+                <TextInput
+                  maxLength={80}
+                  value={state.sarlaft.expectedOperationsOther}
+                  onChange={(event) =>
+                    setState((current) => ({
+                      ...current,
+                      sarlaft: { ...current.sarlaft, expectedOperationsOther: event.target.value },
+                    }))
+                  }
+                />
+              </Field>
+            </div>
+          ) : null}
         </div>
       </div>
     );

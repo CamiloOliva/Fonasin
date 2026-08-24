@@ -103,11 +103,13 @@ class AffiliationSectionPayloadValidator
 
         $this->requireMoneyRange($section, $data, 'monthlySalary', self::MIN_MONTHLY_SALARY, self::MAX_MONEY_VALUE);
         $this->requirePastOrTodayDate($section, $data, 'hireDate');
+        $this->requireOtherDetail($section, $data, 'contractType', 'Otro', 'contractTypeOther');
         $this->requireMaxLengths($section, $data, [
             'employer' => 160,
             'position' => 120,
             'departmentArea' => 120,
             'contractType' => 80,
+            'contractTypeOther' => 80,
             'workCity' => 120,
             'monthlySalary' => 20,
         ]);
@@ -201,11 +203,13 @@ class AffiliationSectionPayloadValidator
             $this->requireDocumentType($section, $beneficiary, 'documentType', "beneficiaries.{$index}.documentType");
             $this->requirePhone($section, $beneficiary, 'phone', "beneficiaries.{$index}.phone");
             $this->requirePastOrTodayDate($section, $beneficiary, 'birthDate', "beneficiaries.{$index}.birthDate");
+            $this->requireOtherDetail($section, $beneficiary, 'relationship', 'Otro', 'relationshipOther', "beneficiaries.{$index}.");
             $this->requireMaxLengths($section, $beneficiary, [
                 'documentType' => 20,
                 'documentNumber' => 30,
                 'fullName' => 160,
                 'relationship' => 80,
+                'relationshipOther' => 80,
                 'phone' => 30,
             ], "beneficiaries.{$index}.");
         }
@@ -255,6 +259,10 @@ class AffiliationSectionPayloadValidator
             }
         }
 
+        $this->requireOtherDetail($section, $data, 'incomeSource', 'Otro', 'incomeSourceOther');
+        $this->requireOtherDetail($section, $data, 'resourceOrigin', 'Otro', 'resourceOriginOther');
+        $this->requireOtherDetail($section, $data, 'expectedOperations', 'Otros servicios', 'expectedOperationsOther');
+
         if ($this->isYes($data['pep'])) {
             $this->requireFields($section, $data, ['pepType', 'pepPosition', 'pepEntity', 'pepLinkDate']);
         }
@@ -266,6 +274,7 @@ class AffiliationSectionPayloadValidator
                 'foreignAccountType',
                 'foreignAccountOrigin',
             ]);
+            $this->requireOtherDetail($section, $data, 'foreignAccountType', 'Otra', 'foreignAccountTypeOther');
         }
 
         if ($this->isYes($data['actsOnBehalfOfThirdParties'])) {
@@ -283,6 +292,8 @@ class AffiliationSectionPayloadValidator
 
         $this->requireMaxLengths($section, $data, [
             'economicActivity' => 160,
+            'incomeSourceOther' => 80,
+            'resourceOriginOther' => 80,
             'pep' => 10,
             'pepType' => 120,
             'pepPosition' => 160,
@@ -293,6 +304,7 @@ class AffiliationSectionPayloadValidator
             'foreignAccountCountry' => 80,
             'foreignAccountEntity' => 160,
             'foreignAccountType' => 80,
+            'foreignAccountTypeOther' => 80,
             'foreignAccountOrigin' => 160,
             'actsOnBehalfOfThirdParties' => 10,
             'thirdPartyName' => 160,
@@ -302,6 +314,7 @@ class AffiliationSectionPayloadValidator
             'taxResidenceCountry' => 80,
             'hasForeignTaxObligations' => 10,
             'foreignTaxId' => 80,
+            'expectedOperationsOther' => 80,
         ]);
 
         foreach (['pepLinkDate', 'pepUnlinkDate'] as $field) {
@@ -408,6 +421,36 @@ class AffiliationSectionPayloadValidator
                     "no puede tener mas de {$limit} caracteres",
                 );
             }
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function requireOtherDetail(
+        AffiliationApplicationStep $section,
+        array $data,
+        string $triggerField,
+        string $triggerValue,
+        string $detailField,
+        string $prefix = '',
+    ): void {
+        $trigger = $data[$triggerField] ?? null;
+        $isSelected = is_array($trigger)
+            ? in_array($triggerValue, $trigger, true)
+            : is_string($trigger) && trim($trigger) === $triggerValue;
+
+        if (! $isSelected) {
+            return;
+        }
+
+        $detail = $data[$detailField] ?? null;
+        if ($this->isBlank($detail)) {
+            throw CannotSaveApplicationSection::missingRequiredFields($section->value, [$prefix.$detailField]);
+        }
+
+        if (! is_string($detail) || mb_strlen(trim($detail)) < 3 || ! preg_match('/[\pL\pN]/u', $detail)) {
+            throw CannotSaveApplicationSection::invalidField($section->value, $prefix.$detailField, 'debe especificar al menos 3 caracteres validos');
         }
     }
 

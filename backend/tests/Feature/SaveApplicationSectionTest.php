@@ -172,6 +172,60 @@ class SaveApplicationSectionTest extends TestCase
         );
     }
 
+    public function test_it_requires_other_contract_type_detail_when_employment_uses_other(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Employment);
+        $data['contractType'] = 'Otro';
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('contractTypeOther');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Employment,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
+    public function test_it_requires_other_beneficiary_relationship_detail_when_relationship_uses_other(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Beneficiaries);
+        $data['beneficiaries'][0]['relationship'] = 'Otro';
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('relationshipOther');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Beneficiaries,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
+    public function test_it_requires_other_sarlaft_details_when_catalog_options_use_other(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Sarlaft);
+        $data['incomeSource'] = ['Otro'];
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('incomeSourceOther');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Sarlaft,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
     public function test_it_rejects_completed_sections_with_future_dates(): void
     {
         $application = app(CreateAffiliationDraft::class)();
