@@ -49,6 +49,12 @@ Route::middleware('auth')
     ->prefix('admin/affiliation-applications')
     ->name('admin.affiliation-applications.')
     ->group(function (): void {
+        Route::get('/', [AffiliationApplicationController::class, 'index'])
+            ->middleware('can:viewAny,App\Models\AffiliationApplication')
+            ->name('index');
+        Route::get('/{application}', [AffiliationApplicationController::class, 'show'])
+            ->middleware('can:view,application')
+            ->name('show');
         Route::post('/{application}/review', [AffiliationApplicationController::class, 'startReview'])
             ->middleware('can:startReview,application')
             ->name('review');

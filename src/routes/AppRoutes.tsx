@@ -7,6 +7,7 @@ import FONAROTATIVO from "../modules/credits/pages/FONAROTATIVO";
 import FonaPortesPage from "../modules/credits/pages/FonaPortesPage";
 import SimuladorFonasin from "../modules/credits/pages/SimuladorFonasin.jsx";
 import Afiliacion from "../pages/Afiliacion/Afiliacion";
+import AdminFonasin from "../pages/AdminFonasin/AdminFonasin";
 import Convenios from "../pages/Convenios/Convenios";
 import ConvenioEmi from "../modules/convenios/ConvenioEmi.jsx";
 import ConvenioEmermedica from "../modules/convenios/ConvenioEmermedica.jsx";
@@ -58,6 +59,7 @@ export default function AppRoutes() {
       />{" "}
       <Route path="/fpqrs" element={<FPQRS />} />{" "}
       <Route path="/afiliacion" element={<Afiliacion />} />{" "}
+      <Route path="/admin-fonasin" element={<AdminFonasin />} />{" "}
       <Route path="/portal-asociado" element={<Portal />} />{" "}
       <Route path="*" element={<Home />} />{" "}
     </Routes>

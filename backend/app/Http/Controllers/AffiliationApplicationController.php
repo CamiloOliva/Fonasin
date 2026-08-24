@@ -12,6 +12,7 @@ use App\Application\Affiliation\UseCases\SaveApplicationSection;
 use App\Application\Affiliation\UseCases\StartAffiliationReview;
 use App\Application\Affiliation\UseCases\SubmitAffiliationApplication;
 use App\Application\Audit\UseCases\RecordAuditEvent;
+use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
 use App\Domain\Affiliation\Enums\ApplicationDocumentType;
@@ -37,6 +38,39 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AffiliationApplicationController extends Controller
 {
+    public function index(Request $request): JsonResponse
+    {
+        $applications = AffiliationApplication::query()
+            ->with(['reviewer'])
+            ->withCount(['sections', 'documents', 'consentRecords'])
+            ->latest('updated_at')
+            ->limit(100)
+            ->get();
+
+        return response()->json([
+            'data' => $applications
+                ->map(fn (AffiliationApplication $application): array => $this->adminApplicationListPayload($application))
+                ->all(),
+        ]);
+    }
+
+    public function show(
+        Request $request,
+        AffiliationApplication $application,
+        EncryptsSensitiveData $cipher,
+    ): JsonResponse {
+        $application->load([
+            'reviewer',
+            'sections' => fn ($query) => $query->oldest('section'),
+            'documents' => fn ($query) => $query->oldest('created_at'),
+            'consentRecords' => fn ($query) => $query->oldest('accepted_at'),
+        ]);
+
+        return response()->json([
+            'data' => $this->adminApplicationDetailPayload($application, $cipher),
+        ]);
+    }
+
     public function store(CreateAffiliationDraft $createDraft): JsonResponse
     {
         $application = $createDraft();
@@ -304,6 +338,69 @@ class AffiliationApplicationController extends Controller
                 ->all(),
             'links' => $this->applicationSignedLinks($application),
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function adminApplicationListPayload(AffiliationApplication $application): array
+    {
+        return [
+            'id' => $application->id,
+            'status' => $application->status,
+            'current_step' => $application->current_step,
+            'submitted_at' => $application->submitted_at?->toJSON(),
+            'reviewed_at' => $application->reviewed_at?->toJSON(),
+            'reviewer' => $application->reviewer ? [
+                'id' => $application->reviewer->id,
+                'email' => $application->reviewer->email,
+            ] : null,
+            'sections_count' => $application->sections_count,
+            'documents_count' => $application->documents_count,
+            'consents_count' => $application->consent_records_count,
+            'updated_at' => $application->updated_at?->toJSON(),
+            'created_at' => $application->created_at?->toJSON(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function adminApplicationDetailPayload(
+        AffiliationApplication $application,
+        EncryptsSensitiveData $cipher,
+    ): array {
+        return [
+            ...$this->adminApplicationListPayload($application),
+            'rejection_reason' => $application->rejection_reason,
+            'sections' => $application->sections
+                ->map(fn (ApplicationSection $section): array => $this->adminSectionPayload($section, $cipher))
+                ->values()
+                ->all(),
+            'documents' => $application->documents
+                ->map(fn (ApplicationDocument $document): array => $this->documentPayload($document))
+                ->values()
+                ->all(),
+            'consents' => $application->consentRecords
+                ->map(fn (ConsentRecord $consent): array => $this->consentPayload($consent))
+                ->values()
+                ->all(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function adminSectionPayload(ApplicationSection $section, EncryptsSensitiveData $cipher): array
+    {
+        $payload = $this->sectionPayload($section);
+        $encryptedPayload = $section->getAttribute('data_encrypted');
+
+        $payload['data'] = is_string($encryptedPayload)
+            ? $cipher->decryptArray($encryptedPayload)
+            : [];
+
+        return $payload;
     }
 
     /**

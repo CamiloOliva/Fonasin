@@ -29,6 +29,10 @@ export default defineConfig(({ mode }) => {
           target: backendTarget,
           changeOrigin: true,
         },
+        '/admin/affiliation-applications': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
         '/fpqrs-submissions': {
           target: backendTarget,
           changeOrigin: true,
