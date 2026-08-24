@@ -30,6 +30,7 @@ type RequestOptions = {
 };
 
 const backendBaseUrl = import.meta.env.VITE_BACKEND_BASE_URL?.trim().replace(/\/$/, '') ?? '';
+let cachedCsrfToken = '';
 
 function buildUrl(path: string): string {
   if (path.startsWith('http://') || path.startsWith('https://')) {
@@ -45,13 +46,29 @@ function buildUrl(path: string): string {
   return `${backendBaseUrl}${path}`;
 }
 
+async function csrfToken(): Promise<string> {
+  if (cachedCsrfToken) return cachedCsrfToken;
+
+  const response = await fetch(buildUrl('/csrf-token'), {
+    credentials: 'include',
+    headers: { Accept: 'application/json' },
+  });
+  const payload = await response.json().catch(() => null);
+  cachedCsrfToken = typeof payload?.data?.token === 'string' ? payload.data.token : '';
+
+  return cachedCsrfToken;
+}
+
 async function requestJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const token = (options.method ?? 'GET') === 'GET' ? '' : await csrfToken();
+
   const response = await fetch(buildUrl(path), {
     method: options.method ?? 'GET',
     credentials: 'include',
     headers: {
       Accept: 'application/json',
       ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+      ...(token ? { 'X-CSRF-TOKEN': token } : {}),
       ...(options.headers ?? {}),
     },
     body: options.body ?? null,

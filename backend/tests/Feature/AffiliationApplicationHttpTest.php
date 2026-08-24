@@ -255,6 +255,12 @@ class AffiliationApplicationHttpTest extends TestCase
         ], ['Accept' => 'application/json'])
             ->assertCreated()
             ->assertJsonPath('data.document_type', ApplicationDocumentType::Identity->value);
+        $this->post($draft['links']['documents'], [
+            'document_type' => ApplicationDocumentType::EmploymentCertificate->value,
+            'file' => UploadedFile::fake()->create('employment-certificate.pdf', 64, 'application/pdf'),
+        ], ['Accept' => 'application/json'])
+            ->assertCreated()
+            ->assertJsonPath('data.document_type', ApplicationDocumentType::EmploymentCertificate->value);
 
         foreach (ConsentType::requiredForSubmission() as $consentType) {
             $this->postJson($draft['links']['consents'], [
@@ -280,7 +286,7 @@ class AffiliationApplicationHttpTest extends TestCase
         $application = AffiliationApplication::query()->findOrFail($draft['id']);
 
         $this->assertSame(5, $application->sections()->whereNotNull('completed_at')->count());
-        $this->assertSame(3, $application->documents()->count());
+        $this->assertSame(4, $application->documents()->count());
         $this->assertSame(2, $application->consentRecords()->count());
         $this->assertDatabaseHas('audit_events', [
             'subject_type' => 'affiliation_application',
@@ -312,6 +318,10 @@ class AffiliationApplicationHttpTest extends TestCase
         $this->post($draft['links']['documents'], [
             'document_type' => ApplicationDocumentType::Identity->value,
             'file' => UploadedFile::fake()->create('identity.pdf', 64, 'application/pdf'),
+        ], ['Accept' => 'application/json'])->assertCreated();
+        $this->post($draft['links']['documents'], [
+            'document_type' => ApplicationDocumentType::EmploymentCertificate->value,
+            'file' => UploadedFile::fake()->create('employment-certificate.pdf', 64, 'application/pdf'),
         ], ['Accept' => 'application/json'])->assertCreated();
 
         foreach (ConsentType::requiredForSubmission() as $consentType) {
@@ -359,6 +369,10 @@ class AffiliationApplicationHttpTest extends TestCase
         $this->post($draft['links']['documents'], [
             'document_type' => ApplicationDocumentType::Identity->value,
             'file' => UploadedFile::fake()->create('identity.pdf', 64, 'application/pdf'),
+        ], ['Accept' => 'application/json'])->assertCreated();
+        $this->post($draft['links']['documents'], [
+            'document_type' => ApplicationDocumentType::EmploymentCertificate->value,
+            'file' => UploadedFile::fake()->create('employment-certificate.pdf', 64, 'application/pdf'),
         ], ['Accept' => 'application/json'])->assertCreated();
 
         foreach (ConsentType::requiredForSubmission() as $consentType) {

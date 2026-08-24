@@ -19,6 +19,18 @@ vi.mock('../services/portalService', () => ({
   logoutPortal: vi.fn(),
 }));
 
+vi.mock('../services/adminAffiliationService', () => ({
+  currentAdminUser: vi.fn().mockRejectedValue(new Error('guest')),
+  fetchAdminAffiliationApplications: vi.fn().mockResolvedValue([]),
+  fetchAdminAffiliationApplication: vi.fn(),
+  loginAdmin: vi.fn(),
+  logoutAdmin: vi.fn(),
+  startAdminAffiliationReview: vi.fn(),
+  requestAdminAffiliationCorrection: vi.fn(),
+  rejectAdminAffiliationApplication: vi.fn(),
+  approveAdminAffiliationApplication: vi.fn(),
+}));
+
 function renderRoute(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
@@ -93,6 +105,15 @@ describe('AppRoutes', () => {
       expect(screen.getByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument();
     });
     expect(screen.getByRole('heading', { name: /consulta tus creditos/i })).toBeInTheDocument();
+  });
+
+  it('renders the administrative affiliation login route', async () => {
+    renderRoute('/admin-fonasin');
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /iniciar sesion administrativa/i })).toBeInTheDocument();
+    });
+    expect(screen.getByRole('heading', { name: /revision interna de afiliaciones/i })).toBeInTheDocument();
   });
 
   it('falls back to the home page for an unknown route', () => {

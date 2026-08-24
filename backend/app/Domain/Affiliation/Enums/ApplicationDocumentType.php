@@ -5,8 +5,10 @@ namespace App\Domain\Affiliation\Enums;
 enum ApplicationDocumentType: string
 {
     case Identity = 'identity';
+    case EmploymentCertificate = 'employment_certificate';
     case AffiliationSummary = 'affiliation_summary';
     case PayrollAuthorization = 'payroll_authorization';
+    case SignedPayrollAuthorization = 'signed_payroll_authorization';
 
     /**
      * @return list<self>
@@ -15,6 +17,7 @@ enum ApplicationDocumentType: string
     {
         return [
             self::Identity,
+            self::EmploymentCertificate,
         ];
     }
 }

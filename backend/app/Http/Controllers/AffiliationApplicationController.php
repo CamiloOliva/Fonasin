@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Application\Affiliation\UseCases\AcceptApplicationConsent;
 use App\Application\Affiliation\UseCases\ApproveAffiliationApplication;
 use App\Application\Affiliation\UseCases\CreateAffiliationDraft;
+use App\Application\Affiliation\UseCases\EnableAffiliationApplication;
 use App\Application\Affiliation\UseCases\RegisterApplicationDocument;
 use App\Application\Affiliation\UseCases\RejectAffiliationApplication;
 use App\Application\Affiliation\UseCases\RequestAffiliationCorrection;
@@ -12,14 +13,17 @@ use App\Application\Affiliation\UseCases\SaveApplicationSection;
 use App\Application\Affiliation\UseCases\StartAffiliationReview;
 use App\Application\Affiliation\UseCases\SubmitAffiliationApplication;
 use App\Application\Audit\UseCases\RecordAuditEvent;
+use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
+use App\Domain\Affiliation\Enums\ApplicationDocumentStatus;
 use App\Domain\Affiliation\Enums\ApplicationDocumentType;
 use App\Domain\Affiliation\Enums\ConsentType;
 use App\Domain\Audit\Enums\AuditActorType;
 use App\Domain\Audit\Enums\AuditModule;
 use App\Http\Requests\Affiliation\AcceptApplicationConsentRequest;
 use App\Http\Requests\Affiliation\RegisterApplicationDocumentRequest;
+use App\Http\Requests\Affiliation\RegisterSignedPayrollAuthorizationRequest;
 use App\Http\Requests\Affiliation\RejectApplicationRequest;
 use App\Http\Requests\Affiliation\RequestApplicationCorrectionRequest;
 use App\Http\Requests\Affiliation\StoreApplicationSectionRequest;
@@ -37,6 +41,45 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AffiliationApplicationController extends Controller
 {
+    public function index(Request $request): JsonResponse
+    {
+        $applications = AffiliationApplication::query()
+            ->with(['reviewer'])
+            ->withCount([
+                'sections',
+                'documents' => fn ($query) => $query->where('status', ApplicationDocumentStatus::Uploaded->value),
+                'consentRecords',
+            ])
+            ->latest('updated_at')
+            ->limit(100)
+            ->get();
+
+        return response()->json([
+            'data' => $applications
+                ->map(fn (AffiliationApplication $application): array => $this->adminApplicationListPayload($application))
+                ->all(),
+        ]);
+    }
+
+    public function show(
+        Request $request,
+        AffiliationApplication $application,
+        EncryptsSensitiveData $cipher,
+    ): JsonResponse {
+        $application->load([
+            'reviewer',
+            'sections' => fn ($query) => $query->oldest('section'),
+            'documents' => fn ($query) => $query
+                ->where('status', ApplicationDocumentStatus::Uploaded->value)
+                ->oldest('created_at'),
+            'consentRecords' => fn ($query) => $query->oldest('accepted_at'),
+        ]);
+
+        return response()->json([
+            'data' => $this->adminApplicationDetailPayload($application, $cipher),
+        ]);
+    }
+
     public function store(CreateAffiliationDraft $createDraft): JsonResponse
     {
         $application = $createDraft();
@@ -95,6 +138,33 @@ class AffiliationApplicationController extends Controller
         ], 201);
     }
 
+    public function storeSignedPayrollAuthorization(
+        RegisterSignedPayrollAuthorizationRequest $request,
+        AffiliationApplication $application,
+        RegisterApplicationDocument $registerDocument,
+    ): JsonResponse {
+        $file = $request->file('file');
+
+        try {
+            $document = $registerDocument(
+                application: $application,
+                documentType: ApplicationDocumentType::SignedPayrollAuthorization,
+                originalFilename: $file->getClientOriginalName(),
+                mimeType: $file->getMimeType() ?: 'application/octet-stream',
+                byteSize: $file->getSize() ?: 0,
+                actor: $request->user(),
+                ipHash: $this->ipHash($request),
+                fileContents: $file->get(),
+            );
+        } catch (DomainException $exception) {
+            return $this->domainError($exception);
+        }
+
+        return response()->json([
+            'data' => $this->documentPayload($document),
+        ], 201);
+    }
+
     public function storeConsent(
         AcceptApplicationConsentRequest $request,
         AffiliationApplication $application,
@@ -119,6 +189,7 @@ class AffiliationApplicationController extends Controller
         RecordAuditEvent $recordAuditEvent,
     ): StreamedResponse {
         abort_unless($document->application_id === $application->id, 404);
+        abort_unless($document->status === ApplicationDocumentStatus::Uploaded->value, 404);
 
         $storageKey = $document->getAttribute('storage_key');
         abort_unless(is_string($storageKey) && Storage::disk('local')->exists($storageKey), 404);
@@ -152,6 +223,7 @@ class AffiliationApplicationController extends Controller
         RecordAuditEvent $recordAuditEvent,
     ): StreamedResponse {
         abort_unless($document->application_id === $application->id, 404);
+        abort_unless($document->status === ApplicationDocumentStatus::Uploaded->value, 404);
 
         $storageKey = $document->getAttribute('storage_key');
         abort_unless(is_string($storageKey) && Storage::disk('local')->exists($storageKey), 404);
@@ -260,6 +332,41 @@ class AffiliationApplicationController extends Controller
         ]);
     }
 
+    public function enable(
+        Request $request,
+        AffiliationApplication $application,
+        EnableAffiliationApplication $enableApplication,
+    ): JsonResponse {
+        try {
+            $result = $enableApplication(
+                application: $application,
+                actor: $request->user(),
+                ipHash: $this->ipHash($request),
+            );
+        } catch (DomainException $exception) {
+            return $this->domainError($exception);
+        }
+
+        return response()->json([
+            'data' => [
+                'application' => $this->applicationPayload($result['application']),
+                'associate' => [
+                    'id' => $result['associate']->id,
+                    'full_name' => $result['associate']->full_name,
+                    'document_type' => $result['associate']->document_type,
+                    'status' => $result['associate']->status,
+                    'user_id' => $result['associate']->user_id,
+                ],
+                'user' => [
+                    'id' => $result['user']->id,
+                    'email' => $result['user']->email,
+                    'status' => $result['user']->status,
+                ],
+                'temporary_password' => $result['temporary_password'],
+            ],
+        ]);
+    }
+
     public function reject(
         RejectApplicationRequest $request,
         AffiliationApplication $application,
@@ -298,12 +405,76 @@ class AffiliationApplicationController extends Controller
                     ApplicationDocumentType::AffiliationSummary->value,
                     ApplicationDocumentType::PayrollAuthorization->value,
                 ])
+                ->where('status', ApplicationDocumentStatus::Uploaded->value)
                 ->oldest('created_at')
                 ->get()
                 ->map(fn (ApplicationDocument $document): array => $this->documentPayload($document))
                 ->all(),
             'links' => $this->applicationSignedLinks($application),
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function adminApplicationListPayload(AffiliationApplication $application): array
+    {
+        return [
+            'id' => $application->id,
+            'status' => $application->status,
+            'current_step' => $application->current_step,
+            'submitted_at' => $application->submitted_at?->toJSON(),
+            'reviewed_at' => $application->reviewed_at?->toJSON(),
+            'reviewer' => $application->reviewer ? [
+                'id' => $application->reviewer->id,
+                'email' => $application->reviewer->email,
+            ] : null,
+            'sections_count' => $application->sections_count,
+            'documents_count' => $application->documents_count,
+            'consents_count' => $application->consent_records_count,
+            'updated_at' => $application->updated_at?->toJSON(),
+            'created_at' => $application->created_at?->toJSON(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function adminApplicationDetailPayload(
+        AffiliationApplication $application,
+        EncryptsSensitiveData $cipher,
+    ): array {
+        return [
+            ...$this->adminApplicationListPayload($application),
+            'rejection_reason' => $application->rejection_reason,
+            'sections' => $application->sections
+                ->map(fn (ApplicationSection $section): array => $this->adminSectionPayload($section, $cipher))
+                ->values()
+                ->all(),
+            'documents' => $application->documents
+                ->map(fn (ApplicationDocument $document): array => $this->documentPayload($document))
+                ->values()
+                ->all(),
+            'consents' => $application->consentRecords
+                ->map(fn (ConsentRecord $consent): array => $this->consentPayload($consent))
+                ->values()
+                ->all(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function adminSectionPayload(ApplicationSection $section, EncryptsSensitiveData $cipher): array
+    {
+        $payload = $this->sectionPayload($section);
+        $encryptedPayload = $section->getAttribute('data_encrypted');
+
+        $payload['data'] = is_string($encryptedPayload)
+            ? $cipher->decryptArray($encryptedPayload)
+            : [];
+
+        return $payload;
     }
 
     /**

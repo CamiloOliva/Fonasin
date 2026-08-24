@@ -18,4 +18,19 @@ class CannotReviewAffiliationApplication extends DomainException
     {
         return new self('Application cannot be rejected without a rejection reason.');
     }
+
+    public static function missingSignedPayrollAuthorization(): self
+    {
+        return new self('Application cannot be enabled without signed payroll authorization.');
+    }
+
+    public static function missingPersonalSection(): self
+    {
+        return new self('Application cannot create an associate without completed personal data.');
+    }
+
+    public static function missingPersonalField(string $field): self
+    {
+        return new self("Application cannot create an associate because personal field [{$field}] is missing.");
+    }
 }

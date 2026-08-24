@@ -98,7 +98,7 @@ El caso de uso de guardado recibe datos estructurados y delega el cifrado a `App
 | `status` | varchar(30) | `uploaded`, `accepted`, `rejected`, `archived` |
 | `uploaded_at` | timestamptz | fecha de carga |
 
-La carga de documentos registra metadatos, genera una `storage_key` privada desde `App\Infrastructure\Storage` y persiste el archivo en el disco privado `local`. La aplicacion no acepta rutas publicas ni claves de almacenamiento enviadas por el navegador. Al reemplazar un documento del mismo tipo, el anterior se archiva y se conserva como historial. Para envio inicial se exige el documento `identity` en estado `uploaded`.
+La carga de documentos registra metadatos, genera una `storage_key` privada desde `App\Infrastructure\Storage` y persiste el archivo en el disco privado `local`. La aplicacion no acepta rutas publicas ni claves de almacenamiento enviadas por el navegador. Al reemplazar un documento del mismo tipo, el anterior se archiva y se conserva como historial. Para envio inicial se exigen los documentos `identity` (documento de identidad por ambos lados en un solo PDF) y `employment_certificate` (certificado laboral en PDF), ambos en estado `uploaded`.
 
 Al enviar una afiliacion, el backend genera dos documentos PDF privados adicionales: `affiliation_summary` y `payroll_authorization`. Estos documentos se crean desde datos descifrados solo dentro del caso de uso de envio, se guardan con `storage_key` privada y se auditan como `document.generated`. El mes y ano de inicio de descuentos queda pendiente de captura explicita en el formulario.
 

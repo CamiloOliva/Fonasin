@@ -135,7 +135,8 @@ type SarlaftData = {
 };
 
 type FinalStepData = {
-  documentFile: File | null;
+  identityDocumentFile: File | null;
+  employmentCertificateFile: File | null;
   signatureCity: string;
   signatureDate: string;
   signatureMechanism: string;
@@ -295,6 +296,51 @@ const legalDocuments = [
     url: '/ESTATUTOS%20DEFINITIVOS%202024.pdf',
   },
 ] as const;
+const DRAFT_STORAGE_KEY = 'fonasin.affiliation.draft.v1';
+const DRAFT_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
+
+type StoredAffiliationDraft = {
+  savedAt: number;
+  draft: AffiliationDraft;
+};
+
+function readStoredDraft(): AffiliationDraft | null {
+  try {
+    const raw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return null;
+
+    const stored = JSON.parse(raw) as StoredAffiliationDraft;
+    if (!stored?.draft?.id || Date.now() - stored.savedAt > DRAFT_STORAGE_TTL_MS) {
+      window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+      return null;
+    }
+
+    return stored.draft;
+  } catch {
+    return null;
+  }
+}
+
+function storeDraft(draft: AffiliationDraft): void {
+  if (draft.status !== 'draft') return;
+
+  try {
+    window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
+      savedAt: Date.now(),
+      draft,
+    }));
+  } catch {
+    // El formulario sigue funcionando aunque el navegador bloquee storage local.
+  }
+}
+
+function clearStoredDraft(): void {
+  try {
+    window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+  } catch {
+    // No hay accion necesaria si el navegador bloquea storage local.
+  }
+}
 
 const personalFields: FieldConfig[] = [
   { key: 'documentType', label: 'Tipo de documento', type: 'select', options: documentTypes },
@@ -445,7 +491,8 @@ function createInitialState(): SectionState {
       expectedOperationsOther: '',
     },
     finalStep: {
-      documentFile: null,
+      identityDocumentFile: null,
+      employmentCertificateFile: null,
       signatureCity: '',
       signatureDate: todayInputDate(),
       signatureMechanism: SIGNATURE_MECHANISM,
@@ -589,11 +636,23 @@ function validateCurrentStep(step: number, state: SectionState): string | null {
   }
 
   if (step === 5) {
-    if (!state.finalStep.documentFile) {
-      return 'Debes adjuntar el documento de identidad antes de enviar.';
+    if (!state.finalStep.identityDocumentFile) {
+      return 'Debes adjuntar el documento de identidad por ambos lados en PDF.';
     }
-    if (state.finalStep.documentFile.size > 5 * 1024 * 1024) {
+    if (!state.finalStep.employmentCertificateFile) {
+      return 'Debes adjuntar el certificado laboral en PDF.';
+    }
+    if (state.finalStep.identityDocumentFile.type !== 'application/pdf') {
+      return 'El documento de identidad debe estar en formato PDF.';
+    }
+    if (state.finalStep.employmentCertificateFile.type !== 'application/pdf') {
+      return 'El certificado laboral debe estar en formato PDF.';
+    }
+    if (state.finalStep.identityDocumentFile.size > 5 * 1024 * 1024) {
       return 'El documento de identidad no debe superar 5MB.';
+    }
+    if (state.finalStep.employmentCertificateFile.size > 5 * 1024 * 1024) {
+      return 'El certificado laboral no debe superar 5MB.';
     }
     if (isBlank(state.finalStep.signatureCity) || isBlank(state.finalStep.signatureDate)) {
       return 'Completa ciudad y fecha de firma.';
@@ -1071,9 +1130,19 @@ export default function AffiliationForm() {
     let active = true;
     (async () => {
       try {
+        const storedDraft = readStoredDraft();
+        if (storedDraft) {
+          if (!active) return;
+          setDraft(storedDraft);
+          setBackendMode('ready');
+          setBackendMessage(`Borrador ${storedDraft.id} recuperado en este navegador.`);
+          return;
+        }
+
         const response = await createAffiliationDraft();
         if (!active) return;
         setDraft(response);
+        storeDraft(response);
         setBackendMode('ready');
         setBackendMessage(`Borrador ${response.id} listo para sincronizar secciones.`);
       } catch {
@@ -1132,20 +1201,24 @@ export default function AffiliationForm() {
         });
         setMessage('Seccion SARLAFT guardada.');
       } else if (step === 5) {
-        if (!state.finalStep.documentFile) {
-          throw new Error('Debes adjuntar el documento de identidad antes de enviar.');
+        if (!state.finalStep.identityDocumentFile || !state.finalStep.employmentCertificateFile) {
+          throw new Error('Debes adjuntar documento de identidad y certificado laboral en PDF.');
         }
 
         setMessage('Documentos, declaraciones y autorizaciones listos para revision.');
       } else {
-        if (!state.finalStep.documentFile) {
-          throw new Error('Debes adjuntar el documento de identidad antes de enviar.');
+        if (!state.finalStep.identityDocumentFile || !state.finalStep.employmentCertificateFile) {
+          throw new Error('Debes adjuntar documento de identidad y certificado laboral en PDF.');
         }
 
         if (draft && backendMode === 'ready') {
           await uploadAffiliationDocument(draft.links.documents, {
             documentType: 'identity',
-            file: state.finalStep.documentFile,
+            file: state.finalStep.identityDocumentFile,
+          });
+          await uploadAffiliationDocument(draft.links.documents, {
+            documentType: 'employment_certificate',
+            file: state.finalStep.employmentCertificateFile,
           });
 
           await acceptAffiliationConsent(draft.links.consents, {
@@ -1158,6 +1231,7 @@ export default function AffiliationForm() {
           });
           const submittedDraft = await submitAffiliationApplication(draft.links.submit, POLICY_VERSION);
           setDraft(submittedDraft);
+          clearStoredDraft();
         }
 
         setSubmitted(true);
@@ -1254,16 +1328,25 @@ export default function AffiliationForm() {
           description="Empresa, cargo, area, contrato, ciudad de trabajo e ingreso mensual."
         />
         {renderFields(employmentFields, state.employment, (next) =>
-          setState((current) => ({
-            ...current,
-            employment: {
-              ...current.employment,
-              ...next,
-              contractTypeOther:
-                next.contractType && next.contractType !== 'Otro' ? '' : next.contractTypeOther ?? current.employment.contractTypeOther,
-              monthlySalary: next.monthlySalary ? currencyOnly(next.monthlySalary) : current.employment.monthlySalary,
-            },
-          })),
+          setState((current) => {
+            const nextMonthlySalary = next.monthlySalary ? currencyOnly(next.monthlySalary) : current.employment.monthlySalary;
+            const shouldMirrorSalary = !current.financial.principalIncome
+              || current.financial.principalIncome === current.employment.monthlySalary;
+
+            return {
+              ...current,
+              employment: {
+                ...current.employment,
+                ...next,
+                contractTypeOther:
+                  next.contractType && next.contractType !== 'Otro' ? '' : next.contractTypeOther ?? current.employment.contractTypeOther,
+                monthlySalary: nextMonthlySalary,
+              },
+              financial: shouldMirrorSalary
+                ? { ...current.financial, principalIncome: nextMonthlySalary }
+                : current.financial,
+            };
+          }),
         'employment', {
           fieldOptions: {
             workCity: colombiaCityOptions,
@@ -2141,7 +2224,8 @@ export default function AffiliationForm() {
         ])}
 
         {reviewCard('Documentos y autorizaciones', [
-          ['Documento adjunto', state.finalStep.documentFile?.name ?? 'No registra'],
+          ['Documento de identidad', state.finalStep.identityDocumentFile?.name ?? 'No registra'],
+          ['Certificado laboral', state.finalStep.employmentCertificateFile?.name ?? 'No registra'],
           ['Firma', `${state.finalStep.signatureCity} - ${state.finalStep.signatureDate}`],
           ['Mecanismo', state.finalStep.signatureMechanism],
           ['Declaraciones', 'Aceptadas'],
@@ -2186,46 +2270,63 @@ export default function AffiliationForm() {
           description="El documento separa esta parte del formulario principal. Aqui quedan el cierre y la firma."
         />
 
-        <div className="grid gap-5 xl:grid-cols-[1.05fr_.95fr]">
+        <div className="grid gap-5">
           <div className="space-y-4">
-            <div className="rounded-[1.6rem] border border-emerald-100 bg-emerald-50 p-4">
-              <div className="flex items-center gap-3">
-                <div className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-600 text-white">
-                  <Upload size={20} />
-                </div>
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Documento obligatorio</p>
-                  <h4 className="text-lg font-black text-slate-950">Documento de identidad</h4>
-                </div>
-              </div>
-              <label className="mt-4 block">
-                <span className="text-sm font-bold text-slate-800">Adjuntar documento <span className="text-red-500">*</span></span>
-                <div className="mt-2 rounded-2xl border border-dashed border-emerald-300 bg-white px-4 py-5">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="text-sm text-slate-600">
-                      <p className="max-w-full truncate font-semibold text-slate-900 sm:max-w-48">
-                        {state.finalStep.documentFile ? state.finalStep.documentFile.name : 'Seleccionar PDF, JPG o PNG'}
-                      </p>
-                      <p className="mt-1 text-xs leading-5 text-slate-500">El backend acepta PDF, JPG y PNG hasta 5MB.</p>
-                    </div>
-                    <span className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white">
-                      <Upload size={16} /> Cargar archivo
-                      <input
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-                        className="sr-only"
-                        onChange={(event) =>
-                          setState((current) => ({
-                            ...current,
-                            finalStep: { ...current.finalStep, documentFile: event.target.files?.[0] ?? null },
-                          }))
-                        }
-                      />
-                    </span>
+            {[
+              {
+                key: 'identityDocumentFile' as const,
+                eyebrow: 'Documento obligatorio 1',
+                title: 'Documento de identidad',
+                helper: 'Incluye ambos lados en un solo PDF. Maximo 5MB.',
+                file: state.finalStep.identityDocumentFile,
+              },
+              {
+                key: 'employmentCertificateFile' as const,
+                eyebrow: 'Documento obligatorio 2',
+                title: 'Certificado laboral',
+                helper: 'Adjunta certificado laboral en PDF. Maximo 5MB.',
+                file: state.finalStep.employmentCertificateFile,
+              },
+            ].map((document) => (
+              <div key={document.key} className="rounded-[1.6rem] border border-emerald-100 bg-emerald-50 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-600 text-white">
+                    <Upload size={20} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">{document.eyebrow}</p>
+                    <h4 className="text-lg font-black text-slate-950">{document.title}</h4>
                   </div>
                 </div>
-              </label>
-            </div>
+                <label className="mt-4 block">
+                  <span className="text-sm font-bold text-slate-800">Adjuntar PDF <span className="text-red-500">*</span></span>
+                  <div className="mt-2 rounded-2xl border border-dashed border-emerald-300 bg-white px-4 py-5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0 text-sm text-slate-600">
+                        <p className="max-w-full truncate font-semibold text-slate-900 sm:max-w-56">
+                          {document.file ? document.file.name : 'Seleccionar PDF'}
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-slate-500">{document.helper}</p>
+                      </div>
+                      <span className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white">
+                        <Upload size={16} /> Cargar archivo
+                        <input
+                          type="file"
+                          accept=".pdf,application/pdf"
+                          className="sr-only"
+                          onChange={(event) =>
+                            setState((current) => ({
+                              ...current,
+                              finalStep: { ...current.finalStep, [document.key]: event.target.files?.[0] ?? null },
+                            }))
+                          }
+                        />
+                      </span>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            ))}
 
             <div className="rounded-[1.6rem] border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

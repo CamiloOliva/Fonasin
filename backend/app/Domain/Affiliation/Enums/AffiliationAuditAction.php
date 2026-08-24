@@ -8,6 +8,7 @@ enum AffiliationAuditAction: string
     case ApplicationReviewStarted = 'application.review_started';
     case ApplicationCorrectionRequested = 'application.correction_requested';
     case ApplicationApproved = 'application.approved';
+    case ApplicationEnabled = 'application.enabled';
     case ApplicationRejected = 'application.rejected';
     case DocumentUploaded = 'document.uploaded';
     case DocumentGenerated = 'document.generated';

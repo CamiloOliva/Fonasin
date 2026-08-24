@@ -40,7 +40,7 @@ export type AffiliationSectionPayload = {
 };
 
 export type AffiliationDocumentPayload = {
-  documentType: 'identity';
+  documentType: 'identity' | 'employment_certificate';
   file: File;
 };
 

@@ -46,13 +46,13 @@ El carrusel estatico de tres imagenes existe, pero permanece `En curso` hasta re
 | ID | Requisito | Estado | Bloqueador o siguiente paso |
 |---|---|---|---|
 | FE-AFI-001 | Pagina informativa | Bloqueado | Contenido, requisitos y soportes oficiales. |
-| FE-AFI-002 | Inicio o recuperacion de borrador | Pendiente | Contrato Backend y politica de recuperacion. |
+| FE-AFI-002 | Inicio o recuperacion de borrador | Implementado | La vista reutiliza por 24 horas el borrador local del mismo navegador guardando solo id y links firmados; no persiste datos personales en storage del frontend. |
 | FE-AFI-003 | Datos personales | Bloqueado | Esquema de campos aprobado. |
 | FE-AFI-004 | Informacion laboral | Bloqueado | Campos y reglas aprobados. |
 | FE-AFI-005 | Informacion financiera | Bloqueado | Campos y reglas aprobados. |
 | FE-AFI-006 | Beneficiarios | Bloqueado | Campos condicionales aprobados. |
 | FE-AFI-006A | SARLAFT | Bloqueado | Declaraciones, campos y tratamiento aprobados. |
-| FE-AFI-007 | Documentos | Pendiente | Tipos, tamanos y rutas temporales Backend. |
+| FE-AFI-007 | Documentos | Implementado | Formulario exige PDF de identidad por ambos lados y certificado laboral; Backend valida PDF privado de hasta 5MB por documento. Falta validacion visual final con FONASIN. |
 | FE-AFI-008 | Documentos generados | Pendiente | Contrato de generacion y descarga PDF. |
 | FE-AFI-009 | Consentimientos | Bloqueado | Versiones oficiales de politica y estatutos. |
 | FE-AFI-010 | Resumen | Pendiente | Depende de las etapas anteriores. |
@@ -65,7 +65,7 @@ La ruta actual `/afiliacion` es un aviso explicito y no se considera implementac
 
 | ID | Requisito | Estado | Bloqueador o siguiente paso |
 |---|---|---|---|
-| FE-ADM-001 a FE-ADM-009 | Gestion de afiliaciones | Pendiente | Inicializar Laravel/Filament, Identity, permisos y flujo Affiliation. |
+| FE-ADM-001 a FE-ADM-009 | Gestion de afiliaciones | En curso | `/admin-fonasin`, endpoints `GET /admin/affiliation-applications`, acciones de revision, carga de libranza externa y habilitacion de asociado. Falta validacion visual final y modulo completo de asociados. |
 | FE-ADM-010 | Importar creditos XLSX | Bloqueado | Plantilla, columnas, validaciones y contrato de importacion aprobados. |
 | FE-ADM-011 | Historial de importaciones | Pendiente | Depende del caso de uso de importacion y auditoria. |
 | FE-ADM-012 | Prohibir alta manual irregular | Pendiente | Debe imponerse con permisos y casos de uso del Backend. |
