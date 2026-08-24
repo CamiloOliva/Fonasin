@@ -59,7 +59,7 @@ async function csrfToken(): Promise<string> {
   return cachedCsrfToken;
 }
 
-async function requestJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
+async function requestJson<T>(path: string, options: RequestOptions = {}, retried = false): Promise<T> {
   const token = (options.method ?? 'GET') === 'GET' ? '' : await csrfToken();
 
   const response = await fetch(buildUrl(path), {
@@ -76,6 +76,12 @@ async function requestJson<T>(path: string, options: RequestOptions = {}): Promi
 
   const payload = await response.json().catch(() => null);
 
+  if (response.status === 419 && !retried) {
+    cachedCsrfToken = '';
+
+    return requestJson<T>(path, options, true);
+  }
+
   if (!response.ok) {
     const message = typeof payload?.message === 'string'
       ? payload.message
@@ -90,6 +96,7 @@ async function requestJson<T>(path: string, options: RequestOptions = {}): Promi
 function translatePortalError(message: string, status: number): string {
   if (status === 401) return 'Inicia sesion para entrar al portal.';
   if (status === 403) return 'Tu usuario no tiene permisos para acceder a esta seccion.';
+  if (status === 419) return 'La sesion expiro. Recarga la pagina e intenta de nuevo.';
   if (status === 429) return 'Demasiados intentos. Espera un momento y vuelve a intentar.';
   if (message === 'Invalid credentials.') return 'Correo o contrasena incorrectos.';
   if (message === 'User account is inactive.') return 'La cuenta de usuario esta inactiva.';

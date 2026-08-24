@@ -21,6 +21,10 @@ export default defineConfig(({ mode }) => {
           target: backendTarget,
           changeOrigin: true,
         },
+        '/csrf-token': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
         '/affiliation-applications': {
           target: backendTarget,
           changeOrigin: true,
@@ -30,6 +34,14 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
         },
         '/admin/affiliation-applications': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
+        '/admin/associates': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
+        '/admin/credits': {
           target: backendTarget,
           changeOrigin: true,
         },

@@ -1410,7 +1410,10 @@ export default function AffiliationForm() {
             consentType: 'bylaws',
             policyVersion: POLICY_VERSION,
           });
-          const submittedDraft = await submitAffiliationApplication(draft.links.submit, POLICY_VERSION);
+          const submittedDraft = await submitAffiliationApplication(draft.links.submit, POLICY_VERSION, {
+            city: state.finalStep.signatureCity,
+            date: state.finalStep.signatureDate,
+          });
           setDraft(submittedDraft);
           clearStoredDraft();
           setUploadedDocumentTypes(new Set());

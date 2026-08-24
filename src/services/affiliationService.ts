@@ -201,11 +201,14 @@ export async function acceptAffiliationConsent(
 export async function submitAffiliationApplication(
   submitUrl: string,
   policyVersion: string,
+  signature: { city: string; date: string },
 ): Promise<AffiliationDraft> {
   return requestJson<AffiliationDraft>(submitUrl, {
     method: 'POST',
     body: JSON.stringify({
       policy_version: policyVersion,
+      signature_city: signature.city,
+      signature_date: signature.date,
     }),
   });
 }

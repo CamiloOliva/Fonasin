@@ -29,10 +29,12 @@ class GenerateAffiliationSubmissionDocuments
         ?string $correlationId = null,
         ?string $ipHash = null,
         ?Carbon $generatedAt = null,
+        ?string $signatureCity = null,
+        ?string $signatureDate = null,
     ): array {
         $sections = $this->decryptedSections($application);
-        $payroll = $this->payrollContext($sections);
         $generatedAt ??= now();
+        $payroll = $this->payrollContext($sections, $generatedAt, $signatureCity, $signatureDate);
 
         $summaryPdf = $this->renderer->affiliationSummary($application, $sections);
         $payrollPdf = $this->renderer->payrollAuthorization($application, $sections, $payroll);
@@ -96,7 +98,7 @@ class GenerateAffiliationSubmissionDocuments
      * @param  array<string, array<string, mixed>>  $sections
      * @return array<string, mixed>
      */
-    private function payrollContext(array $sections): array
+    private function payrollContext(array $sections, Carbon $generatedAt, ?string $signatureCity, ?string $signatureDate): array
     {
         $personal = $sections[AffiliationApplicationStep::Personal->value] ?? [];
         $employment = $sections[AffiliationApplicationStep::Employment->value] ?? [];
@@ -106,8 +108,11 @@ class GenerateAffiliationSubmissionDocuments
         $voluntaryApplies = $this->isYes($financial['voluntarySavings'] ?? null);
         $voluntaryValue = $voluntaryApplies ? $this->numberValue($financial['voluntarySavingsValue'] ?? null) : 0.0;
 
+        $signedAt = $this->signatureDate($signatureDate) ?? $generatedAt;
+
         return [
-            'city' => 'Bucaramanga',
+            'city' => $signatureCity !== null && trim($signatureCity) !== '' ? trim($signatureCity) : 'Bucaramanga',
+            'signature_date_label' => $this->spanishDate($signedAt),
             'full_name' => trim(implode(' ', array_filter([
                 $personal['firstName'] ?? '',
                 $personal['middleName'] ?? '',
@@ -127,6 +132,35 @@ class GenerateAffiliationSubmissionDocuments
             'phone' => $personal['mobile'] ?? '',
             'email' => $personal['email'] ?? '',
         ];
+    }
+
+    private function signatureDate(?string $value): ?Carbon
+    {
+        if ($value === null || trim($value) === '') {
+            return null;
+        }
+
+        return Carbon::createFromFormat('Y-m-d', trim($value), 'America/Bogota')?->startOfDay();
+    }
+
+    private function spanishDate(Carbon $date): string
+    {
+        $months = [
+            1 => 'enero',
+            2 => 'febrero',
+            3 => 'marzo',
+            4 => 'abril',
+            5 => 'mayo',
+            6 => 'junio',
+            7 => 'julio',
+            8 => 'agosto',
+            9 => 'septiembre',
+            10 => 'octubre',
+            11 => 'noviembre',
+            12 => 'diciembre',
+        ];
+
+        return sprintf('%d de %s de %d', (int) $date->format('j'), $months[(int) $date->format('n')], (int) $date->format('Y'));
     }
 
     private function isYes(mixed $value): bool

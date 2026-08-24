@@ -56,7 +56,7 @@ async function csrfToken(): Promise<string> {
   return cachedCsrfToken;
 }
 
-async function requestJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
+async function requestJson<T>(path: string, options: RequestOptions = {}, retried = false): Promise<T> {
   const token = (options.method ?? 'GET') === 'GET' ? '' : await csrfToken();
 
   const response = await fetch(buildUrl(path), {
@@ -73,10 +73,18 @@ async function requestJson<T>(path: string, options: RequestOptions = {}): Promi
 
   const payload = await response.json().catch(() => null);
 
+  if (response.status === 419 && !retried) {
+    cachedCsrfToken = '';
+
+    return requestJson<T>(path, options, true);
+  }
+
   if (!response.ok) {
     const message = typeof payload?.message === 'string'
       ? payload.message
-      : 'No fue posible completar la solicitud.';
+      : response.status === 419
+        ? 'La sesion expiro. Recarga la pagina e intenta de nuevo.'
+        : 'No fue posible completar la solicitud.';
 
     throw new Error(message);
   }

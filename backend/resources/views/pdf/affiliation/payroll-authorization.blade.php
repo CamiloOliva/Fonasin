@@ -63,7 +63,7 @@
     <h1>FONASIN</h1>
     <p class="center">NIT 900.861.038-8</p>
 
-    <p>Bucaramanga, <span class="line wide">&nbsp;</span></p>
+    <p>{{ $payroll['city'] }}, {{ $payroll['signature_date_label'] }}</p>
 
     <p>
         Señores<br>
