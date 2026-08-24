@@ -7,6 +7,11 @@ use App\Models\User;
 
 class CreditAccountPolicy
 {
+    public function viewAny(User $user): bool
+    {
+        return $this->canManageCredits($user);
+    }
+
     public function create(User $user): bool
     {
         return $this->canManageCredits($user);

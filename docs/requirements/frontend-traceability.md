@@ -66,6 +66,7 @@ La ruta actual `/afiliacion` es un aviso explicito y no se considera implementac
 | ID | Requisito | Estado | Bloqueador o siguiente paso |
 |---|---|---|---|
 | FE-ADM-001 a FE-ADM-009 | Gestion de afiliaciones y asociados | En curso | `/admin-fonasin`, endpoints `GET /admin/affiliation-applications`, acciones de revision, carga de libranza externa, habilitacion de asociado y modulo administrativo de asociados con alta manual y desactivacion logica. Falta validacion visual final con FONASIN. |
+| FE-ADM-009A | Gestion manual de creditos | En curso | `/admin-fonasin`, endpoints `GET/POST/PATCH /admin/credits` y archivado logico de creditos. Falta validacion visual final con FONASIN. |
 | FE-ADM-010 | Importar creditos XLSX | Bloqueado | Plantilla, columnas, validaciones y contrato de importacion aprobados. |
 | FE-ADM-011 | Historial de importaciones | Pendiente | Depende del caso de uso de importacion y auditoria. |
 | FE-ADM-012 | Prohibir alta manual irregular | Pendiente | Debe imponerse con permisos y casos de uso del Backend. |

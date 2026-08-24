@@ -104,6 +104,9 @@ Route::middleware('auth')
     ->prefix('admin/credits')
     ->name('admin.credits.')
     ->group(function (): void {
+        Route::get('/', [CreditAccountController::class, 'index'])
+            ->middleware('can:viewAny,App\Models\CreditAccount')
+            ->name('index');
         Route::post('/', [CreditAccountController::class, 'store'])
             ->middleware('can:create,App\Models\CreditAccount')
             ->name('store');

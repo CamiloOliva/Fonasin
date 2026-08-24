@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Application\Audit\UseCases\RecordAuditEvent;
 use App\Application\Credits\UseCases\ArchiveCreditAccount;
 use App\Application\Credits\UseCases\RegisterCreditAccount;
 use App\Application\Credits\UseCases\UpdateCreditAccount;
 use App\Application\Credits\UseCases\ViewAssociateCredits;
+use App\Domain\Audit\Enums\AuditActorType;
+use App\Domain\Audit\Enums\AuditModule;
+use App\Domain\Credits\Enums\CreditAuditAction;
 use App\Http\Requests\Credits\StoreCreditAccountRequest;
 use App\Http\Requests\Credits\UpdateCreditAccountRequest;
 use App\Models\Associate;
@@ -16,6 +20,32 @@ use Illuminate\Http\Request;
 
 class CreditAccountController extends Controller
 {
+    public function index(Request $request, RecordAuditEvent $recordAuditEvent): JsonResponse
+    {
+        $credits = CreditAccount::query()
+            ->with('associate:id,full_name,document_type,status')
+            ->latest()
+            ->get();
+
+        ($recordAuditEvent)(
+            module: AuditModule::Credits,
+            action: CreditAuditAction::CreditViewed->value,
+            subjectType: 'credit_account_collection',
+            subjectId: $request->user()->id,
+            actor: $request->user(),
+            actorType: AuditActorType::User,
+            ipHash: $this->ipHash($request),
+            metadata: [
+                'scope' => 'admin',
+                'count' => $credits->count(),
+            ],
+        );
+
+        return response()->json([
+            'data' => $credits->map(fn (CreditAccount $credit): array => $this->creditPayload($credit))->values(),
+        ]);
+    }
+
     public function store(
         StoreCreditAccountRequest $request,
         RegisterCreditAccount $registerCreditAccount,
@@ -103,6 +133,12 @@ class CreditAccountController extends Controller
             'installment_amount' => $credit->installment_amount,
             'status' => $credit->status,
             'registered_by_user_id' => $credit->registered_by_user_id,
+            'associate' => $credit->associate ? [
+                'id' => $credit->associate->id,
+                'full_name' => $credit->associate->full_name,
+                'document_type' => $credit->associate->document_type,
+                'status' => $credit->associate->status,
+            ] : null,
         ];
     }
 

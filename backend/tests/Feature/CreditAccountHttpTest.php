@@ -20,6 +20,8 @@ class CreditAccountHttpTest extends TestCase
     {
         $associate = $this->createAssociate();
 
+        $this->getJson('/admin/credits')->assertUnauthorized();
+
         $this->postJson('/admin/credits', [
             'associate_id' => $associate->id,
             ...$this->creditData(),
@@ -37,6 +39,26 @@ class CreditAccountHttpTest extends TestCase
                 ...$this->creditData(),
             ])
             ->assertForbidden();
+    }
+
+    public function test_reviewer_can_list_credits_over_http(): void
+    {
+        $reviewer = $this->userWithRole('reviewer');
+        $associate = $this->createAssociate();
+        $credit = $this->createCredit($reviewer, $associate);
+
+        $response = $this->actingAs($reviewer)->getJson('/admin/credits');
+
+        $response->assertOk()
+            ->assertJsonPath('data.0.id', $credit->id)
+            ->assertJsonPath('data.0.associate.id', $associate->id)
+            ->assertJsonPath('data.0.associate.full_name', $associate->full_name);
+
+        $this->assertDatabaseHas('audit_events', [
+            'actor_user_id' => $reviewer->id,
+            'action' => CreditAuditAction::CreditViewed->value,
+            'subject_type' => 'credit_account_collection',
+        ]);
     }
 
     public function test_reviewer_can_register_credit_over_http(): void
