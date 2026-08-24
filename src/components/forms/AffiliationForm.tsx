@@ -15,6 +15,7 @@ import {
   Upload,
   Users,
 } from 'lucide-react';
+import StatutesBookViewer from '../sections/StatutesBookViewer';
 import {
   acceptAffiliationConsent,
   createAffiliationDraft,
@@ -22,6 +23,7 @@ import {
   submitAffiliationApplication,
   uploadAffiliationDocument,
   type AffiliationDraft,
+  type GeneratedAffiliationDocument,
   type AffiliationSectionKey,
 } from '../../services/affiliationService';
 import colombiaDepartmentsCatalog from '../../data/catalogs/colombia_departamentos_municipios.json';
@@ -254,6 +256,13 @@ function todayInputDate(): string {
   const day = String(today.getDate()).padStart(2, '0');
 
   return `${year}-${month}-${day}`;
+}
+
+function generatedDocumentTitle(document: GeneratedAffiliationDocument): string {
+  if (document.document_type === 'affiliation_summary') return 'Formulario de afiliacion completo';
+  if (document.document_type === 'payroll_authorization') return 'Autorizacion de descuento por nomina';
+
+  return document.original_filename;
 }
 const incomeBands = ['Hasta $2 millones', '$2 a $5 millones', '$5 a $10 millones', 'Mas de $10 millones'];
 const relationshipOptions = ['Padre', 'Madre', 'Hijo/a', 'Conyuge', 'Hermano/a', 'Otro'];
@@ -2377,23 +2386,41 @@ export default function AffiliationForm() {
   }
 
   if (submitted) {
+    const generatedDocuments = draft?.generated_documents ?? [];
+
     return (
-      <div className="rounded-[2rem] border border-emerald-100 bg-white p-8 text-center shadow-[0_24px_70px_rgba(6,74,46,0.12)]">
+      <div className="rounded-[2rem] border border-emerald-100 bg-white p-6 text-center shadow-[0_24px_70px_rgba(6,74,46,0.12)] sm:p-8">
         <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-emerald-100 text-emerald-700">
           <CheckCircle2 size={34} />
         </div>
         <h2 className="mt-5 text-3xl font-black text-slate-950">Solicitud preparada</h2>
         <p className="mt-3 text-sm leading-6 text-slate-600">
           La solicitud fue enviada para revision interna. Los documentos generados quedan protegidos en el backend y
-          no se descargan desde este formulario.
+          se muestran aqui solo como vista previa.
         </p>
-        <div className="mx-auto mt-6 max-w-xl rounded-[1.5rem] border border-emerald-100 bg-emerald-50 p-4 text-left">
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Documentos internos</p>
-          <p className="mt-2 text-sm leading-6 text-emerald-900">
-            FONASIN recibira el formulario de afiliacion completo y la autorizacion de descuento por nomina para su
-            revision administrativa.
-          </p>
-        </div>
+        {generatedDocuments.length > 0 ? (
+          <div className="mt-6 space-y-5 text-left">
+            {generatedDocuments.map((document) => (
+              <article key={document.id} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+                <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Documento interno</p>
+                    <h3 className="mt-1 text-xl font-black text-slate-950">{generatedDocumentTitle(document)}</h3>
+                  </div>
+                  <p className="text-xs font-semibold text-slate-500">Vista protegida, sin descarga desde el formulario</p>
+                </div>
+                <StatutesBookViewer url={document.links.preview} title={generatedDocumentTitle(document)} />
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="mx-auto mt-6 max-w-xl rounded-[1.5rem] border border-amber-100 bg-amber-50 p-4 text-left">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-amber-700">Documentos internos</p>
+            <p className="mt-2 text-sm leading-6 text-amber-900">
+              La solicitud quedo enviada, pero este entorno no devolvio los enlaces de vista previa de los documentos.
+            </p>
+          </div>
+        )}
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <button
             type="button"
