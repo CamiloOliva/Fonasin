@@ -246,6 +246,15 @@ const pepTypes = ['Nacional', 'Extranjera', 'Organizacion internacional', 'Por v
 const accountTypes = ['Cuenta de ahorros', 'Cuenta corriente', 'Cuenta de inversion', 'Otra'];
 const expectedOperations = ['Aportes', 'Ahorros', 'Credito', 'Otros servicios'];
 const SIGNATURE_MECHANISM = 'Firma electronica simple';
+
+function todayInputDate(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
 const incomeBands = ['Hasta $2 millones', '$2 a $5 millones', '$5 a $10 millones', 'Mas de $10 millones'];
 const relationshipOptions = ['Padre', 'Madre', 'Hijo/a', 'Conyuge', 'Hermano/a', 'Otro'];
 const countryOptions = (countriesCatalog as Country[]).map((item) => item.name);
@@ -429,7 +438,7 @@ function createInitialState(): SectionState {
     finalStep: {
       documentFile: null,
       signatureCity: '',
-      signatureDate: '',
+      signatureDate: todayInputDate(),
       signatureMechanism: SIGNATURE_MECHANISM,
       declarations: {
         truthful: false,
@@ -2342,13 +2351,9 @@ export default function AffiliationForm() {
                 <Field label="Fecha" required>
                   <TextInput
                     type="date"
+                    disabled
                     value={state.finalStep.signatureDate}
-                    onChange={(event) =>
-                      setState((current) => ({
-                        ...current,
-                        finalStep: { ...current.finalStep, signatureDate: event.target.value },
-                      }))
-                    }
+                    onChange={() => undefined}
                   />
                 </Field>
                 <p className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900">
