@@ -18,6 +18,7 @@ export type GeneratedAffiliationDocument = {
   uploaded_at: string | null;
   links: {
     download: string;
+    preview: string;
   };
 };
 

@@ -59,12 +59,18 @@ class AffiliationSectionPayloadValidator
 
         $this->requireDocumentNumber($section, $data, 'documentNumber');
         $this->requireDocumentType($section, $data, 'documentType');
-        $this->requirePhone($section, $data, 'mobile');
+        $this->requireColombianMobile($section, $data, 'mobile');
         $this->requirePastOrTodayDate($section, $data, 'issueDate');
         $this->requirePastOrTodayDate($section, $data, 'birthDate');
+
+        if ($this->isYes($data['hasDependents'])) {
+            $this->requireFields($section, $data, ['dependentsCount']);
+            $this->requirePositiveIntegerRange($section, $data, 'dependentsCount', 1, 999);
+        }
+
         $this->requireMaxLengths($section, $data, [
             'documentType' => 20,
-            'documentNumber' => 30,
+            'documentNumber' => 16,
             'issuePlace' => 120,
             'firstName' => 80,
             'middleName' => 80,
@@ -201,12 +207,12 @@ class AffiliationSectionPayloadValidator
 
             $this->requireDocumentNumber($section, $beneficiary, 'documentNumber', "beneficiaries.{$index}.documentNumber");
             $this->requireDocumentType($section, $beneficiary, 'documentType', "beneficiaries.{$index}.documentType");
-            $this->requirePhone($section, $beneficiary, 'phone', "beneficiaries.{$index}.phone");
+            $this->requireFlexiblePhone($section, $beneficiary, 'phone', "beneficiaries.{$index}.phone");
             $this->requirePastOrTodayDate($section, $beneficiary, 'birthDate', "beneficiaries.{$index}.birthDate");
             $this->requireOtherDetail($section, $beneficiary, 'relationship', 'Otro', 'relationshipOther', "beneficiaries.{$index}.");
             $this->requireMaxLengths($section, $beneficiary, [
                 'documentType' => 20,
-                'documentNumber' => 30,
+                'documentNumber' => 16,
                 'fullName' => 160,
                 'relationship' => 80,
                 'relationshipOther' => 80,
@@ -224,7 +230,7 @@ class AffiliationSectionPayloadValidator
             'phone',
         ], 'emergencyContact.');
 
-        $this->requirePhone($section, $data['emergencyContact'], 'phone', 'emergencyContact.phone');
+        $this->requireColombianMobile($section, $data['emergencyContact'], 'phone', 'emergencyContact.phone');
         $this->requireMaxLengths($section, $data['emergencyContact'], [
             'fullName' => 160,
             'relationship' => 80,
@@ -401,6 +407,28 @@ class AffiliationSectionPayloadValidator
 
     /**
      * @param  array<string, mixed>  $data
+     */
+    private function requirePositiveIntegerRange(AffiliationApplicationStep $section, array $data, string $field, int $minimum, int $maximum): void
+    {
+        $value = $data[$field] ?? null;
+
+        if (! is_string($value) && ! is_int($value)) {
+            throw CannotSaveApplicationSection::invalidField($section->value, $field, "debe estar entre {$minimum} y {$maximum}");
+        }
+
+        $normalized = (string) $value;
+        if (! preg_match('/^\d+$/', $normalized)) {
+            throw CannotSaveApplicationSection::invalidField($section->value, $field, "debe estar entre {$minimum} y {$maximum}");
+        }
+
+        $number = (int) $normalized;
+        if ($number < $minimum || $number > $maximum) {
+            throw CannotSaveApplicationSection::invalidField($section->value, $field, "debe estar entre {$minimum} y {$maximum}");
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
      * @param  array<string, int>  $limits
      */
     private function requireMaxLengths(AffiliationApplicationStep $section, array $data, array $limits, string $prefix = ''): void
@@ -484,12 +512,30 @@ class AffiliationSectionPayloadValidator
         ?string $displayField = null,
     ): void {
         $value = $data[$field] ?? null;
+        $documentType = $data['documentType'] ?? null;
 
-        if (! is_string($value) || ! preg_match('/^[A-Za-z0-9.-]{5,30}$/', trim($value))) {
+        if (! is_string($value) || ! is_string($documentType)) {
             throw CannotSaveApplicationSection::invalidField(
                 $section->value,
                 $displayField ?? $field,
-                'debe contener entre 5 y 30 letras, numeros, puntos o guiones',
+                'debe cumplir el formato del tipo de documento seleccionado',
+            );
+        }
+
+        $normalized = trim($value);
+        $isValid = match ($documentType) {
+            'CC' => preg_match('/^\d{3,10}$/', $normalized) === 1,
+            'TI' => preg_match('/^\d{10,11}$/', $normalized) === 1,
+            'CE' => preg_match('/^[A-Za-z0-9]{3,7}$/', $normalized) === 1,
+            'Pasaporte' => preg_match('/^[A-Za-z0-9]{3,16}$/', $normalized) === 1,
+            default => false,
+        };
+
+        if (! $isValid) {
+            throw CannotSaveApplicationSection::invalidField(
+                $section->value,
+                $displayField ?? $field,
+                'debe cumplir el formato del tipo de documento seleccionado',
             );
         }
     }
@@ -497,7 +543,7 @@ class AffiliationSectionPayloadValidator
     /**
      * @param  array<string, mixed>  $data
      */
-    private function requirePhone(
+    private function requireColombianMobile(
         AffiliationApplicationStep $section,
         array $data,
         string $field,
@@ -516,6 +562,32 @@ class AffiliationSectionPayloadValidator
                 $section->value,
                 $displayField ?? $field,
                 'debe contener 10 digitos e iniciar por 3',
+            );
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function requireFlexiblePhone(
+        AffiliationApplicationStep $section,
+        array $data,
+        string $field,
+        ?string $displayField = null,
+    ): void {
+        $value = $data[$field] ?? null;
+
+        if (! is_string($value)) {
+            throw CannotSaveApplicationSection::invalidField($section->value, $displayField ?? $field, 'debe ser un telefono valido');
+        }
+
+        $digits = preg_replace('/\D/', '', $value) ?? '';
+
+        if (! preg_match('/^\d{7,10}$/', $digits)) {
+            throw CannotSaveApplicationSection::invalidField(
+                $section->value,
+                $displayField ?? $field,
+                'debe contener entre 7 y 10 digitos',
             );
         }
     }

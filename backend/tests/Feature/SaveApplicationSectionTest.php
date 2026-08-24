@@ -121,6 +121,25 @@ class SaveApplicationSectionTest extends TestCase
         );
     }
 
+    public function test_it_rejects_invalid_document_number_format_on_completed_personal_section(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Personal);
+        $data['documentType'] = 'CC';
+        $data['documentNumber'] = 'ABC123';
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('numero de documento');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Personal,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
     public function test_it_rejects_invalid_colombian_mobile_on_completed_personal_section(): void
     {
         $application = app(CreateAffiliationDraft::class)();
@@ -129,6 +148,25 @@ class SaveApplicationSectionTest extends TestCase
 
         $this->expectException(CannotSaveApplicationSection::class);
         $this->expectExceptionMessage('celular');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Personal,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
+    public function test_it_rejects_invalid_dependents_count_when_personal_section_has_dependents(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Personal);
+        $data['hasDependents'] = 'Si';
+        $data['dependentsCount'] = 'abc';
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('numero de personas a cargo');
 
         app(SaveApplicationSection::class)(
             application: $application,
@@ -278,6 +316,41 @@ class SaveApplicationSectionTest extends TestCase
 
         $this->assertSame(AffiliationApplicationStep::Beneficiaries->value, $section->section);
         $this->assertNotNull($section->completed_at);
+    }
+
+    public function test_it_allows_flexible_beneficiary_phone_numbers(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Beneficiaries);
+        $data['beneficiaries'][0]['phone'] = '6071234';
+
+        $section = app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Beneficiaries,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+
+        $this->assertSame(AffiliationApplicationStep::Beneficiaries->value, $section->section);
+    }
+
+    public function test_it_rejects_non_mobile_emergency_contact_numbers(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Beneficiaries);
+        $data['emergencyContact']['phone'] = '6071234';
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('emergencyContact.phone');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Beneficiaries,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
     }
 
     public function test_it_rejects_completed_sections_with_overlong_values(): void

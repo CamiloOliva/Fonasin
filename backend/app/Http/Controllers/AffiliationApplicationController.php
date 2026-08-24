@@ -145,6 +145,40 @@ class AffiliationApplicationController extends Controller
         );
     }
 
+    public function previewDocument(
+        Request $request,
+        AffiliationApplication $application,
+        ApplicationDocument $document,
+        RecordAuditEvent $recordAuditEvent,
+    ): StreamedResponse {
+        abort_unless($document->application_id === $application->id, 404);
+
+        $storageKey = $document->getAttribute('storage_key');
+        abort_unless(is_string($storageKey) && Storage::disk('local')->exists($storageKey), 404);
+
+        $recordAuditEvent(
+            module: AuditModule::Affiliation,
+            action: AffiliationAuditAction::DocumentViewed->value,
+            subjectType: 'application_document',
+            subjectId: $document->id,
+            actorType: AuditActorType::System,
+            ipHash: $this->ipHash($request),
+            metadata: [
+                'application_id' => $application->id,
+                'document_type' => $document->document_type,
+                'mime_type' => $document->mime_type,
+                'byte_size' => $document->byte_size,
+            ],
+        );
+
+        return Storage::disk('local')->response(
+            $storageKey,
+            $document->original_filename,
+            ['Content-Type' => $document->mime_type],
+            'inline',
+        );
+    }
+
     public function submit(
         SubmitAffiliationApplicationRequest $request,
         AffiliationApplication $application,
@@ -345,6 +379,15 @@ class AffiliationApplicationController extends Controller
             'links' => [
                 'download' => URL::temporarySignedRoute(
                     'affiliation-applications.documents.download',
+                    now()->addHours(24),
+                    [
+                        'application' => $document->application_id,
+                        'document' => $document,
+                    ],
+                    false,
+                ),
+                'preview' => URL::temporarySignedRoute(
+                    'affiliation-applications.documents.preview',
                     now()->addHours(24),
                     [
                         'application' => $document->application_id,

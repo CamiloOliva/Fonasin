@@ -274,7 +274,8 @@ class AffiliationApplicationHttpTest extends TestCase
             ->assertJsonPath('data.submitted_at', fn (?string $submittedAt): bool => $submittedAt !== null)
             ->assertJsonCount(2, 'data.generated_documents')
             ->assertJsonMissingPath('data.generated_documents.0.storage_key')
-            ->assertJsonPath('data.generated_documents.0.links.download', fn (string $downloadUrl): bool => str_starts_with($downloadUrl, '/affiliation-applications/'));
+            ->assertJsonPath('data.generated_documents.0.links.download', fn (string $downloadUrl): bool => str_starts_with($downloadUrl, '/affiliation-applications/'))
+            ->assertJsonPath('data.generated_documents.0.links.preview', fn (string $previewUrl): bool => str_starts_with($previewUrl, '/affiliation-applications/'));
 
         $application = AffiliationApplication::query()->findOrFail($draft['id']);
 
@@ -336,6 +337,55 @@ class AffiliationApplicationHttpTest extends TestCase
             'subject_type' => 'application_document',
             'subject_id' => $submitted['generated_documents'][0]['id'],
             'action' => 'document.downloaded',
+        ]);
+    }
+
+    public function test_it_previews_generated_document_inline_with_signed_url_and_audits_it(): void
+    {
+        Storage::fake('local');
+
+        $draft = $this->postJson('/affiliation-applications')
+            ->assertCreated()
+            ->json('data');
+
+        foreach (AffiliationApplicationStep::formSections() as $section) {
+            $this->postJson($draft['links']['sections'][$section->value], [
+                'schema_version' => 1,
+                'data' => $this->validSectionPayload($section),
+                'completed' => true,
+            ])->assertOk();
+        }
+
+        $this->post($draft['links']['documents'], [
+            'document_type' => ApplicationDocumentType::Identity->value,
+            'file' => UploadedFile::fake()->create('identity.pdf', 64, 'application/pdf'),
+        ], ['Accept' => 'application/json'])->assertCreated();
+
+        foreach (ConsentType::requiredForSubmission() as $consentType) {
+            $this->postJson($draft['links']['consents'], [
+                'consent_type' => $consentType->value,
+                'policy_version' => '2026-01',
+            ])->assertCreated();
+        }
+
+        $submitted = $this->postJson($draft['links']['submit'], [
+            'policy_version' => '2026-01',
+        ])
+            ->assertOk()
+            ->json('data');
+
+        $previewUrl = $submitted['generated_documents'][0]['links']['preview'];
+
+        $response = $this->get($previewUrl)
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+
+        $this->assertStringContainsString('inline', (string) $response->headers->get('content-disposition'));
+
+        $this->assertDatabaseHas('audit_events', [
+            'subject_type' => 'application_document',
+            'subject_id' => $submitted['generated_documents'][0]['id'],
+            'action' => 'document.viewed',
         ]);
     }
 
