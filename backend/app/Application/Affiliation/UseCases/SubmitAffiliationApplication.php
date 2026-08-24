@@ -34,8 +34,10 @@ class SubmitAffiliationApplication
         ?string $correlationId = null,
         ?string $ipHash = null,
         ?Carbon $submittedAt = null,
+        ?string $signatureCity = null,
+        ?string $signatureDate = null,
     ): AffiliationApplication {
-        return DB::transaction(function () use ($application, $policyVersion, $actor, $correlationId, $ipHash, $submittedAt) {
+        return DB::transaction(function () use ($application, $policyVersion, $actor, $correlationId, $ipHash, $submittedAt, $signatureCity, $signatureDate) {
             $application->refresh();
             $fromStatus = AffiliationApplicationStatus::from($application->status);
             $toStatus = AffiliationApplicationStatus::Submitted;
@@ -71,6 +73,8 @@ class SubmitAffiliationApplication
                 correlationId: $correlationId,
                 ipHash: $ipHash,
                 generatedAt: $submittedAt,
+                signatureCity: $signatureCity,
+                signatureDate: $signatureDate,
             );
 
             $application->forceFill([

@@ -57,13 +57,15 @@ class AffiliationBackofficeHttpTest extends TestCase
     public function test_reviewer_can_list_affiliation_applications_over_http(): void
     {
         $application = $this->applicationWithStatus(AffiliationApplicationStatus::Submitted);
+        $draft = $this->applicationWithStatus(AffiliationApplicationStatus::Draft);
         $reviewer = $this->userWithRole('reviewer');
 
         $this->actingAs($reviewer)
             ->getJson('/admin/affiliation-applications')
             ->assertOk()
             ->assertJsonPath('data.0.id', $application->id)
-            ->assertJsonPath('data.0.status', AffiliationApplicationStatus::Submitted->value);
+            ->assertJsonPath('data.0.status', AffiliationApplicationStatus::Submitted->value)
+            ->assertJsonMissing(['id' => $draft->id]);
     }
 
     public function test_reviewer_can_read_affiliation_application_detail_over_http(): void

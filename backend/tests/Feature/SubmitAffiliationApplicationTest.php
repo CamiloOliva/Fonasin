@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Application\Affiliation\Exceptions\CannotSubmitAffiliationApplication;
+use App\Application\Affiliation\Contracts\RendersAffiliationSubmissionDocuments;
 use App\Application\Affiliation\UseCases\AcceptApplicationConsent;
 use App\Application\Affiliation\UseCases\CreateAffiliationDraft;
 use App\Application\Affiliation\UseCases\RegisterApplicationDocument;
@@ -19,6 +20,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Mockery;
 use Tests\Support\AffiliationSectionPayloads;
 use Tests\TestCase;
 
@@ -95,6 +97,42 @@ class SubmitAffiliationApplicationTest extends TestCase
         $this->expectException(CannotSubmitAffiliationApplication::class);
 
         app(SubmitAffiliationApplication::class)($application, '2026-01');
+    }
+
+    public function test_it_uses_signature_date_for_payroll_authorization_header(): void
+    {
+        Storage::fake('local');
+        $application = app(CreateAffiliationDraft::class)();
+        $capturedPayroll = [];
+        $renderer = Mockery::mock(RendersAffiliationSubmissionDocuments::class);
+
+        $renderer->shouldReceive('affiliationSummary')
+            ->once()
+            ->andReturn('%PDF summary');
+        $renderer->shouldReceive('payrollAuthorization')
+            ->once()
+            ->withArgs(function (AffiliationApplication $receivedApplication, array $sections, array $payroll) use ($application, &$capturedPayroll): bool {
+                $capturedPayroll = $payroll;
+
+                return $receivedApplication->is($application);
+            })
+            ->andReturn('%PDF payroll');
+
+        $this->app->instance(RendersAffiliationSubmissionDocuments::class, $renderer);
+
+        $this->completeSections($application);
+        $this->uploadRequiredDocuments($application);
+        $this->acceptRequiredConsents($application, '2026-01');
+
+        app(SubmitAffiliationApplication::class)(
+            application: $application,
+            policyVersion: '2026-01',
+            signatureCity: 'Bucaramanga',
+            signatureDate: '2026-08-24',
+        );
+
+        $this->assertSame('Bucaramanga', $capturedPayroll['city']);
+        $this->assertSame('24 de agosto de 2026', $capturedPayroll['signature_date_label']);
     }
 
     public function test_it_rejects_submission_when_required_consents_are_missing(): void

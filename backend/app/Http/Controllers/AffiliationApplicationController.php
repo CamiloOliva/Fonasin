@@ -46,6 +46,7 @@ class AffiliationApplicationController extends Controller
     {
         $applications = AffiliationApplication::query()
             ->with(['reviewer'])
+            ->where('status', '!=', AffiliationApplicationStatus::Draft->value)
             ->withCount([
                 'sections',
                 'documents' => fn ($query) => $query->where('status', ApplicationDocumentStatus::Uploaded->value),
@@ -303,6 +304,8 @@ class AffiliationApplicationController extends Controller
                 application: $application,
                 policyVersion: $request->string('policy_version')->toString(),
                 ipHash: $this->ipHash($request),
+                signatureCity: $request->string('signature_city')->toString(),
+                signatureDate: $request->string('signature_date')->toString(),
             );
         } catch (DomainException $exception) {
             return $this->domainError($exception);
