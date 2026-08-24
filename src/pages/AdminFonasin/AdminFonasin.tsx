@@ -11,6 +11,7 @@ import {
   UserPlus,
   UserCog,
   Users,
+  WalletCards,
   XCircle,
 } from 'lucide-react';
 import {
@@ -37,11 +38,18 @@ import {
   fetchAdminAssociates,
   type AdminAssociate,
 } from '../../services/adminAssociateService';
+import {
+  archiveAdminCredit,
+  createAdminCredit,
+  fetchAdminCredits,
+  updateAdminCredit,
+  type AdminCredit,
+} from '../../services/adminCreditService';
 import type { PortalUser } from '../../services/portalService';
 
 type SessionState = 'checking' | 'guest' | 'authenticated';
 type DataState = 'idle' | 'loading' | 'ready' | 'error';
-type AdminPanelView = 'applications' | 'associates';
+type AdminPanelView = 'applications' | 'associates' | 'credits';
 
 const statusLabels: Record<string, string> = {
   draft: 'Borrador',
@@ -56,6 +64,8 @@ const statusLabels: Record<string, string> = {
   cancelled: 'Cancelada',
   active: 'Activo',
   inactive: 'Inactivo',
+  settled: 'Pagado',
+  archived: 'Archivado',
 };
 
 const documentLabels: Record<string, string> = {
@@ -97,10 +107,12 @@ export default function AdminFonasin() {
   const [sessionState, setSessionState] = useState<SessionState>('checking');
   const [dataState, setDataState] = useState<DataState>('idle');
   const [associateDataState, setAssociateDataState] = useState<DataState>('idle');
+  const [creditDataState, setCreditDataState] = useState<DataState>('idle');
   const [activeView, setActiveView] = useState<AdminPanelView>('applications');
   const [user, setUser] = useState<PortalUser | null>(null);
   const [applications, setApplications] = useState<AdminAffiliationApplication[]>([]);
   const [associates, setAssociates] = useState<AdminAssociate[]>([]);
+  const [credits, setCredits] = useState<AdminCredit[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<AdminAffiliationDetail | null>(null);
   const [email, setEmail] = useState('');
@@ -113,6 +125,16 @@ export default function AdminFonasin() {
     document_type: 'CC',
     document_number: '',
     full_name: '',
+    status: 'active',
+  });
+  const [creditForm, setCreditForm] = useState({
+    associate_id: '',
+    credit_line: 'FONALIBRE',
+    initial_balance: '',
+    current_balance: '',
+    term_months: '24',
+    interest_rate: '1.2500',
+    installment_amount: '',
     status: 'active',
   });
   const [message, setMessage] = useState<string | null>(null);
@@ -178,6 +200,29 @@ export default function AdminFonasin() {
     }
   }
 
+  async function loadCredits() {
+    setCreditDataState('loading');
+    setError(null);
+
+    try {
+      const [nextCredits, nextAssociates] = await Promise.all([
+        fetchAdminCredits(),
+        associates.length > 0 ? Promise.resolve(associates) : fetchAdminAssociates(),
+      ]);
+      setCredits(nextCredits);
+      setAssociates(nextAssociates);
+      setCreditForm((current) => ({
+        ...current,
+        associate_id: current.associate_id || nextAssociates[0]?.id || '',
+      }));
+      setCreditDataState('ready');
+    } catch (caught) {
+      setCreditDataState('error');
+      setCredits([]);
+      setError(caught instanceof Error ? caught.message : 'No fue posible cargar los creditos.');
+    }
+  }
+
   async function openApplications() {
     setActiveView('applications');
     await loadApplications(selectedId);
@@ -186,6 +231,11 @@ export default function AdminFonasin() {
   async function openAssociates() {
     setActiveView('associates');
     await loadAssociates();
+  }
+
+  async function openCredits() {
+    setActiveView('credits');
+    await loadCredits();
   }
 
   useEffect(() => {
@@ -240,6 +290,7 @@ export default function AdminFonasin() {
     setUser(null);
     setApplications([]);
     setAssociates([]);
+    setCredits([]);
     setDetail(null);
     setSelectedId(null);
     setSessionState('guest');
@@ -335,6 +386,53 @@ export default function AdminFonasin() {
     }
   }
 
+  async function handleCreateCredit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setMessage(null);
+
+    try {
+      await createAdminCredit({
+        associate_id: creditForm.associate_id,
+        credit_line: creditForm.credit_line,
+        initial_balance: creditForm.initial_balance,
+        current_balance: creditForm.current_balance || creditForm.initial_balance,
+        term_months: Number(creditForm.term_months),
+        interest_rate: creditForm.interest_rate,
+        installment_amount: creditForm.installment_amount,
+        status: creditForm.status,
+      });
+      setCreditForm((current) => ({
+        ...current,
+        initial_balance: '',
+        current_balance: '',
+        installment_amount: '',
+      }));
+      await loadCredits();
+      setMessage('Credito registrado correctamente.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible registrar el credito.');
+    }
+  }
+
+  async function handleCreditStatus(id: string, status: 'active' | 'settled' | 'archived') {
+    setError(null);
+    setMessage(null);
+
+    try {
+      if (status === 'archived') {
+        await archiveAdminCredit(id);
+      } else {
+        await updateAdminCredit(id, { status });
+      }
+
+      await loadCredits();
+      setMessage(status === 'archived' ? 'Credito archivado correctamente.' : 'Estado del credito actualizado.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible actualizar el credito.');
+    }
+  }
+
   if (sessionState === 'checking') {
     return (
       <section className="min-h-[58vh] bg-slate-50 py-16">
@@ -426,7 +524,11 @@ export default function AdminFonasin() {
             <div>
               <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-700">Admin FONASIN</p>
               <h1 className="mt-2 text-3xl font-black text-slate-950">
-                {activeView === 'applications' ? 'Solicitudes de afiliacion' : 'Administracion de asociados'}
+                {activeView === 'applications'
+                  ? 'Solicitudes de afiliacion'
+                  : activeView === 'associates'
+                    ? 'Administracion de asociados'
+                    : 'Administracion de creditos'}
               </h1>
               <div className="mt-3 flex flex-wrap gap-2">
                 {(user?.roles ?? []).map((role) => (
@@ -439,7 +541,12 @@ export default function AdminFonasin() {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => (activeView === 'applications' ? loadApplications(selectedId) : loadAssociates())}
+                onClick={() => {
+                  if (activeView === 'applications') return loadApplications(selectedId);
+                  if (activeView === 'associates') return loadAssociates();
+
+                  return loadCredits();
+                }}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100"
               >
                 <RefreshCw size={16} />
@@ -484,6 +591,18 @@ export default function AdminFonasin() {
           >
             <Users size={16} />
             Asociados
+          </button>
+          <button
+            type="button"
+            onClick={openCredits}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black transition ${
+              activeView === 'credits'
+                ? 'bg-emerald-600 text-white'
+                : 'bg-white text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <WalletCards size={16} />
+            Creditos
           </button>
         </nav>
 
@@ -564,7 +683,7 @@ export default function AdminFonasin() {
             ) : null}
           </main>
         </div>
-        ) : (
+        ) : activeView === 'associates' ? (
           <AssociatesPanel
             associates={associates}
             dataState={associateDataState}
@@ -572,6 +691,16 @@ export default function AdminFonasin() {
             onFormChange={setAssociateForm}
             onCreate={handleCreateAssociate}
             onStatusChange={handleAssociateStatus}
+          />
+        ) : (
+          <CreditsPanel
+            credits={credits}
+            associates={associates}
+            dataState={creditDataState}
+            form={creditForm}
+            onFormChange={setCreditForm}
+            onCreate={handleCreateCredit}
+            onStatusChange={handleCreditStatus}
           />
         )}
       </div>
@@ -716,6 +845,240 @@ function AssociatesPanel({
           {associates.length === 0 && dataState !== 'loading' ? (
             <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">
               No hay asociados registrados.
+            </p>
+          ) : null}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+type CreditFormState = {
+  associate_id: string;
+  credit_line: string;
+  initial_balance: string;
+  current_balance: string;
+  term_months: string;
+  interest_rate: string;
+  installment_amount: string;
+  status: string;
+};
+
+function formatCurrency(value: string): string {
+  const amount = Number(value);
+
+  if (Number.isNaN(amount)) return value;
+
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function CreditsPanel({
+  credits,
+  associates,
+  dataState,
+  form,
+  onFormChange,
+  onCreate,
+  onStatusChange,
+}: {
+  credits: AdminCredit[];
+  associates: AdminAssociate[];
+  dataState: DataState;
+  form: CreditFormState;
+  onFormChange: (form: CreditFormState) => void;
+  onCreate: (event: FormEvent<HTMLFormElement>) => void;
+  onStatusChange: (id: string, status: 'active' | 'settled' | 'archived') => void;
+}) {
+  const activeAssociates = associates.filter((associate) => associate.status === 'active');
+
+  return (
+    <div className="grid gap-5 xl:grid-cols-[380px_1fr]">
+      <form onSubmit={onCreate} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-100 text-emerald-700">
+            <WalletCards size={22} />
+          </div>
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Nuevo credito</p>
+            <h2 className="text-xl font-black text-slate-950">Registro administrativo</h2>
+          </div>
+        </div>
+
+        <div className="mt-5 space-y-4">
+          <label className="block">
+            <span className="text-sm font-bold text-slate-800">Asociado</span>
+            <select
+              value={form.associate_id}
+              onChange={(event) => onFormChange({ ...form, associate_id: event.target.value })}
+              required
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+            >
+              {activeAssociates.length === 0 ? <option value="">No hay asociados activos</option> : null}
+              {activeAssociates.map((associate) => (
+                <option key={associate.id} value={associate.id}>{associate.full_name}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-sm font-bold text-slate-800">Linea</span>
+            <input
+              value={form.credit_line}
+              onChange={(event) => onFormChange({ ...form, credit_line: event.target.value })}
+              maxLength={120}
+              required
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+            />
+          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-sm font-bold text-slate-800">Saldo inicial</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={form.initial_balance}
+                onChange={(event) => onFormChange({ ...form, initial_balance: event.target.value })}
+                required
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-bold text-slate-800">Saldo actual</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={form.current_balance}
+                onChange={(event) => onFormChange({ ...form, current_balance: event.target.value })}
+                placeholder="Igual al inicial"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+              />
+            </label>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <label className="block">
+              <span className="text-sm font-bold text-slate-800">Plazo</span>
+              <input
+                type="number"
+                min={1}
+                value={form.term_months}
+                onChange={(event) => onFormChange({ ...form, term_months: event.target.value })}
+                required
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-bold text-slate-800">Tasa</span>
+              <input
+                type="number"
+                min={0}
+                step="0.0001"
+                value={form.interest_rate}
+                onChange={(event) => onFormChange({ ...form, interest_rate: event.target.value })}
+                required
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-bold text-slate-800">Cuota</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={form.installment_amount}
+                onChange={(event) => onFormChange({ ...form, installment_amount: event.target.value })}
+                required
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+              />
+            </label>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={activeAssociates.length === 0}
+          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+        >
+          Registrar credito
+          <WalletCards size={18} />
+        </button>
+      </form>
+
+      <section className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Creditos</p>
+            <h2 className="mt-1 text-2xl font-black text-slate-950">{credits.length} registros</h2>
+          </div>
+          <WalletCards className="text-emerald-700" size={28} />
+        </div>
+
+        {dataState === 'loading' ? (
+          <div className="mt-5 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600">
+            <Loader2 className="animate-spin" size={18} />
+            Cargando creditos
+          </div>
+        ) : null}
+
+        <div className="mt-5 overflow-x-auto">
+          <table className="w-full min-w-[900px] text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                <th className="py-3 pr-4">Asociado</th>
+                <th className="py-3 pr-4">Linea</th>
+                <th className="py-3 pr-4">Saldo inicial</th>
+                <th className="py-3 pr-4">Saldo actual</th>
+                <th className="py-3 pr-4">Cuota</th>
+                <th className="py-3 pr-4">Plazo</th>
+                <th className="py-3 pr-4">Estado</th>
+                <th className="py-3 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {credits.map((credit) => (
+                <tr key={credit.id} className="border-b border-slate-100 last:border-0">
+                  <td className="py-4 pr-4 font-black text-slate-950">{credit.associate?.full_name ?? 'Sin asociado'}</td>
+                  <td className="py-4 pr-4 text-slate-700">{credit.credit_line}</td>
+                  <td className="py-4 pr-4 text-slate-700">{formatCurrency(credit.initial_balance)}</td>
+                  <td className="py-4 pr-4 font-black text-slate-950">{formatCurrency(credit.current_balance)}</td>
+                  <td className="py-4 pr-4 text-slate-700">{formatCurrency(credit.installment_amount)}</td>
+                  <td className="py-4 pr-4 text-slate-700">{credit.term_months} meses</td>
+                  <td className="py-4 pr-4">
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-700">
+                      {statusLabel(credit.status)}
+                    </span>
+                  </td>
+                  <td className="py-4 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onStatusChange(credit.id, credit.status === 'settled' ? 'active' : 'settled')}
+                        disabled={credit.status === 'archived'}
+                        className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
+                      >
+                        {credit.status === 'settled' ? 'Reactivar' : 'Marcar pagado'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onStatusChange(credit.id, 'archived')}
+                        disabled={credit.status === 'archived'}
+                        className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-300"
+                      >
+                        Archivar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {credits.length === 0 && dataState !== 'loading' ? (
+            <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">
+              No hay creditos registrados.
             </p>
           ) : null}
         </div>

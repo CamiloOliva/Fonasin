@@ -16,6 +16,7 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 - La recuperacion local de borrador de afiliacion guarda solo el identificador y enlaces firmados temporales por 24 horas. No se guardan datos personales, SARLAFT, documentos ni valores economicos en `localStorage`.
 - El panel administrativo de afiliaciones requiere sesion y rol `admin` o `reviewer`. La revision del formulario, la carga de libranza firmada externa y la habilitacion final del asociado pasan por policies y casos de uso auditados.
 - El modulo administrativo de asociados no elimina registros fisicamente. La accion de retiro cambia el estado a `inactive`, mantiene la trazabilidad y registra auditoria.
+- La administracion manual de creditos requiere sesion, policy y auditoria. El retiro operativo se maneja como estado `archived`, no como borrado fisico.
 
 ## Datos sensibles
 
