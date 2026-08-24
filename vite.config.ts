@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => {
           target: backendTarget,
           changeOrigin: true,
         },
-        '/portal': {
+        '/portal/credits': {
           target: backendTarget,
           changeOrigin: true,
         },
