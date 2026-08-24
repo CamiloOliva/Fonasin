@@ -6,6 +6,7 @@ import {
   Briefcase,
   CheckCircle2,
   Download,
+  ExternalLink,
   FileText,
   HeartHandshake,
   MapPin,
@@ -26,6 +27,10 @@ import {
   type GeneratedAffiliationDocument,
   type AffiliationSectionKey,
 } from '../../services/affiliationService';
+import colombiaDepartmentsCatalog from '../../data/catalogs/colombia_departamentos_municipios.json';
+import economicActivitiesCatalog from '../../data/catalogs/actividades_economicas_dian.json';
+import nationalitiesCatalog from '../../data/catalogs/nacionalidades.json';
+import countriesCatalog from '../../data/catalogs/paises.json';
 
 type BackendMode = 'loading' | 'ready' | 'local';
 type StepKey = 'personal' | 'employment' | 'financial' | 'beneficiaries' | 'sarlaft' | 'final';
@@ -60,6 +65,7 @@ type EmploymentData = {
   position: string;
   departmentArea: string;
   contractType: string;
+  contractTypeOther: string;
   hireDate: string;
   workCity: string;
   monthlySalary: string;
@@ -85,6 +91,7 @@ type BeneficiaryData = {
   documentNumber: string;
   fullName: string;
   relationship: string;
+  relationshipOther: string;
   birthDate: string;
   phone: string;
   percentage: string;
@@ -99,7 +106,9 @@ type EmergencyContactData = {
 type SarlaftData = {
   economicActivity: string;
   incomeSource: string[];
+  incomeSourceOther: string;
   resourceOrigin: string[];
+  resourceOriginOther: string;
   pep: string;
   pepType: string;
   pepPosition: string;
@@ -112,6 +121,7 @@ type SarlaftData = {
   foreignAccountCountry: string;
   foreignAccountEntity: string;
   foreignAccountType: string;
+  foreignAccountTypeOther: string;
   foreignAccountOrigin: string;
   actsOnBehalfOfThirdParties: string;
   thirdPartyName: string;
@@ -122,6 +132,7 @@ type SarlaftData = {
   hasForeignTaxObligations: string;
   foreignTaxId: string;
   expectedOperations: string[];
+  expectedOperationsOther: string;
 };
 
 type FinalStepData = {
@@ -150,7 +161,7 @@ type SectionState = {
   finalStep: FinalStepData;
 };
 
-type InputType = 'text' | 'email' | 'date' | 'number' | 'textarea' | 'select';
+type InputType = 'text' | 'email' | 'date' | 'number' | 'textarea' | 'select' | 'combobox';
 type FieldConfig = {
   key: string;
   label: string;
@@ -159,6 +170,42 @@ type FieldConfig = {
   helper?: string;
   inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
   maxLength?: number;
+};
+
+type CatalogCity = {
+  code: string;
+  name: string;
+  type: string;
+};
+
+type CatalogDepartment = {
+  code: string;
+  department: string;
+  countryCode: string;
+  cities: CatalogCity[];
+};
+
+type EconomicActivity = {
+  code: string;
+  name: string;
+  type: string;
+  sectionCode: string | null;
+  section: string | null;
+  division: string | null;
+  group: string | null;
+};
+
+type Nationality = {
+  countryCode: string;
+  country: string;
+  name: string;
+};
+
+type Country = {
+  iso2: string;
+  iso3: string;
+  numericCode: string;
+  name: string;
 };
 
 const POLICY_VERSION = 'afiliacion-v1';
@@ -190,7 +237,8 @@ const stepLabels: Array<{ key: StepKey; label: string; title: string; descriptio
   { key: 'final', label: '6', title: 'Documentos y cierre', description: 'Declaraciones, autorizaciones, documento y firma.' },
 ];
 
-const documentTypes = ['CC', 'CE', 'TI', 'Pasaporte', 'Registro civil', 'Otro'];
+const documentTypes = ['CC', 'CE', 'Pasaporte', 'TI'];
+const colombianNationalityDocumentTypes = new Set(['CC', 'TI']);
 const maritalStatuses = ['Soltero/a', 'Casado/a', 'Union libre', 'Divorciado/a', 'Viudo/a'];
 const educationLevels = ['Primaria', 'Bachillerato', 'Tecnico', 'Tecnologo', 'Profesional', 'Especializacion', 'Maestria', 'Doctorado'];
 const contractTypes = ['Indefinido', 'Termino fijo', 'Obra o labor', 'Prestacion de servicios', 'Otro'];
@@ -202,6 +250,35 @@ const expectedOperations = ['Aportes', 'Ahorros', 'Credito', 'Otros servicios'];
 const signatureMechanisms = ['Firma manuscrita', 'Firma electronica', 'Validacion interna'];
 const incomeBands = ['Hasta $2 millones', '$2 a $5 millones', '$5 a $10 millones', 'Mas de $10 millones'];
 const relationshipOptions = ['Padre', 'Madre', 'Hijo/a', 'Conyuge', 'Hermano/a', 'Otro'];
+const countryOptions = (countriesCatalog as Country[]).map((item) => item.name);
+const nationalityOptions = (nationalitiesCatalog as Nationality[]).map((item) => item.name);
+const colombiaDepartments = colombiaDepartmentsCatalog as CatalogDepartment[];
+const departmentOptions = colombiaDepartments.map((item) => item.department);
+const citiesByDepartment = new Map(
+  colombiaDepartments.map((item) => [item.department, item.cities.map((city) => city.name)]),
+);
+const colombiaCityOptions = colombiaDepartments.flatMap((department) =>
+  department.cities.map((city) => `${city.name} - ${department.department}`),
+);
+const economicActivityOptions = (economicActivitiesCatalog as EconomicActivity[]).map((activity) => ({
+  value: activity.code,
+  label: `${activity.code} - ${activity.name}`,
+}));
+const economicActivitySearchOptions = economicActivityOptions.map((activity) => activity.label);
+const legalDocuments = [
+  {
+    key: 'data-policy',
+    title: 'Politica de tratamiento de datos',
+    description: 'Documento que soporta la autorizacion de datos personales.',
+    url: '/Politica_Tratamiento_Datos_Personales_FONASIN_2026.pdf',
+  },
+  {
+    key: 'bylaws',
+    title: 'Estatutos definitivos 2024',
+    description: 'Reglamento base que el solicitante declara conocer y aceptar.',
+    url: '/ESTATUTOS%20DEFINITIVOS%202024.pdf',
+  },
+] as const;
 
 const personalFields: FieldConfig[] = [
   { key: 'documentType', label: 'Tipo de documento', type: 'select', options: documentTypes },
@@ -213,15 +290,15 @@ const personalFields: FieldConfig[] = [
   { key: 'lastName', label: 'Primer apellido', maxLength: NAME_MAX_LENGTH },
   { key: 'secondLastName', label: 'Segundo apellido', maxLength: NAME_MAX_LENGTH },
   { key: 'birthDate', label: 'Fecha de nacimiento', type: 'date' },
-  { key: 'nationality', label: 'Nacionalidad' },
-  { key: 'residenceCountry', label: 'Pais de residencia' },
+  { key: 'nationality', label: 'Nacionalidad', type: 'select' },
+  { key: 'residenceCountry', label: 'Pais de residencia', type: 'select' },
   { key: 'maritalStatus', label: 'Estado civil', type: 'select', options: maritalStatuses },
   { key: 'residenceAddress', label: 'Direccion de residencia' },
-  { key: 'city', label: 'Ciudad / municipio' },
-  { key: 'department', label: 'Departamento' },
+  { key: 'department', label: 'Departamento', type: 'select' },
+  { key: 'city', label: 'Ciudad / municipio', type: 'select' },
   { key: 'neighborhood', label: 'Barrio' },
-  { key: 'mobile', label: 'Celular' },
-  { key: 'email', label: 'Correo electronico', type: 'email' },
+  { key: 'mobile', label: 'Celular', inputMode: 'numeric', helper: 'Ejemplo: 3001234567' },
+  { key: 'email', label: 'Correo electronico', type: 'email', helper: 'Ejemplo: nombre@dominio.com' },
   { key: 'educationLevel', label: 'Nivel educativo', type: 'select', options: educationLevels },
   { key: 'profession', label: 'Profesion' },
   { key: 'hasDependents', label: 'Tiene personas a cargo', type: 'select', options: ['No', 'Si'] },
@@ -233,7 +310,7 @@ const employmentFields: FieldConfig[] = [
   { key: 'departmentArea', label: 'Area / dependencia' },
   { key: 'contractType', label: 'Tipo de contrato', type: 'select', options: contractTypes },
   { key: 'hireDate', label: 'Fecha de ingreso', type: 'date' },
-  { key: 'workCity', label: 'Ciudad donde trabaja' },
+  { key: 'workCity', label: 'Ciudad donde trabaja', type: 'combobox', helper: 'Escribe para buscar municipio y departamento.' },
   { key: 'monthlySalary', label: 'Salario mensual', inputMode: 'numeric' },
 ];
 
@@ -257,6 +334,7 @@ function createBeneficiary(): BeneficiaryData {
     documentNumber: '',
     fullName: '',
     relationship: '',
+    relationshipOther: '',
     birthDate: '',
     phone: '',
     percentage: '',
@@ -294,6 +372,7 @@ function createInitialState(): SectionState {
       position: '',
       departmentArea: '',
       contractType: '',
+      contractTypeOther: '',
       hireDate: '',
       workCity: '',
       monthlySalary: '',
@@ -321,7 +400,9 @@ function createInitialState(): SectionState {
     sarlaft: {
       economicActivity: '',
       incomeSource: [],
+      incomeSourceOther: '',
       resourceOrigin: [],
+      resourceOriginOther: '',
       pep: 'No',
       pepType: '',
       pepPosition: '',
@@ -334,6 +415,7 @@ function createInitialState(): SectionState {
       foreignAccountCountry: '',
       foreignAccountEntity: '',
       foreignAccountType: '',
+      foreignAccountTypeOther: '',
       foreignAccountOrigin: '',
       actsOnBehalfOfThirdParties: 'No',
       thirdPartyName: '',
@@ -344,6 +426,7 @@ function createInitialState(): SectionState {
       hasForeignTaxObligations: 'No',
       foreignTaxId: '',
       expectedOperations: [],
+      expectedOperationsOther: '',
     },
     finalStep: {
       documentFile: null,
@@ -372,6 +455,9 @@ function validateCurrentStep(step: number, state: SectionState): string | null {
     if (!isValidEmail(state.personal.email)) {
       return 'El correo electronico debe tener un formato valido.';
     }
+    if (!/^3\d{9}$/.test(state.personal.mobile)) {
+      return 'El celular debe tener 10 digitos e iniciar por 3.';
+    }
     if (state.personal.firstName.length > NAME_MAX_LENGTH || state.personal.lastName.length > NAME_MAX_LENGTH) {
       return `Los nombres y apellidos principales no deben superar ${NAME_MAX_LENGTH} caracteres.`;
     }
@@ -388,6 +474,12 @@ function validateCurrentStep(step: number, state: SectionState): string | null {
     const monthlySalary = Number(state.employment.monthlySalary || '0');
     if (monthlySalary < MIN_MONTHLY_SALARY || monthlySalary > MONEY_MAX_VALUE) {
       return `El salario mensual debe estar entre ${moneyLabel(MIN_MONTHLY_SALARY)} y ${moneyLabel(MONEY_MAX_VALUE)}.`;
+    }
+    if (!isValidCatalogOption(state.employment.workCity, colombiaCityOptions)) {
+      return 'Selecciona la ciudad donde trabaja desde el catalogo.';
+    }
+    if (state.employment.contractType === 'Otro' && !isValidOtherDetail(state.employment.contractTypeOther)) {
+      return otherDetailMessage('el tipo de contrato');
     }
   }
 
@@ -408,6 +500,12 @@ function validateCurrentStep(step: number, state: SectionState): string | null {
     if (incompleteBeneficiaries) {
       return 'Cada beneficiario debe tener documento, nombre, parentesco, fecha de nacimiento y telefono.';
     }
+    const beneficiaryWithoutOtherDetail = state.beneficiaries.some(
+      (beneficiary) => beneficiary.relationship === 'Otro' && !isValidOtherDetail(beneficiary.relationshipOther),
+    );
+    if (beneficiaryWithoutOtherDetail) {
+      return otherDetailMessage('el parentesco del beneficiario');
+    }
     const emergencyMissing = missingFields(state.emergencyContact as unknown as Record<string, unknown>, ['fullName', 'relationship', 'phone']);
     if (emergencyMissing.length > 0) {
       return `Faltan datos del contacto de emergencia: ${friendlyList(emergencyMissing.map((key) => requiredLabels[key] ?? key))}.`;
@@ -418,6 +516,18 @@ function validateCurrentStep(step: number, state: SectionState): string | null {
     const missing = missingFields(state.sarlaft as unknown as Record<string, unknown>, requiredBySection.sarlaft);
     if (missing.length > 0) {
       return `Faltan campos obligatorios: ${friendlyList(missing.map((key) => requiredLabels[key] ?? key))}.`;
+    }
+    if (!isValidEconomicActivity(state.sarlaft.economicActivity)) {
+      return 'Selecciona una actividad economica del catalogo DIAN.';
+    }
+    if (state.sarlaft.incomeSource.includes('Otro') && !isValidOtherDetail(state.sarlaft.incomeSourceOther)) {
+      return otherDetailMessage('la fuente de ingresos');
+    }
+    if (state.sarlaft.resourceOrigin.includes('Otro') && !isValidOtherDetail(state.sarlaft.resourceOriginOther)) {
+      return otherDetailMessage('el origen de recursos');
+    }
+    if (state.sarlaft.expectedOperations.includes('Otros servicios') && !isValidOtherDetail(state.sarlaft.expectedOperationsOther)) {
+      return otherDetailMessage('las operaciones esperadas');
     }
     if (state.sarlaft.pep === 'Si') {
       const pepMissing = missingFields(state.sarlaft as unknown as Record<string, unknown>, ['pepType', 'pepPosition', 'pepEntity']);
@@ -434,6 +544,9 @@ function validateCurrentStep(step: number, state: SectionState): string | null {
       ]);
       if (foreignAccountMissing.length > 0) {
         return 'Completa los datos de la cuenta financiera en el exterior.';
+      }
+      if (state.sarlaft.foreignAccountType === 'Otra' && !isValidOtherDetail(state.sarlaft.foreignAccountTypeOther)) {
+        return otherDetailMessage('el tipo de cuenta');
       }
     }
     if (state.sarlaft.actsOnBehalfOfThirdParties === 'Si') {
@@ -530,6 +643,7 @@ const requiredLabels: Record<string, string> = {
   position: 'cargo',
   departmentArea: 'area o dependencia',
   contractType: 'tipo de contrato',
+  contractTypeOther: 'detalle del tipo de contrato',
   hireDate: 'fecha de ingreso',
   workCity: 'ciudad donde trabaja',
   monthlySalary: 'salario mensual',
@@ -545,8 +659,11 @@ const requiredLabels: Record<string, string> = {
   voluntarySavingsValue: 'valor mensual del ahorro voluntario',
   economicActivity: 'actividad economica',
   incomeSource: 'fuente de ingresos',
+  incomeSourceOther: 'detalle de fuente de ingresos',
   resourceOrigin: 'origen de recursos',
+  resourceOriginOther: 'detalle de origen de recursos',
   expectedOperations: 'operaciones esperadas',
+  expectedOperationsOther: 'detalle de operaciones esperadas',
   signatureCity: 'ciudad de firma',
   signatureDate: 'fecha de firma',
 };
@@ -588,10 +705,66 @@ const requiredBySection: Record<AffiliationSectionKey, string[]> = {
   sarlaft: ['economicActivity', 'incomeSource', 'resourceOrigin', 'expectedOperations'],
 };
 
+function normalizeMobile(value: string): string {
+  return value.replace(/[^\d]/g, '').slice(0, 10);
+}
+
+function normalizeEconomicActivity(value: string): string {
+  const exactOption = economicActivityOptions.find((activity) => activity.label === value || activity.value === value);
+
+  return exactOption ? exactOption.value : value.trim();
+}
+
+function isValidCatalogOption(value: string, options: string[]): boolean {
+  return options.includes(value);
+}
+
+function isValidEconomicActivity(value: string): boolean {
+  return economicActivityOptions.some((activity) => activity.label === value || activity.value === value);
+}
+
+function isValidOtherDetail(value: string): boolean {
+  const normalized = value.trim();
+
+  return normalized.length >= 3 && /[\p{L}\p{N}]/u.test(normalized);
+}
+
+function otherDetailMessage(label: string): string {
+  return `Especifica ${label} con al menos 3 caracteres validos.`;
+}
+
+function normalizePersonalData(current: PersonalData, next: Record<string, string>): PersonalData {
+  const merged = { ...current, ...next };
+
+  if ('department' in next && next.department !== current.department) {
+    merged.city = '';
+  }
+
+  const availableCities = citiesByDepartment.get(merged.department) ?? [];
+  if (merged.city && !availableCities.includes(merged.city)) {
+    merged.city = '';
+  }
+
+  if (colombianNationalityDocumentTypes.has(merged.documentType)) {
+    merged.nationality = 'Colombiana';
+    merged.residenceCountry = 'Colombia';
+  }
+
+  if ('mobile' in next) {
+    merged.mobile = normalizeMobile(next.mobile);
+  }
+
+  return merged;
+}
+
 function fieldMaxLength(field: FieldConfig): number | undefined {
   if (field.maxLength) return field.maxLength;
   if (currencyFieldKeys.has(field.key)) return MONEY_MAX_DISPLAY_LENGTH;
-  if (field.inputMode === 'numeric') return MONEY_MAX_DIGITS;
+  if (field.key === 'mobile') return 10;
+  if (field.key === 'email') return 254;
+  if (field.key === 'documentNumber') return 30;
+  if (field.key === 'dependentsCount') return 3;
+  if (field.inputMode === 'numeric') return 30;
   if (field.type === 'email') return TEXT_MAX_LENGTH;
   if (field.type === 'text' || !field.type) return TEXT_MAX_LENGTH;
 
@@ -641,7 +814,7 @@ function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className={`w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 ${props.className ?? ''}`}
+      className={`w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 ${props.className ?? ''}`}
     />
   );
 }
@@ -659,8 +832,74 @@ function SelectInput(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       {...props}
-      className={`w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-slate-900 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 ${props.className ?? ''}`}
+      className={`w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-slate-900 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 ${props.className ?? ''}`}
     />
+  );
+}
+
+function ComboInput({
+  id,
+  options,
+  value,
+  onChange,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & {
+  id: string;
+  options: string[];
+}) {
+  const [open, setOpen] = useState(false);
+  const currentValue = typeof value === 'string' ? value : '';
+  const normalizedValue = currentValue.trim().toLocaleLowerCase('es-CO');
+  const visibleOptions = options
+    .filter((option) => (normalizedValue ? option.toLocaleLowerCase('es-CO').includes(normalizedValue) : true))
+    .slice(0, 8);
+
+  function selectOption(option: string) {
+    onChange?.({ target: { value: option } } as React.ChangeEvent<HTMLInputElement>);
+    setOpen(false);
+  }
+
+  function closeAndNormalize() {
+    window.setTimeout(() => {
+      if (currentValue && !options.includes(currentValue)) {
+        onChange?.({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
+      }
+      setOpen(false);
+    }, 120);
+  }
+
+  return (
+    <div className="relative">
+      <TextInput
+        {...props}
+        id={id}
+        value={value}
+        autoComplete="off"
+        onFocus={() => setOpen(true)}
+        onBlur={closeAndNormalize}
+        onChange={(event) => {
+          setOpen(true);
+          onChange?.(event);
+        }}
+      />
+      {open && visibleOptions.length > 0 ? (
+        <div className="absolute left-0 right-0 z-30 mt-2 max-h-72 overflow-y-auto rounded-2xl border border-emerald-100 bg-white p-1.5 shadow-xl shadow-slate-900/12">
+          {visibleOptions.map((option) => (
+            <button
+              key={option}
+              type="button"
+              className="block w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-900"
+              onMouseDown={(event) => {
+                event.preventDefault();
+                selectOption(option);
+              }}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -694,45 +933,67 @@ function renderFields(
   values: Record<string, string>,
   setValues: (next: Record<string, string>) => void,
   section?: AffiliationSectionKey,
+  options: {
+    disabledKeys?: Set<string>;
+    fieldOptions?: Record<string, string[]>;
+    placeholders?: Record<string, string>;
+  } = {},
 ) {
   return (
     <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-      {fields.map((field) => (
-        <Field key={field.key} label={field.label} helper={field.helper} required={section ? isRequiredField(section, field.key) : false}>
-          {field.type === 'select' ? (
-            <SelectInput
-              value={values[field.key] ?? ''}
-              onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}
-            >
-              <option value="">Selecciona una opcion</option>
-              {(field.options ?? []).map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </SelectInput>
-          ) : field.type === 'textarea' ? (
-            <TextArea
-              rows={4}
-              value={values[field.key] ?? ''}
-              onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}
-            />
-          ) : (
-            <TextInput
-              type={field.type ?? 'text'}
-              inputMode={field.inputMode as any}
-              maxLength={fieldMaxLength(field)}
-              value={currencyFieldKeys.has(field.key) ? formatCurrency(values[field.key] ?? '') : values[field.key] ?? ''}
-              onChange={(event) =>
-                setValues({
-                  ...values,
-                  [field.key]: currencyFieldKeys.has(field.key) ? limitedCurrency(event.target.value) : event.target.value,
-                })
-              }
-            />
-          )}
-        </Field>
-      ))}
+      {fields.map((field) => {
+        const selectOptions = options.fieldOptions?.[field.key] ?? field.options ?? [];
+
+        return (
+          <Field key={field.key} label={field.label} helper={field.helper} required={section ? isRequiredField(section, field.key) : false}>
+            {field.type === 'select' ? (
+              <SelectInput
+                disabled={options.disabledKeys?.has(field.key)}
+                value={values[field.key] ?? ''}
+                onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}
+              >
+                <option value="">Selecciona una opcion</option>
+                {selectOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </SelectInput>
+            ) : field.type === 'combobox' ? (
+              <ComboInput
+                id={`affiliation-${field.key}-options`}
+                options={selectOptions}
+                maxLength={fieldMaxLength(field)}
+                disabled={options.disabledKeys?.has(field.key)}
+                placeholder={options.placeholders?.[field.key]}
+                value={values[field.key] ?? ''}
+                onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}
+              />
+            ) : field.type === 'textarea' ? (
+              <TextArea
+                rows={4}
+                value={values[field.key] ?? ''}
+                onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}
+              />
+            ) : (
+              <TextInput
+                type={field.type ?? 'text'}
+                inputMode={field.inputMode as any}
+                maxLength={fieldMaxLength(field)}
+                disabled={options.disabledKeys?.has(field.key)}
+                placeholder={options.placeholders?.[field.key]}
+                value={currencyFieldKeys.has(field.key) ? formatCurrency(values[field.key] ?? '') : values[field.key] ?? ''}
+                onChange={(event) =>
+                  setValues({
+                    ...values,
+                    [field.key]: currencyFieldKeys.has(field.key) ? limitedCurrency(event.target.value) : event.target.value,
+                  })
+                }
+              />
+            )}
+          </Field>
+        );
+      })}
     </div>
   );
 }
@@ -747,6 +1008,7 @@ export default function AffiliationForm() {
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [generatedDocuments, setGeneratedDocuments] = useState<GeneratedAffiliationDocument[]>([]);
+  const [selectedLegalDocument, setSelectedLegalDocument] = useState<(typeof legalDocuments)[number]>(legalDocuments[0]);
   const [state, setState] = useState<SectionState>(createInitialState);
 
   const progress = useMemo(() => Math.round(((step + 1) / stepLabels.length) * 100), [step]);
@@ -810,7 +1072,10 @@ export default function AffiliationForm() {
         });
         setMessage('Beneficiarios guardados.');
       } else if (step === 4) {
-        await syncSection('sarlaft', state.sarlaft);
+        await syncSection('sarlaft', {
+          ...state.sarlaft,
+          economicActivity: normalizeEconomicActivity(state.sarlaft.economicActivity),
+        });
         setMessage('Seccion SARLAFT guardada.');
       } else {
         if (!state.finalStep.documentFile) {
@@ -853,6 +1118,18 @@ export default function AffiliationForm() {
   }
 
   function renderPersonalSection() {
+    const nationalityLocked = colombianNationalityDocumentTypes.has(state.personal.documentType);
+    const disabledKeys = new Set<string>();
+
+    if (nationalityLocked) {
+      disabledKeys.add('nationality');
+      disabledKeys.add('residenceCountry');
+    }
+
+    if (!state.personal.department) {
+      disabledKeys.add('city');
+    }
+
     return (
       <div className="space-y-6">
         <SectionHeader
@@ -864,12 +1141,21 @@ export default function AffiliationForm() {
         {renderFields(personalFields, state.personal, (next) =>
           setState((current) => ({
             ...current,
-            personal: {
-              ...current.personal,
-              ...next,
-            },
+            personal: normalizePersonalData(current.personal, next),
           })),
-        'personal')}
+        'personal', {
+          disabledKeys,
+          fieldOptions: {
+            nationality: nationalityOptions,
+            residenceCountry: countryOptions,
+            department: departmentOptions,
+            city: citiesByDepartment.get(state.personal.department) ?? [],
+          },
+          placeholders: {
+            email: 'nombre@dominio.com',
+            mobile: '3001234567',
+          },
+        })}
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Numero de personas a cargo" helper="Solo visible si el asociado indica que si tiene personas a cargo." required={state.personal.hasDependents === 'Si'}>
             {state.personal.hasDependents === 'Si' ? (
@@ -913,10 +1199,30 @@ export default function AffiliationForm() {
             employment: {
               ...current.employment,
               ...next,
+              contractTypeOther:
+                next.contractType && next.contractType !== 'Otro' ? '' : next.contractTypeOther ?? current.employment.contractTypeOther,
               monthlySalary: next.monthlySalary ? currencyOnly(next.monthlySalary) : current.employment.monthlySalary,
             },
           })),
-        'employment')}
+        'employment', {
+          fieldOptions: {
+            workCity: colombiaCityOptions,
+          },
+        })}
+        {state.employment.contractType === 'Otro' ? (
+          <Field label="Especifique el tipo de contrato" required>
+            <TextInput
+              maxLength={80}
+              value={state.employment.contractTypeOther}
+              onChange={(event) =>
+                setState((current) => ({
+                  ...current,
+                  employment: { ...current.employment, contractTypeOther: event.target.value },
+                }))
+              }
+            />
+          </Field>
+        ) : null}
       </div>
     );
   }
@@ -1040,7 +1346,14 @@ export default function AffiliationForm() {
                           setState((current) => ({
                             ...current,
                             beneficiaries: current.beneficiaries.map((item, itemIndex) =>
-                              itemIndex === index ? { ...item, [field.key]: event.target.value } : item,
+                              itemIndex === index
+                                ? {
+                                    ...item,
+                                    [field.key]: event.target.value,
+                                    relationshipOther:
+                                      field.key === 'relationship' && event.target.value !== 'Otro' ? '' : item.relationshipOther,
+                                  }
+                                : item,
                             ),
                           }))
                         }
@@ -1071,6 +1384,24 @@ export default function AffiliationForm() {
                   </Field>
                 ))}
               </div>
+              {beneficiary.relationship === 'Otro' ? (
+                <div className="mt-4">
+                  <Field label="Especifique parentesco" required>
+                    <TextInput
+                      maxLength={80}
+                      value={beneficiary.relationshipOther}
+                      onChange={(event) =>
+                        setState((current) => ({
+                          ...current,
+                          beneficiaries: current.beneficiaries.map((item, itemIndex) =>
+                            itemIndex === index ? { ...item, relationshipOther: event.target.value } : item,
+                          ),
+                        }))
+                      }
+                    />
+                  </Field>
+                </div>
+              ) : null}
             </div>
           ))}
         </div>
@@ -1123,8 +1454,11 @@ export default function AffiliationForm() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Actividad economica principal" required>
-            <TextInput
-              maxLength={TEXT_MAX_LENGTH}
+            <ComboInput
+              id="affiliation-economic-activity-options"
+              options={economicActivitySearchOptions}
+              maxLength={240}
+              placeholder="Escribe codigo o actividad"
               value={state.sarlaft.economicActivity}
               onChange={(event) =>
                 setState((current) => ({
@@ -1153,7 +1487,12 @@ export default function AffiliationForm() {
                     onChange={() =>
                       setState((current) => ({
                         ...current,
-                        sarlaft: { ...current.sarlaft, incomeSource: toggleValue(current.sarlaft.incomeSource, option) },
+                        sarlaft: {
+                          ...current.sarlaft,
+                          incomeSource: toggleValue(current.sarlaft.incomeSource, option),
+                          incomeSourceOther:
+                            option === 'Otro' && current.sarlaft.incomeSource.includes(option) ? '' : current.sarlaft.incomeSourceOther,
+                        },
                       }))
                     }
                   />
@@ -1161,6 +1500,22 @@ export default function AffiliationForm() {
                 </label>
               ))}
             </div>
+            {state.sarlaft.incomeSource.includes('Otro') ? (
+              <div className="mt-3">
+                <Field label="Especifique fuente de ingresos" required>
+                  <TextInput
+                    maxLength={80}
+                    value={state.sarlaft.incomeSourceOther}
+                    onChange={(event) =>
+                      setState((current) => ({
+                        ...current,
+                        sarlaft: { ...current.sarlaft, incomeSourceOther: event.target.value },
+                      }))
+                    }
+                  />
+                </Field>
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -1183,7 +1538,12 @@ export default function AffiliationForm() {
                     onChange={() =>
                       setState((current) => ({
                         ...current,
-                        sarlaft: { ...current.sarlaft, resourceOrigin: toggleValue(current.sarlaft.resourceOrigin, option) },
+                        sarlaft: {
+                          ...current.sarlaft,
+                          resourceOrigin: toggleValue(current.sarlaft.resourceOrigin, option),
+                          resourceOriginOther:
+                            option === 'Otro' && current.sarlaft.resourceOrigin.includes(option) ? '' : current.sarlaft.resourceOriginOther,
+                        },
                       }))
                     }
                   />
@@ -1191,6 +1551,22 @@ export default function AffiliationForm() {
                 </label>
               ))}
             </div>
+            {state.sarlaft.resourceOrigin.includes('Otro') ? (
+              <div className="mt-3">
+                <Field label="Especifique origen de recursos" required>
+                  <TextInput
+                    maxLength={80}
+                    value={state.sarlaft.resourceOriginOther}
+                    onChange={(event) =>
+                      setState((current) => ({
+                        ...current,
+                        sarlaft: { ...current.sarlaft, resourceOriginOther: event.target.value },
+                      }))
+                    }
+                  />
+                </Field>
+              </div>
+            ) : null}
           </div>
 
           <Field label="PEP" helper="Si marca Si, se despliegan los campos adicionales.">
@@ -1370,7 +1746,11 @@ export default function AffiliationForm() {
                   onChange={(event) =>
                     setState((current) => ({
                       ...current,
-                      sarlaft: { ...current.sarlaft, foreignAccountType: event.target.value },
+                      sarlaft: {
+                        ...current.sarlaft,
+                        foreignAccountType: event.target.value,
+                        foreignAccountTypeOther: event.target.value === 'Otra' ? current.sarlaft.foreignAccountTypeOther : '',
+                      },
                     }))
                   }
                 >
@@ -1382,6 +1762,20 @@ export default function AffiliationForm() {
                   ))}
                 </SelectInput>
               </Field>
+              {state.sarlaft.foreignAccountType === 'Otra' ? (
+                <Field label="Especifique tipo de cuenta" required>
+                  <TextInput
+                    maxLength={80}
+                    value={state.sarlaft.foreignAccountTypeOther}
+                    onChange={(event) =>
+                      setState((current) => ({
+                        ...current,
+                        sarlaft: { ...current.sarlaft, foreignAccountTypeOther: event.target.value },
+                      }))
+                    }
+                  />
+                </Field>
+              ) : null}
               <Field label="Origen de los recursos" required>
                 <TextInput
                   maxLength={TEXT_MAX_LENGTH}
@@ -1516,6 +1910,10 @@ export default function AffiliationForm() {
                       sarlaft: {
                         ...current.sarlaft,
                         expectedOperations: toggleValue(current.sarlaft.expectedOperations, option),
+                        expectedOperationsOther:
+                          option === 'Otros servicios' && current.sarlaft.expectedOperations.includes(option)
+                            ? ''
+                            : current.sarlaft.expectedOperationsOther,
                       },
                     }))
                   }
@@ -1530,6 +1928,22 @@ export default function AffiliationForm() {
               );
             })}
           </div>
+          {state.sarlaft.expectedOperations.includes('Otros servicios') ? (
+            <div className="mt-4">
+              <Field label="Especifique otros servicios" required>
+                <TextInput
+                  maxLength={80}
+                  value={state.sarlaft.expectedOperationsOther}
+                  onChange={(event) =>
+                    setState((current) => ({
+                      ...current,
+                      sarlaft: { ...current.sarlaft, expectedOperationsOther: event.target.value },
+                    }))
+                  }
+                />
+              </Field>
+            </div>
+          ) : null}
         </div>
       </div>
     );
@@ -1543,10 +1957,10 @@ export default function AffiliationForm() {
       ['pepDeclaration', 'Declaro la informacion relacionada con mi condicion de PEP, si aplica.'],
     ];
 
-    const consentItems: Array<[keyof FinalStepData['declarations'], string]> = [
-      ['dataProcessing', 'Autorizo el tratamiento de mis datos personales.'],
-      ['consultations', 'Autorizo las consultas y verificaciones necesarias.'],
-      ['bylaws', 'Declaro conocer y aceptar estatutos y reglamentos.'],
+    const consentItems: Array<[keyof FinalStepData['declarations'], string, (typeof legalDocuments)[number] | null]> = [
+      ['dataProcessing', 'Autorizo el tratamiento de mis datos personales.', legalDocuments[0]],
+      ['consultations', 'Autorizo las consultas y verificaciones necesarias.', null],
+      ['bylaws', 'Declaro conocer y aceptar estatutos y reglamentos.', legalDocuments[1]],
     ];
 
     return (
@@ -1558,7 +1972,7 @@ export default function AffiliationForm() {
           description="El documento separa esta parte del formulario principal. Aqui quedan el cierre y la firma."
         />
 
-        <div className="grid gap-4 lg:grid-cols-[1.05fr_.95fr]">
+        <div className="grid gap-5 xl:grid-cols-[1.05fr_.95fr]">
           <div className="space-y-4">
             <div className="rounded-[1.6rem] border border-emerald-100 bg-emerald-50 p-4">
               <div className="flex items-center gap-3">
@@ -1599,6 +2013,57 @@ export default function AffiliationForm() {
               </label>
             </div>
 
+            <div className="rounded-[1.6rem] border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Documentos legales</p>
+                  <h4 className="mt-1 text-lg font-black text-slate-950">Revise antes de aceptar</h4>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    Estos documentos respaldan las autorizaciones y declaraciones del cierre.
+                  </p>
+                </div>
+                <a
+                  href={selectedLegalDocument.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100"
+                >
+                  Abrir PDF <ExternalLink size={15} />
+                </a>
+              </div>
+
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                {legalDocuments.map((document) => {
+                  const active = selectedLegalDocument.key === document.key;
+
+                  return (
+                    <button
+                      key={document.key}
+                      type="button"
+                      onClick={() => setSelectedLegalDocument(document)}
+                      className={`rounded-2xl border px-4 py-3 text-left transition ${
+                        active
+                          ? 'border-emerald-300 bg-emerald-50 text-emerald-950'
+                          : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-emerald-200 hover:bg-white'
+                      }`}
+                    >
+                      <span className="block text-sm font-black">{document.title}</span>
+                      <span className="mt-1 block text-xs leading-5 text-slate-500">{document.description}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                <iframe
+                  key={selectedLegalDocument.key}
+                  title={selectedLegalDocument.title}
+                  src={selectedLegalDocument.url}
+                  className="h-[24rem] w-full bg-white"
+                />
+              </div>
+            </div>
+
             <div className="rounded-[1.6rem] border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Declaraciones del asociado</p>
               <div className="mt-4 space-y-3">
@@ -1628,7 +2093,7 @@ export default function AffiliationForm() {
             <div className="rounded-[1.6rem] border border-sky-100 bg-sky-50 p-4">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-sky-700">Autorizaciones obligatorias</p>
               <div className="mt-4 space-y-3">
-                {consentItems.map(([key, text]) => (
+                {consentItems.map(([key, text, document]) => (
                   <label key={String(key)} className="flex gap-3 rounded-2xl border border-sky-100 bg-white p-4 text-sm text-slate-700">
                     <input
                       type="checkbox"
@@ -1643,7 +2108,21 @@ export default function AffiliationForm() {
                         }))
                       }
                     />
-                    <span>{text}</span>
+                    <span>
+                      {text}
+                      {document ? (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            setSelectedLegalDocument(document);
+                          }}
+                          className="ml-1 font-bold text-emerald-700 underline-offset-4 hover:underline"
+                        >
+                          Ver documento.
+                        </button>
+                      ) : null}
+                    </span>
                   </label>
                 ))}
               </div>

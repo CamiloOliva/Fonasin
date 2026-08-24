@@ -1,0 +1,1745 @@
+[
+  {
+    "iso2": "CO",
+    "iso3": "COL",
+    "numericCode": "170",
+    "name": "Colombia",
+    "default": true
+  },
+  {
+    "iso2": "AF",
+    "iso3": "AFG",
+    "numericCode": "004",
+    "name": "Afganistán",
+    "default": false
+  },
+  {
+    "iso2": "AL",
+    "iso3": "ALB",
+    "numericCode": "008",
+    "name": "Albania",
+    "default": false
+  },
+  {
+    "iso2": "DE",
+    "iso3": "DEU",
+    "numericCode": "276",
+    "name": "Alemania",
+    "default": false
+  },
+  {
+    "iso2": "AD",
+    "iso3": "AND",
+    "numericCode": "020",
+    "name": "Andorra",
+    "default": false
+  },
+  {
+    "iso2": "AO",
+    "iso3": "AGO",
+    "numericCode": "024",
+    "name": "Angola",
+    "default": false
+  },
+  {
+    "iso2": "AI",
+    "iso3": "AIA",
+    "numericCode": "660",
+    "name": "Anguila",
+    "default": false
+  },
+  {
+    "iso2": "AG",
+    "iso3": "ATG",
+    "numericCode": "028",
+    "name": "Antigua y Barbuda",
+    "default": false
+  },
+  {
+    "iso2": "AQ",
+    "iso3": "ATA",
+    "numericCode": "010",
+    "name": "Antártida",
+    "default": false
+  },
+  {
+    "iso2": "SA",
+    "iso3": "SAU",
+    "numericCode": "682",
+    "name": "Arabia Saudí",
+    "default": false
+  },
+  {
+    "iso2": "DZ",
+    "iso3": "DZA",
+    "numericCode": "012",
+    "name": "Argelia",
+    "default": false
+  },
+  {
+    "iso2": "AR",
+    "iso3": "ARG",
+    "numericCode": "032",
+    "name": "Argentina",
+    "default": false
+  },
+  {
+    "iso2": "AM",
+    "iso3": "ARM",
+    "numericCode": "051",
+    "name": "Armenia",
+    "default": false
+  },
+  {
+    "iso2": "AW",
+    "iso3": "ABW",
+    "numericCode": "533",
+    "name": "Aruba",
+    "default": false
+  },
+  {
+    "iso2": "AU",
+    "iso3": "AUS",
+    "numericCode": "036",
+    "name": "Australia",
+    "default": false
+  },
+  {
+    "iso2": "AT",
+    "iso3": "AUT",
+    "numericCode": "040",
+    "name": "Austria",
+    "default": false
+  },
+  {
+    "iso2": "AZ",
+    "iso3": "AZE",
+    "numericCode": "031",
+    "name": "Azerbaiyán",
+    "default": false
+  },
+  {
+    "iso2": "BS",
+    "iso3": "BHS",
+    "numericCode": "044",
+    "name": "Bahamas",
+    "default": false
+  },
+  {
+    "iso2": "BD",
+    "iso3": "BGD",
+    "numericCode": "050",
+    "name": "Bangladés",
+    "default": false
+  },
+  {
+    "iso2": "BB",
+    "iso3": "BRB",
+    "numericCode": "052",
+    "name": "Barbados",
+    "default": false
+  },
+  {
+    "iso2": "BH",
+    "iso3": "BHR",
+    "numericCode": "048",
+    "name": "Baréin",
+    "default": false
+  },
+  {
+    "iso2": "BZ",
+    "iso3": "BLZ",
+    "numericCode": "084",
+    "name": "Belice",
+    "default": false
+  },
+  {
+    "iso2": "BJ",
+    "iso3": "BEN",
+    "numericCode": "204",
+    "name": "Benín",
+    "default": false
+  },
+  {
+    "iso2": "BM",
+    "iso3": "BMU",
+    "numericCode": "060",
+    "name": "Bermudas",
+    "default": false
+  },
+  {
+    "iso2": "BY",
+    "iso3": "BLR",
+    "numericCode": "112",
+    "name": "Bielorrusia",
+    "default": false
+  },
+  {
+    "iso2": "BO",
+    "iso3": "BOL",
+    "numericCode": "068",
+    "name": "Bolivia",
+    "default": false
+  },
+  {
+    "iso2": "BA",
+    "iso3": "BIH",
+    "numericCode": "070",
+    "name": "Bosnia y Herzegovina",
+    "default": false
+  },
+  {
+    "iso2": "BW",
+    "iso3": "BWA",
+    "numericCode": "072",
+    "name": "Botsuana",
+    "default": false
+  },
+  {
+    "iso2": "BR",
+    "iso3": "BRA",
+    "numericCode": "076",
+    "name": "Brasil",
+    "default": false
+  },
+  {
+    "iso2": "BN",
+    "iso3": "BRN",
+    "numericCode": "096",
+    "name": "Brunéi",
+    "default": false
+  },
+  {
+    "iso2": "BG",
+    "iso3": "BGR",
+    "numericCode": "100",
+    "name": "Bulgaria",
+    "default": false
+  },
+  {
+    "iso2": "BF",
+    "iso3": "BFA",
+    "numericCode": "854",
+    "name": "Burkina Faso",
+    "default": false
+  },
+  {
+    "iso2": "BI",
+    "iso3": "BDI",
+    "numericCode": "108",
+    "name": "Burundi",
+    "default": false
+  },
+  {
+    "iso2": "BT",
+    "iso3": "BTN",
+    "numericCode": "064",
+    "name": "Bután",
+    "default": false
+  },
+  {
+    "iso2": "BE",
+    "iso3": "BEL",
+    "numericCode": "056",
+    "name": "Bélgica",
+    "default": false
+  },
+  {
+    "iso2": "CV",
+    "iso3": "CPV",
+    "numericCode": "132",
+    "name": "Cabo Verde",
+    "default": false
+  },
+  {
+    "iso2": "KH",
+    "iso3": "KHM",
+    "numericCode": "116",
+    "name": "Camboya",
+    "default": false
+  },
+  {
+    "iso2": "CM",
+    "iso3": "CMR",
+    "numericCode": "120",
+    "name": "Camerún",
+    "default": false
+  },
+  {
+    "iso2": "CA",
+    "iso3": "CAN",
+    "numericCode": "124",
+    "name": "Canadá",
+    "default": false
+  },
+  {
+    "iso2": "BQ",
+    "iso3": "BES",
+    "numericCode": "535",
+    "name": "Caribe neerlandés",
+    "default": false
+  },
+  {
+    "iso2": "QA",
+    "iso3": "QAT",
+    "numericCode": "634",
+    "name": "Catar",
+    "default": false
+  },
+  {
+    "iso2": "TD",
+    "iso3": "TCD",
+    "numericCode": "148",
+    "name": "Chad",
+    "default": false
+  },
+  {
+    "iso2": "CZ",
+    "iso3": "CZE",
+    "numericCode": "203",
+    "name": "Chequia",
+    "default": false
+  },
+  {
+    "iso2": "CL",
+    "iso3": "CHL",
+    "numericCode": "152",
+    "name": "Chile",
+    "default": false
+  },
+  {
+    "iso2": "CN",
+    "iso3": "CHN",
+    "numericCode": "156",
+    "name": "China",
+    "default": false
+  },
+  {
+    "iso2": "CY",
+    "iso3": "CYP",
+    "numericCode": "196",
+    "name": "Chipre",
+    "default": false
+  },
+  {
+    "iso2": "VA",
+    "iso3": "VAT",
+    "numericCode": "336",
+    "name": "Ciudad del Vaticano",
+    "default": false
+  },
+  {
+    "iso2": "KM",
+    "iso3": "COM",
+    "numericCode": "174",
+    "name": "Comoras",
+    "default": false
+  },
+  {
+    "iso2": "CG",
+    "iso3": "COG",
+    "numericCode": "178",
+    "name": "Congo",
+    "default": false
+  },
+  {
+    "iso2": "KP",
+    "iso3": "PRK",
+    "numericCode": "408",
+    "name": "Corea del Norte",
+    "default": false
+  },
+  {
+    "iso2": "KR",
+    "iso3": "KOR",
+    "numericCode": "410",
+    "name": "Corea del Sur",
+    "default": false
+  },
+  {
+    "iso2": "CR",
+    "iso3": "CRI",
+    "numericCode": "188",
+    "name": "Costa Rica",
+    "default": false
+  },
+  {
+    "iso2": "HR",
+    "iso3": "HRV",
+    "numericCode": "191",
+    "name": "Croacia",
+    "default": false
+  },
+  {
+    "iso2": "CU",
+    "iso3": "CUB",
+    "numericCode": "192",
+    "name": "Cuba",
+    "default": false
+  },
+  {
+    "iso2": "CW",
+    "iso3": "CUW",
+    "numericCode": "531",
+    "name": "Curazao",
+    "default": false
+  },
+  {
+    "iso2": "CI",
+    "iso3": "CIV",
+    "numericCode": "384",
+    "name": "Côte d’Ivoire",
+    "default": false
+  },
+  {
+    "iso2": "DK",
+    "iso3": "DNK",
+    "numericCode": "208",
+    "name": "Dinamarca",
+    "default": false
+  },
+  {
+    "iso2": "DM",
+    "iso3": "DMA",
+    "numericCode": "212",
+    "name": "Dominica",
+    "default": false
+  },
+  {
+    "iso2": "EC",
+    "iso3": "ECU",
+    "numericCode": "218",
+    "name": "Ecuador",
+    "default": false
+  },
+  {
+    "iso2": "EG",
+    "iso3": "EGY",
+    "numericCode": "818",
+    "name": "Egipto",
+    "default": false
+  },
+  {
+    "iso2": "SV",
+    "iso3": "SLV",
+    "numericCode": "222",
+    "name": "El Salvador",
+    "default": false
+  },
+  {
+    "iso2": "AE",
+    "iso3": "ARE",
+    "numericCode": "784",
+    "name": "Emiratos Árabes Unidos",
+    "default": false
+  },
+  {
+    "iso2": "ER",
+    "iso3": "ERI",
+    "numericCode": "232",
+    "name": "Eritrea",
+    "default": false
+  },
+  {
+    "iso2": "SK",
+    "iso3": "SVK",
+    "numericCode": "703",
+    "name": "Eslovaquia",
+    "default": false
+  },
+  {
+    "iso2": "SI",
+    "iso3": "SVN",
+    "numericCode": "705",
+    "name": "Eslovenia",
+    "default": false
+  },
+  {
+    "iso2": "ES",
+    "iso3": "ESP",
+    "numericCode": "724",
+    "name": "España",
+    "default": false
+  },
+  {
+    "iso2": "US",
+    "iso3": "USA",
+    "numericCode": "840",
+    "name": "Estados Unidos",
+    "default": false
+  },
+  {
+    "iso2": "EE",
+    "iso3": "EST",
+    "numericCode": "233",
+    "name": "Estonia",
+    "default": false
+  },
+  {
+    "iso2": "SZ",
+    "iso3": "SWZ",
+    "numericCode": "748",
+    "name": "Esuatini",
+    "default": false
+  },
+  {
+    "iso2": "ET",
+    "iso3": "ETH",
+    "numericCode": "231",
+    "name": "Etiopía",
+    "default": false
+  },
+  {
+    "iso2": "PH",
+    "iso3": "PHL",
+    "numericCode": "608",
+    "name": "Filipinas",
+    "default": false
+  },
+  {
+    "iso2": "FI",
+    "iso3": "FIN",
+    "numericCode": "246",
+    "name": "Finlandia",
+    "default": false
+  },
+  {
+    "iso2": "FJ",
+    "iso3": "FJI",
+    "numericCode": "242",
+    "name": "Fiyi",
+    "default": false
+  },
+  {
+    "iso2": "FR",
+    "iso3": "FRA",
+    "numericCode": "250",
+    "name": "Francia",
+    "default": false
+  },
+  {
+    "iso2": "GA",
+    "iso3": "GAB",
+    "numericCode": "266",
+    "name": "Gabón",
+    "default": false
+  },
+  {
+    "iso2": "GM",
+    "iso3": "GMB",
+    "numericCode": "270",
+    "name": "Gambia",
+    "default": false
+  },
+  {
+    "iso2": "GE",
+    "iso3": "GEO",
+    "numericCode": "268",
+    "name": "Georgia",
+    "default": false
+  },
+  {
+    "iso2": "GH",
+    "iso3": "GHA",
+    "numericCode": "288",
+    "name": "Ghana",
+    "default": false
+  },
+  {
+    "iso2": "GI",
+    "iso3": "GIB",
+    "numericCode": "292",
+    "name": "Gibraltar",
+    "default": false
+  },
+  {
+    "iso2": "GD",
+    "iso3": "GRD",
+    "numericCode": "308",
+    "name": "Granada",
+    "default": false
+  },
+  {
+    "iso2": "GR",
+    "iso3": "GRC",
+    "numericCode": "300",
+    "name": "Grecia",
+    "default": false
+  },
+  {
+    "iso2": "GL",
+    "iso3": "GRL",
+    "numericCode": "304",
+    "name": "Groenlandia",
+    "default": false
+  },
+  {
+    "iso2": "GP",
+    "iso3": "GLP",
+    "numericCode": "312",
+    "name": "Guadalupe",
+    "default": false
+  },
+  {
+    "iso2": "GU",
+    "iso3": "GUM",
+    "numericCode": "316",
+    "name": "Guam",
+    "default": false
+  },
+  {
+    "iso2": "GT",
+    "iso3": "GTM",
+    "numericCode": "320",
+    "name": "Guatemala",
+    "default": false
+  },
+  {
+    "iso2": "GF",
+    "iso3": "GUF",
+    "numericCode": "254",
+    "name": "Guayana Francesa",
+    "default": false
+  },
+  {
+    "iso2": "GG",
+    "iso3": "GGY",
+    "numericCode": "831",
+    "name": "Guernesey",
+    "default": false
+  },
+  {
+    "iso2": "GN",
+    "iso3": "GIN",
+    "numericCode": "324",
+    "name": "Guinea",
+    "default": false
+  },
+  {
+    "iso2": "GQ",
+    "iso3": "GNQ",
+    "numericCode": "226",
+    "name": "Guinea Ecuatorial",
+    "default": false
+  },
+  {
+    "iso2": "GW",
+    "iso3": "GNB",
+    "numericCode": "624",
+    "name": "Guinea-Bisáu",
+    "default": false
+  },
+  {
+    "iso2": "GY",
+    "iso3": "GUY",
+    "numericCode": "328",
+    "name": "Guyana",
+    "default": false
+  },
+  {
+    "iso2": "HT",
+    "iso3": "HTI",
+    "numericCode": "332",
+    "name": "Haití",
+    "default": false
+  },
+  {
+    "iso2": "HN",
+    "iso3": "HND",
+    "numericCode": "340",
+    "name": "Honduras",
+    "default": false
+  },
+  {
+    "iso2": "HU",
+    "iso3": "HUN",
+    "numericCode": "348",
+    "name": "Hungría",
+    "default": false
+  },
+  {
+    "iso2": "IN",
+    "iso3": "IND",
+    "numericCode": "356",
+    "name": "India",
+    "default": false
+  },
+  {
+    "iso2": "ID",
+    "iso3": "IDN",
+    "numericCode": "360",
+    "name": "Indonesia",
+    "default": false
+  },
+  {
+    "iso2": "IQ",
+    "iso3": "IRQ",
+    "numericCode": "368",
+    "name": "Irak",
+    "default": false
+  },
+  {
+    "iso2": "IE",
+    "iso3": "IRL",
+    "numericCode": "372",
+    "name": "Irlanda",
+    "default": false
+  },
+  {
+    "iso2": "IR",
+    "iso3": "IRN",
+    "numericCode": "364",
+    "name": "Irán",
+    "default": false
+  },
+  {
+    "iso2": "BV",
+    "iso3": "BVT",
+    "numericCode": "074",
+    "name": "Isla Bouvet",
+    "default": false
+  },
+  {
+    "iso2": "IM",
+    "iso3": "IMN",
+    "numericCode": "833",
+    "name": "Isla de Man",
+    "default": false
+  },
+  {
+    "iso2": "CX",
+    "iso3": "CXR",
+    "numericCode": "162",
+    "name": "Isla de Navidad",
+    "default": false
+  },
+  {
+    "iso2": "NF",
+    "iso3": "NFK",
+    "numericCode": "574",
+    "name": "Isla Norfolk",
+    "default": false
+  },
+  {
+    "iso2": "IS",
+    "iso3": "ISL",
+    "numericCode": "352",
+    "name": "Islandia",
+    "default": false
+  },
+  {
+    "iso2": "AX",
+    "iso3": "ALA",
+    "numericCode": "248",
+    "name": "Islas Aland",
+    "default": false
+  },
+  {
+    "iso2": "KY",
+    "iso3": "CYM",
+    "numericCode": "136",
+    "name": "Islas Caimán",
+    "default": false
+  },
+  {
+    "iso2": "CC",
+    "iso3": "CCK",
+    "numericCode": "166",
+    "name": "Islas Cocos",
+    "default": false
+  },
+  {
+    "iso2": "CK",
+    "iso3": "COK",
+    "numericCode": "184",
+    "name": "Islas Cook",
+    "default": false
+  },
+  {
+    "iso2": "FO",
+    "iso3": "FRO",
+    "numericCode": "234",
+    "name": "Islas Feroe",
+    "default": false
+  },
+  {
+    "iso2": "GS",
+    "iso3": "SGS",
+    "numericCode": "239",
+    "name": "Islas Georgia del Sur y Sandwich del Sur",
+    "default": false
+  },
+  {
+    "iso2": "HM",
+    "iso3": "HMD",
+    "numericCode": "334",
+    "name": "Islas Heard y McDonald",
+    "default": false
+  },
+  {
+    "iso2": "FK",
+    "iso3": "FLK",
+    "numericCode": "238",
+    "name": "Islas Malvinas",
+    "default": false
+  },
+  {
+    "iso2": "MP",
+    "iso3": "MNP",
+    "numericCode": "580",
+    "name": "Islas Marianas del Norte",
+    "default": false
+  },
+  {
+    "iso2": "MH",
+    "iso3": "MHL",
+    "numericCode": "584",
+    "name": "Islas Marshall",
+    "default": false
+  },
+  {
+    "iso2": "UM",
+    "iso3": "UMI",
+    "numericCode": "581",
+    "name": "Islas menores alejadas de EE. UU.",
+    "default": false
+  },
+  {
+    "iso2": "PN",
+    "iso3": "PCN",
+    "numericCode": "612",
+    "name": "Islas Pitcairn",
+    "default": false
+  },
+  {
+    "iso2": "SB",
+    "iso3": "SLB",
+    "numericCode": "090",
+    "name": "Islas Salomón",
+    "default": false
+  },
+  {
+    "iso2": "TC",
+    "iso3": "TCA",
+    "numericCode": "796",
+    "name": "Islas Turcas y Caicos",
+    "default": false
+  },
+  {
+    "iso2": "VG",
+    "iso3": "VGB",
+    "numericCode": "092",
+    "name": "Islas Vírgenes Británicas",
+    "default": false
+  },
+  {
+    "iso2": "VI",
+    "iso3": "VIR",
+    "numericCode": "850",
+    "name": "Islas Vírgenes de EE. UU.",
+    "default": false
+  },
+  {
+    "iso2": "IL",
+    "iso3": "ISR",
+    "numericCode": "376",
+    "name": "Israel",
+    "default": false
+  },
+  {
+    "iso2": "IT",
+    "iso3": "ITA",
+    "numericCode": "380",
+    "name": "Italia",
+    "default": false
+  },
+  {
+    "iso2": "JM",
+    "iso3": "JAM",
+    "numericCode": "388",
+    "name": "Jamaica",
+    "default": false
+  },
+  {
+    "iso2": "JP",
+    "iso3": "JPN",
+    "numericCode": "392",
+    "name": "Japón",
+    "default": false
+  },
+  {
+    "iso2": "JE",
+    "iso3": "JEY",
+    "numericCode": "832",
+    "name": "Jersey",
+    "default": false
+  },
+  {
+    "iso2": "JO",
+    "iso3": "JOR",
+    "numericCode": "400",
+    "name": "Jordania",
+    "default": false
+  },
+  {
+    "iso2": "KZ",
+    "iso3": "KAZ",
+    "numericCode": "398",
+    "name": "Kazajistán",
+    "default": false
+  },
+  {
+    "iso2": "KE",
+    "iso3": "KEN",
+    "numericCode": "404",
+    "name": "Kenia",
+    "default": false
+  },
+  {
+    "iso2": "KG",
+    "iso3": "KGZ",
+    "numericCode": "417",
+    "name": "Kirguistán",
+    "default": false
+  },
+  {
+    "iso2": "KI",
+    "iso3": "KIR",
+    "numericCode": "296",
+    "name": "Kiribati",
+    "default": false
+  },
+  {
+    "iso2": "KW",
+    "iso3": "KWT",
+    "numericCode": "414",
+    "name": "Kuwait",
+    "default": false
+  },
+  {
+    "iso2": "LA",
+    "iso3": "LAO",
+    "numericCode": "418",
+    "name": "Laos",
+    "default": false
+  },
+  {
+    "iso2": "LS",
+    "iso3": "LSO",
+    "numericCode": "426",
+    "name": "Lesoto",
+    "default": false
+  },
+  {
+    "iso2": "LV",
+    "iso3": "LVA",
+    "numericCode": "428",
+    "name": "Letonia",
+    "default": false
+  },
+  {
+    "iso2": "LR",
+    "iso3": "LBR",
+    "numericCode": "430",
+    "name": "Liberia",
+    "default": false
+  },
+  {
+    "iso2": "LY",
+    "iso3": "LBY",
+    "numericCode": "434",
+    "name": "Libia",
+    "default": false
+  },
+  {
+    "iso2": "LI",
+    "iso3": "LIE",
+    "numericCode": "438",
+    "name": "Liechtenstein",
+    "default": false
+  },
+  {
+    "iso2": "LT",
+    "iso3": "LTU",
+    "numericCode": "440",
+    "name": "Lituania",
+    "default": false
+  },
+  {
+    "iso2": "LU",
+    "iso3": "LUX",
+    "numericCode": "442",
+    "name": "Luxemburgo",
+    "default": false
+  },
+  {
+    "iso2": "LB",
+    "iso3": "LBN",
+    "numericCode": "422",
+    "name": "Líbano",
+    "default": false
+  },
+  {
+    "iso2": "MK",
+    "iso3": "MKD",
+    "numericCode": "807",
+    "name": "Macedonia del Norte",
+    "default": false
+  },
+  {
+    "iso2": "MG",
+    "iso3": "MDG",
+    "numericCode": "450",
+    "name": "Madagascar",
+    "default": false
+  },
+  {
+    "iso2": "MY",
+    "iso3": "MYS",
+    "numericCode": "458",
+    "name": "Malasia",
+    "default": false
+  },
+  {
+    "iso2": "MW",
+    "iso3": "MWI",
+    "numericCode": "454",
+    "name": "Malaui",
+    "default": false
+  },
+  {
+    "iso2": "MV",
+    "iso3": "MDV",
+    "numericCode": "462",
+    "name": "Maldivas",
+    "default": false
+  },
+  {
+    "iso2": "ML",
+    "iso3": "MLI",
+    "numericCode": "466",
+    "name": "Mali",
+    "default": false
+  },
+  {
+    "iso2": "MT",
+    "iso3": "MLT",
+    "numericCode": "470",
+    "name": "Malta",
+    "default": false
+  },
+  {
+    "iso2": "MA",
+    "iso3": "MAR",
+    "numericCode": "504",
+    "name": "Marruecos",
+    "default": false
+  },
+  {
+    "iso2": "MQ",
+    "iso3": "MTQ",
+    "numericCode": "474",
+    "name": "Martinica",
+    "default": false
+  },
+  {
+    "iso2": "MU",
+    "iso3": "MUS",
+    "numericCode": "480",
+    "name": "Mauricio",
+    "default": false
+  },
+  {
+    "iso2": "MR",
+    "iso3": "MRT",
+    "numericCode": "478",
+    "name": "Mauritania",
+    "default": false
+  },
+  {
+    "iso2": "YT",
+    "iso3": "MYT",
+    "numericCode": "175",
+    "name": "Mayotte",
+    "default": false
+  },
+  {
+    "iso2": "FM",
+    "iso3": "FSM",
+    "numericCode": "583",
+    "name": "Micronesia",
+    "default": false
+  },
+  {
+    "iso2": "MD",
+    "iso3": "MDA",
+    "numericCode": "498",
+    "name": "Moldavia",
+    "default": false
+  },
+  {
+    "iso2": "MN",
+    "iso3": "MNG",
+    "numericCode": "496",
+    "name": "Mongolia",
+    "default": false
+  },
+  {
+    "iso2": "ME",
+    "iso3": "MNE",
+    "numericCode": "499",
+    "name": "Montenegro",
+    "default": false
+  },
+  {
+    "iso2": "MS",
+    "iso3": "MSR",
+    "numericCode": "500",
+    "name": "Montserrat",
+    "default": false
+  },
+  {
+    "iso2": "MZ",
+    "iso3": "MOZ",
+    "numericCode": "508",
+    "name": "Mozambique",
+    "default": false
+  },
+  {
+    "iso2": "MM",
+    "iso3": "MMR",
+    "numericCode": "104",
+    "name": "Myanmar (Birmania)",
+    "default": false
+  },
+  {
+    "iso2": "MX",
+    "iso3": "MEX",
+    "numericCode": "484",
+    "name": "México",
+    "default": false
+  },
+  {
+    "iso2": "MC",
+    "iso3": "MCO",
+    "numericCode": "492",
+    "name": "Mónaco",
+    "default": false
+  },
+  {
+    "iso2": "NA",
+    "iso3": "NAM",
+    "numericCode": "516",
+    "name": "Namibia",
+    "default": false
+  },
+  {
+    "iso2": "NR",
+    "iso3": "NRU",
+    "numericCode": "520",
+    "name": "Nauru",
+    "default": false
+  },
+  {
+    "iso2": "NP",
+    "iso3": "NPL",
+    "numericCode": "524",
+    "name": "Nepal",
+    "default": false
+  },
+  {
+    "iso2": "NI",
+    "iso3": "NIC",
+    "numericCode": "558",
+    "name": "Nicaragua",
+    "default": false
+  },
+  {
+    "iso2": "NG",
+    "iso3": "NGA",
+    "numericCode": "566",
+    "name": "Nigeria",
+    "default": false
+  },
+  {
+    "iso2": "NU",
+    "iso3": "NIU",
+    "numericCode": "570",
+    "name": "Niue",
+    "default": false
+  },
+  {
+    "iso2": "NO",
+    "iso3": "NOR",
+    "numericCode": "578",
+    "name": "Noruega",
+    "default": false
+  },
+  {
+    "iso2": "NC",
+    "iso3": "NCL",
+    "numericCode": "540",
+    "name": "Nueva Caledonia",
+    "default": false
+  },
+  {
+    "iso2": "NZ",
+    "iso3": "NZL",
+    "numericCode": "554",
+    "name": "Nueva Zelanda",
+    "default": false
+  },
+  {
+    "iso2": "NE",
+    "iso3": "NER",
+    "numericCode": "562",
+    "name": "Níger",
+    "default": false
+  },
+  {
+    "iso2": "OM",
+    "iso3": "OMN",
+    "numericCode": "512",
+    "name": "Omán",
+    "default": false
+  },
+  {
+    "iso2": "PK",
+    "iso3": "PAK",
+    "numericCode": "586",
+    "name": "Pakistán",
+    "default": false
+  },
+  {
+    "iso2": "PW",
+    "iso3": "PLW",
+    "numericCode": "585",
+    "name": "Palaos",
+    "default": false
+  },
+  {
+    "iso2": "PA",
+    "iso3": "PAN",
+    "numericCode": "591",
+    "name": "Panamá",
+    "default": false
+  },
+  {
+    "iso2": "PG",
+    "iso3": "PNG",
+    "numericCode": "598",
+    "name": "Papúa Nueva Guinea",
+    "default": false
+  },
+  {
+    "iso2": "PY",
+    "iso3": "PRY",
+    "numericCode": "600",
+    "name": "Paraguay",
+    "default": false
+  },
+  {
+    "iso2": "NL",
+    "iso3": "NLD",
+    "numericCode": "528",
+    "name": "Países Bajos",
+    "default": false
+  },
+  {
+    "iso2": "PE",
+    "iso3": "PER",
+    "numericCode": "604",
+    "name": "Perú",
+    "default": false
+  },
+  {
+    "iso2": "PF",
+    "iso3": "PYF",
+    "numericCode": "258",
+    "name": "Polinesia Francesa",
+    "default": false
+  },
+  {
+    "iso2": "PL",
+    "iso3": "POL",
+    "numericCode": "616",
+    "name": "Polonia",
+    "default": false
+  },
+  {
+    "iso2": "PT",
+    "iso3": "PRT",
+    "numericCode": "620",
+    "name": "Portugal",
+    "default": false
+  },
+  {
+    "iso2": "PR",
+    "iso3": "PRI",
+    "numericCode": "630",
+    "name": "Puerto Rico",
+    "default": false
+  },
+  {
+    "iso2": "HK",
+    "iso3": "HKG",
+    "numericCode": "344",
+    "name": "RAE de Hong Kong (China)",
+    "default": false
+  },
+  {
+    "iso2": "MO",
+    "iso3": "MAC",
+    "numericCode": "446",
+    "name": "RAE de Macao (China)",
+    "default": false
+  },
+  {
+    "iso2": "GB",
+    "iso3": "GBR",
+    "numericCode": "826",
+    "name": "Reino Unido",
+    "default": false
+  },
+  {
+    "iso2": "CF",
+    "iso3": "CAF",
+    "numericCode": "140",
+    "name": "República Centroafricana",
+    "default": false
+  },
+  {
+    "iso2": "CD",
+    "iso3": "COD",
+    "numericCode": "180",
+    "name": "República Democrática del Congo",
+    "default": false
+  },
+  {
+    "iso2": "DO",
+    "iso3": "DOM",
+    "numericCode": "214",
+    "name": "República Dominicana",
+    "default": false
+  },
+  {
+    "iso2": "RE",
+    "iso3": "REU",
+    "numericCode": "638",
+    "name": "Reunión",
+    "default": false
+  },
+  {
+    "iso2": "RW",
+    "iso3": "RWA",
+    "numericCode": "646",
+    "name": "Ruanda",
+    "default": false
+  },
+  {
+    "iso2": "RO",
+    "iso3": "ROU",
+    "numericCode": "642",
+    "name": "Rumanía",
+    "default": false
+  },
+  {
+    "iso2": "RU",
+    "iso3": "RUS",
+    "numericCode": "643",
+    "name": "Rusia",
+    "default": false
+  },
+  {
+    "iso2": "WS",
+    "iso3": "WSM",
+    "numericCode": "882",
+    "name": "Samoa",
+    "default": false
+  },
+  {
+    "iso2": "AS",
+    "iso3": "ASM",
+    "numericCode": "016",
+    "name": "Samoa Americana",
+    "default": false
+  },
+  {
+    "iso2": "BL",
+    "iso3": "BLM",
+    "numericCode": "652",
+    "name": "San Bartolomé",
+    "default": false
+  },
+  {
+    "iso2": "KN",
+    "iso3": "KNA",
+    "numericCode": "659",
+    "name": "San Cristóbal y Nieves",
+    "default": false
+  },
+  {
+    "iso2": "SM",
+    "iso3": "SMR",
+    "numericCode": "674",
+    "name": "San Marino",
+    "default": false
+  },
+  {
+    "iso2": "MF",
+    "iso3": "MAF",
+    "numericCode": "663",
+    "name": "San Martín",
+    "default": false
+  },
+  {
+    "iso2": "PM",
+    "iso3": "SPM",
+    "numericCode": "666",
+    "name": "San Pedro y Miquelón",
+    "default": false
+  },
+  {
+    "iso2": "VC",
+    "iso3": "VCT",
+    "numericCode": "670",
+    "name": "San Vicente y las Granadinas",
+    "default": false
+  },
+  {
+    "iso2": "SH",
+    "iso3": "SHN",
+    "numericCode": "654",
+    "name": "Santa Elena",
+    "default": false
+  },
+  {
+    "iso2": "LC",
+    "iso3": "LCA",
+    "numericCode": "662",
+    "name": "Santa Lucía",
+    "default": false
+  },
+  {
+    "iso2": "ST",
+    "iso3": "STP",
+    "numericCode": "678",
+    "name": "Santo Tomé y Príncipe",
+    "default": false
+  },
+  {
+    "iso2": "SN",
+    "iso3": "SEN",
+    "numericCode": "686",
+    "name": "Senegal",
+    "default": false
+  },
+  {
+    "iso2": "RS",
+    "iso3": "SRB",
+    "numericCode": "688",
+    "name": "Serbia",
+    "default": false
+  },
+  {
+    "iso2": "SC",
+    "iso3": "SYC",
+    "numericCode": "690",
+    "name": "Seychelles",
+    "default": false
+  },
+  {
+    "iso2": "SL",
+    "iso3": "SLE",
+    "numericCode": "694",
+    "name": "Sierra Leona",
+    "default": false
+  },
+  {
+    "iso2": "SG",
+    "iso3": "SGP",
+    "numericCode": "702",
+    "name": "Singapur",
+    "default": false
+  },
+  {
+    "iso2": "SX",
+    "iso3": "SXM",
+    "numericCode": "534",
+    "name": "Sint Maarten",
+    "default": false
+  },
+  {
+    "iso2": "SY",
+    "iso3": "SYR",
+    "numericCode": "760",
+    "name": "Siria",
+    "default": false
+  },
+  {
+    "iso2": "SO",
+    "iso3": "SOM",
+    "numericCode": "706",
+    "name": "Somalia",
+    "default": false
+  },
+  {
+    "iso2": "LK",
+    "iso3": "LKA",
+    "numericCode": "144",
+    "name": "Sri Lanka",
+    "default": false
+  },
+  {
+    "iso2": "ZA",
+    "iso3": "ZAF",
+    "numericCode": "710",
+    "name": "Sudáfrica",
+    "default": false
+  },
+  {
+    "iso2": "SD",
+    "iso3": "SDN",
+    "numericCode": "729",
+    "name": "Sudán",
+    "default": false
+  },
+  {
+    "iso2": "SS",
+    "iso3": "SSD",
+    "numericCode": "728",
+    "name": "Sudán del Sur",
+    "default": false
+  },
+  {
+    "iso2": "SE",
+    "iso3": "SWE",
+    "numericCode": "752",
+    "name": "Suecia",
+    "default": false
+  },
+  {
+    "iso2": "CH",
+    "iso3": "CHE",
+    "numericCode": "756",
+    "name": "Suiza",
+    "default": false
+  },
+  {
+    "iso2": "SR",
+    "iso3": "SUR",
+    "numericCode": "740",
+    "name": "Surinam",
+    "default": false
+  },
+  {
+    "iso2": "SJ",
+    "iso3": "SJM",
+    "numericCode": "744",
+    "name": "Svalbard y Jan Mayen",
+    "default": false
+  },
+  {
+    "iso2": "EH",
+    "iso3": "ESH",
+    "numericCode": "732",
+    "name": "Sáhara Occidental",
+    "default": false
+  },
+  {
+    "iso2": "TH",
+    "iso3": "THA",
+    "numericCode": "764",
+    "name": "Tailandia",
+    "default": false
+  },
+  {
+    "iso2": "TW",
+    "iso3": "TWN",
+    "numericCode": "158",
+    "name": "Taiwán",
+    "default": false
+  },
+  {
+    "iso2": "TZ",
+    "iso3": "TZA",
+    "numericCode": "834",
+    "name": "Tanzania",
+    "default": false
+  },
+  {
+    "iso2": "TJ",
+    "iso3": "TJK",
+    "numericCode": "762",
+    "name": "Tayikistán",
+    "default": false
+  },
+  {
+    "iso2": "IO",
+    "iso3": "IOT",
+    "numericCode": "086",
+    "name": "Territorio Británico del Océano Índico",
+    "default": false
+  },
+  {
+    "iso2": "TF",
+    "iso3": "ATF",
+    "numericCode": "260",
+    "name": "Territorios Australes Franceses",
+    "default": false
+  },
+  {
+    "iso2": "PS",
+    "iso3": "PSE",
+    "numericCode": "275",
+    "name": "Territorios Palestinos",
+    "default": false
+  },
+  {
+    "iso2": "TL",
+    "iso3": "TLS",
+    "numericCode": "626",
+    "name": "Timor-Leste",
+    "default": false
+  },
+  {
+    "iso2": "TG",
+    "iso3": "TGO",
+    "numericCode": "768",
+    "name": "Togo",
+    "default": false
+  },
+  {
+    "iso2": "TK",
+    "iso3": "TKL",
+    "numericCode": "772",
+    "name": "Tokelau",
+    "default": false
+  },
+  {
+    "iso2": "TO",
+    "iso3": "TON",
+    "numericCode": "776",
+    "name": "Tonga",
+    "default": false
+  },
+  {
+    "iso2": "TT",
+    "iso3": "TTO",
+    "numericCode": "780",
+    "name": "Trinidad y Tobago",
+    "default": false
+  },
+  {
+    "iso2": "TM",
+    "iso3": "TKM",
+    "numericCode": "795",
+    "name": "Turkmenistán",
+    "default": false
+  },
+  {
+    "iso2": "TR",
+    "iso3": "TUR",
+    "numericCode": "792",
+    "name": "Turquía",
+    "default": false
+  },
+  {
+    "iso2": "TV",
+    "iso3": "TUV",
+    "numericCode": "798",
+    "name": "Tuvalu",
+    "default": false
+  },
+  {
+    "iso2": "TN",
+    "iso3": "TUN",
+    "numericCode": "788",
+    "name": "Túnez",
+    "default": false
+  },
+  {
+    "iso2": "UA",
+    "iso3": "UKR",
+    "numericCode": "804",
+    "name": "Ucrania",
+    "default": false
+  },
+  {
+    "iso2": "UG",
+    "iso3": "UGA",
+    "numericCode": "800",
+    "name": "Uganda",
+    "default": false
+  },
+  {
+    "iso2": "UY",
+    "iso3": "URY",
+    "numericCode": "858",
+    "name": "Uruguay",
+    "default": false
+  },
+  {
+    "iso2": "UZ",
+    "iso3": "UZB",
+    "numericCode": "860",
+    "name": "Uzbekistán",
+    "default": false
+  },
+  {
+    "iso2": "VU",
+    "iso3": "VUT",
+    "numericCode": "548",
+    "name": "Vanuatu",
+    "default": false
+  },
+  {
+    "iso2": "VE",
+    "iso3": "VEN",
+    "numericCode": "862",
+    "name": "Venezuela",
+    "default": false
+  },
+  {
+    "iso2": "VN",
+    "iso3": "VNM",
+    "numericCode": "704",
+    "name": "Vietnam",
+    "default": false
+  },
+  {
+    "iso2": "WF",
+    "iso3": "WLF",
+    "numericCode": "876",
+    "name": "Wallis y Futuna",
+    "default": false
+  },
+  {
+    "iso2": "YE",
+    "iso3": "YEM",
+    "numericCode": "887",
+    "name": "Yemen",
+    "default": false
+  },
+  {
+    "iso2": "DJ",
+    "iso3": "DJI",
+    "numericCode": "262",
+    "name": "Yibuti",
+    "default": false
+  },
+  {
+    "iso2": "ZM",
+    "iso3": "ZMB",
+    "numericCode": "894",
+    "name": "Zambia",
+    "default": false
+  },
+  {
+    "iso2": "ZW",
+    "iso3": "ZWE",
+    "numericCode": "716",
+    "name": "Zimbabue",
+    "default": false
+  }
+]

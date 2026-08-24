@@ -103,6 +103,42 @@ class SaveApplicationSectionTest extends TestCase
         );
     }
 
+    public function test_it_rejects_invalid_document_type_on_completed_personal_section(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Personal);
+        $data['documentType'] = 'Otro';
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('tipo de documento');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Personal,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
+    public function test_it_rejects_invalid_colombian_mobile_on_completed_personal_section(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Personal);
+        $data['mobile'] = '6011234567';
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('celular');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Personal,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
     public function test_it_allows_partial_sections_when_they_are_not_marked_completed(): void
     {
         $application = app(CreateAffiliationDraft::class)();
@@ -126,6 +162,60 @@ class SaveApplicationSectionTest extends TestCase
 
         $this->expectException(CannotSaveApplicationSection::class);
         $this->expectExceptionMessage('pais de cuenta en el exterior');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Sarlaft,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
+    public function test_it_requires_other_contract_type_detail_when_employment_uses_other(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Employment);
+        $data['contractType'] = 'Otro';
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('contractTypeOther');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Employment,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
+    public function test_it_requires_other_beneficiary_relationship_detail_when_relationship_uses_other(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Beneficiaries);
+        $data['beneficiaries'][0]['relationship'] = 'Otro';
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('relationshipOther');
+
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Beneficiaries,
+            schemaVersion: 1,
+            data: $data,
+            completedAt: now(),
+        );
+    }
+
+    public function test_it_requires_other_sarlaft_details_when_catalog_options_use_other(): void
+    {
+        $application = app(CreateAffiliationDraft::class)();
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Sarlaft);
+        $data['incomeSource'] = ['Otro'];
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('incomeSourceOther');
 
         app(SaveApplicationSection::class)(
             application: $application,
