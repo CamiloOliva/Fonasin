@@ -11,6 +11,8 @@ import AdminFonasin from "../pages/AdminFonasin/AdminFonasin";
 import Convenios from "../pages/Convenios/Convenios";
 import ConvenioEmi from "../modules/convenios/ConvenioEmi.jsx";
 import ConvenioEmermedica from "../modules/convenios/ConvenioEmermedica.jsx";
+import ConvenioUmaIps from "../modules/convenios/ConvenioUmaIps.jsx";
+import ConvenioGrupoManejar from "../modules/convenios/ConvenioGrupoManejar.jsx";
 import ConvenioPractiCar from "../modules/convenios/ConvenioPractiCar.jsx";
 import ConvenioLosOlivos from "../modules/convenios/ConvenioLosOlivos.jsx";
 import ConvenioSanitas from "../modules/convenios/ConvenioSanitas.jsx";
@@ -42,6 +44,8 @@ export default function AppRoutes() {
       <Route path="/convenios" element={<Convenios />} />{" "}
       <Route path="/convenios/emi" element={<ConvenioEmi />} />{" "}
       <Route path="/convenios/emermedica" element={<ConvenioEmermedica />} />{" "}
+      <Route path="/convenios/uma-ips" element={<ConvenioUmaIps />} />{" "}
+      <Route path="/convenios/manejar" element={<ConvenioGrupoManejar />} />{" "}
       <Route path="/convenios/practicar" element={<ConvenioPractiCar />} />{" "}
       <Route path="/convenios/los-olivos" element={<ConvenioLosOlivos />} />{" "}
       <Route path="/convenios/sanitas" element={<ConvenioSanitas />} />{" "}

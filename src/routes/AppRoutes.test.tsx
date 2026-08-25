@@ -98,6 +98,7 @@ describe('AppRoutes', () => {
     expect(screen.getByRole('heading', { level: 1, name: /fonaportes/i })).toBeInTheDocument();
   });
 
+<<<<<<< HEAD
   it('renders the associate portal login route', async () => {
     renderRoute('/portal-asociado');
 
@@ -114,6 +115,18 @@ describe('AppRoutes', () => {
       expect(screen.getByRole('heading', { name: /iniciar sesion administrativa/i })).toBeInTheDocument();
     });
     expect(screen.getByRole('heading', { name: /revision interna de afiliaciones/i })).toBeInTheDocument();
+=======
+  it('renders the Manejar detail route', () => {
+    renderRoute('/convenios/manejar');
+
+    expect(screen.getByRole('heading', { name: /protección vial, seguros y/i })).toBeInTheDocument();
+  });
+
+  it('renders the UMA IPS detail route', () => {
+    renderRoute('/convenios/uma-ips');
+
+    expect(screen.getByRole('heading', { name: /medicina integral/i })).toBeInTheDocument();
+>>>>>>> 4db1181 (complemento de convenios, cambio de flyers)
   });
 
   it('falls back to the home page for an unknown route', () => {
