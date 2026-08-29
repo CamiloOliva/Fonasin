@@ -284,7 +284,7 @@ export default function StatutesBookViewer({ url, title }: StatutesBookViewerPro
       </div>
 
       <div
-        className="relative mt-3 flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-[1.4rem] border border-amber-200/80 bg-[linear-gradient(135deg,#fdfaf1,#f5ead5)] px-2 py-3 sm:px-3 sm:py-4"
+        className="relative mt-3 flex min-h-0 flex-1 items-start justify-center overflow-y-auto overflow-x-hidden rounded-[1.4rem] border border-amber-200/80 bg-[linear-gradient(135deg,#fdfaf1,#f5ead5)] px-2 py-3 sm:px-3 sm:py-4"
         style={{ perspective: `${BOOK_PERSPECTIVE}px` }}
       >
         <div className="pointer-events-none absolute inset-y-0 left-0 w-12 bg-[linear-gradient(90deg,rgba(91,59,23,0.14),rgba(91,59,23,0.06),transparent)] sm:w-16" />
@@ -303,7 +303,7 @@ export default function StatutesBookViewer({ url, title }: StatutesBookViewerPro
             <p className="mt-2 text-sm leading-6 text-amber-950/75">{errorMessage}</p>
           </div>
         ) : currentImage ? (
-          <div className="relative w-full max-w-[760px] px-1 sm:px-2">
+          <div className="relative w-full max-w-[760px] px-1 py-2 sm:px-2 sm:py-3">
             <div
               className="relative aspect-[0.74/1] w-full overflow-hidden rounded-[1.1rem] border border-amber-200/80 bg-[#fffdf8] shadow-[0_24px_80px_rgba(91,59,23,0.15)] sm:aspect-[0.72/1]"
               style={{ transformStyle: 'preserve-3d' }}

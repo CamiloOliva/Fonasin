@@ -1,0 +1,271 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+.container {
+  font-family: 'Montserrat', sans-serif;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* --- CARD AHORRO PERMANENTE --- */
+.cardPermanente {
+  background: linear-gradient(135deg, #003D2B 0%, #002F23 100%);
+  border-radius: 20px;
+  color: #FFFFFF;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(213, 165, 31, 0.2);
+}
+
+.contentCol {
+  padding: 36px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  text-transform: uppercase;
+  margin: 0;
+  color: #FFFFFF;
+}
+
+.titleAccent {
+  color: #D5A51F;
+}
+
+.subtitle {
+  font-size: 1.05rem;
+  font-style: italic;
+  color: #E8E8E8;
+  margin-top: 6px;
+  margin-bottom: 24px;
+}
+
+.subtitleAccent {
+  color: #F2B814;
+  font-weight: 600;
+}
+
+.description {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #E8E8E8;
+  margin-bottom: 24px;
+}
+
+.badgeHighlight {
+  background-color: #F2B814;
+  color: #002F23;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 800;
+}
+
+/* Callout Box */
+.calloutBox {
+  border: 1px solid #D5A51F;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(8, 122, 67, 0.2);
+}
+
+.calloutIcon {
+  color: #F2B814;
+  flex-shrink: 0;
+}
+
+.calloutText {
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* Stats Right Section */
+.statsCol {
+  background: rgba(0, 47, 35, 0.6);
+  padding: 36px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+  border-left: 1px solid rgba(213, 165, 31, 0.15);
+}
+
+.statRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px 16px;
+  border-radius: 12px;
+}
+
+.statIconContainer {
+  background: rgba(213, 165, 31, 0.15);
+  border: 1px solid #D5A51F;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #F2B814;
+  flex-shrink: 0;
+}
+
+.statValue {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin-right: 8px;
+}
+
+.statLabelTitle {
+  color: #D5A51F;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
+.statLabelSub {
+  font-size: 0.8rem;
+  color: #E8E8E8;
+}
+
+/* --- CARD AHORROS VOLUNTARIOS --- */
+.cardVoluntarios {
+  background: linear-gradient(135deg, #171447 0%, #0d0b2b 100%);
+  border-radius: 20px;
+  color: #FFFFFF;
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(114, 70, 168, 0.3);
+}
+
+.leftVoluntarios {
+  padding: 36px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.btnPrimary {
+  background-color: #F2B814;
+  color: #171447;
+  border: none;
+  border-radius: 30px;
+  padding: 12px 24px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 16px;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.btnPrimary:hover {
+  background-color: #D5A51F;
+  transform: translateY(-2px);
+}
+
+.btnIcon {
+  background: #171447;
+  color: #FFFFFF;
+  border-radius: 50%;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Categorías Voluntarias */
+.rightVoluntarios {
+  padding: 36px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.categoryGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.categoryCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.categoryIcon {
+  background: linear-gradient(135deg, #54298A 0%, #7246A8 100%);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  margin-bottom: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.categoryTitle {
+  color: #F2B814;
+  font-weight: 700;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.categoryDesc {
+  font-size: 0.68rem;
+  color: #E8E8E8;
+  line-height: 1.2;
+}
+
+/* Frase Manuscrita */
+.handwrittenText {
+  font-family: 'Caveat', cursive;
+  font-size: 1.8rem;
+  color: #D5A51F;
+  text-align: center;
+  margin-top: 24px;
+  font-weight: 600;
+}
+
+/* Responsivo para móviles */
+@media (max-width: 900px) {
+  .cardPermanente, .cardVoluntarios {
+    grid-template-columns: 1fr;
+  }
+  .leftVoluntarios {
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .categoryGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
