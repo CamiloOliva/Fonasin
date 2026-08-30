@@ -100,46 +100,46 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="relative mt-16 overflow-hidden bg-[#062f1a] text-white">
+    <footer className="relative mt-8 overflow-hidden bg-[#062f1a] text-white">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(109,201,64,0.28),transparent_26%),radial-gradient(circle_at_top_right,rgba(215,205,0,0.24),transparent_22%),linear-gradient(180deg,rgba(5,29,16,0.35),rgba(2,14,8,0.2))]" />
       <div className="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-[#8cc63f]/35 blur-3xl" />
       <div className="pointer-events-none absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-[#d9d500]/25 blur-3xl" />
 
-      <div className="container-page relative py-10 sm:py-12 lg:py-14">
-        <div className="grid gap-8 xl:grid-cols-[1.25fr_0.75fr] xl:items-center">
-          <div className="grid gap-6 lg:grid-cols-[auto_1fr] lg:items-center">
+      <div className="container-page relative py-6 sm:py-7 lg:py-8">
+        <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr] xl:items-center">
+          <div className="grid gap-3 lg:grid-cols-[auto_1fr] lg:items-center">
             <div className="flex items-center justify-center lg:justify-start">
-              <div className="rounded-[2rem] border border-white/30 bg-white p-3 shadow-[0_18px_50px_rgba(0,0,0,0.16)] backdrop-blur-sm">
-                <img src="/logotipo.png" alt="Logotipo de FONASIN" className="h-28 w-28 object-contain sm:h-32 sm:w-32" />
+              <div className="rounded-[1.5rem] border border-white/30 bg-white p-2.5 shadow-[0_14px_36px_rgba(0,0,0,0.14)] backdrop-blur-sm">
+                <img src="/logotipo.png" alt="Logotipo de FONASIN" className="h-20 w-20 object-contain sm:h-22 sm:w-22" />
               </div>
             </div>
 
-            <div className="space-y-5 text-center lg:text-left lg:pl-2">
+            <div className="space-y-2.5 text-center lg:text-left lg:pl-1">
               <div className="max-w-4xl mx-auto lg:mx-0">
-                <p className="text-4xl font-black leading-none tracking-[0.03em] text-white sm:text-5xl lg:text-6xl">FONASIN</p>
-                <p className="mt-3 max-w-3xl text-lg font-semibold leading-tight text-white/92 sm:text-[1.55rem] sm:leading-tight">
+                <p className="text-2xl font-black leading-tight tracking-[0.03em] text-white sm:text-3xl lg:text-4xl">FONASIN</p>
+                <p className="mt-2 max-w-3xl text-sm font-semibold leading-tight text-white/92 sm:text-base sm:leading-tight">
                   Fondo de Empleados del Sector Mineroenergético y Empleados Sintraelecol
                 </p>
-                <p className="mt-5 text-base italic text-white/80 sm:text-lg">
+                <p className="mt-2.5 text-xs italic text-white/80 sm:text-sm">
                   Trabajamos para el bienestar de nuestros asociados
                 </p>
               </div>
 
-              <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center lg:justify-start lg:pl-1">
-                <div className="rounded-[2rem] border border-white/15 bg-black/12 px-5 py-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-sm">
-                  <p className="text-2xl font-light italic leading-tight text-white sm:text-3xl">Juntos construimos</p>
-                  <p className="text-3xl font-black italic leading-tight text-[#d9d500] sm:text-4xl">mas bienestar!</p>
+              <div className="flex flex-col items-center gap-2.5 sm:flex-row sm:justify-center lg:justify-start lg:pl-0">
+                <div className="rounded-[1.35rem] border border-white/15 bg-black/12 px-4 py-2.5 shadow-[0_10px_24px_rgba(0,0,0,0.14)] backdrop-blur-sm">
+                  <p className="text-lg font-light italic leading-tight text-white sm:text-xl">Juntos construimos</p>
+                  <p className="text-xl font-black italic leading-tight text-[#d9d500] sm:text-2xl">mas bienestar!</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 xl:justify-items-end">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1 xl:justify-items-end">
             <a
               href={WHATSAPP_URL}
               target="_blank"
               rel="noreferrer"
-              className="group inline-flex items-center justify-between gap-4 rounded-full bg-gradient-to-r from-[#13b84c] to-[#0b7f39] px-5 py-4 text-sm font-bold text-white shadow-[0_18px_45px_rgba(13,122,58,0.4)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(13,122,58,0.5)] focus-ring"
+              className="group inline-flex items-center justify-between gap-4 rounded-full bg-gradient-to-r from-[#13b84c] to-[#0b7f39] px-4 py-2.5 text-sm font-bold text-white shadow-[0_12px_26px_rgba(13,122,58,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(13,122,58,0.34)] focus-ring"
             >
               <span className="flex items-center gap-3">
                 <span className="grid h-10 w-10 place-items-center rounded-full bg-white/12 ring-1 ring-white/20">
@@ -152,7 +152,7 @@ export default function Footer() {
 
             <Link
               to="/portal-asociado"
-              className="group inline-flex items-center justify-between gap-4 rounded-full border border-white/35 bg-black/10 px-5 py-4 text-sm font-bold text-white shadow-[0_18px_45px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5 hover:bg-white/10 focus-ring"
+              className="group inline-flex items-center justify-between gap-4 rounded-full border border-white/35 bg-black/10 px-4 py-2.5 text-sm font-bold text-white shadow-[0_12px_26px_rgba(0,0,0,0.16)] transition hover:-translate-y-0.5 hover:bg-white/10 focus-ring"
             >
               <span className="flex items-center gap-3">
                 <span className="grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-white/10">
@@ -165,15 +165,15 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="my-8 h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+        <div className="my-4 h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent" />
 
-        <div className="grid gap-6 xl:grid-cols-4">
-          <section className="rounded-[1.75rem] border border-white/12 bg-black/10 p-6 backdrop-blur-sm">
-            <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#d9d500]/15 text-[#d9d500] ring-1 ring-[#d9d500]/20">
+        <div className="grid gap-3 xl:grid-cols-4">
+          <section className="rounded-[1.35rem] border border-white/12 bg-black/10 p-3.5 backdrop-blur-sm">
+            <div className="mb-2.5 inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-[#d9d500]/15 text-[#d9d500] ring-1 ring-[#d9d500]/20">
               <Home className="h-5 w-5" />
             </div>
-            <h2 className="text-xl font-black leading-tight text-[#d9d500]">Navegacion</h2>
-            <div className="mt-4 space-y-2.5 leading-none">
+            <h2 className="text-base font-black leading-tight text-[#d9d500]">Navegacion</h2>
+            <div className="mt-2.5 space-y-1.5 leading-tight">
               {navigation.map((item) => (
                 <Link
                   key={item.to}
@@ -187,12 +187,12 @@ export default function Footer() {
             </div>
           </section>
 
-          <section className="rounded-[1.75rem] border border-white/12 bg-black/10 p-6 backdrop-blur-sm">
-            <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#d9d500]/15 text-[#d9d500] ring-1 ring-[#d9d500]/20">
+          <section className="rounded-[1.35rem] border border-white/12 bg-black/10 p-3.5 backdrop-blur-sm">
+            <div className="mb-2.5 inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-[#d9d500]/15 text-[#d9d500] ring-1 ring-[#d9d500]/20">
               <MessageCircle className="h-5 w-5" />
             </div>
-            <h2 className="text-xl font-black leading-tight text-[#d9d500]">Atencion al asociado</h2>
-            <div className="mt-4 space-y-3 leading-none">
+            <h2 className="text-base font-black leading-tight text-[#d9d500]">Atencion al asociado</h2>
+            <div className="mt-2.5 space-y-1.5 leading-tight">
               <Link
                 to="/portal-asociado"
                 className="flex items-center gap-3 text-sm font-medium text-white/82 transition hover:text-white"
@@ -214,12 +214,12 @@ export default function Footer() {
             </div>
           </section>
 
-          <section className="rounded-[1.75rem] border border-white/12 bg-black/10 p-6 backdrop-blur-sm">
-            <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#d9d500]/15 text-[#d9d500] ring-1 ring-[#d9d500]/20">
+          <section className="rounded-[1.35rem] border border-white/12 bg-black/10 p-3.5 backdrop-blur-sm">
+            <div className="mb-2.5 inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-[#d9d500]/15 text-[#d9d500] ring-1 ring-[#d9d500]/20">
               <FileText className="h-5 w-5" />
             </div>
-            <h2 className="text-xl font-black leading-tight text-[#d9d500]">Legales</h2>
-            <div className="mt-4 space-y-3 leading-none">
+            <h2 className="text-base font-black leading-tight text-[#d9d500]">Legales</h2>
+            <div className="mt-2.5 space-y-1.5 leading-tight">
               {legalLinks.map((item) =>
                 item.to ? (
                   <Link
@@ -247,15 +247,15 @@ export default function Footer() {
             </div>
           </section>
 
-          <section className="rounded-[1.75rem] border border-white/12 bg-black/10 p-6 backdrop-blur-sm">
-            <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#d9d500]/15 text-[#d9d500] ring-1 ring-[#d9d500]/20">
+          <section className="rounded-[1.35rem] border border-white/12 bg-black/10 p-3.5 backdrop-blur-sm">
+            <div className="mb-2.5 inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-[#d9d500]/15 text-[#d9d500] ring-1 ring-[#d9d500]/20">
               <Users className="h-5 w-5" />
             </div>
-            <h2 className="text-xl font-black leading-tight text-[#d9d500]">Siguenos</h2>
+            <h2 className="text-base font-black leading-tight text-[#d9d500]">Siguenos</h2>
             <p className="mt-4 max-w-xs text-sm leading-6 text-white/78">
               Conoce nuestras novedades a traves de nuestros canales.
             </p>
-            <div className="mt-5 flex flex-wrap gap-3">
+            <div className="mt-3.5 flex flex-wrap gap-2">
               {socialLinks.map((social) => (
                 <IconPill key={social.label} icon={social.icon} label={social.label} />
               ))}
@@ -263,9 +263,9 @@ export default function Footer() {
           </section>
         </div>
 
-        <div className="mt-8 flex flex-col gap-4 rounded-[1.75rem] border border-white/10 bg-black/15 px-5 py-4 text-sm text-white/80 backdrop-blur-sm lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+        <div className="mt-4 flex flex-col gap-2.5 rounded-[1.25rem] border border-white/10 bg-black/15 px-4 py-2.5 text-xs text-white/80 backdrop-blur-sm lg:flex-row lg:items-center lg:justify-between lg:gap-3">
           <div className="flex items-start gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#d9d500]/15 text-[#d9d500] ring-1 ring-[#d9d500]/20 mt-0.5">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#d9d500]/15 text-[#d9d500] ring-1 ring-[#d9d500]/20 mt-0.5">
               <span className="text-lg">🤝</span>
             </span>
             <p>
@@ -273,9 +273,9 @@ export default function Footer() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-white/72">
-            <span className="h-5 w-px bg-white/20" />
+            <span className="h-3.5 w-px bg-white/20" />
             <span>© {currentYear} FONASIN</span>
-            <span className="h-5 w-px bg-white/20" />
+            <span className="h-3.5 w-px bg-white/20" />
             <span>Todos los derechos reservados.</span>
           </div>
         </div>
