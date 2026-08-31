@@ -17,6 +17,7 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 - El panel administrativo de afiliaciones requiere sesion y rol `admin` o `reviewer`. La revision del formulario, la carga de libranza firmada externa y la habilitacion final del asociado pasan por policies y casos de uso auditados.
 - El modulo administrativo de asociados no elimina registros fisicamente. La accion de retiro cambia el estado a `inactive`, mantiene la trazabilidad y registra auditoria. El alta manual crea o vincula un usuario con rol `associate`; si se genera una contrasena temporal, se muestra una sola vez al administrador.
 - La administracion manual de creditos requiere sesion, policy y auditoria. Solo permite asociados activos y lineas de credito aprobadas. El retiro operativo se maneja como estado `archived`, no como borrado fisico.
+- Las cuentas creadas con contrasena temporal quedan marcadas con `must_change_password` y no pueden usar rutas privadas de portal o administracion hasta cambiarla. El cambio exige la contrasena actual, guarda solo hash y registra evento de autenticacion.
 
 ## Datos sensibles
 

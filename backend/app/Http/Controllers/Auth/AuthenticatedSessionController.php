@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Application\Identity\UseCases\RecordAuthEvent;
 use App\Domain\Identity\Enums\AuthEventType;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -22,11 +23,7 @@ class AuthenticatedSessionController extends Controller
         $user = $request->user();
 
         return response()->json([
-            'data' => [
-                'id' => $user->id,
-                'email' => $user->email,
-                'roles' => $user->roles()->pluck('name')->values(),
-            ],
+            'data' => $this->userPayload($user),
         ]);
     }
 
@@ -113,11 +110,31 @@ class AuthenticatedSessionController extends Controller
         );
 
         return response()->json([
-            'data' => [
-                'id' => $user->id,
-                'email' => $user->email,
-                'roles' => $user->roles()->pluck('name')->values(),
-            ],
+            'data' => $this->userPayload($user),
+        ]);
+    }
+
+    public function updatePassword(ChangePasswordRequest $request, RecordAuthEvent $recordAuthEvent): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $user->forceFill([
+            'password' => $request->string('password')->toString(),
+            'must_change_password' => false,
+        ])->save();
+
+        ($recordAuthEvent)(
+            eventType: AuthEventType::PasswordChanged,
+            user: $user,
+            emailHash: hash('sha256', Str::lower($user->email)),
+            ipHash: $this->ipHash($request),
+            userAgentHash: $this->userAgentHash($request),
+            metadata: ['reason' => 'required_first_login'],
+        );
+
+        return response()->json([
+            'data' => $this->userPayload($user->refresh()),
         ]);
     }
 
@@ -163,5 +180,18 @@ class AuthenticatedSessionController extends Controller
     private function throttleKey(string $email, Request $request): string
     {
         return 'login|'.$email.'|'.$request->ip();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function userPayload(User $user): array
+    {
+        return [
+            'id' => $user->id,
+            'email' => $user->email,
+            'roles' => $user->roles()->pluck('name')->values(),
+            'must_change_password' => $user->must_change_password,
+        ];
     }
 }

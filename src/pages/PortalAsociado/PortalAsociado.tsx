@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { ArrowRight, CreditCard, Loader2, LogOut, RefreshCw, ShieldCheck, UserRound } from 'lucide-react';
+import ForcedPasswordChange from '../../components/auth/ForcedPasswordChange';
 import {
+  changeOwnPassword,
   currentPortalUser,
   fetchPortalCredits,
   loginPortal,
@@ -84,7 +86,9 @@ export default function PortalAsociado() {
         if (!active) return;
         setUser(currentUser);
         setSessionState('authenticated');
-        await loadCredits();
+        if (!currentUser.must_change_password) {
+          await loadCredits();
+        }
       } catch {
         if (!active) return;
         setSessionState('guest');
@@ -108,7 +112,9 @@ export default function PortalAsociado() {
       setSessionState('authenticated');
       setPassword('');
       setMessage('Sesion iniciada correctamente.');
-      await loadCredits();
+      if (!loggedUser.must_change_password) {
+        await loadCredits();
+      }
     } catch (caught) {
       setUser(null);
       setCredits([]);
@@ -136,6 +142,17 @@ export default function PortalAsociado() {
     setSessionState('guest');
     setCreditsState('idle');
     setMessage('Sesion cerrada.');
+  }
+
+  async function handlePasswordChange(payload: {
+    currentPassword: string;
+    password: string;
+    passwordConfirmation: string;
+  }) {
+    const updatedUser = await changeOwnPassword(payload);
+    setUser(updatedUser);
+    setMessage('Contrasena actualizada correctamente.');
+    await loadCredits();
   }
 
   if (sessionState === 'checking') {
@@ -230,6 +247,17 @@ export default function PortalAsociado() {
           </form>
         </div>
       </section>
+    );
+  }
+
+  if (user?.must_change_password) {
+    return (
+      <ForcedPasswordChange
+        email={user.email}
+        contextLabel="Portal asociado"
+        onSubmit={handlePasswordChange}
+        onLogout={handleLogout}
+      />
     );
   }
 

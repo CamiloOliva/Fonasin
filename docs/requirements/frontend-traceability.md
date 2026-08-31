@@ -75,7 +75,7 @@ La ruta actual `/afiliacion` es un aviso explicito y no se considera implementac
 
 | ID | Requisito | Clase | Estado | Bloqueador o siguiente paso |
 |---|---|---|---|---|
-| FE-OBQ-001 | Ingreso y ciclo de contraseña | OBQ | Pendiente | Identity, correo y politicas de seguridad. |
+| FE-OBQ-001 | Ingreso y ciclo de contraseña | OBQ | En curso | Login con sesion Laravel y cambio obligatorio de contrasena temporal. Recuperacion de contrasena queda pendiente de definicion. |
 | FE-OBQ-002 | Inicio privado | OBQ | Pendiente | Afiliado aprobado, activo, habilitado y autenticado. |
 | FE-OBQ-003 | Creditos actuales | OBQ | Pendiente | Importacion de creditos y consulta autorizada por sesion. |
 | FE-OBQ-004 | Aislamiento por sesion | OBQ | Pendiente | Policy Backend; nunca aceptar identificador del navegador. |
