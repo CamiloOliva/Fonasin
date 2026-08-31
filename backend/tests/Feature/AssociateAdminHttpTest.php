@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
+use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Models\Associate;
 use App\Models\Role;
 use App\Models\User;
@@ -32,12 +33,18 @@ class AssociateAdminHttpTest extends TestCase
     public function test_reviewer_can_list_associates_without_sensitive_document_values(): void
     {
         $reviewer = $this->userWithRole('reviewer');
-        $associate = $this->createAssociate();
+        $associate = $this->createAssociate([
+            'document_number_hash' => hash('sha256', '1234567890'),
+            'document_number_encrypted' => app(EncryptsSensitiveData::class)->encryptArray([
+                'document_number' => '1234567890',
+            ]),
+        ]);
 
         $response = $this->actingAs($reviewer)->getJson('/admin/associates');
 
         $response->assertOk()
             ->assertJsonPath('data.0.id', $associate->id)
+            ->assertJsonPath('data.0.document_number_masked', '******7890')
             ->assertJsonMissingPath('data.0.document_number_hash')
             ->assertJsonMissingPath('data.0.document_number_encrypted');
     }
@@ -58,6 +65,7 @@ class AssociateAdminHttpTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('data.document_type', 'CC')
+            ->assertJsonPath('data.document_number_masked', '******7890')
             ->assertJsonPath('data.full_name', 'Persona Sintetica')
             ->assertJsonPath('data.status', 'active')
             ->assertJsonPath('data.user.email', 'persona.sintetica@fonasin.test')

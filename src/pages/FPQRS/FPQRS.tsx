@@ -1,1 +1,26 @@
-import FPQRSForm from '../../components/forms/FPQRSForm';export default function FPQRS(){return <div className="py-14 bg-fonasin-surface"><div className="container-page grid lg:grid-cols-[.7fr_1.3fr] gap-10 items-start"><div><span className="text-xs uppercase tracking-[.18em] font-bold text-fonasin-green">Canales de atención</span><h1 className="text-4xl sm:text-5xl font-black text-fonasin-deep mt-2">FPQRS</h1><p className="mt-5 text-lg text-slate-600 leading-8">Utiliza este formulario para preparar una petición, queja, reclamo o sugerencia.</p><div className="mt-7 p-5 rounded-2xl bg-white border"><strong className="text-fonasin-deep">Estado de esta versión</strong><p className="mt-2 text-sm text-slate-600">Frontend únicamente. La integración futura será mediante POST /api/fpqrs.</p></div></div><FPQRSForm/></div></div>}
+import FPQRSForm from '../../components/forms/FPQRSForm';
+
+export default function FPQRS() {
+  return (
+    <div className="bg-fonasin-surface py-14">
+      <div className="container-page grid items-start gap-10 lg:grid-cols-[0.7fr_1.3fr]">
+        <div>
+          <span className="text-xs font-bold uppercase tracking-[0.18em] text-fonasin-green">
+            Canales de atencion
+          </span>
+          <h1 className="mt-2 text-4xl font-black text-fonasin-deep sm:text-5xl">FPQRS</h1>
+          <p className="mt-5 text-lg leading-8 text-slate-600">
+            Utiliza este formulario para enviar una peticion, queja, reclamo, solicitud o sugerencia.
+          </p>
+          <div className="mt-7 rounded-2xl border border-emerald-100 bg-white p-5">
+            <strong className="text-fonasin-deep">Canal institucional</strong>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              La informacion se remite al correo de atencion al cliente configurado por FONASIN.
+            </p>
+          </div>
+        </div>
+        <FPQRSForm />
+      </div>
+    </div>
+  );
+}

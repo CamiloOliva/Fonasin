@@ -23,6 +23,9 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'email',
+        'document_type',
+        'document_number_hash',
+        'document_number_encrypted',
         'password',
         'must_change_password',
         'status',
@@ -36,6 +39,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'document_number_hash',
+        'document_number_encrypted',
     ];
 
     /**

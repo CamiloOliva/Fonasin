@@ -2,6 +2,7 @@ export type AdminAssociate = {
   id: string;
   user_id: string | null;
   document_type: string;
+  document_number_masked: string;
   full_name: string;
   status: string;
   user: {

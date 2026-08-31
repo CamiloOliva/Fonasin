@@ -3,6 +3,7 @@
 use App\Http\Controllers\AffiliationApplicationController;
 use App\Http\Controllers\AssociateController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\CreditAccountController;
 use App\Http\Controllers\FpqrsSubmissionController;
 use Illuminate\Support\Facades\Route;
@@ -28,6 +29,12 @@ Route::post('/auth/password', [AuthenticatedSessionController::class, 'updatePas
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
+
+Route::post('/password/forgot', [PasswordResetController::class, 'store'])
+    ->name('password.forgot');
+
+Route::post('/password/reset', [PasswordResetController::class, 'update'])
+    ->name('password.reset');
 
 Route::prefix('affiliation-applications')->group(function (): void {
     Route::post('/', [AffiliationApplicationController::class, 'store'])

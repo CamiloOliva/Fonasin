@@ -1,8 +1,9 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AppRoutes from './AppRoutes';
+import * as portalService from '../services/portalService';
 
 vi.mock('../components/sections/StatutesBookViewer', () => ({
   default: () => (
@@ -13,6 +14,7 @@ vi.mock('../components/sections/StatutesBookViewer', () => ({
 }));
 
 vi.mock('../services/portalService', () => ({
+  changeOwnPassword: vi.fn(),
   currentPortalUser: vi.fn().mockRejectedValue(new Error('guest')),
   fetchPortalCredits: vi.fn().mockResolvedValue([]),
   loginPortal: vi.fn(),
@@ -29,6 +31,27 @@ vi.mock('../services/adminAffiliationService', () => ({
   requestAdminAffiliationCorrection: vi.fn(),
   rejectAdminAffiliationApplication: vi.fn(),
   approveAdminAffiliationApplication: vi.fn(),
+  enableAdminAffiliationApplication: vi.fn(),
+  uploadSignedPayrollAuthorization: vi.fn(),
+}));
+
+vi.mock('../services/adminAssociateService', () => ({
+  activateAdminAssociate: vi.fn(),
+  createAdminAssociate: vi.fn(),
+  deactivateAdminAssociate: vi.fn(),
+  fetchAdminAssociates: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock('../services/adminCreditService', () => ({
+  archiveAdminCredit: vi.fn(),
+  createAdminCredit: vi.fn(),
+  fetchAdminCredits: vi.fn().mockResolvedValue([]),
+  updateAdminCredit: vi.fn(),
+}));
+
+vi.mock('../services/passwordRecoveryService', () => ({
+  requestPasswordReset: vi.fn(),
+  resetPassword: vi.fn(),
 }));
 
 function renderRoute(path: string) {
@@ -40,6 +63,10 @@ function renderRoute(path: string) {
 }
 
 describe('AppRoutes', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('renders the public credits route', () => {
     renderRoute('/creditos');
 
@@ -107,6 +134,33 @@ describe('AppRoutes', () => {
     expect(screen.getByRole('heading', { name: /consulta tus creditos/i })).toBeInTheDocument();
   });
 
+  it('rejects admin users from the associate portal', async () => {
+    const user = userEvent.setup();
+    vi.mocked(portalService.loginPortal).mockResolvedValueOnce({
+      id: 'admin-user',
+      email: 'admin@fonasin.test',
+      roles: ['admin'],
+      must_change_password: false,
+    });
+    vi.mocked(portalService.logoutPortal).mockResolvedValueOnce();
+
+    renderRoute('/portal-asociado');
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByLabelText(/correo electronico/i), 'admin@fonasin.test');
+    await user.type(screen.getByLabelText(/contrasena/i), 'Admin12345');
+    await user.click(screen.getByRole('button', { name: /entrar al portal/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/no tiene acceso al portal asociado/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/resumen de creditos registrados/i)).not.toBeInTheDocument();
+    expect(portalService.logoutPortal).toHaveBeenCalled();
+  });
+
   it('renders the administrative affiliation login route', async () => {
     renderRoute('/admin-fonasin');
 
@@ -114,6 +168,13 @@ describe('AppRoutes', () => {
       expect(screen.getByRole('heading', { name: /iniciar sesion administrativa/i })).toBeInTheDocument();
     });
     expect(screen.getByRole('heading', { name: /revision interna de afiliaciones/i })).toBeInTheDocument();
+  });
+
+  it('renders the password recovery route', () => {
+    renderRoute('/recuperar-contrasena');
+
+    expect(screen.getByRole('heading', { name: /recupera tu contrasena/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /enviar enlace temporal/i })).toBeInTheDocument();
   });
 
   it('renders the Manejar detail route', () => {

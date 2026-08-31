@@ -32,6 +32,10 @@ return [
         'recipient_email' => env('FPQRS_RECIPIENT_EMAIL'),
     ],
 
+    'frontend' => [
+        'url' => env('FRONTEND_URL', env('APP_URL', 'http://localhost')),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

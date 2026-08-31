@@ -21,6 +21,10 @@ export default defineConfig(({ mode }) => {
           target: backendTarget,
           changeOrigin: true,
         },
+        '/password': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
         '/csrf-token': {
           target: backendTarget,
           changeOrigin: true,

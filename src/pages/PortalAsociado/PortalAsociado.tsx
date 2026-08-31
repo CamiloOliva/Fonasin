@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { ArrowRight, CreditCard, Loader2, LogOut, RefreshCw, ShieldCheck, UserRound } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import ForcedPasswordChange from '../../components/auth/ForcedPasswordChange';
 import {
   changeOwnPassword,
@@ -46,6 +47,14 @@ function roleLabel(role: string): string {
   return labels[role] ?? role;
 }
 
+function ensureAssociatePortalUser(user: PortalUser): PortalUser {
+  if (!user.roles.includes('associate')) {
+    throw new Error('Tu usuario no tiene acceso al portal asociado.');
+  }
+
+  return user;
+}
+
 export default function PortalAsociado() {
   const [sessionState, setSessionState] = useState<SessionState>('checking');
   const [creditsState, setCreditsState] = useState<CreditsState>('idle');
@@ -82,7 +91,7 @@ export default function PortalAsociado() {
 
     (async () => {
       try {
-        const currentUser = await currentPortalUser();
+        const currentUser = ensureAssociatePortalUser(await currentPortalUser());
         if (!active) return;
         setUser(currentUser);
         setSessionState('authenticated');
@@ -107,7 +116,7 @@ export default function PortalAsociado() {
     setSessionState('checking');
 
     try {
-      const loggedUser = await loginPortal({ email, password, remember });
+      const loggedUser = ensureAssociatePortalUser(await loginPortal({ email, password, remember }));
       setUser(loggedUser);
       setSessionState('authenticated');
       setPassword('');
@@ -116,6 +125,7 @@ export default function PortalAsociado() {
         await loadCredits();
       }
     } catch (caught) {
+      await logoutPortal().catch(() => undefined);
       setUser(null);
       setCredits([]);
       setSessionState('guest');
@@ -233,6 +243,12 @@ export default function PortalAsociado() {
                 />
                 Mantener sesion iniciada
               </label>
+              <Link
+                to="/recuperar-contrasena?from=portal"
+                className="inline-flex text-sm font-bold text-emerald-700 hover:text-emerald-800"
+              >
+                Olvide mi contrasena
+              </Link>
             </div>
 
             {error ? <p className="mt-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</p> : null}

@@ -33,7 +33,7 @@ Solo FONASIN puede mover contenido funcional a `Aceptado`. Una PR puede proponer
 | FE-WEB-005A | Visor PDF | Pendiente | Sin visor | Mostrar PDF embebido con descarga y fallback accesible. |
 | FE-WEB-006 | Noticias | Bloqueado | Sin ruta ni datos | Recibir publicaciones iniciales aprobadas; no crear CMS general. |
 | FE-WEB-007 | Contacto | Bloqueado | WhatsApp parcial | Recibir datos, redes, mapa y horarios oficiales. |
-| FE-WEB-008 | FPQRS | En curso | Formulario visual y servicio simulado; Backend disponible en `POST /fpqrs-submissions` con entrega a correo institucional | Conectar frontend al endpoint real y probar estados/error. |
+| FE-WEB-008 | FPQRS | Implementado | Formulario conectado a `POST /fpqrs-submissions`, adjunto opcional PDF/JPG/PNG hasta 5MB, estados de envio/error y entrega a correo institucional por backend. | Validar envio real con SMTP de produccion. |
 | FE-WEB-009 | WhatsApp | En curso | Enlace configurable con `VITE_WHATSAPP_URL` | Confirmar numero, mensaje y comportamiento oficial. |
 | FE-WEB-010 | SEO y accesibilidad | En curso | HTML en español, description, semantica y foco parcial | Ejecutar auditoria sin errores criticos y agregar pruebas. |
 | FE-WEB-011 | Transacciones y QR | Pendiente | Acceso marcado `Proximamente` | Publicar QR, destino, concepto, instrucciones, advertencia y descarga. |
@@ -75,7 +75,7 @@ La ruta actual `/afiliacion` es un aviso explicito y no se considera implementac
 
 | ID | Requisito | Clase | Estado | Bloqueador o siguiente paso |
 |---|---|---|---|---|
-| FE-OBQ-001 | Ingreso y ciclo de contraseña | OBQ | En curso | Login con sesion Laravel y cambio obligatorio de contrasena temporal. Recuperacion de contrasena queda pendiente de definicion. |
+| FE-OBQ-001 | Ingreso y ciclo de contraseña | OBQ | En curso | Login con sesion Laravel, cambio obligatorio de contrasena temporal y recuperacion con correo, cedula y link temporal. | Validar SMTP de produccion y flujo visual final. |
 | FE-OBQ-002 | Inicio privado | OBQ | Pendiente | Afiliado aprobado, activo, habilitado y autenticado. |
 | FE-OBQ-003 | Creditos actuales | OBQ | Pendiente | Importacion de creditos y consulta autorizada por sesion. |
 | FE-OBQ-004 | Aislamiento por sesion | OBQ | Pendiente | Policy Backend; nunca aceptar identificador del navegador. |
