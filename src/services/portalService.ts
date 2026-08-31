@@ -2,12 +2,19 @@ export type PortalUser = {
   id: string;
   email: string;
   roles: string[];
+  must_change_password: boolean;
 };
 
 export type LoginPayload = {
   email: string;
   password: string;
   remember: boolean;
+};
+
+export type ChangePasswordPayload = {
+  currentPassword: string;
+  password: string;
+  passwordConfirmation: string;
 };
 
 export type PortalCredit = {
@@ -98,6 +105,8 @@ function translatePortalError(message: string, status: number): string {
   if (status === 403) return 'Tu usuario no tiene permisos para acceder a esta seccion.';
   if (status === 419) return 'La sesion expiro. Recarga la pagina e intenta de nuevo.';
   if (status === 429) return 'Demasiados intentos. Espera un momento y vuelve a intentar.';
+  if (status === 423) return 'Debes cambiar la contrasena temporal antes de continuar.';
+  if (message.includes('current password')) return 'La contrasena temporal no es correcta.';
   if (message === 'Invalid credentials.') return 'Correo o contrasena incorrectos.';
   if (message === 'User account is inactive.') return 'La cuenta de usuario esta inactiva.';
   if (message.includes('associate profile')) return 'Tu usuario aun no tiene un asociado vinculado.';
@@ -124,6 +133,19 @@ export async function logoutPortal(): Promise<void> {
   await requestJson<{ message: string }>('/logout', {
     method: 'POST',
   });
+}
+
+export async function changeOwnPassword(payload: ChangePasswordPayload): Promise<PortalUser> {
+  const response = await requestJson<{ data: PortalUser }>('/auth/password', {
+    method: 'POST',
+    body: JSON.stringify({
+      current_password: payload.currentPassword,
+      password: payload.password,
+      password_confirmation: payload.passwordConfirmation,
+    }),
+  });
+
+  return response.data;
 }
 
 export async function fetchPortalCredits(): Promise<PortalCredit[]> {

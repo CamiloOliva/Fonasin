@@ -22,6 +22,10 @@ Route::get('/auth/user', [AuthenticatedSessionController::class, 'show'])
     ->middleware('auth')
     ->name('auth.user');
 
+Route::post('/auth/password', [AuthenticatedSessionController::class, 'updatePassword'])
+    ->middleware('auth')
+    ->name('auth.password.update');
+
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
@@ -52,7 +56,7 @@ Route::prefix('affiliation-applications')->group(function (): void {
         ->name('affiliation-applications.submit');
 });
 
-Route::middleware('auth')
+Route::middleware(['auth', 'password.changed'])
     ->prefix('admin/affiliation-applications')
     ->name('admin.affiliation-applications.')
     ->group(function (): void {
@@ -82,7 +86,7 @@ Route::middleware('auth')
             ->name('reject');
     });
 
-Route::middleware('auth')
+Route::middleware(['auth', 'password.changed'])
     ->prefix('admin/associates')
     ->name('admin.associates.')
     ->group(function (): void {
@@ -100,7 +104,7 @@ Route::middleware('auth')
             ->name('deactivate');
     });
 
-Route::middleware('auth')
+Route::middleware(['auth', 'password.changed'])
     ->prefix('admin/credits')
     ->name('admin.credits.')
     ->group(function (): void {
@@ -118,7 +122,7 @@ Route::middleware('auth')
             ->name('archive');
     });
 
-Route::middleware('auth')
+Route::middleware(['auth', 'password.changed'])
     ->get('/portal/credits', [CreditAccountController::class, 'mine'])
     ->name('portal.credits.index');
 

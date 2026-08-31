@@ -77,6 +77,8 @@ async function requestJson<T>(path: string, options: RequestOptions = {}, retrie
   if (!response.ok) {
     const message = typeof payload?.message === 'string'
       ? payload.message
+      : response.status === 423
+        ? 'Debes cambiar la contrasena temporal antes de usar el panel administrativo.'
       : response.status === 419
         ? 'La sesion expiro. Recarga la pagina e intenta de nuevo.'
         : 'No fue posible completar la solicitud.';

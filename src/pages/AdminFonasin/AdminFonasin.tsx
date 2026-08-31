@@ -14,6 +14,7 @@ import {
   WalletCards,
   XCircle,
 } from 'lucide-react';
+import ForcedPasswordChange from '../../components/auth/ForcedPasswordChange';
 import {
   approveAdminAffiliationApplication,
   currentAdminUser,
@@ -45,7 +46,7 @@ import {
   updateAdminCredit,
   type AdminCredit,
 } from '../../services/adminCreditService';
-import type { PortalUser } from '../../services/portalService';
+import { changeOwnPassword, type PortalUser } from '../../services/portalService';
 
 type SessionState = 'checking' | 'guest' | 'authenticated';
 type DataState = 'idle' | 'loading' | 'ready' | 'error';
@@ -255,7 +256,9 @@ export default function AdminFonasin() {
         if (!active) return;
         setUser(currentUser);
         setSessionState('authenticated');
-        await loadApplications();
+        if (!currentUser.must_change_password) {
+          await loadApplications();
+        }
       } catch {
         if (!active) return;
         setSessionState('guest');
@@ -280,7 +283,9 @@ export default function AdminFonasin() {
       setPassword('');
       setSessionState('authenticated');
       setMessage('Sesion administrativa iniciada.');
-      await loadApplications();
+      if (!loggedUser.must_change_password) {
+        await loadApplications();
+      }
     } catch (caught) {
       setUser(null);
       setSessionState('guest');
@@ -304,6 +309,17 @@ export default function AdminFonasin() {
     setSessionState('guest');
     setDataState('idle');
     setMessage('Sesion cerrada.');
+  }
+
+  async function handlePasswordChange(payload: {
+    currentPassword: string;
+    password: string;
+    passwordConfirmation: string;
+  }) {
+    const updatedUser = await changeOwnPassword(payload);
+    setUser(updatedUser);
+    setMessage('Contrasena actualizada correctamente.');
+    await loadApplications();
   }
 
   async function runAction(action: () => Promise<AdminAffiliationDetail>, successMessage: string) {
@@ -530,6 +546,17 @@ export default function AdminFonasin() {
           </form>
         </div>
       </section>
+    );
+  }
+
+  if (user?.must_change_password) {
+    return (
+      <ForcedPasswordChange
+        email={user.email}
+        contextLabel="Admin FONASIN"
+        onSubmit={handlePasswordChange}
+        onLogout={handleLogout}
+      />
     );
   }
 

@@ -44,7 +44,7 @@ class SchemaContractTest extends TestCase
     public function test_identity_schema_has_uuid_users_and_roles(): void
     {
         $this->assertTrue(Schema::hasTable('users'));
-        $this->assertTrue(Schema::hasColumns('users', ['id', 'email', 'password', 'status']));
+        $this->assertTrue(Schema::hasColumns('users', ['id', 'email', 'password', 'must_change_password', 'status']));
         $this->assertTrue(Schema::hasTable('roles'));
         $this->assertTrue(Schema::hasColumns('roles', ['id', 'name']));
         $this->assertTrue(Schema::hasTable('role_user'));

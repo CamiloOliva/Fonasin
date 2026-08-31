@@ -71,6 +71,7 @@ class EnableAffiliationApplication
                 $temporaryPassword = Str::random(16);
                 $user->forceFill([
                     'password' => $temporaryPassword,
+                    'must_change_password' => true,
                     'status' => 'active',
                     'email_verified_at' => now(),
                 ])->save();

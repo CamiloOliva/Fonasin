@@ -146,6 +146,7 @@ async function requestJson<T>(path: string, options: RequestOptions = {}, retrie
 function translateAdminError(message: string, status: number): string {
   if (status === 401) return 'Inicia sesion para entrar al panel administrativo.';
   if (status === 403) return 'Tu usuario no tiene permisos administrativos para esta accion.';
+  if (status === 423) return 'Debes cambiar la contrasena temporal antes de usar el panel administrativo.';
   if (status === 419) return 'La sesion expiro. Recarga la pagina e intenta de nuevo.';
   if (status === 404) return 'No se encontro la solicitud seleccionada.';
   if (status === 422) return message;

@@ -68,6 +68,7 @@ class AssociateAdminHttpTest extends TestCase
         $associateId = $response->json('data.id');
         $user = User::query()->where('email', 'persona.sintetica@fonasin.test')->firstOrFail();
         $this->assertTrue(Hash::check('clave-segura-123', $user->password));
+        $this->assertFalse($user->must_change_password);
         $this->assertTrue($user->roles()->where('name', 'associate')->exists());
         $this->assertDatabaseHas('associates', [
             'id' => $associateId,
@@ -127,6 +128,7 @@ class AssociateAdminHttpTest extends TestCase
 
         $user = User::query()->where('email', 'persona.acceso@fonasin.test')->firstOrFail();
         $this->assertTrue(Hash::check($temporaryPassword, $user->password));
+        $this->assertTrue($user->must_change_password);
         $this->assertTrue($user->roles()->where('name', 'associate')->exists());
     }
 

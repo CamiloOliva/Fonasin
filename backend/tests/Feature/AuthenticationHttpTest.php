@@ -34,6 +34,7 @@ class AuthenticationHttpTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.id', $user->id)
             ->assertJsonPath('data.roles.0', 'reviewer')
+            ->assertJsonPath('data.must_change_password', false)
             ->assertJsonMissingPath('data.password');
 
         $this->assertAuthenticatedAs($user);
@@ -59,6 +60,7 @@ class AuthenticationHttpTest extends TestCase
             ->assertJsonPath('data.id', $user->id)
             ->assertJsonPath('data.email', 'associate@example.test')
             ->assertJsonPath('data.roles.0', 'associate')
+            ->assertJsonPath('data.must_change_password', false)
             ->assertJsonMissingPath('data.password');
     }
 
@@ -153,5 +155,72 @@ class AuthenticationHttpTest extends TestCase
             'user_id' => $user->id,
             'event_type' => AuthEventType::Logout->value,
         ]);
+    }
+
+    public function test_user_with_temporary_password_must_change_it_before_accessing_private_routes(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'temporary@example.test',
+            'password' => Hash::make('temporary-123'),
+            'status' => 'active',
+            'must_change_password' => true,
+        ]);
+        $role = Role::query()->create(['name' => 'associate']);
+        $user->roles()->attach($role);
+
+        $this->actingAs($user)
+            ->getJson('/portal/credits')
+            ->assertStatus(423)
+            ->assertJsonPath('message', 'Password change is required before continuing.');
+    }
+
+    public function test_user_can_change_required_temporary_password(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'temporary@example.test',
+            'password' => Hash::make('temporary-123'),
+            'status' => 'active',
+            'must_change_password' => true,
+        ]);
+        $role = Role::query()->create(['name' => 'associate']);
+        $user->roles()->attach($role);
+
+        $response = $this->actingAs($user)
+            ->postJson('/auth/password', [
+                'current_password' => 'temporary-123',
+                'password' => 'NuevaClave123',
+                'password_confirmation' => 'NuevaClave123',
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.id', $user->id)
+            ->assertJsonPath('data.must_change_password', false)
+            ->assertJsonMissingPath('data.password');
+
+        $this->assertFalse($user->refresh()->must_change_password);
+        $this->assertTrue(Hash::check('NuevaClave123', $user->password));
+        $this->assertDatabaseHas('auth_events', [
+            'user_id' => $user->id,
+            'event_type' => AuthEventType::PasswordChanged->value,
+        ]);
+    }
+
+    public function test_current_password_is_required_to_change_password(): void
+    {
+        $user = User::factory()->create([
+            'password' => Hash::make('temporary-123'),
+            'status' => 'active',
+            'must_change_password' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->postJson('/auth/password', [
+                'current_password' => 'wrong-password',
+                'password' => 'NuevaClave123',
+                'password_confirmation' => 'NuevaClave123',
+            ])
+            ->assertUnprocessable();
+
+        $this->assertTrue($user->refresh()->must_change_password);
     }
 }
