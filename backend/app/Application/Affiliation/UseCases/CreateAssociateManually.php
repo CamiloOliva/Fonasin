@@ -63,7 +63,7 @@ class CreateAssociateManually
                 $user = User::query()->create([
                     'email' => $email,
                     'password' => $password,
-                    'must_change_password' => $temporaryPassword !== null,
+                    'must_change_password' => true,
                     'status' => 'active',
                 ]);
             }
