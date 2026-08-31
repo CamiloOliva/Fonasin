@@ -21,6 +21,7 @@ import FPQRS from "../pages/FPQRS/FPQRS";
 import Home from "../pages/Home/Home";
 import MiFondo from "../pages/MiFondo/MiFondo";
 import Estatutos from "../pages/Estatutos/Estatutos";
+import PasswordRecovery from "../pages/PasswordRecovery/PasswordRecovery";
 import Portal from "../pages/PortalAsociado/PortalAsociado";
 import ProductosServicios from "../pages/ProductosServicios/ProductosServicios";
 export default function AppRoutes() {
@@ -65,6 +66,7 @@ export default function AppRoutes() {
       <Route path="/afiliacion" element={<Afiliacion />} />{" "}
       <Route path="/admin-fonasin" element={<AdminFonasin />} />{" "}
       <Route path="/portal-asociado" element={<Portal />} />{" "}
+      <Route path="/recuperar-contrasena" element={<PasswordRecovery />} />{" "}
       <Route path="*" element={<Home />} />{" "}
     </Routes>
   );

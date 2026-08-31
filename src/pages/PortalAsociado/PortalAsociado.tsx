@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { ArrowRight, CreditCard, Loader2, LogOut, RefreshCw, ShieldCheck, UserRound } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import ForcedPasswordChange from '../../components/auth/ForcedPasswordChange';
 import {
   changeOwnPassword,
@@ -233,6 +234,12 @@ export default function PortalAsociado() {
                 />
                 Mantener sesion iniciada
               </label>
+              <Link
+                to="/recuperar-contrasena?from=portal"
+                className="inline-flex text-sm font-bold text-emerald-700 hover:text-emerald-800"
+              >
+                Olvide mi contrasena
+              </Link>
             </div>
 
             {error ? <p className="mt-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</p> : null}

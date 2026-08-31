@@ -13,6 +13,7 @@ vi.mock('../components/sections/StatutesBookViewer', () => ({
 }));
 
 vi.mock('../services/portalService', () => ({
+  changeOwnPassword: vi.fn(),
   currentPortalUser: vi.fn().mockRejectedValue(new Error('guest')),
   fetchPortalCredits: vi.fn().mockResolvedValue([]),
   loginPortal: vi.fn(),
@@ -29,6 +30,27 @@ vi.mock('../services/adminAffiliationService', () => ({
   requestAdminAffiliationCorrection: vi.fn(),
   rejectAdminAffiliationApplication: vi.fn(),
   approveAdminAffiliationApplication: vi.fn(),
+  enableAdminAffiliationApplication: vi.fn(),
+  uploadSignedPayrollAuthorization: vi.fn(),
+}));
+
+vi.mock('../services/adminAssociateService', () => ({
+  activateAdminAssociate: vi.fn(),
+  createAdminAssociate: vi.fn(),
+  deactivateAdminAssociate: vi.fn(),
+  fetchAdminAssociates: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock('../services/adminCreditService', () => ({
+  archiveAdminCredit: vi.fn(),
+  createAdminCredit: vi.fn(),
+  fetchAdminCredits: vi.fn().mockResolvedValue([]),
+  updateAdminCredit: vi.fn(),
+}));
+
+vi.mock('../services/passwordRecoveryService', () => ({
+  requestPasswordReset: vi.fn(),
+  resetPassword: vi.fn(),
 }));
 
 function renderRoute(path: string) {
@@ -114,6 +136,13 @@ describe('AppRoutes', () => {
       expect(screen.getByRole('heading', { name: /iniciar sesion administrativa/i })).toBeInTheDocument();
     });
     expect(screen.getByRole('heading', { name: /revision interna de afiliaciones/i })).toBeInTheDocument();
+  });
+
+  it('renders the password recovery route', () => {
+    renderRoute('/recuperar-contrasena');
+
+    expect(screen.getByRole('heading', { name: /recupera tu contrasena/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /enviar enlace temporal/i })).toBeInTheDocument();
   });
 
   it('renders the Manejar detail route', () => {

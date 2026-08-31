@@ -18,11 +18,13 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 - El modulo administrativo de asociados no elimina registros fisicamente. La accion de retiro cambia el estado a `inactive`, mantiene la trazabilidad y registra auditoria. El alta manual crea o vincula un usuario con rol `associate`; si se genera una contrasena temporal, se muestra una sola vez al administrador.
 - La administracion manual de creditos requiere sesion, policy y auditoria. Solo permite asociados activos y lineas de credito aprobadas. El retiro operativo se maneja como estado `archived`, no como borrado fisico.
 - Las cuentas creadas con contrasena temporal quedan marcadas con `must_change_password` y no pueden usar rutas privadas de portal o administracion hasta cambiarla. El cambio exige la contrasena actual, guarda solo hash y registra evento de autenticacion.
+- La recuperacion de contrasena usa correo y numero de documento. Para asociados se valida contra `associates`; para usuarios internos se valida contra el documento cifrado/hasheado en `users`. Los tokens se guardan hasheados, expiran y los eventos se registran sin exponer correo ni documento en claro.
 
 ## Datos sensibles
 
 - Contraseñas: exclusivamente hashes administrados por Laravel.
 - Numeros de documento: version cifrada para consulta controlada y hash unico para busqueda.
+- Los usuarios internos pueden tener documento cifrado y hash de busqueda para soportar recuperacion de acceso sin depender de un perfil de asociado.
 - Datos de afiliacion, financieros y SARLAFT: cifrados antes de persistirse y nunca enviados a logs.
 - Los seeds, pruebas, capturas y entornos locales usan datos ficticios.
 - Los mensajes de error no revelan detalles de autorizacion, estructura de base de datos ni secretos.
@@ -41,6 +43,7 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 
 - El modulo FPQRS registra la recepcion inicial, adjunto opcional privado y estado interno de entrega por correo institucional.
 - El correo institucional contiene el mensaje recibido y metadatos minimos; los adjuntos quedan en storage privado y no se adjuntan al correo.
+- El frontend envia FPQRS al endpoint Laravel `POST /fpqrs-submissions` y conserva la validacion de archivo permitida por servidor.
 - No genera radicado ni seguimiento publico.
 - La auditoria no almacena correo, mensaje completo ni contenido del adjunto.
 
