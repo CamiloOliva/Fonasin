@@ -308,6 +308,37 @@ class AuthenticationHttpTest extends TestCase
         ]);
     }
 
+    public function test_password_reset_request_is_rate_limited(): void
+    {
+        Mail::fake();
+
+        $user = User::factory()->create([
+            'email' => 'asociado@example.test',
+            'status' => 'active',
+        ]);
+        Associate::query()->create([
+            'user_id' => $user->id,
+            'document_type' => 'CC',
+            'document_number_hash' => hash('sha256', '1234567890'),
+            'document_number_encrypted' => 'encrypted',
+            'full_name' => 'Persona Asociada',
+            'status' => 'active',
+        ]);
+
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            $this->postJson('/password/forgot', [
+                'email' => 'asociado@example.test',
+                'document_number' => '1234567890',
+            ])->assertOk();
+        }
+
+        $this->postJson('/password/forgot', [
+            'email' => 'asociado@example.test',
+            'document_number' => '1234567890',
+        ])->assertTooManyRequests()
+            ->assertJsonPath('message', 'Demasiados intentos. Espera unos minutos y vuelve a intentar.');
+    }
+
     public function test_user_can_reset_password_with_email_token(): void
     {
         Mail::fake();

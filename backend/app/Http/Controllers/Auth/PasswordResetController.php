@@ -9,13 +9,26 @@ use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 class PasswordResetController extends Controller
 {
     public function store(ForgotPasswordRequest $request, RequestPasswordReset $requestPasswordReset): JsonResponse
     {
+        $email = Str::lower($request->string('email')->toString());
+        $throttleKey = 'password-reset|'.$email.'|'.$request->ip();
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 3)) {
+            return response()->json([
+                'message' => 'Demasiados intentos. Espera unos minutos y vuelve a intentar.',
+            ], 429);
+        }
+
+        RateLimiter::hit($throttleKey, 300);
+
         $requestPasswordReset(
-            email: $request->string('email')->toString(),
+            email: $email,
             documentNumber: $request->string('document_number')->toString(),
             ipHash: $this->ipHash($request),
             userAgentHash: $this->userAgentHash($request),

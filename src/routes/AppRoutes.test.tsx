@@ -1,8 +1,9 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AppRoutes from './AppRoutes';
+import * as portalService from '../services/portalService';
 
 vi.mock('../components/sections/StatutesBookViewer', () => ({
   default: () => (
@@ -62,6 +63,10 @@ function renderRoute(path: string) {
 }
 
 describe('AppRoutes', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('renders the public credits route', () => {
     renderRoute('/creditos');
 
@@ -127,6 +132,33 @@ describe('AppRoutes', () => {
       expect(screen.getByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument();
     });
     expect(screen.getByRole('heading', { name: /consulta tus creditos/i })).toBeInTheDocument();
+  });
+
+  it('rejects admin users from the associate portal', async () => {
+    const user = userEvent.setup();
+    vi.mocked(portalService.loginPortal).mockResolvedValueOnce({
+      id: 'admin-user',
+      email: 'admin@fonasin.test',
+      roles: ['admin'],
+      must_change_password: false,
+    });
+    vi.mocked(portalService.logoutPortal).mockResolvedValueOnce();
+
+    renderRoute('/portal-asociado');
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByLabelText(/correo electronico/i), 'admin@fonasin.test');
+    await user.type(screen.getByLabelText(/contrasena/i), 'Admin12345');
+    await user.click(screen.getByRole('button', { name: /entrar al portal/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/no tiene acceso al portal asociado/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/resumen de creditos registrados/i)).not.toBeInTheDocument();
+    expect(portalService.logoutPortal).toHaveBeenCalled();
   });
 
   it('renders the administrative affiliation login route', async () => {

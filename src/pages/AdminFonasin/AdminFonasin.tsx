@@ -897,7 +897,7 @@ function AssociatesPanel({
         ) : null}
 
         <div className="mt-5 overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left text-sm">
+          <table className="w-full min-w-[860px] text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
                 <th className="py-3 pr-4">Nombre</th>
@@ -912,7 +912,10 @@ function AssociatesPanel({
               {associates.map((associate) => (
                 <tr key={associate.id} className="border-b border-slate-100 last:border-0">
                   <td className="py-4 pr-4 font-black text-slate-950">{associate.full_name}</td>
-                  <td className="py-4 pr-4 text-slate-700">{associate.document_type}</td>
+                  <td className="py-4 pr-4 text-slate-700">
+                    <span className="font-bold text-slate-900">{associate.document_type}</span>
+                    <span className="ml-2 text-slate-500">{associate.document_number_masked}</span>
+                  </td>
                   <td className="py-4 pr-4 text-slate-700">{associate.user?.email ?? 'Sin usuario vinculado'}</td>
                   <td className="py-4 pr-4 text-slate-700">{associate.credit_accounts_count}</td>
                   <td className="py-4 pr-4">

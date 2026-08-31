@@ -1,10 +1,11 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { ArrowLeft, CheckCircle2, KeyRound, Mail, ShieldCheck } from 'lucide-react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { requestPasswordReset, resetPassword } from '../../services/passwordRecoveryService';
 
 export default function PasswordRecovery() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const token = searchParams.get('token') ?? '';
   const emailFromUrl = searchParams.get('email') ?? '';
   const from = searchParams.get('from') ?? '';
@@ -18,11 +19,22 @@ export default function PasswordRecovery() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [requestSent, setRequestSent] = useState(false);
 
   const title = useMemo(
     () => (isResetMode ? 'Crea una nueva contrasena' : 'Recupera tu contrasena'),
     [isResetMode],
   );
+
+  useEffect(() => {
+    if (!requestSent || isResetMode) return undefined;
+
+    const timeout = window.setTimeout(() => {
+      navigate(backTarget, { replace: true });
+    }, 3500);
+
+    return () => window.clearTimeout(timeout);
+  }, [backTarget, isResetMode, navigate, requestSent]);
 
   async function handleRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -33,6 +45,7 @@ export default function PasswordRecovery() {
     try {
       const response = await requestPasswordReset({ email, documentNumber });
       setMessage(response.message);
+      setRequestSent(true);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible solicitar la recuperacion.');
     } finally {
@@ -109,6 +122,7 @@ export default function PasswordRecovery() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   readOnly={isResetMode}
+                  disabled={requestSent}
                   className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition read-only:bg-slate-50 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
                 />
               </label>
@@ -122,6 +136,7 @@ export default function PasswordRecovery() {
                     maxLength={16}
                     value={documentNumber}
                     onChange={(event) => setDocumentNumber(event.target.value)}
+                    disabled={requestSent}
                     className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
                   />
                 </label>
@@ -157,16 +172,25 @@ export default function PasswordRecovery() {
             {message ? (
               <p className="mt-5 flex gap-2 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
                 <CheckCircle2 className="mt-0.5 shrink-0" size={18} />
-                <span>{message}</span>
+                <span>
+                  {message}
+                  {!isResetMode && requestSent ? ' Volveras al inicio de sesion en unos segundos.' : ''}
+                </span>
               </p>
             ) : null}
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || requestSent}
               className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading ? 'Procesando...' : isResetMode ? 'Guardar nueva contrasena' : 'Enviar enlace temporal'}
+              {loading
+                ? 'Procesando...'
+                : requestSent
+                  ? 'Enlace solicitado'
+                  : isResetMode
+                    ? 'Guardar nueva contrasena'
+                    : 'Enviar enlace temporal'}
             </button>
           </form>
         </div>

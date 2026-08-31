@@ -47,6 +47,14 @@ function roleLabel(role: string): string {
   return labels[role] ?? role;
 }
 
+function ensureAssociatePortalUser(user: PortalUser): PortalUser {
+  if (!user.roles.includes('associate')) {
+    throw new Error('Tu usuario no tiene acceso al portal asociado.');
+  }
+
+  return user;
+}
+
 export default function PortalAsociado() {
   const [sessionState, setSessionState] = useState<SessionState>('checking');
   const [creditsState, setCreditsState] = useState<CreditsState>('idle');
@@ -83,7 +91,7 @@ export default function PortalAsociado() {
 
     (async () => {
       try {
-        const currentUser = await currentPortalUser();
+        const currentUser = ensureAssociatePortalUser(await currentPortalUser());
         if (!active) return;
         setUser(currentUser);
         setSessionState('authenticated');
@@ -108,7 +116,7 @@ export default function PortalAsociado() {
     setSessionState('checking');
 
     try {
-      const loggedUser = await loginPortal({ email, password, remember });
+      const loggedUser = ensureAssociatePortalUser(await loginPortal({ email, password, remember }));
       setUser(loggedUser);
       setSessionState('authenticated');
       setPassword('');
@@ -117,6 +125,7 @@ export default function PortalAsociado() {
         await loadCredits();
       }
     } catch (caught) {
+      await logoutPortal().catch(() => undefined);
       setUser(null);
       setCredits([]);
       setSessionState('guest');

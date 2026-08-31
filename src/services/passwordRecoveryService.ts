@@ -60,6 +60,7 @@ async function requestJson(path: string, body: unknown, retried = false): Promis
 
 function translatePasswordRecoveryError(message: string, status: number): string {
   if (status === 419) return 'La sesion expiro. Recarga la pagina e intenta de nuevo.';
+  if (status === 429) return 'Demasiados intentos. Espera unos minutos y vuelve a intentar.';
   if (status === 422) {
     if (message.includes('password')) return 'La nueva contrasena debe tener minimo 8 caracteres, letras y numeros.';
     if (message.includes('token')) return 'El enlace no es valido o ya expiro.';
