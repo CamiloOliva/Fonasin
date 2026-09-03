@@ -180,40 +180,40 @@ export default function PortalAsociado() {
 
   if (sessionState === 'guest') {
     return (
-      <section className="bg-slate-50 py-14">
-        <div className="container-page grid gap-7 lg:grid-cols-[.9fr_1.1fr] lg:items-center">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-700">Portal asociado</p>
+      <section className="portal-login-scene relative min-h-[calc(100vh-5rem)] overflow-hidden bg-slate-950 bg-[url(/Fondo.png)] bg-cover bg-center py-10 sm:py-14">
+        <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[1px]" /><div className="portal-login-light pointer-events-none absolute -left-24 top-[-20%] h-[145%] w-[48%]" /><div className="absolute inset-0 bg-gradient-to-r from-amber-50/65 via-white/20 to-transparent" /><div className="container-page relative grid min-h-[calc(100vh-5rem)] gap-7 lg:grid-cols-[.9fr_1.1fr] lg:items-center">
+          <div className="portal-login-content relative rounded-[2rem] border border-white/40 bg-white/25 p-5 shadow-lg shadow-slate-950/10 backdrop-blur-[3px] sm:p-7">
+            <div className="mb-7 grid h-16 w-16 place-items-center overflow-hidden rounded-2xl border border-white/70 bg-white/85 p-2 shadow-xl backdrop-blur sm:h-20 sm:w-20"><img src="/logotipo.png" alt="Logo FONASIN" className="max-h-full max-w-full object-contain" /></div><p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-900">Portal asociado</p>
             <h1 className="mt-3 max-w-xl text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
               Consulta tus creditos y servicios en linea
             </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+            <p className="mt-4 max-w-2xl text-base font-medium leading-7 text-slate-900 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">
               Ingresa con tu usuario registrado para consultar la informacion asociada a tu perfil FONASIN.
             </p>
             <div className="mt-7 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm">
-                <ShieldCheck className="text-emerald-700" size={24} />
-                <p className="mt-3 font-black text-slate-950">Acceso protegido</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">El portal usa sesion Laravel y roles registrados.</p>
+              <div className="rounded-2xl border border-white/60 bg-slate-900/35 p-5 text-white shadow-lg backdrop-blur-md">
+                <ShieldCheck className="text-fonasin-lime" size={24} />
+                <p className="mt-3 font-black text-white drop-shadow-sm">Acceso protegido</p>
+                <p className="mt-1 text-sm leading-6 text-white drop-shadow-sm">El portal usa sesion Laravel y roles registrados.</p>
               </div>
-              <div className="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm">
-                <CreditCard className="text-emerald-700" size={24} />
-                <p className="mt-3 font-black text-slate-950">Creditos asociados</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">Consulta saldos y condiciones de tus creditos activos.</p>
+              <div className="rounded-2xl border border-white/60 bg-slate-900/35 p-5 text-white shadow-lg backdrop-blur-md">
+                <CreditCard className="text-fonasin-lime" size={24} />
+                <p className="mt-3 font-black text-white drop-shadow-sm">Creditos asociados</p>
+                <p className="mt-1 text-sm leading-6 text-white drop-shadow-sm">Consulta saldos y condiciones de tus creditos activos.</p>
               </div>
             </div>
           </div>
 
-          <form onSubmit={handleLogin} className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
+          <form onSubmit={handleLogin} className="portal-login-card rounded-[2rem] border border-white/70 bg-white/75 p-6 shadow-[0_28px_80px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:p-8">
             <div className="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-100 text-emerald-700">
               <UserRound size={24} />
             </div>
             <h2 className="mt-4 text-2xl font-black text-slate-950">Iniciar sesion</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">Usa el correo y contrasena asignados por FONASIN.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-800">Usa el correo y contrasena asignados por FONASIN.</p>
 
             <div className="mt-5 space-y-4">
               <label className="block">
-                <span className="text-sm font-bold text-slate-800">Correo electronico</span>
+                <span className="text-sm font-bold text-slate-950">Correo electronico</span>
                 <input
                   type="email"
                   autoComplete="email"
@@ -224,7 +224,7 @@ export default function PortalAsociado() {
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-bold text-slate-800">Contrasena</span>
+                <span className="text-sm font-bold text-slate-950">Contrasena</span>
                 <input
                   type="password"
                   autoComplete="current-password"
@@ -245,7 +245,7 @@ export default function PortalAsociado() {
               </label>
               <Link
                 to="/recuperar-contrasena?from=portal"
-                className="inline-flex text-sm font-bold text-emerald-700 hover:text-emerald-800"
+                className="inline-flex rounded-md px-1 text-sm font-bold text-emerald-900 underline decoration-emerald-700/40 underline-offset-4 hover:text-emerald-950 focus-ring"
               >
                 Olvide mi contrasena
               </Link>
@@ -256,7 +256,7 @@ export default function PortalAsociado() {
 
             <button
               type="submit"
-              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700"
+              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-600 to-lime-500 px-5 py-3.5 text-base font-black text-white shadow-lg shadow-emerald-700/25 transition hover:from-emerald-700 hover:to-emerald-600 focus-ring"
             >
               Entrar al portal <ArrowRight size={18} />
             </button>
@@ -283,7 +283,7 @@ export default function PortalAsociado() {
         <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-700">Portal asociado</p>
+              <div className="mb-7 grid h-16 w-16 place-items-center overflow-hidden rounded-2xl border border-white/70 bg-white/85 p-2 shadow-xl backdrop-blur sm:h-20 sm:w-20"><img src="/logotipo.png" alt="Logo FONASIN" className="max-h-full max-w-full object-contain" /></div><p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-900">Portal asociado</p>
               <h1 className="mt-2 text-3xl font-black text-slate-950">Hola, {user?.email}</h1>
               <div className="mt-3 flex flex-wrap gap-2">
                 {(user?.roles ?? []).map((role) => (

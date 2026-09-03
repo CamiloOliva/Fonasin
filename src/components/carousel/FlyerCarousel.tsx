@@ -17,11 +17,11 @@ export default function FlyerCarousel() {
   return (
     <section className="bg-fonasin-deep" aria-label="Comunicaciones destacadas">
       <div className="relative isolate overflow-hidden">
-        <div className="relative h-[clamp(240px,34vw,520px)] overflow-hidden">
+        <div className="relative flex min-h-[clamp(240px,34vw,520px)] items-center justify-center overflow-hidden bg-fonasin-deep/95 px-2 sm:px-4">
           <img
             src={flyer.image}
             alt={flyer.title}
-            className="block h-full w-full object-cover object-center"
+            className="block h-auto max-h-[70vh] w-full object-contain object-center"
           />
         </div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-fonasin-deep/25 to-transparent" />
