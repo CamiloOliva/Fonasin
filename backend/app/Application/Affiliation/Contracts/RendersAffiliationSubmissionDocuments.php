@@ -9,7 +9,7 @@ interface RendersAffiliationSubmissionDocuments
     /**
      * @param  array<string, array<string, mixed>>  $sections
      */
-    public function affiliationSummary(AffiliationApplication $application, array $sections): string;
+    public function affiliationSummary(AffiliationApplication $application, array $sections, array $signature): string;
 
     /**
      * @param  array<string, array<string, mixed>>  $sections

@@ -104,10 +104,16 @@ class SubmitAffiliationApplicationTest extends TestCase
         Storage::fake('local');
         $application = app(CreateAffiliationDraft::class)();
         $capturedPayroll = [];
+        $capturedSignature = [];
         $renderer = Mockery::mock(RendersAffiliationSubmissionDocuments::class);
 
         $renderer->shouldReceive('affiliationSummary')
             ->once()
+            ->withArgs(function (AffiliationApplication $receivedApplication, array $sections, array $signature) use ($application, &$capturedSignature): bool {
+                $capturedSignature = $signature;
+
+                return $receivedApplication->is($application);
+            })
             ->andReturn('%PDF summary');
         $renderer->shouldReceive('payrollAuthorization')
             ->once()
@@ -133,6 +139,10 @@ class SubmitAffiliationApplicationTest extends TestCase
 
         $this->assertSame('Bucaramanga', $capturedPayroll['city']);
         $this->assertSame('24 de agosto de 2026', $capturedPayroll['signature_date_label']);
+        $this->assertSame('Bucaramanga', $capturedPayroll['signature']['city']);
+        $this->assertSame('24 de agosto de 2026', $capturedPayroll['signature']['signature_date_label']);
+        $this->assertSame('24 de agosto de 2026', $capturedSignature['signature_date_label']);
+        $this->assertSame('Firma electronica simple', $capturedSignature['mechanism']);
     }
 
     public function test_it_rejects_submission_when_required_consents_are_missing(): void

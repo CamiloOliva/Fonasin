@@ -8,11 +8,13 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class LaravelDompdfAffiliationSubmissionRenderer implements RendersAffiliationSubmissionDocuments
 {
-    public function affiliationSummary(AffiliationApplication $application, array $sections): string
+    public function affiliationSummary(AffiliationApplication $application, array $sections, array $signature): string
     {
         return Pdf::loadView('pdf.affiliation.summary', [
             'application' => $application,
             'sections' => $sections,
+            'signature' => $signature,
+            'logoPath' => public_path('logotipo.png'),
         ])->output();
     }
 
@@ -22,6 +24,7 @@ class LaravelDompdfAffiliationSubmissionRenderer implements RendersAffiliationSu
             'application' => $application,
             'sections' => $sections,
             'payroll' => $payroll,
+            'logoPath' => public_path('logotipo.png'),
         ])->output();
     }
 }
