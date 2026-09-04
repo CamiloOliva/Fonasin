@@ -1338,7 +1338,7 @@ export default function AffiliationForm() {
                 ),
             ));
             setBackendMode('ready');
-            setBackendMessage(`Borrador ${recoveredDraft.id} recuperado en este navegador.`);
+            setBackendMessage('Encontramos un borrador guardado en este navegador. Puedes continuar donde ibas durante las proximas 24 horas.');
             return;
           } catch {
             clearStoredDraft();
