@@ -1,13 +1,20 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { AlertCircle, CheckCircle2, ListFilter, Mail, MessageCircle, Paperclip, Send, UploadCloud, UserRound } from 'lucide-react';
 import { submitFPQRS } from '../../services/fpqrsService';
 
 const submissionTypes = [
+  { value: 'debt_certificate', label: 'Certificado de deuda' },
+  { value: 'tax_certificate', label: 'Certificado tributario' },
+  { value: 'clearance', label: 'Paz y salvo' },
+  { value: 'voluntary_savings_withdrawal', label: 'Retiro de ahorro voluntario' },
+  { value: 'permanent_savings_20_withdrawal', label: 'Retiro 20% ahorro permanente' },
+  { value: 'savings_withdrawal', label: 'Solicitud de retiro' },
   { value: 'petition', label: 'Peticion' },
   { value: 'complaint', label: 'Queja' },
   { value: 'claim', label: 'Reclamo' },
-  { value: 'request', label: 'Solicitud' },
   { value: 'suggestion', label: 'Sugerencia' },
+  { value: 'compliment', label: 'Felicitacion' },
+  { value: 'right_to_petition', label: 'Derecho de peticion' },
 ];
 
 const maxAttachmentSize = 5 * 1024 * 1024;

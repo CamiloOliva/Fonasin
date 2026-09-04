@@ -1,4 +1,4 @@
-import { ChevronRight, FileText, Globe, Home, Instagram, Link2, MapPin, MessageCircle, Radio, Send, Users, Youtube } from 'lucide-react';
+import { ChevronRight, FileText, Globe, Home, Instagram, Link2, MessageCircle, Radio, Users, Youtube } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { Link } from 'react-router-dom';
 import { navigation } from '../../data/navigation';
@@ -209,8 +209,22 @@ export default function Footer() {
                 <ChevronRight className="h-4 w-4 text-[#d9d500]" />
                 WhatsApp
               </a>
-              <SoftButton icon={Send} label="Contactenos" muted />
-              <SoftButton icon={MapPin} label="Nuestra ubicacion" muted />
+              <a
+                href="mailto:fonasin.bucaramanga@fonasin.com"
+                className="group flex items-center gap-3 text-sm font-medium text-white/82 transition hover:text-white"
+              >
+                <ChevronRight className="h-4 w-4 text-[#d9d500] transition group-hover:translate-x-1" />
+                Correo
+              </a>
+              <a
+                href="https://www.google.com/maps/@7.1297229,-73.1261016,976a,75y,280.5h,85.21t/data=!3m7!1e1!3m5!1sW3PTyLJZ4c20uLXzQjIiuQ!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D4.790603214045703%26panoid%3DW3PTyLJZ4c20uLXzQjIiuQ%26yaw%3D280.5047369856187!7i16384!8i8192?entry=ttu&g_ep=EgoyMDI2MDkwMS4wIKXMDSoASAFQAw%3D%3D"
+                target="_blank"
+                rel="noreferrer"
+                className="group flex items-center gap-3 text-sm font-medium text-white/82 transition hover:text-white"
+              >
+                <ChevronRight className="h-4 w-4 text-[#d9d500] transition group-hover:translate-x-1" />
+                Nuestra ubicacion
+              </a>
             </div>
           </section>
 
