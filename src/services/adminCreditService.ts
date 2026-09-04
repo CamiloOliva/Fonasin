@@ -94,8 +94,12 @@ async function requestJson<T>(path: string, options: RequestOptions = {}, retrie
   return payload as T;
 }
 
-export async function fetchAdminCredits(): Promise<AdminCredit[]> {
-  const response = await requestJson<{ data: AdminCredit[] }>('/admin/credits');
+export async function fetchAdminCredits(page = 1, perPage = 50): Promise<AdminCredit[]> {
+  const params = new URLSearchParams({
+    page: String(page),
+    per_page: String(perPage),
+  });
+  const response = await requestJson<{ data: AdminCredit[] }>(`/admin/credits?${params.toString()}`);
 
   return response.data;
 }

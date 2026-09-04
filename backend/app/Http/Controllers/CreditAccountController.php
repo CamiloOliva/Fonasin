@@ -22,10 +22,11 @@ class CreditAccountController extends Controller
 {
     public function index(Request $request, RecordAuditEvent $recordAuditEvent): JsonResponse
     {
+        $perPage = max(1, min(100, (int) $request->integer('per_page', 50)));
         $credits = CreditAccount::query()
             ->with('associate:id,full_name,document_type,status')
             ->latest()
-            ->get();
+            ->paginate($perPage);
 
         ($recordAuditEvent)(
             module: AuditModule::Credits,
@@ -38,11 +39,21 @@ class CreditAccountController extends Controller
             metadata: [
                 'scope' => 'admin',
                 'count' => $credits->count(),
+                'total' => $credits->total(),
+                'per_page' => $credits->perPage(),
             ],
         );
 
         return response()->json([
-            'data' => $credits->map(fn (CreditAccount $credit): array => $this->creditPayload($credit))->values(),
+            'data' => $credits->getCollection()
+                ->map(fn (CreditAccount $credit): array => $this->creditPayload($credit))
+                ->values(),
+            'meta' => [
+                'current_page' => $credits->currentPage(),
+                'last_page' => $credits->lastPage(),
+                'per_page' => $credits->perPage(),
+                'total' => $credits->total(),
+            ],
         ]);
     }
 

@@ -54,6 +54,20 @@ class PortalAffiliationHttpTest extends TestCase
         ]);
     }
 
+    public function test_inactive_associate_cannot_view_portal_affiliation(): void
+    {
+        $user = $this->userWithRole('associate');
+        $this->createAssociate([
+            'user_id' => $user->id,
+            'status' => 'inactive',
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/portal/affiliation')
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'El asociado no se encuentra activo.');
+    }
+
     public function test_associate_can_view_only_own_enabled_affiliation_generated_documents(): void
     {
         $user = $this->userWithRole('associate');
@@ -73,12 +87,32 @@ class PortalAffiliationHttpTest extends TestCase
             ->assertJsonCount(1, 'data.documents')
             ->assertJsonPath('data.documents.0.links.preview', fn (string $url): bool => str_starts_with($url, '/affiliation-applications/'))
             ->assertJsonMissingPath('data.documents.0.storage_key');
+        $this->assertStringContainsString('context=portal', $response->json('data.documents.0.links.preview'));
 
         $documentTypes = collect($response->json('data.documents'))->pluck('document_type')->all();
 
         $this->assertEqualsCanonicalizing([
             ApplicationDocumentType::AffiliationSummary->value,
         ], $documentTypes);
+    }
+
+    public function test_portal_document_links_require_authenticated_owner_session(): void
+    {
+        $associate = $this->createAssociate();
+        $application = $this->createAffiliationApplication($associate, AffiliationApplicationStatus::Enabled);
+        $document = $this->createDocument($application, ApplicationDocumentType::AffiliationSummary);
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'affiliation-applications.documents.preview',
+            now()->addMinutes(10),
+            [
+                'application' => $application,
+                'document' => $document,
+                'context' => 'portal',
+            ],
+            false,
+        );
+
+        $this->get($url)->assertForbidden();
     }
 
     public function test_associate_can_start_update_draft_from_enabled_affiliation(): void
@@ -93,6 +127,7 @@ class PortalAffiliationHttpTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('data.status', AffiliationApplicationStatus::Draft->value)
+            ->assertJsonPath('data.draft_access_token', fn (string $token): bool => strlen($token) === 64)
             ->assertJsonPath('data.links.read', fn (string $url): bool => str_starts_with($url, '/affiliation-applications/'));
 
         $draftId = $response->json('data.id');
@@ -104,6 +139,7 @@ class PortalAffiliationHttpTest extends TestCase
             'current_step' => AffiliationApplicationStep::Personal->value,
         ]);
         $this->assertSame(2, ApplicationSection::query()->where('application_id', $draftId)->count());
+        $this->assertNotNull(AffiliationApplication::query()->findOrFail($draftId)->access_token_hash);
         $this->assertDatabaseHas('audit_events', [
             'actor_user_id' => $user->id,
             'action' => AffiliationAuditAction::ApplicationUpdateDraftCreated->value,
@@ -123,12 +159,29 @@ class PortalAffiliationHttpTest extends TestCase
         $response = $this->actingAs($user)->postJson('/portal/affiliation/update-draft');
 
         $response->assertCreated()
-            ->assertJsonPath('data.id', $existingDraft->id);
+            ->assertJsonPath('data.id', $existingDraft->id)
+            ->assertJsonPath('data.draft_access_token', fn (string $token): bool => strlen($token) === 64);
+
+        $this->assertNotNull($existingDraft->refresh()->access_token_hash);
 
         $this->assertSame(
             1,
             $associate->affiliationApplications()->where('status', AffiliationApplicationStatus::Draft->value)->count(),
         );
+    }
+
+    public function test_inactive_associate_cannot_start_update_draft(): void
+    {
+        $user = $this->userWithRole('associate');
+        $this->createAssociate([
+            'user_id' => $user->id,
+            'status' => 'inactive',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson('/portal/affiliation/update-draft')
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'El asociado no se encuentra activo.');
     }
 
     /**

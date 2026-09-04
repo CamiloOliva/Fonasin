@@ -11,6 +11,7 @@ use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Models\AffiliationApplication;
 use App\Models\ApplicationDocument;
 use App\Models\ApplicationSection;
+use App\Models\Associate;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -97,7 +98,7 @@ class AffiliationBackofficeHttpTest extends TestCase
             'uploaded_at' => now(),
         ]);
 
-        $this->actingAs($reviewer)
+        $response = $this->actingAs($reviewer)
             ->getJson("/admin/affiliation-applications/{$application->id}")
             ->assertOk()
             ->assertJsonPath('data.id', $application->id)
@@ -105,6 +106,35 @@ class AffiliationBackofficeHttpTest extends TestCase
             ->assertJsonPath('data.sections.0.data.firstName', 'Ana')
             ->assertJsonPath('data.sections.0.data.documentNumber', '123456789')
             ->assertJsonPath('data.documents.0.document_type', ApplicationDocumentType::Identity->value);
+
+        $this->assertStringContainsString('context=admin', $response->json('data.documents.0.links.preview'));
+    }
+
+    public function test_admin_document_links_require_authenticated_backoffice_session(): void
+    {
+        $application = $this->applicationWithStatus(AffiliationApplicationStatus::Submitted);
+        $document = ApplicationDocument::query()->forceCreate([
+            'application_id' => $application->id,
+            'document_type' => ApplicationDocumentType::Identity->value,
+            'original_filename' => 'cedula.pdf',
+            'storage_key' => 'private/affiliations/demo/cedula.pdf',
+            'mime_type' => 'application/pdf',
+            'byte_size' => 128,
+            'status' => ApplicationDocumentStatus::Uploaded->value,
+            'uploaded_at' => now(),
+        ]);
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'affiliation-applications.documents.preview',
+            now()->addMinutes(10),
+            [
+                'application' => $application,
+                'document' => $document,
+                'context' => 'admin',
+            ],
+            false,
+        );
+
+        $this->get($url)->assertForbidden();
     }
 
     public function test_reviewer_can_start_review_over_http(): void
@@ -193,36 +223,8 @@ class AffiliationBackofficeHttpTest extends TestCase
 
     public function test_reviewer_can_enable_application_after_signed_payroll_authorization(): void
     {
-        $application = $this->applicationWithStatus(AffiliationApplicationStatus::Approved);
+        $application = $this->applicationReadyForEnable();
         $reviewer = $this->userWithRole('reviewer');
-        $cipher = app(EncryptsSensitiveData::class);
-
-        ApplicationSection::query()->forceCreate([
-            'application_id' => $application->id,
-            'section' => AffiliationApplicationStep::Personal->value,
-            'schema_version' => 1,
-            'data_encrypted' => $cipher->encryptArray([
-                'documentType' => 'CC',
-                'documentNumber' => '123456789',
-                'firstName' => 'Ana',
-                'middleName' => 'Maria',
-                'lastName' => 'Prueba',
-                'secondLastName' => 'Perez',
-                'email' => 'ana.prueba@example.test',
-            ]),
-            'completed_at' => now(),
-        ]);
-
-        ApplicationDocument::query()->forceCreate([
-            'application_id' => $application->id,
-            'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
-            'original_filename' => 'libranza-firmada.pdf',
-            'storage_key' => 'private/affiliations/demo/libranza-firmada.pdf',
-            'mime_type' => 'application/pdf',
-            'byte_size' => 128,
-            'status' => ApplicationDocumentStatus::Uploaded->value,
-            'uploaded_at' => now(),
-        ]);
 
         $response = $this->actingAs($reviewer)
             ->postJson("/admin/affiliation-applications/{$application->id}/enable");
@@ -246,6 +248,53 @@ class AffiliationBackofficeHttpTest extends TestCase
             'actor_user_id' => $reviewer->id,
             'action' => AffiliationAuditAction::ApplicationEnabled->value,
             'subject_id' => $application->id,
+        ]);
+    }
+
+    public function test_enable_rejects_existing_email_with_different_document(): void
+    {
+        User::factory()->create([
+            'email' => 'ana.prueba@example.test',
+            'document_type' => 'CC',
+            'document_number_hash' => hash('sha256', '999999999'),
+            'document_number_encrypted' => 'test-ciphertext',
+        ]);
+        $application = $this->applicationReadyForEnable();
+        $reviewer = $this->userWithRole('reviewer');
+
+        $this->actingAs($reviewer)
+            ->postJson("/admin/affiliation-applications/{$application->id}/enable")
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'No se puede habilitar la afiliacion porque el correo o documento ya pertenece a otra identidad.');
+
+        $this->assertDatabaseMissing('affiliation_applications', [
+            'id' => $application->id,
+            'status' => AffiliationApplicationStatus::Enabled->value,
+        ]);
+    }
+
+    public function test_enable_rejects_existing_document_linked_to_another_user(): void
+    {
+        $existingUser = User::factory()->create(['email' => 'otra.persona@example.test']);
+        Associate::query()->create([
+            'user_id' => $existingUser->id,
+            'document_type' => 'CC',
+            'document_number_hash' => hash('sha256', '123456789'),
+            'document_number_encrypted' => 'test-ciphertext',
+            'full_name' => 'Otra Persona',
+            'status' => 'active',
+        ]);
+        $application = $this->applicationReadyForEnable();
+        $reviewer = $this->userWithRole('reviewer');
+
+        $this->actingAs($reviewer)
+            ->postJson("/admin/affiliation-applications/{$application->id}/enable")
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'No se puede habilitar la afiliacion porque el correo o documento ya pertenece a otra identidad.');
+
+        $this->assertDatabaseMissing('affiliation_applications', [
+            'id' => $application->id,
+            'status' => AffiliationApplicationStatus::Enabled->value,
         ]);
     }
 
@@ -301,6 +350,45 @@ class AffiliationBackofficeHttpTest extends TestCase
             'status' => $status->value,
             'current_step' => AffiliationApplicationStep::Summary->value,
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $personalOverrides
+     */
+    private function applicationReadyForEnable(array $personalOverrides = []): AffiliationApplication
+    {
+        $application = $this->applicationWithStatus(AffiliationApplicationStatus::Approved);
+        $cipher = app(EncryptsSensitiveData::class);
+
+        ApplicationSection::query()->forceCreate([
+            'application_id' => $application->id,
+            'section' => AffiliationApplicationStep::Personal->value,
+            'schema_version' => 1,
+            'data_encrypted' => $cipher->encryptArray([
+                'documentType' => 'CC',
+                'documentNumber' => '123456789',
+                'firstName' => 'Ana',
+                'middleName' => 'Maria',
+                'lastName' => 'Prueba',
+                'secondLastName' => 'Perez',
+                'email' => 'ana.prueba@example.test',
+                ...$personalOverrides,
+            ]),
+            'completed_at' => now(),
+        ]);
+
+        ApplicationDocument::query()->forceCreate([
+            'application_id' => $application->id,
+            'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
+            'original_filename' => 'libranza-firmada.pdf',
+            'storage_key' => 'private/affiliations/demo/libranza-firmada.pdf',
+            'mime_type' => 'application/pdf',
+            'byte_size' => 128,
+            'status' => ApplicationDocumentStatus::Uploaded->value,
+            'uploaded_at' => now(),
+        ]);
+
+        return $application;
     }
 
     private function userWithRole(string $roleName): User

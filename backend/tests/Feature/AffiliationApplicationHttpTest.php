@@ -28,7 +28,8 @@ class AffiliationApplicationHttpTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('data.status', AffiliationApplicationStatus::Draft->value)
-            ->assertJsonPath('data.current_step', AffiliationApplicationStep::Personal->value);
+            ->assertJsonPath('data.current_step', AffiliationApplicationStep::Personal->value)
+            ->assertJsonPath('data.draft_access_token', fn (string $token): bool => strlen($token) === 64);
 
         $this->assertStringStartsWith('/affiliation-applications/', $response->json('data.links.sections.personal'));
         $this->assertStringStartsWith('/affiliation-applications/', $response->json('data.links.read'));
@@ -40,6 +41,9 @@ class AffiliationApplicationHttpTest extends TestCase
             'id' => $response->json('data.id'),
             'status' => AffiliationApplicationStatus::Draft->value,
         ]);
+        $this->assertNotNull(
+            AffiliationApplication::query()->findOrFail($response->json('data.id'))->access_token_hash
+        );
     }
 
     public function test_it_stores_a_section_without_exposing_encrypted_payload_over_http(): void
@@ -48,11 +52,12 @@ class AffiliationApplicationHttpTest extends TestCase
             'status' => AffiliationApplicationStatus::Draft->value,
             'current_step' => AffiliationApplicationStep::Personal->value,
         ]);
+        $headers = $this->protectDraft($application);
 
         $response = $this->postJson($this->signedSectionUrl($application, AffiliationApplicationStep::Personal), [
             'schema_version' => 1,
             'data' => $this->validSectionPayload(AffiliationApplicationStep::Personal),
-        ]);
+        ], $headers);
 
         $response->assertOk()
             ->assertJsonPath('data.application_id', $application->id)
@@ -71,11 +76,12 @@ class AffiliationApplicationHttpTest extends TestCase
             'status' => AffiliationApplicationStatus::Draft->value,
             'current_step' => AffiliationApplicationStep::Personal->value,
         ]);
+        $headers = $this->protectDraft($application);
 
         $this->postJson($this->signedSectionUrl($application, AffiliationApplicationStep::Documents), [
             'schema_version' => 1,
             'data' => ['document' => 'not-a-section'],
-        ])->assertUnprocessable();
+        ], $headers)->assertUnprocessable();
     }
 
     public function test_it_registers_document_without_exposing_storage_key_over_http(): void
@@ -85,11 +91,12 @@ class AffiliationApplicationHttpTest extends TestCase
             'status' => AffiliationApplicationStatus::Draft->value,
             'current_step' => AffiliationApplicationStep::Documents->value,
         ]);
+        $headers = $this->protectDraft($application);
 
         $response = $this->post($this->signedDocumentUrl($application), [
             'document_type' => ApplicationDocumentType::Identity->value,
             'file' => UploadedFile::fake()->create('identity.pdf', 64, 'application/pdf'),
-        ], ['Accept' => 'application/json']);
+        ], ['Accept' => 'application/json', ...$headers]);
 
         $response->assertCreated()
             ->assertJsonPath('data.application_id', $application->id)
@@ -111,11 +118,12 @@ class AffiliationApplicationHttpTest extends TestCase
             'status' => AffiliationApplicationStatus::Draft->value,
             'current_step' => AffiliationApplicationStep::Consents->value,
         ]);
+        $headers = $this->protectDraft($application);
 
         $response = $this->postJson($this->signedConsentUrl($application), [
             'consent_type' => ConsentType::DataProcessing->value,
             'policy_version' => '2026-01',
-        ]);
+        ], $headers);
 
         $response->assertCreated()
             ->assertJsonPath('data.application_id', $application->id)
@@ -130,24 +138,25 @@ class AffiliationApplicationHttpTest extends TestCase
         $draft = $this->postJson('/affiliation-applications')
             ->assertCreated()
             ->json('data');
+        $headers = $this->draftHeaders($draft);
 
         $this->postJson($draft['links']['sections']['personal'], [
             'schema_version' => 1,
             'data' => $this->validSectionPayload(AffiliationApplicationStep::Personal),
             'completed' => true,
-        ])->assertOk();
+        ], $headers)->assertOk();
 
         $this->post($draft['links']['documents'], [
             'document_type' => ApplicationDocumentType::Identity->value,
             'file' => UploadedFile::fake()->create('identity.pdf', 64, 'application/pdf'),
-        ], ['Accept' => 'application/json'])->assertCreated();
+        ], ['Accept' => 'application/json', ...$headers])->assertCreated();
 
         $this->postJson($draft['links']['consents'], [
             'consent_type' => ConsentType::DataProcessing->value,
             'policy_version' => '2026-01',
-        ])->assertCreated();
+        ], $headers)->assertCreated();
 
-        $this->getJson($draft['links']['read'])
+        $this->getJson($draft['links']['read'], $headers)
             ->assertOk()
             ->assertJsonPath('data.id', $draft['id'])
             ->assertJsonPath('data.status', AffiliationApplicationStatus::Draft->value)
@@ -167,13 +176,14 @@ class AffiliationApplicationHttpTest extends TestCase
             'status' => AffiliationApplicationStatus::Draft->value,
             'current_step' => AffiliationApplicationStep::Personal->value,
         ]);
+        $headers = $this->protectDraft($application);
         $this->completeSections($application);
         $this->uploadRequiredDocuments($application);
         $this->acceptRequiredConsents($application, '2026-01');
 
         $response = $this->postJson($this->signedSubmitUrl($application), [
             'policy_version' => '2026-01',
-        ]);
+        ], $headers);
 
         $response->assertOk()
             ->assertJsonPath('data.id', $application->id)
@@ -197,13 +207,14 @@ class AffiliationApplicationHttpTest extends TestCase
             'status' => AffiliationApplicationStatus::Draft->value,
             'current_step' => AffiliationApplicationStep::Personal->value,
         ]);
+        $headers = $this->protectDraft($application);
         $this->completeSections($application);
         $this->uploadRequiredDocuments($application);
         $this->acceptRequiredConsents($application, '2026-01');
 
         $this->postJson($this->signedSubmitUrl($application), [
             'policy_version' => '2026-01',
-        ])->assertOk();
+        ], $headers)->assertOk();
 
         $this->getJson($this->signedReadUrl($application))
             ->assertConflict()
@@ -216,10 +227,11 @@ class AffiliationApplicationHttpTest extends TestCase
             'status' => AffiliationApplicationStatus::Draft->value,
             'current_step' => AffiliationApplicationStep::Personal->value,
         ]);
+        $headers = $this->protectDraft($application);
 
         $this->postJson($this->signedSubmitUrl($application), [
             'policy_version' => '2026-01',
-        ])->assertUnprocessable();
+        ], $headers)->assertUnprocessable();
     }
 
     public function test_it_rejects_public_application_mutations_without_signed_url(): void
@@ -228,8 +240,23 @@ class AffiliationApplicationHttpTest extends TestCase
             'status' => AffiliationApplicationStatus::Draft->value,
             'current_step' => AffiliationApplicationStep::Personal->value,
         ]);
+        $headers = $this->protectDraft($application);
 
         $this->postJson("/affiliation-applications/{$application->id}/sections/personal", [
+            'schema_version' => 1,
+            'data' => $this->validSectionPayload(AffiliationApplicationStep::Personal),
+        ], $headers)->assertForbidden();
+    }
+
+    public function test_it_rejects_signed_draft_access_without_access_token(): void
+    {
+        $application = AffiliationApplication::query()->forceCreate([
+            'status' => AffiliationApplicationStatus::Draft->value,
+            'current_step' => AffiliationApplicationStep::Personal->value,
+        ]);
+        $this->protectDraft($application);
+
+        $this->postJson($this->signedSectionUrl($application, AffiliationApplicationStep::Personal), [
             'schema_version' => 1,
             'data' => $this->validSectionPayload(AffiliationApplicationStep::Personal),
         ])->assertForbidden();
@@ -260,6 +287,7 @@ class AffiliationApplicationHttpTest extends TestCase
             'status' => AffiliationApplicationStatus::Draft->value,
             'current_step' => AffiliationApplicationStep::Personal->value,
         ]);
+        $headers = $this->protectDraft($application);
         $data = $this->validSectionPayload(AffiliationApplicationStep::Personal);
         $data['email'] = '';
 
@@ -267,7 +295,7 @@ class AffiliationApplicationHttpTest extends TestCase
             'schema_version' => 1,
             'data' => $data,
             'completed' => true,
-        ])
+        ], $headers)
             ->assertUnprocessable()
             ->assertJsonFragment(['message' => 'La seccion [personal] no se puede completar porque faltan campos obligatorios: correo electronico.']);
     }
@@ -278,6 +306,7 @@ class AffiliationApplicationHttpTest extends TestCase
             'status' => AffiliationApplicationStatus::Draft->value,
             'current_step' => AffiliationApplicationStep::Employment->value,
         ]);
+        $headers = $this->protectDraft($application);
         $data = $this->validSectionPayload(AffiliationApplicationStep::Employment);
         $data['monthlySalary'] = '1000000';
 
@@ -285,7 +314,7 @@ class AffiliationApplicationHttpTest extends TestCase
             'schema_version' => 1,
             'data' => $data,
             'completed' => true,
-        ])
+        ], $headers)
             ->assertUnprocessable()
             ->assertJsonFragment(['message' => 'La seccion [employment] tiene un campo invalido [salario mensual]: debe estar entre $1.750.905 y $100.000.000.']);
     }
@@ -297,26 +326,27 @@ class AffiliationApplicationHttpTest extends TestCase
         $draft = $this->postJson('/affiliation-applications')
             ->assertCreated()
             ->json('data');
+        $headers = $this->draftHeaders($draft);
 
         foreach (AffiliationApplicationStep::formSections() as $section) {
             $this->postJson($draft['links']['sections'][$section->value], [
                 'schema_version' => 1,
                 'data' => $this->validSectionPayload($section),
                 'completed' => true,
-            ])->assertOk()
+            ], $headers)->assertOk()
                 ->assertJsonPath('data.section', $section->value);
         }
 
         $this->post($draft['links']['documents'], [
             'document_type' => ApplicationDocumentType::Identity->value,
             'file' => UploadedFile::fake()->create('identity.pdf', 64, 'application/pdf'),
-        ], ['Accept' => 'application/json'])
+        ], ['Accept' => 'application/json', ...$headers])
             ->assertCreated()
             ->assertJsonPath('data.document_type', ApplicationDocumentType::Identity->value);
         $this->post($draft['links']['documents'], [
             'document_type' => ApplicationDocumentType::EmploymentCertificate->value,
             'file' => UploadedFile::fake()->create('employment-certificate.pdf', 64, 'application/pdf'),
-        ], ['Accept' => 'application/json'])
+        ], ['Accept' => 'application/json', ...$headers])
             ->assertCreated()
             ->assertJsonPath('data.document_type', ApplicationDocumentType::EmploymentCertificate->value);
 
@@ -324,13 +354,13 @@ class AffiliationApplicationHttpTest extends TestCase
             $this->postJson($draft['links']['consents'], [
                 'consent_type' => $consentType->value,
                 'policy_version' => '2026-01',
-            ])->assertCreated()
+            ], $headers)->assertCreated()
                 ->assertJsonPath('data.consent_type', $consentType->value);
         }
 
         $this->postJson($draft['links']['submit'], [
             'policy_version' => '2026-01',
-        ])
+        ], $headers)
             ->assertOk()
             ->assertJsonPath('data.id', $draft['id'])
             ->assertJsonPath('data.status', AffiliationApplicationStatus::Submitted->value)
@@ -364,34 +394,35 @@ class AffiliationApplicationHttpTest extends TestCase
         $draft = $this->postJson('/affiliation-applications')
             ->assertCreated()
             ->json('data');
+        $headers = $this->draftHeaders($draft);
 
         foreach (AffiliationApplicationStep::formSections() as $section) {
             $this->postJson($draft['links']['sections'][$section->value], [
                 'schema_version' => 1,
                 'data' => $this->validSectionPayload($section),
                 'completed' => true,
-            ])->assertOk();
+            ], $headers)->assertOk();
         }
 
         $this->post($draft['links']['documents'], [
             'document_type' => ApplicationDocumentType::Identity->value,
             'file' => UploadedFile::fake()->create('identity.pdf', 64, 'application/pdf'),
-        ], ['Accept' => 'application/json'])->assertCreated();
+        ], ['Accept' => 'application/json', ...$headers])->assertCreated();
         $this->post($draft['links']['documents'], [
             'document_type' => ApplicationDocumentType::EmploymentCertificate->value,
             'file' => UploadedFile::fake()->create('employment-certificate.pdf', 64, 'application/pdf'),
-        ], ['Accept' => 'application/json'])->assertCreated();
+        ], ['Accept' => 'application/json', ...$headers])->assertCreated();
 
         foreach (ConsentType::requiredForSubmission() as $consentType) {
             $this->postJson($draft['links']['consents'], [
                 'consent_type' => $consentType->value,
                 'policy_version' => '2026-01',
-            ])->assertCreated();
+            ], $headers)->assertCreated();
         }
 
         $submitted = $this->postJson($draft['links']['submit'], [
             'policy_version' => '2026-01',
-        ])
+        ], $headers)
             ->assertOk()
             ->json('data');
 
@@ -415,34 +446,35 @@ class AffiliationApplicationHttpTest extends TestCase
         $draft = $this->postJson('/affiliation-applications')
             ->assertCreated()
             ->json('data');
+        $headers = $this->draftHeaders($draft);
 
         foreach (AffiliationApplicationStep::formSections() as $section) {
             $this->postJson($draft['links']['sections'][$section->value], [
                 'schema_version' => 1,
                 'data' => $this->validSectionPayload($section),
                 'completed' => true,
-            ])->assertOk();
+            ], $headers)->assertOk();
         }
 
         $this->post($draft['links']['documents'], [
             'document_type' => ApplicationDocumentType::Identity->value,
             'file' => UploadedFile::fake()->create('identity.pdf', 64, 'application/pdf'),
-        ], ['Accept' => 'application/json'])->assertCreated();
+        ], ['Accept' => 'application/json', ...$headers])->assertCreated();
         $this->post($draft['links']['documents'], [
             'document_type' => ApplicationDocumentType::EmploymentCertificate->value,
             'file' => UploadedFile::fake()->create('employment-certificate.pdf', 64, 'application/pdf'),
-        ], ['Accept' => 'application/json'])->assertCreated();
+        ], ['Accept' => 'application/json', ...$headers])->assertCreated();
 
         foreach (ConsentType::requiredForSubmission() as $consentType) {
             $this->postJson($draft['links']['consents'], [
                 'consent_type' => $consentType->value,
                 'policy_version' => '2026-01',
-            ])->assertCreated();
+            ], $headers)->assertCreated();
         }
 
         $submitted = $this->postJson($draft['links']['submit'], [
             'policy_version' => '2026-01',
-        ])
+        ], $headers)
             ->assertOk()
             ->json('data');
 
@@ -498,6 +530,27 @@ class AffiliationApplicationHttpTest extends TestCase
         foreach (ConsentType::requiredForSubmission() as $consentType) {
             $acceptConsent($application, $consentType, $policyVersion);
         }
+    }
+
+    /**
+     * @param array<string, mixed> $draft
+     * @return array<string, string>
+     */
+    private function draftHeaders(array $draft): array
+    {
+        return ['X-Affiliation-Draft-Token' => (string) $draft['draft_access_token']];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function protectDraft(AffiliationApplication $application, string $token = 'test-draft-token'): array
+    {
+        $application->forceFill([
+            'access_token_hash' => hash('sha256', $token),
+        ])->save();
+
+        return ['X-Affiliation-Draft-Token' => $token];
     }
 
     private function signedSectionUrl(AffiliationApplication $application, AffiliationApplicationStep $section): string

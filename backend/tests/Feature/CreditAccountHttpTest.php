@@ -52,7 +52,9 @@ class CreditAccountHttpTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.0.id', $credit->id)
             ->assertJsonPath('data.0.associate.id', $associate->id)
-            ->assertJsonPath('data.0.associate.full_name', $associate->full_name);
+            ->assertJsonPath('data.0.associate.full_name', $associate->full_name)
+            ->assertJsonPath('meta.per_page', 50)
+            ->assertJsonPath('meta.total', 1);
 
         $this->assertDatabaseHas('audit_events', [
             'actor_user_id' => $reviewer->id,
@@ -121,6 +123,22 @@ class CreditAccountHttpTest extends TestCase
         ]);
     }
 
+    public function test_credit_status_cannot_return_from_settled_to_active(): void
+    {
+        $admin = $this->userWithRole('admin');
+        $credit = $this->createCredit($admin);
+        $credit->forceFill(['status' => CreditAccountStatus::Settled->value])->save();
+
+        $this->actingAs($admin)
+            ->patchJson("/admin/credits/{$credit->id}", [
+                'status' => CreditAccountStatus::Active->value,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Credit account cannot transition from [settled] to [active].');
+
+        $this->assertSame(CreditAccountStatus::Settled->value, $credit->refresh()->status);
+    }
+
     public function test_reviewer_can_archive_credit_over_http(): void
     {
         $reviewer = $this->userWithRole('reviewer');
@@ -168,6 +186,20 @@ class CreditAccountHttpTest extends TestCase
         $this->actingAs($user)
             ->getJson('/portal/credits')
             ->assertUnprocessable();
+    }
+
+    public function test_inactive_associate_cannot_view_portal_credits(): void
+    {
+        $user = $this->userWithRole('associate');
+        $this->createAssociate([
+            'user_id' => $user->id,
+            'status' => 'inactive',
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/portal/credits')
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'El asociado no se encuentra activo.');
     }
 
     /**

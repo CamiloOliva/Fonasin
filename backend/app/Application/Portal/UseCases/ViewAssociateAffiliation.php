@@ -31,6 +31,10 @@ class ViewAssociateAffiliation
             throw CannotViewPortalAffiliation::associateAccountIsMissing();
         }
 
+        if ($associate->status !== 'active') {
+            throw CannotViewPortalAffiliation::associateAccountIsInactive();
+        }
+
         $application = $associate->affiliationApplications()
             ->with(['documents' => fn ($query) => $query
                 ->where('status', ApplicationDocumentStatus::Uploaded->value)

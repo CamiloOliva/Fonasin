@@ -33,6 +33,7 @@ use App\Models\AffiliationApplication;
 use App\Models\ApplicationDocument;
 use App\Models\ApplicationSection;
 use App\Models\ConsentRecord;
+use App\Models\User;
 use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -42,6 +43,12 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AffiliationApplicationController extends Controller
 {
+    private const DRAFT_LINK_TTL_HOURS = 24;
+    private const DOCUMENT_LINK_TTL_MINUTES = 10;
+    private const DOCUMENT_CONTEXT_ADMIN = 'admin';
+    private const DOCUMENT_CONTEXT_PORTAL = 'portal';
+    private const DOCUMENT_CONTEXT_PUBLIC = 'public';
+
     public function index(Request $request): JsonResponse
     {
         $applications = AffiliationApplication::query()
@@ -85,16 +92,20 @@ class AffiliationApplicationController extends Controller
     public function store(CreateAffiliationDraft $createDraft): JsonResponse
     {
         $application = $createDraft();
+        $accessToken = $this->refreshDraftAccessToken($application);
 
         return response()->json([
-            'data' => $this->applicationPayload($application),
+            'data' => $this->applicationPayload($application, $accessToken),
         ], 201);
     }
 
     public function readDraft(
+        Request $request,
         AffiliationApplication $application,
         EncryptsSensitiveData $cipher,
     ): JsonResponse {
+        $this->ensureDraftAccess($request, $application);
+
         if ($application->status !== AffiliationApplicationStatus::Draft->value) {
             return response()->json([
                 'message' => 'La solicitud ya fue enviada o cerrada.',
@@ -138,6 +149,8 @@ class AffiliationApplicationController extends Controller
         string $section,
         SaveApplicationSection $saveSection,
     ): JsonResponse {
+        $this->ensureDraftAccess($request, $application);
+
         try {
             $applicationSection = $saveSection(
                 application: $application,
@@ -160,6 +173,8 @@ class AffiliationApplicationController extends Controller
         AffiliationApplication $application,
         RegisterApplicationDocument $registerDocument,
     ): JsonResponse {
+        $this->ensureDraftAccess($request, $application);
+
         $file = $request->file('file');
 
         try {
@@ -204,7 +219,7 @@ class AffiliationApplicationController extends Controller
         }
 
         return response()->json([
-            'data' => $this->documentPayload($document),
+            'data' => $this->documentPayload($document, self::DOCUMENT_CONTEXT_ADMIN),
         ], 201);
     }
 
@@ -213,6 +228,8 @@ class AffiliationApplicationController extends Controller
         AffiliationApplication $application,
         AcceptApplicationConsent $acceptConsent,
     ): JsonResponse {
+        $this->ensureDraftAccess($request, $application);
+
         $consent = $acceptConsent(
             application: $application,
             consentType: ConsentType::from($request->string('consent_type')->toString()),
@@ -233,6 +250,7 @@ class AffiliationApplicationController extends Controller
     ): StreamedResponse {
         abort_unless($document->application_id === $application->id, 404);
         abort_unless($document->status === ApplicationDocumentStatus::Uploaded->value, 404);
+        $actor = $this->authorizeDocumentAccess($request, $application, $document);
 
         $storageKey = $document->getAttribute('storage_key');
         abort_unless(is_string($storageKey) && Storage::disk('local')->exists($storageKey), 404);
@@ -242,7 +260,8 @@ class AffiliationApplicationController extends Controller
             action: AffiliationAuditAction::DocumentDownloaded->value,
             subjectType: 'application_document',
             subjectId: $document->id,
-            actorType: AuditActorType::System,
+            actor: $actor,
+            actorType: $actor ? AuditActorType::User : AuditActorType::System,
             ipHash: $this->ipHash($request),
             metadata: [
                 'application_id' => $application->id,
@@ -267,6 +286,7 @@ class AffiliationApplicationController extends Controller
     ): StreamedResponse {
         abort_unless($document->application_id === $application->id, 404);
         abort_unless($document->status === ApplicationDocumentStatus::Uploaded->value, 404);
+        $actor = $this->authorizeDocumentAccess($request, $application, $document);
 
         $storageKey = $document->getAttribute('storage_key');
         abort_unless(is_string($storageKey) && Storage::disk('local')->exists($storageKey), 404);
@@ -276,7 +296,8 @@ class AffiliationApplicationController extends Controller
             action: AffiliationAuditAction::DocumentViewed->value,
             subjectType: 'application_document',
             subjectId: $document->id,
-            actorType: AuditActorType::System,
+            actor: $actor,
+            actorType: $actor ? AuditActorType::User : AuditActorType::System,
             ipHash: $this->ipHash($request),
             metadata: [
                 'application_id' => $application->id,
@@ -299,6 +320,8 @@ class AffiliationApplicationController extends Controller
         AffiliationApplication $application,
         SubmitAffiliationApplication $submitApplication,
     ): JsonResponse {
+        $this->ensureDraftAccess($request, $application);
+
         try {
             $submitted = $submitApplication(
                 application: $application,
@@ -332,7 +355,7 @@ class AffiliationApplicationController extends Controller
         }
 
         return response()->json([
-            'data' => $this->applicationPayload($review),
+            'data' => $this->applicationPayload($review, documentContext: self::DOCUMENT_CONTEXT_ADMIN),
         ]);
     }
 
@@ -353,7 +376,7 @@ class AffiliationApplicationController extends Controller
         }
 
         return response()->json([
-            'data' => $this->applicationPayload($correction),
+            'data' => $this->applicationPayload($correction, documentContext: self::DOCUMENT_CONTEXT_ADMIN),
         ]);
     }
 
@@ -373,7 +396,7 @@ class AffiliationApplicationController extends Controller
         }
 
         return response()->json([
-            'data' => $this->applicationPayload($approved),
+            'data' => $this->applicationPayload($approved, documentContext: self::DOCUMENT_CONTEXT_ADMIN),
         ]);
     }
 
@@ -394,7 +417,7 @@ class AffiliationApplicationController extends Controller
 
         return response()->json([
             'data' => [
-                'application' => $this->applicationPayload($result['application']),
+                'application' => $this->applicationPayload($result['application'], documentContext: self::DOCUMENT_CONTEXT_ADMIN),
                 'associate' => [
                     'id' => $result['associate']->id,
                     'full_name' => $result['associate']->full_name,
@@ -429,16 +452,20 @@ class AffiliationApplicationController extends Controller
         }
 
         return response()->json([
-            'data' => $this->applicationPayload($rejected),
+            'data' => $this->applicationPayload($rejected, documentContext: self::DOCUMENT_CONTEXT_ADMIN),
         ]);
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function applicationPayload(AffiliationApplication $application): array
+    private function applicationPayload(
+        AffiliationApplication $application,
+        ?string $plainAccessToken = null,
+        string $documentContext = self::DOCUMENT_CONTEXT_PUBLIC,
+    ): array
     {
-        return [
+        $payload = [
             'id' => $application->id,
             'status' => $application->status,
             'current_step' => $application->current_step,
@@ -453,10 +480,16 @@ class AffiliationApplicationController extends Controller
                 ->where('status', ApplicationDocumentStatus::Uploaded->value)
                 ->oldest('created_at')
                 ->get()
-                ->map(fn (ApplicationDocument $document): array => $this->documentPayload($document))
+                ->map(fn (ApplicationDocument $document): array => $this->documentPayload($document, $documentContext))
                 ->all(),
             'links' => $this->applicationSignedLinks($application),
         ];
+
+        if ($plainAccessToken !== null) {
+            $payload['draft_access_token'] = $plainAccessToken;
+        }
+
+        return $payload;
     }
 
     /**
@@ -497,7 +530,7 @@ class AffiliationApplicationController extends Controller
                 ->values()
                 ->all(),
             'documents' => $application->documents
-                ->map(fn (ApplicationDocument $document): array => $this->documentPayload($document))
+                ->map(fn (ApplicationDocument $document): array => $this->documentPayload($document, self::DOCUMENT_CONTEXT_ADMIN))
                 ->values()
                 ->all(),
             'consents' => $application->consentRecords
@@ -527,7 +560,7 @@ class AffiliationApplicationController extends Controller
      */
     private function applicationSignedLinks(AffiliationApplication $application): array
     {
-        $expiresAt = now()->addHours(24);
+        $expiresAt = now()->addHours(self::DRAFT_LINK_TTL_HOURS);
 
         return [
             'read' => URL::temporarySignedRoute(
@@ -587,7 +620,10 @@ class AffiliationApplicationController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function documentPayload(ApplicationDocument $document): array
+    private function documentPayload(
+        ApplicationDocument $document,
+        string $accessContext = self::DOCUMENT_CONTEXT_PUBLIC,
+    ): array
     {
         return [
             'id' => $document->id,
@@ -601,24 +637,71 @@ class AffiliationApplicationController extends Controller
             'links' => [
                 'download' => URL::temporarySignedRoute(
                     'affiliation-applications.documents.download',
-                    now()->addHours(24),
-                    [
-                        'application' => $document->application_id,
-                        'document' => $document,
-                    ],
+                    now()->addMinutes(self::DOCUMENT_LINK_TTL_MINUTES),
+                    $this->documentRouteParameters($document, $accessContext),
                     false,
                 ),
                 'preview' => URL::temporarySignedRoute(
                     'affiliation-applications.documents.preview',
-                    now()->addHours(24),
-                    [
-                        'application' => $document->application_id,
-                        'document' => $document,
-                    ],
+                    now()->addMinutes(self::DOCUMENT_LINK_TTL_MINUTES),
+                    $this->documentRouteParameters($document, $accessContext),
                     false,
                 ),
             ],
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function documentRouteParameters(ApplicationDocument $document, string $accessContext): array
+    {
+        $parameters = [
+            'application' => $document->application_id,
+            'document' => $document,
+        ];
+
+        if ($accessContext !== self::DOCUMENT_CONTEXT_PUBLIC) {
+            $parameters['context'] = $accessContext;
+        }
+
+        return $parameters;
+    }
+
+    private function authorizeDocumentAccess(
+        Request $request,
+        AffiliationApplication $application,
+        ApplicationDocument $document,
+    ): ?User {
+        $context = (string) $request->query('context', self::DOCUMENT_CONTEXT_PUBLIC);
+        $user = $request->user();
+
+        if ($context === self::DOCUMENT_CONTEXT_ADMIN) {
+            abort_unless($user instanceof User && ! $user->must_change_password && $user->can('view', $application), 403);
+
+            return $user;
+        }
+
+        if ($context === self::DOCUMENT_CONTEXT_PORTAL) {
+            $associate = $user instanceof User ? $user->associate : null;
+
+            abort_unless(
+                $user instanceof User
+                && ! $user->must_change_password
+                && $associate
+                && $associate->status === 'active'
+                && $application->associate_id === $associate->id
+                && $document->document_type === ApplicationDocumentType::AffiliationSummary->value,
+                403,
+            );
+
+            return $user;
+        }
+
+        abort_unless($context === self::DOCUMENT_CONTEXT_PUBLIC, 403);
+        abort_if($document->document_type === ApplicationDocumentType::SignedPayrollAuthorization->value, 404);
+
+        return null;
     }
 
     /**
@@ -647,5 +730,34 @@ class AffiliationApplicationController extends Controller
         $ip = $request->ip();
 
         return $ip ? hash('sha256', $ip) : null;
+    }
+
+    private function refreshDraftAccessToken(AffiliationApplication $application): string
+    {
+        $token = bin2hex(random_bytes(32));
+
+        $application->forceFill([
+            'access_token_hash' => hash('sha256', $token),
+        ])->save();
+
+        return $token;
+    }
+
+    private function ensureDraftAccess(Request $request, AffiliationApplication $application): void
+    {
+        if ($application->status !== AffiliationApplicationStatus::Draft->value) {
+            return;
+        }
+
+        $expectedHash = $application->access_token_hash;
+        $token = $request->header('X-Affiliation-Draft-Token');
+
+        abort_unless(
+            is_string($expectedHash)
+            && $expectedHash !== ''
+            && is_string($token)
+            && hash_equals($expectedHash, hash('sha256', $token)),
+            403,
+        );
     }
 }
