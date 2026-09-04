@@ -34,10 +34,7 @@ class ViewAssociateAffiliation
         $application = $associate->affiliationApplications()
             ->with(['documents' => fn ($query) => $query
                 ->where('status', ApplicationDocumentStatus::Uploaded->value)
-                ->whereIn('document_type', [
-                    ApplicationDocumentType::AffiliationSummary->value,
-                    ApplicationDocumentType::PayrollAuthorization->value,
-                ])
+                ->where('document_type', ApplicationDocumentType::AffiliationSummary->value)
                 ->oldest('created_at')])
             ->where('status', AffiliationApplicationStatus::Enabled->value)
             ->latest('updated_at')

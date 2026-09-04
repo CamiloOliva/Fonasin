@@ -70,7 +70,7 @@ class PortalAffiliationHttpTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.id', $application->id)
             ->assertJsonPath('data.status', AffiliationApplicationStatus::Enabled->value)
-            ->assertJsonCount(2, 'data.documents')
+            ->assertJsonCount(1, 'data.documents')
             ->assertJsonPath('data.documents.0.links.preview', fn (string $url): bool => str_starts_with($url, '/affiliation-applications/'))
             ->assertJsonMissingPath('data.documents.0.storage_key');
 
@@ -78,7 +78,6 @@ class PortalAffiliationHttpTest extends TestCase
 
         $this->assertEqualsCanonicalizing([
             ApplicationDocumentType::AffiliationSummary->value,
-            ApplicationDocumentType::PayrollAuthorization->value,
         ], $documentTypes);
     }
 
