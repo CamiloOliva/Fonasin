@@ -98,7 +98,7 @@ class AffiliationBackofficeHttpTest extends TestCase
             'uploaded_at' => now(),
         ]);
 
-        $this->actingAs($reviewer)
+        $response = $this->actingAs($reviewer)
             ->getJson("/admin/affiliation-applications/{$application->id}")
             ->assertOk()
             ->assertJsonPath('data.id', $application->id)
@@ -106,6 +106,35 @@ class AffiliationBackofficeHttpTest extends TestCase
             ->assertJsonPath('data.sections.0.data.firstName', 'Ana')
             ->assertJsonPath('data.sections.0.data.documentNumber', '123456789')
             ->assertJsonPath('data.documents.0.document_type', ApplicationDocumentType::Identity->value);
+
+        $this->assertStringContainsString('context=admin', $response->json('data.documents.0.links.preview'));
+    }
+
+    public function test_admin_document_links_require_authenticated_backoffice_session(): void
+    {
+        $application = $this->applicationWithStatus(AffiliationApplicationStatus::Submitted);
+        $document = ApplicationDocument::query()->forceCreate([
+            'application_id' => $application->id,
+            'document_type' => ApplicationDocumentType::Identity->value,
+            'original_filename' => 'cedula.pdf',
+            'storage_key' => 'private/affiliations/demo/cedula.pdf',
+            'mime_type' => 'application/pdf',
+            'byte_size' => 128,
+            'status' => ApplicationDocumentStatus::Uploaded->value,
+            'uploaded_at' => now(),
+        ]);
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'affiliation-applications.documents.preview',
+            now()->addMinutes(10),
+            [
+                'application' => $application,
+                'document' => $document,
+                'context' => 'admin',
+            ],
+            false,
+        );
+
+        $this->get($url)->assertForbidden();
     }
 
     public function test_reviewer_can_start_review_over_http(): void

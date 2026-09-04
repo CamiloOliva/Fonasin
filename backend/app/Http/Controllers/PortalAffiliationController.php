@@ -98,6 +98,7 @@ class PortalAffiliationController extends Controller
                     [
                         'application' => $document->application_id,
                         'document' => $document,
+                        'context' => 'portal',
                     ],
                     false,
                 ),

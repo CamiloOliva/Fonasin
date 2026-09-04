@@ -87,12 +87,32 @@ class PortalAffiliationHttpTest extends TestCase
             ->assertJsonCount(1, 'data.documents')
             ->assertJsonPath('data.documents.0.links.preview', fn (string $url): bool => str_starts_with($url, '/affiliation-applications/'))
             ->assertJsonMissingPath('data.documents.0.storage_key');
+        $this->assertStringContainsString('context=portal', $response->json('data.documents.0.links.preview'));
 
         $documentTypes = collect($response->json('data.documents'))->pluck('document_type')->all();
 
         $this->assertEqualsCanonicalizing([
             ApplicationDocumentType::AffiliationSummary->value,
         ], $documentTypes);
+    }
+
+    public function test_portal_document_links_require_authenticated_owner_session(): void
+    {
+        $associate = $this->createAssociate();
+        $application = $this->createAffiliationApplication($associate, AffiliationApplicationStatus::Enabled);
+        $document = $this->createDocument($application, ApplicationDocumentType::AffiliationSummary);
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'affiliation-applications.documents.preview',
+            now()->addMinutes(10),
+            [
+                'application' => $application,
+                'document' => $document,
+                'context' => 'portal',
+            ],
+            false,
+        );
+
+        $this->get($url)->assertForbidden();
     }
 
     public function test_associate_can_start_update_draft_from_enabled_affiliation(): void
