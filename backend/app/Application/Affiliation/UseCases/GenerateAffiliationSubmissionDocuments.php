@@ -34,9 +34,13 @@ class GenerateAffiliationSubmissionDocuments
     ): array {
         $sections = $this->decryptedSections($application);
         $generatedAt ??= now();
-        $payroll = $this->payrollContext($sections, $generatedAt, $signatureCity, $signatureDate);
+        $signature = $this->signatureContext($application, $sections, $generatedAt, $ipHash, $signatureCity, $signatureDate);
+        $payroll = [
+            ...$this->payrollContext($sections, $generatedAt, $signatureCity, $signatureDate),
+            'signature' => $signature,
+        ];
 
-        $summaryPdf = $this->renderer->affiliationSummary($application, $sections);
+        $summaryPdf = $this->renderer->affiliationSummary($application, $sections, $signature);
         $payrollPdf = $this->renderer->payrollAuthorization($application, $sections, $payroll);
 
         return [
@@ -66,6 +70,52 @@ class GenerateAffiliationSubmissionDocuments
                 fileContents: $payrollPdf,
                 auditAction: AffiliationAuditAction::DocumentGenerated->value,
             ),
+        ];
+    }
+
+    /**
+     * @param  array<string, array<string, mixed>>  $sections
+     * @return array<string, string>
+     */
+    private function signatureContext(
+        AffiliationApplication $application,
+        array $sections,
+        Carbon $generatedAt,
+        ?string $ipHash,
+        ?string $signatureCity,
+        ?string $signatureDate,
+    ): array {
+        $personal = $sections[AffiliationApplicationStep::Personal->value] ?? [];
+        $signedAt = $this->signatureDate($signatureDate) ?? $generatedAt;
+        $documentType = is_string($personal['documentType'] ?? null) ? trim($personal['documentType']) : '';
+        $documentNumber = is_string($personal['documentNumber'] ?? null) ? trim($personal['documentNumber']) : '';
+        $email = is_string($personal['email'] ?? null) ? trim($personal['email']) : '';
+        $fullName = trim(implode(' ', array_filter([
+            $personal['firstName'] ?? '',
+            $personal['middleName'] ?? '',
+            $personal['lastName'] ?? '',
+            $personal['secondLastName'] ?? '',
+        ])));
+        $verificationHash = hash('sha256', implode('|', [
+            $application->id,
+            $fullName,
+            $documentType,
+            $documentNumber,
+            $email,
+            $signedAt->toIso8601String(),
+            $ipHash ?? '',
+        ]));
+
+        return [
+            'full_name' => $fullName,
+            'document' => trim($documentType.' '.$documentNumber),
+            'email' => $email,
+            'city' => $signatureCity !== null && trim($signatureCity) !== '' ? trim($signatureCity) : 'Bucaramanga',
+            'signed_at_label' => $signedAt->copy()->timezone('America/Bogota')->format('Y-m-d H:i:s'),
+            'signature_date_label' => $this->spanishDate($signedAt),
+            'ip_reference' => $ipHash ? substr($ipHash, 0, 16) : 'Registrada en auditoria',
+            'verification_hash' => substr($verificationHash, 0, 16),
+            'mechanism' => 'Aceptacion electronica del formulario',
         ];
     }
 

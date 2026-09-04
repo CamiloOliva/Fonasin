@@ -30,6 +30,34 @@ export type PortalCredit = {
   registered_by_user_id: string;
 };
 
+export type PortalAffiliationDocument = {
+  id: string;
+  document_type: string;
+  original_filename: string;
+  mime_type: string;
+  byte_size: number;
+  uploaded_at: string | null;
+  links: {
+    preview: string;
+  };
+};
+
+export type PortalAffiliation = {
+  id: string;
+  status: string;
+  submitted_at: string | null;
+  enabled_at: string | null;
+  documents: PortalAffiliationDocument[];
+};
+
+export type PortalAffiliationUpdateDraft = {
+  id: string;
+  status: string;
+  links: {
+    read: string;
+  };
+};
+
 type RequestOptions = {
   method?: 'GET' | 'POST';
   body?: BodyInit | null;
@@ -51,6 +79,10 @@ function buildUrl(path: string): string {
   }
 
   return `${backendBaseUrl}${path}`;
+}
+
+export function portalDocumentPreviewUrl(path: string): string {
+  return buildUrl(path);
 }
 
 async function csrfToken(): Promise<string> {
@@ -150,6 +182,20 @@ export async function changeOwnPassword(payload: ChangePasswordPayload): Promise
 
 export async function fetchPortalCredits(): Promise<PortalCredit[]> {
   const response = await requestJson<{ data: PortalCredit[] }>('/portal/credits');
+
+  return response.data;
+}
+
+export async function fetchPortalAffiliation(): Promise<PortalAffiliation | null> {
+  const response = await requestJson<{ data: PortalAffiliation | null }>('/portal/affiliation');
+
+  return response.data;
+}
+
+export async function startPortalAffiliationUpdate(): Promise<PortalAffiliationUpdateDraft> {
+  const response = await requestJson<{ data: PortalAffiliationUpdateDraft }>('/portal/affiliation/update-draft', {
+    method: 'POST',
+  });
 
   return response.data;
 }

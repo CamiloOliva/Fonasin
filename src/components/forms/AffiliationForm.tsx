@@ -24,6 +24,7 @@ import {
   submitAffiliationApplication,
   uploadAffiliationDocument,
   type AffiliationDraft,
+  type AffiliationDraftLinks,
   type GeneratedAffiliationDocument,
   type AffiliationSectionKey,
 } from '../../services/affiliationService';
@@ -303,21 +304,36 @@ const DRAFT_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
 
 type StoredAffiliationDraft = {
   savedAt: number;
-  draft: AffiliationDraft;
+  id?: string;
+  readUrl?: string;
+  status?: string;
+  draft?: AffiliationDraft;
 };
 
-function readStoredDraft(): AffiliationDraft | null {
+type RecoverableAffiliationDraft = Pick<AffiliationDraft, 'id'> & {
+  links: Pick<AffiliationDraftLinks, 'read'>;
+};
+
+function readStoredDraft(): RecoverableAffiliationDraft | null {
   try {
     const raw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
     if (!raw) return null;
 
     const stored = JSON.parse(raw) as StoredAffiliationDraft;
-    if (!stored?.draft?.id || !stored.draft.links?.read || Date.now() - stored.savedAt > DRAFT_STORAGE_TTL_MS) {
+    const draftId = stored.id ?? stored.draft?.id;
+    const readUrl = stored.readUrl ?? stored.draft?.links?.read;
+
+    if (!draftId || !readUrl || Date.now() - stored.savedAt > DRAFT_STORAGE_TTL_MS) {
       window.localStorage.removeItem(DRAFT_STORAGE_KEY);
       return null;
     }
 
-    return stored.draft;
+    return {
+      id: draftId,
+      links: {
+        read: readUrl,
+      },
+    };
   } catch {
     return null;
   }
@@ -329,7 +345,9 @@ function storeDraft(draft: AffiliationDraft): void {
   try {
     window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
       savedAt: Date.now(),
-      draft,
+      id: draft.id,
+      readUrl: draft.links.read,
+      status: draft.status,
     }));
   } catch {
     // El formulario sigue funcionando aunque el navegador bloquee storage local.
