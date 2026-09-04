@@ -16,9 +16,11 @@ vi.mock('../components/sections/StatutesBookViewer', () => ({
 vi.mock('../services/portalService', () => ({
   changeOwnPassword: vi.fn(),
   currentPortalUser: vi.fn().mockRejectedValue(new Error('guest')),
+  fetchPortalAffiliation: vi.fn().mockResolvedValue(null),
   fetchPortalCredits: vi.fn().mockResolvedValue([]),
   loginPortal: vi.fn(),
   logoutPortal: vi.fn(),
+  portalDocumentPreviewUrl: vi.fn((path: string) => path),
 }));
 
 vi.mock('../services/adminAffiliationService', () => ({

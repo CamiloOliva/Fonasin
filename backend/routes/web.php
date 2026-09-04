@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\CreditAccountController;
 use App\Http\Controllers\FpqrsSubmissionController;
+use App\Http\Controllers\PortalAffiliationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -131,6 +132,10 @@ Route::middleware(['auth', 'password.changed'])
 Route::middleware(['auth', 'password.changed'])
     ->get('/portal/credits', [CreditAccountController::class, 'mine'])
     ->name('portal.credits.index');
+
+Route::middleware(['auth', 'password.changed'])
+    ->get('/portal/affiliation', [PortalAffiliationController::class, 'show'])
+    ->name('portal.affiliation.show');
 
 Route::post('/fpqrs-submissions', [FpqrsSubmissionController::class, 'store'])
     ->name('fpqrs-submissions.store');

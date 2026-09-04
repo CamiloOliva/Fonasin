@@ -5,15 +5,20 @@ import ForcedPasswordChange from '../../components/auth/ForcedPasswordChange';
 import {
   changeOwnPassword,
   currentPortalUser,
+  fetchPortalAffiliation,
   fetchPortalCredits,
   loginPortal,
   logoutPortal,
+  portalDocumentPreviewUrl,
+  type PortalAffiliation,
+  type PortalAffiliationDocument,
   type PortalCredit,
   type PortalUser,
 } from '../../services/portalService';
 
 type SessionState = 'checking' | 'guest' | 'authenticated';
 type CreditsState = 'idle' | 'loading' | 'ready' | 'error';
+type AffiliationState = 'idle' | 'loading' | 'ready' | 'error';
 type PortalTab = 'statement' | 'contributions' | 'form';
 
 const currency = new Intl.NumberFormat('es-CO', {
@@ -38,6 +43,39 @@ function statusLabel(status: string): string {
   return labels[status] ?? status;
 }
 
+function affiliationStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    enabled: 'Afiliacion habilitada',
+    approved: 'Aprobada',
+    submitted: 'Enviada',
+    under_review: 'En revision',
+  };
+
+  return labels[status] ?? status;
+}
+
+function documentLabel(documentType: string): string {
+  const labels: Record<string, string> = {
+    affiliation_summary: 'Formulario de afiliacion',
+    payroll_authorization: 'Libranza',
+  };
+
+  return labels[documentType] ?? documentType;
+}
+
+function formatPortalDate(value: string | null): string {
+  if (!value) return 'Sin fecha';
+
+  const date = new Date(value);
+
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat('es-CO', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date);
+}
+
 function roleLabel(role: string): string {
   const labels: Record<string, string> = {
     admin: 'Administrador',
@@ -59,8 +97,10 @@ function ensureAssociatePortalUser(user: PortalUser): PortalUser {
 export default function PortalAsociado() {
   const [sessionState, setSessionState] = useState<SessionState>('checking');
   const [creditsState, setCreditsState] = useState<CreditsState>('idle');
+  const [affiliationState, setAffiliationState] = useState<AffiliationState>('idle');
   const [user, setUser] = useState<PortalUser | null>(null);
   const [credits, setCredits] = useState<PortalCredit[]>([]);
+  const [affiliation, setAffiliation] = useState<PortalAffiliation | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
@@ -92,6 +132,21 @@ export default function PortalAsociado() {
     }
   }
 
+  async function loadAffiliation() {
+    setAffiliationState('loading');
+    setError(null);
+
+    try {
+      const result = await fetchPortalAffiliation();
+      setAffiliation(result);
+      setAffiliationState('ready');
+    } catch (caught) {
+      setAffiliation(null);
+      setAffiliationState('error');
+      setError(caught instanceof Error ? caught.message : 'No fue posible cargar tu formulario.');
+    }
+  }
+
   useEffect(() => {
     let active = true;
 
@@ -115,6 +170,17 @@ export default function PortalAsociado() {
     };
   }, []);
 
+  useEffect(() => {
+    if (
+      sessionState === 'authenticated'
+      && !user?.must_change_password
+      && activeTab === 'form'
+      && affiliationState === 'idle'
+    ) {
+      void loadAffiliation();
+    }
+  }, [activeTab, affiliationState, sessionState, user?.must_change_password]);
+
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -134,8 +200,10 @@ export default function PortalAsociado() {
       await logoutPortal().catch(() => undefined);
       setUser(null);
       setCredits([]);
+      setAffiliation(null);
       setSessionState('guest');
       setCreditsState('idle');
+      setAffiliationState('idle');
       setError(caught instanceof Error ? caught.message : 'No fue posible iniciar sesion.');
     }
   }
@@ -152,11 +220,13 @@ export default function PortalAsociado() {
 
     setUser(null);
     setCredits([]);
+    setAffiliation(null);
     setEmail('');
     setPassword('');
     setRemember(false);
     setSessionState('guest');
     setCreditsState('idle');
+    setAffiliationState('idle');
     setMessage('Sesion cerrada.');
   }
 
@@ -455,27 +525,116 @@ export default function PortalAsociado() {
 
           {activeTab === 'form' ? (
             <div className="p-5 sm:p-7">
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Formulario</p>
-              <h2 className="mt-1 font-heading text-2xl font-black text-fonasin-deep sm:text-3xl">Informacion de afiliacion</h2>
-              <div className="mt-5 grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-                  <FileText className="text-fonasin-green" size={28} />
-                  <p className="mt-4 font-black text-slate-950">Formulario pendiente de conectar</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
-                    En el siguiente bloque este espacio consultara el formulario generado para el asociado y permitira abrirlo en vista interna si existe.
-                  </p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Formulario</p>
+                  <h2 className="mt-1 font-heading text-2xl font-black text-fonasin-deep sm:text-3xl">Documentos de afiliacion</h2>
                 </div>
-                <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-fonasin-green">Proximo paso</p>
-                  <p className="mt-3 text-sm font-semibold leading-6 text-slate-700">
-                    Conectar los datos guardados de afiliacion, el PDF vigente y la entrada para solicitar actualizacion de datos.
-                  </p>
-                </div>
+                <button
+                  type="button"
+                  onClick={loadAffiliation}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-fonasin-green/20 bg-fonasin-surface px-4 py-2.5 text-sm font-bold text-fonasin-green transition hover:bg-fonasin-lime/20 focus-ring"
+                >
+                  <RefreshCw size={16} />
+                  Actualizar
+                </button>
               </div>
+
+              {affiliationState === 'loading' ? (
+                <div className="mt-5 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600">
+                  <Loader2 className="animate-spin" size={18} />
+                  Cargando documentos
+                </div>
+              ) : null}
+
+              {affiliationState === 'error' ? (
+                <div className="mt-5 rounded-xl border border-amber-100 bg-amber-50 px-4 py-4 text-sm font-semibold text-amber-800">
+                  {error ?? 'No fue posible cargar tu formulario.'}
+                </div>
+              ) : null}
+
+              {affiliationState === 'ready' && !affiliation ? (
+                <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-10 text-center">
+                  <FileText className="mx-auto text-slate-300" size={40} />
+                  <p className="mt-3 font-black text-slate-950">No hay formulario generado</p>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Cuando tu afiliacion quede habilitada, podras ver aqui el formulario y la libranza generados.
+                  </p>
+                </div>
+              ) : null}
+
+              {affiliationState === 'ready' && affiliation ? (
+                <div className="mt-5 space-y-4">
+                  <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-fonasin-green">Afiliacion</p>
+                    <div className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
+                      <div>
+                        <span className="font-black text-slate-500">Estado</span>
+                        <p className="mt-1 font-bold text-slate-950">{affiliationStatusLabel(affiliation.status)}</p>
+                      </div>
+                      <div>
+                        <span className="font-black text-slate-500">Enviada</span>
+                        <p className="mt-1 font-bold text-slate-950">{formatPortalDate(affiliation.submitted_at)}</p>
+                      </div>
+                      <div>
+                        <span className="font-black text-slate-500">Habilitada</span>
+                        <p className="mt-1 font-bold text-slate-950">{formatPortalDate(affiliation.enabled_at)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {affiliation.documents.length > 0 ? (
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      {affiliation.documents.map((document) => (
+                        <PortalDocumentCard key={document.id} document={document} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-8 text-center">
+                      <FileText className="mx-auto text-slate-300" size={36} />
+                      <p className="mt-3 font-black text-slate-950">No hay documentos visibles</p>
+                      <p className="mt-2 text-sm text-slate-600">FONASIN aun no ha generado documentos para mostrar en el portal.</p>
+                    </div>
+                  )}
+
+                  <div className="rounded-xl border border-slate-200 bg-white p-5">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Actualizacion de datos</p>
+                    <p className="mt-3 text-sm font-semibold leading-6 text-slate-700">
+                      La solicitud de actualizacion de datos queda separada para el siguiente bloque, usando la informacion vigente guardada por FONASIN.
+                    </p>
+                  </div>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
       </div>
     </section>
+  );
+}
+
+function PortalDocumentCard({ document }: { document: PortalAffiliationDocument }) {
+  return (
+    <article className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+      <div className="flex items-start gap-4">
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white text-fonasin-green shadow-sm">
+          <FileText size={22} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-black text-slate-950">{documentLabel(document.document_type)}</p>
+          <p className="mt-1 truncate text-sm font-semibold text-slate-600">{document.original_filename}</p>
+          <p className="mt-2 text-xs font-bold text-slate-500">Generado: {formatPortalDate(document.uploaded_at)}</p>
+          <a
+            href={portalDocumentPreviewUrl(document.links.preview)}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-fonasin-green px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 focus-ring"
+          >
+            <FileText size={16} />
+            Ver documento
+          </a>
+        </div>
+      </div>
+    </article>
   );
 }
