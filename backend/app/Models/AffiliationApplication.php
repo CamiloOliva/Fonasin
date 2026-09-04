@@ -15,10 +15,15 @@ class AffiliationApplication extends Model
         'associate_id',
         'status',
         'current_step',
+        'access_token_hash',
         'submitted_at',
         'reviewed_by_user_id',
         'reviewed_at',
         'rejection_reason',
+    ];
+
+    protected $hidden = [
+        'access_token_hash',
     ];
 
     protected function casts(): array

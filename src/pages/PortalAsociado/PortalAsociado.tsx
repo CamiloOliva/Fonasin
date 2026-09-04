@@ -103,6 +103,7 @@ function storeAffiliationUpdateDraft(draft: PortalAffiliationUpdateDraft): void 
       savedAt: Date.now(),
       id: draft.id,
       readUrl: draft.links.read,
+      draftAccessToken: draft.draft_access_token,
       status: draft.status,
     }));
   } catch {

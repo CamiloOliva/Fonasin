@@ -306,6 +306,7 @@ type StoredAffiliationDraft = {
   savedAt: number;
   id?: string;
   readUrl?: string;
+  draftAccessToken?: string;
   status?: string;
   draft?: AffiliationDraft;
 };
@@ -339,14 +340,30 @@ function readStoredDraft(): RecoverableAffiliationDraft | null {
   }
 }
 
+function readStoredDraftAccessToken(): string {
+  try {
+    const raw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return '';
+
+    const stored = JSON.parse(raw) as StoredAffiliationDraft;
+
+    return typeof stored.draftAccessToken === 'string' ? stored.draftAccessToken : '';
+  } catch {
+    return '';
+  }
+}
+
 function storeDraft(draft: AffiliationDraft): void {
   if (draft.status !== 'draft') return;
+
+  const draftAccessToken = draft.draft_access_token ?? readStoredDraftAccessToken();
 
   try {
     window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
       savedAt: Date.now(),
       id: draft.id,
       readUrl: draft.links.read,
+      draftAccessToken,
       status: draft.status,
     }));
   } catch {

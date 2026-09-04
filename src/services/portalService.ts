@@ -53,6 +53,7 @@ export type PortalAffiliation = {
 export type PortalAffiliationUpdateDraft = {
   id: string;
   status: string;
+  draft_access_token: string;
   links: {
     read: string;
   };

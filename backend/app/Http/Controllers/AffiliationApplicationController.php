@@ -42,6 +42,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AffiliationApplicationController extends Controller
 {
+    private const DRAFT_LINK_TTL_HOURS = 24;
+    private const DOCUMENT_LINK_TTL_MINUTES = 10;
+
     public function index(Request $request): JsonResponse
     {
         $applications = AffiliationApplication::query()
@@ -85,16 +88,20 @@ class AffiliationApplicationController extends Controller
     public function store(CreateAffiliationDraft $createDraft): JsonResponse
     {
         $application = $createDraft();
+        $accessToken = $this->refreshDraftAccessToken($application);
 
         return response()->json([
-            'data' => $this->applicationPayload($application),
+            'data' => $this->applicationPayload($application, $accessToken),
         ], 201);
     }
 
     public function readDraft(
+        Request $request,
         AffiliationApplication $application,
         EncryptsSensitiveData $cipher,
     ): JsonResponse {
+        $this->ensureDraftAccess($request, $application);
+
         if ($application->status !== AffiliationApplicationStatus::Draft->value) {
             return response()->json([
                 'message' => 'La solicitud ya fue enviada o cerrada.',
@@ -138,6 +145,8 @@ class AffiliationApplicationController extends Controller
         string $section,
         SaveApplicationSection $saveSection,
     ): JsonResponse {
+        $this->ensureDraftAccess($request, $application);
+
         try {
             $applicationSection = $saveSection(
                 application: $application,
@@ -160,6 +169,8 @@ class AffiliationApplicationController extends Controller
         AffiliationApplication $application,
         RegisterApplicationDocument $registerDocument,
     ): JsonResponse {
+        $this->ensureDraftAccess($request, $application);
+
         $file = $request->file('file');
 
         try {
@@ -213,6 +224,8 @@ class AffiliationApplicationController extends Controller
         AffiliationApplication $application,
         AcceptApplicationConsent $acceptConsent,
     ): JsonResponse {
+        $this->ensureDraftAccess($request, $application);
+
         $consent = $acceptConsent(
             application: $application,
             consentType: ConsentType::from($request->string('consent_type')->toString()),
@@ -299,6 +312,8 @@ class AffiliationApplicationController extends Controller
         AffiliationApplication $application,
         SubmitAffiliationApplication $submitApplication,
     ): JsonResponse {
+        $this->ensureDraftAccess($request, $application);
+
         try {
             $submitted = $submitApplication(
                 application: $application,
@@ -436,9 +451,9 @@ class AffiliationApplicationController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function applicationPayload(AffiliationApplication $application): array
+    private function applicationPayload(AffiliationApplication $application, ?string $plainAccessToken = null): array
     {
-        return [
+        $payload = [
             'id' => $application->id,
             'status' => $application->status,
             'current_step' => $application->current_step,
@@ -457,6 +472,12 @@ class AffiliationApplicationController extends Controller
                 ->all(),
             'links' => $this->applicationSignedLinks($application),
         ];
+
+        if ($plainAccessToken !== null) {
+            $payload['draft_access_token'] = $plainAccessToken;
+        }
+
+        return $payload;
     }
 
     /**
@@ -527,7 +548,7 @@ class AffiliationApplicationController extends Controller
      */
     private function applicationSignedLinks(AffiliationApplication $application): array
     {
-        $expiresAt = now()->addHours(24);
+        $expiresAt = now()->addHours(self::DRAFT_LINK_TTL_HOURS);
 
         return [
             'read' => URL::temporarySignedRoute(
@@ -601,7 +622,7 @@ class AffiliationApplicationController extends Controller
             'links' => [
                 'download' => URL::temporarySignedRoute(
                     'affiliation-applications.documents.download',
-                    now()->addHours(24),
+                    now()->addMinutes(self::DOCUMENT_LINK_TTL_MINUTES),
                     [
                         'application' => $document->application_id,
                         'document' => $document,
@@ -610,7 +631,7 @@ class AffiliationApplicationController extends Controller
                 ),
                 'preview' => URL::temporarySignedRoute(
                     'affiliation-applications.documents.preview',
-                    now()->addHours(24),
+                    now()->addMinutes(self::DOCUMENT_LINK_TTL_MINUTES),
                     [
                         'application' => $document->application_id,
                         'document' => $document,
@@ -647,5 +668,34 @@ class AffiliationApplicationController extends Controller
         $ip = $request->ip();
 
         return $ip ? hash('sha256', $ip) : null;
+    }
+
+    private function refreshDraftAccessToken(AffiliationApplication $application): string
+    {
+        $token = bin2hex(random_bytes(32));
+
+        $application->forceFill([
+            'access_token_hash' => hash('sha256', $token),
+        ])->save();
+
+        return $token;
+    }
+
+    private function ensureDraftAccess(Request $request, AffiliationApplication $application): void
+    {
+        if ($application->status !== AffiliationApplicationStatus::Draft->value) {
+            return;
+        }
+
+        $expectedHash = $application->access_token_hash;
+        $token = $request->header('X-Affiliation-Draft-Token');
+
+        abort_unless(
+            is_string($expectedHash)
+            && $expectedHash !== ''
+            && is_string($token)
+            && hash_equals($expectedHash, hash('sha256', $token)),
+            403,
+        );
     }
 }

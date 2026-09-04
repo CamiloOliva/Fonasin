@@ -93,6 +93,7 @@ class PortalAffiliationHttpTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('data.status', AffiliationApplicationStatus::Draft->value)
+            ->assertJsonPath('data.draft_access_token', fn (string $token): bool => strlen($token) === 64)
             ->assertJsonPath('data.links.read', fn (string $url): bool => str_starts_with($url, '/affiliation-applications/'));
 
         $draftId = $response->json('data.id');
@@ -104,6 +105,7 @@ class PortalAffiliationHttpTest extends TestCase
             'current_step' => AffiliationApplicationStep::Personal->value,
         ]);
         $this->assertSame(2, ApplicationSection::query()->where('application_id', $draftId)->count());
+        $this->assertNotNull(AffiliationApplication::query()->findOrFail($draftId)->access_token_hash);
         $this->assertDatabaseHas('audit_events', [
             'actor_user_id' => $user->id,
             'action' => AffiliationAuditAction::ApplicationUpdateDraftCreated->value,
@@ -123,7 +125,10 @@ class PortalAffiliationHttpTest extends TestCase
         $response = $this->actingAs($user)->postJson('/portal/affiliation/update-draft');
 
         $response->assertCreated()
-            ->assertJsonPath('data.id', $existingDraft->id);
+            ->assertJsonPath('data.id', $existingDraft->id)
+            ->assertJsonPath('data.draft_access_token', fn (string $token): bool => strlen($token) === 64);
+
+        $this->assertNotNull($existingDraft->refresh()->access_token_hash);
 
         $this->assertSame(
             1,

@@ -30,6 +30,7 @@ export type AffiliationDraft = {
   submitted_at: string | null;
   reviewed_by_user_id: string | null;
   reviewed_at: string | null;
+  draft_access_token?: string;
   generated_documents?: GeneratedAffiliationDocument[];
   sections?: Array<{
     id: string;
@@ -86,6 +87,7 @@ type AffiliationRequestOptions = {
 };
 
 const backendBaseUrl = import.meta.env.VITE_BACKEND_BASE_URL?.trim().replace(/\/$/, '') ?? '';
+const DRAFT_STORAGE_KEY = 'fonasin.affiliation.draft.v1';
 
 function buildUrl(path: string): string {
   if (path.startsWith('http://') || path.startsWith('https://')) {
@@ -105,13 +107,30 @@ function csrfToken(): string {
   return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 }
 
+function draftAccessToken(): string {
+  try {
+    const raw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return '';
+
+    const stored = JSON.parse(raw) as { draftAccessToken?: unknown };
+
+    return typeof stored.draftAccessToken === 'string' ? stored.draftAccessToken : '';
+  } catch {
+    return '';
+  }
+}
+
 async function requestJson<T>(path: string, options: AffiliationRequestOptions = {}): Promise<T> {
+  const token = csrfToken();
+  const storedDraftAccessToken = draftAccessToken();
+
   const response = await fetch(buildUrl(path), {
     method: options.method ?? 'POST',
     credentials: 'include',
     headers: {
       Accept: 'application/json',
-      ...(csrfToken() ? { 'X-CSRF-TOKEN': csrfToken() } : {}),
+      ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+      ...(storedDraftAccessToken ? { 'X-Affiliation-Draft-Token': storedDraftAccessToken } : {}),
       ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
       ...(options.headers ?? {}),
     },

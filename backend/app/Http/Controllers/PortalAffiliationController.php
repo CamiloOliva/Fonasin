@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\URL;
 
 class PortalAffiliationController extends Controller
 {
+    private const DRAFT_LINK_TTL_HOURS = 24;
+    private const DOCUMENT_LINK_TTL_MINUTES = 10;
+
     public function show(Request $request, ViewAssociateAffiliation $viewAssociateAffiliation): JsonResponse
     {
         try {
@@ -40,14 +43,17 @@ class PortalAffiliationController extends Controller
             return $this->domainError($exception);
         }
 
+        $accessToken = $this->refreshDraftAccessToken($draft);
+
         return response()->json([
             'data' => [
                 'id' => $draft->id,
                 'status' => $draft->status,
+                'draft_access_token' => $accessToken,
                 'links' => [
                     'read' => URL::temporarySignedRoute(
                         'affiliation-applications.read',
-                        now()->addHours(24),
+                        now()->addHours(self::DRAFT_LINK_TTL_HOURS),
                         ['application' => $draft],
                         false,
                     ),
@@ -88,7 +94,7 @@ class PortalAffiliationController extends Controller
             'links' => [
                 'preview' => URL::temporarySignedRoute(
                     'affiliation-applications.documents.preview',
-                    now()->addHours(24),
+                    now()->addMinutes(self::DOCUMENT_LINK_TTL_MINUTES),
                     [
                         'application' => $document->application_id,
                         'document' => $document,
@@ -111,5 +117,16 @@ class PortalAffiliationController extends Controller
         $ip = $request->ip();
 
         return $ip ? hash('sha256', $ip) : null;
+    }
+
+    private function refreshDraftAccessToken(AffiliationApplication $application): string
+    {
+        $token = bin2hex(random_bytes(32));
+
+        $application->forceFill([
+            'access_token_hash' => hash('sha256', $token),
+        ])->save();
+
+        return $token;
     }
 }
