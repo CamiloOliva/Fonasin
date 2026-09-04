@@ -21,6 +21,7 @@ vi.mock('../services/portalService', () => ({
   loginPortal: vi.fn(),
   logoutPortal: vi.fn(),
   portalDocumentPreviewUrl: vi.fn((path: string) => path),
+  startPortalAffiliationUpdate: vi.fn(),
 }));
 
 vi.mock('../services/adminAffiliationService', () => ({

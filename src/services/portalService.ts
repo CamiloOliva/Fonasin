@@ -50,6 +50,14 @@ export type PortalAffiliation = {
   documents: PortalAffiliationDocument[];
 };
 
+export type PortalAffiliationUpdateDraft = {
+  id: string;
+  status: string;
+  links: {
+    read: string;
+  };
+};
+
 type RequestOptions = {
   method?: 'GET' | 'POST';
   body?: BodyInit | null;
@@ -180,6 +188,14 @@ export async function fetchPortalCredits(): Promise<PortalCredit[]> {
 
 export async function fetchPortalAffiliation(): Promise<PortalAffiliation | null> {
   const response = await requestJson<{ data: PortalAffiliation | null }>('/portal/affiliation');
+
+  return response.data;
+}
+
+export async function startPortalAffiliationUpdate(): Promise<PortalAffiliationUpdateDraft> {
+  const response = await requestJson<{ data: PortalAffiliationUpdateDraft }>('/portal/affiliation/update-draft', {
+    method: 'POST',
+  });
 
   return response.data;
 }

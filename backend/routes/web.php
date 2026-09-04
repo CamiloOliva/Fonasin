@@ -137,5 +137,9 @@ Route::middleware(['auth', 'password.changed'])
     ->get('/portal/affiliation', [PortalAffiliationController::class, 'show'])
     ->name('portal.affiliation.show');
 
+Route::middleware(['auth', 'password.changed'])
+    ->post('/portal/affiliation/update-draft', [PortalAffiliationController::class, 'storeUpdateDraft'])
+    ->name('portal.affiliation.update-draft.store');
+
 Route::post('/fpqrs-submissions', [FpqrsSubmissionController::class, 'store'])
     ->name('fpqrs-submissions.store');

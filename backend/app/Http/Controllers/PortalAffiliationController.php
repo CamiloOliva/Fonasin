@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Application\Portal\UseCases\ViewAssociateAffiliation;
+use App\Application\Portal\UseCases\StartAssociateAffiliationUpdate;
 use App\Models\AffiliationApplication;
 use App\Models\ApplicationDocument;
 use DomainException;
@@ -26,6 +27,33 @@ class PortalAffiliationController extends Controller
         return response()->json([
             'data' => $application ? $this->applicationPayload($application) : null,
         ]);
+    }
+
+    public function storeUpdateDraft(Request $request, StartAssociateAffiliationUpdate $startAssociateAffiliationUpdate): JsonResponse
+    {
+        try {
+            $draft = $startAssociateAffiliationUpdate(
+                actor: $request->user(),
+                ipHash: $this->ipHash($request),
+            );
+        } catch (DomainException $exception) {
+            return $this->domainError($exception);
+        }
+
+        return response()->json([
+            'data' => [
+                'id' => $draft->id,
+                'status' => $draft->status,
+                'links' => [
+                    'read' => URL::temporarySignedRoute(
+                        'affiliation-applications.read',
+                        now()->addHours(24),
+                        ['application' => $draft],
+                        false,
+                    ),
+                ],
+            ],
+        ], 201);
     }
 
     /**

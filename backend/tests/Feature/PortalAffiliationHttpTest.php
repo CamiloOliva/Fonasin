@@ -9,6 +9,7 @@ use App\Domain\Affiliation\Enums\ApplicationDocumentStatus;
 use App\Domain\Affiliation\Enums\ApplicationDocumentType;
 use App\Models\AffiliationApplication;
 use App\Models\ApplicationDocument;
+use App\Models\ApplicationSection;
 use App\Models\Associate;
 use App\Models\Role;
 use App\Models\User;
@@ -81,6 +82,56 @@ class PortalAffiliationHttpTest extends TestCase
         ], $documentTypes);
     }
 
+    public function test_associate_can_start_update_draft_from_enabled_affiliation(): void
+    {
+        $user = $this->userWithRole('associate');
+        $associate = $this->createAssociate(['user_id' => $user->id]);
+        $application = $this->createAffiliationApplication($associate, AffiliationApplicationStatus::Enabled);
+        $this->createSection($application, AffiliationApplicationStep::Personal);
+        $this->createSection($application, AffiliationApplicationStep::Employment);
+
+        $response = $this->actingAs($user)->postJson('/portal/affiliation/update-draft');
+
+        $response->assertCreated()
+            ->assertJsonPath('data.status', AffiliationApplicationStatus::Draft->value)
+            ->assertJsonPath('data.links.read', fn (string $url): bool => str_starts_with($url, '/affiliation-applications/'));
+
+        $draftId = $response->json('data.id');
+
+        $this->assertDatabaseHas('affiliation_applications', [
+            'id' => $draftId,
+            'associate_id' => $associate->id,
+            'status' => AffiliationApplicationStatus::Draft->value,
+            'current_step' => AffiliationApplicationStep::Personal->value,
+        ]);
+        $this->assertSame(2, ApplicationSection::query()->where('application_id', $draftId)->count());
+        $this->assertDatabaseHas('audit_events', [
+            'actor_user_id' => $user->id,
+            'action' => AffiliationAuditAction::ApplicationUpdateDraftCreated->value,
+            'subject_type' => 'affiliation_application',
+            'subject_id' => $draftId,
+        ]);
+    }
+
+    public function test_update_draft_reuses_existing_draft_for_associate(): void
+    {
+        $user = $this->userWithRole('associate');
+        $associate = $this->createAssociate(['user_id' => $user->id]);
+        $enabledApplication = $this->createAffiliationApplication($associate, AffiliationApplicationStatus::Enabled);
+        $existingDraft = $this->createAffiliationApplication($associate, AffiliationApplicationStatus::Draft);
+        $this->createSection($enabledApplication, AffiliationApplicationStep::Personal);
+
+        $response = $this->actingAs($user)->postJson('/portal/affiliation/update-draft');
+
+        $response->assertCreated()
+            ->assertJsonPath('data.id', $existingDraft->id);
+
+        $this->assertSame(
+            1,
+            $associate->affiliationApplications()->where('status', AffiliationApplicationStatus::Draft->value)->count(),
+        );
+    }
+
     /**
      * @param  array<string, string>  $overrides
      */
@@ -132,6 +183,19 @@ class PortalAffiliationHttpTest extends TestCase
             'byte_size' => 2048,
             'status' => ApplicationDocumentStatus::Uploaded->value,
             'uploaded_at' => now()->startOfSecond(),
+        ]);
+    }
+
+    private function createSection(
+        AffiliationApplication $application,
+        AffiliationApplicationStep $section,
+    ): ApplicationSection {
+        return ApplicationSection::query()->forceCreate([
+            'application_id' => $application->id,
+            'section' => $section->value,
+            'schema_version' => 1,
+            'data_encrypted' => "encrypted-{$section->value}",
+            'completed_at' => now()->startOfSecond(),
         ]);
     }
 }

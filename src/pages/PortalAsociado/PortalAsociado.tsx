@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { ArrowRight, CreditCard, FileText, Loader2, LogOut, PiggyBank, RefreshCw, ShieldCheck, UserRound } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import ForcedPasswordChange from '../../components/auth/ForcedPasswordChange';
 import {
   changeOwnPassword,
@@ -10,8 +10,10 @@ import {
   loginPortal,
   logoutPortal,
   portalDocumentPreviewUrl,
+  startPortalAffiliationUpdate,
   type PortalAffiliation,
   type PortalAffiliationDocument,
+  type PortalAffiliationUpdateDraft,
   type PortalCredit,
   type PortalUser,
 } from '../../services/portalService';
@@ -20,6 +22,7 @@ type SessionState = 'checking' | 'guest' | 'authenticated';
 type CreditsState = 'idle' | 'loading' | 'ready' | 'error';
 type AffiliationState = 'idle' | 'loading' | 'ready' | 'error';
 type PortalTab = 'statement' | 'contributions' | 'form';
+const AFFILIATION_DRAFT_STORAGE_KEY = 'fonasin.affiliation.draft.v1';
 
 const currency = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -94,7 +97,21 @@ function ensureAssociatePortalUser(user: PortalUser): PortalUser {
   return user;
 }
 
+function storeAffiliationUpdateDraft(draft: PortalAffiliationUpdateDraft): void {
+  try {
+    window.localStorage.setItem(AFFILIATION_DRAFT_STORAGE_KEY, JSON.stringify({
+      savedAt: Date.now(),
+      id: draft.id,
+      readUrl: draft.links.read,
+      status: draft.status,
+    }));
+  } catch {
+    // El asociado puede abrir el formulario aunque el navegador bloquee storage local.
+  }
+}
+
 export default function PortalAsociado() {
+  const navigate = useNavigate();
   const [sessionState, setSessionState] = useState<SessionState>('checking');
   const [creditsState, setCreditsState] = useState<CreditsState>('idle');
   const [affiliationState, setAffiliationState] = useState<AffiliationState>('idle');
@@ -105,6 +122,7 @@ export default function PortalAsociado() {
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
   const [activeTab, setActiveTab] = useState<PortalTab>('statement');
+  const [startingUpdate, setStartingUpdate] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -239,6 +257,22 @@ export default function PortalAsociado() {
     setUser(updatedUser);
     setMessage('Contrasena actualizada correctamente.');
     await loadCredits();
+  }
+
+  async function handleStartAffiliationUpdate() {
+    setStartingUpdate(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const updateDraft = await startPortalAffiliationUpdate();
+      storeAffiliationUpdateDraft(updateDraft);
+      navigate('/afiliacion');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible preparar la actualizacion de datos.');
+    } finally {
+      setStartingUpdate(false);
+    }
   }
 
   if (sessionState === 'checking') {
@@ -600,8 +634,17 @@ export default function PortalAsociado() {
                   <div className="rounded-xl border border-slate-200 bg-white p-5">
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Actualizacion de datos</p>
                     <p className="mt-3 text-sm font-semibold leading-6 text-slate-700">
-                      La solicitud de actualizacion de datos queda separada para el siguiente bloque, usando la informacion vigente guardada por FONASIN.
+                      Puedes preparar un borrador con la informacion vigente para revisar cambios y enviarlos nuevamente a FONASIN.
                     </p>
+                    <button
+                      type="button"
+                      onClick={handleStartAffiliationUpdate}
+                      disabled={startingUpdate}
+                      className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-fonasin-green px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 focus-ring"
+                    >
+                      {startingUpdate ? <Loader2 className="animate-spin" size={16} /> : <ArrowRight size={16} />}
+                      {startingUpdate ? 'Preparando borrador' : 'Actualizar datos'}
+                    </button>
                   </div>
                 </div>
               ) : null}
