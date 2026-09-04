@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { ArrowRight, CreditCard, Loader2, LogOut, RefreshCw, ShieldCheck, UserRound } from 'lucide-react';
+import { ArrowRight, CreditCard, FileText, Loader2, LogOut, PiggyBank, RefreshCw, ShieldCheck, UserRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ForcedPasswordChange from '../../components/auth/ForcedPasswordChange';
 import {
@@ -14,6 +14,7 @@ import {
 
 type SessionState = 'checking' | 'guest' | 'authenticated';
 type CreditsState = 'idle' | 'loading' | 'ready' | 'error';
+type PortalTab = 'statement' | 'contributions' | 'form';
 
 const currency = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -63,11 +64,16 @@ export default function PortalAsociado() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
+  const [activeTab, setActiveTab] = useState<PortalTab>('statement');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const totalBalance = useMemo(
     () => credits.reduce((total, credit) => total + Number.parseFloat(credit.current_balance || '0'), 0),
+    [credits],
+  );
+  const totalInitialBalance = useMemo(
+    () => credits.reduce((total, credit) => total + Number.parseFloat(credit.initial_balance || '0'), 0),
     [credits],
   );
 
@@ -278,19 +284,26 @@ export default function PortalAsociado() {
   }
 
   return (
-    <section className="relative overflow-hidden bg-[#f5f7e8] py-10 sm:py-14"><div className="pointer-events-none absolute -right-32 top-10 h-72 w-72 rounded-full bg-fonasin-lime/20 blur-3xl" /><div className="pointer-events-none absolute -left-40 bottom-0 h-96 w-96 rounded-full bg-fonasin-green/10 blur-3xl" />
-      <div className="container-page relative space-y-7">
-        <div className="rounded-[2rem] border border-white/80 bg-white/90 p-6 shadow-[0_20px_55px_rgba(13,71,56,0.10)] backdrop-blur sm:p-8">
+    <section className="bg-slate-50 py-8 sm:py-10">
+      <div className="container-page space-y-6">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <div className="mb-7 grid h-16 w-16 place-items-center overflow-hidden rounded-2xl border border-white/70 bg-white/85 p-2 shadow-xl backdrop-blur sm:h-20 sm:w-20"><img src="/logotipo.png" alt="Logo FONASIN" className="max-h-full max-w-full object-contain" /></div><p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-900">Portal asociado</p>
-              <h1 className="mt-2 font-heading text-3xl font-black tracking-tight text-fonasin-deep sm:text-4xl">Hola, {user?.email}</h1>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {(user?.roles ?? []).map((role) => (
-                  <span key={role} className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
-                    {roleLabel(role)}
-                  </span>
-                ))}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-xl border border-emerald-100 bg-white p-2 shadow-sm">
+                <img src="/logotipo.png" alt="Logo FONASIN" className="max-h-full max-w-full object-contain" />
+              </div>
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.24em] text-fonasin-green">Portal asociado</p>
+                <h1 className="mt-2 font-heading text-3xl font-black tracking-tight text-fonasin-deep sm:text-4xl">
+                  Hola, {user?.email}
+                </h1>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {(user?.roles ?? []).map((role) => (
+                    <span key={role} className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
+                      {roleLabel(role)}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
             <button
@@ -304,89 +317,161 @@ export default function PortalAsociado() {
           </div>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-3">
-          <div className="relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-fonasin-deep via-fonasin-green to-emerald-600 p-6 text-white shadow-lg shadow-fonasin-green/20">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-100">Saldo actual</p>
+        <div className="grid gap-4 lg:grid-cols-4">
+          <div className="rounded-xl bg-fonasin-green p-5 text-white shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-100">Saldo actual</p>
             <p className="mt-3 font-heading text-3xl font-black">{currency.format(totalBalance)}</p>
           </div>
-          <div className="rounded-[1.5rem] border border-white/80 bg-white/90 p-6 shadow-lg shadow-fonasin-deep/5 backdrop-blur">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Creditos activos</p>
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Saldo inicial</p>
+            <p className="mt-3 text-2xl font-black text-slate-950">{currency.format(totalInitialBalance)}</p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Creditos activos</p>
             <p className="mt-3 text-3xl font-black text-slate-950">{credits.length}</p>
           </div>
-          <div className="rounded-[1.5rem] border border-white/80 bg-white/90 p-6 shadow-lg shadow-fonasin-deep/5 backdrop-blur">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Estado</p>
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Estado</p>
             <p className="mt-3 text-lg font-black text-emerald-700">Sesion protegida</p>
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-white/80 bg-white/95 p-5 shadow-[0_20px_55px_rgba(13,71,56,0.10)] sm:p-7">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Mis creditos</p>
-              <h2 className="mt-1 font-heading text-2xl font-black text-fonasin-deep sm:text-3xl">Resumen de creditos registrados</h2>
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 p-3">
+            <div className="grid gap-2 sm:grid-cols-3">
+              {[
+                { id: 'statement' as const, label: 'Estado de cuenta', icon: CreditCard },
+                { id: 'contributions' as const, label: 'Aportes', icon: PiggyBank },
+                { id: 'form' as const, label: 'Formulario', icon: FileText },
+              ].map((tab) => {
+                const Icon = tab.icon;
+                const selected = activeTab === tab.id;
+
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black transition focus-ring ${
+                      selected
+                        ? 'bg-fonasin-green text-white shadow-sm'
+                        : 'bg-slate-50 text-slate-600 hover:bg-fonasin-surface hover:text-fonasin-deep'
+                    }`}
+                  >
+                    <Icon size={18} />
+                    {tab.label}
+                  </button>
+                );
+              })}
             </div>
-            <button
-              type="button"
-              onClick={loadCredits}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-fonasin-green/20 bg-fonasin-surface px-4 py-2.5 text-sm font-bold text-fonasin-green transition hover:bg-fonasin-lime/20 focus-ring"
-            >
-              <RefreshCw size={16} />
-              Actualizar
-            </button>
           </div>
 
-          {creditsState === 'loading' ? (
-            <div className="mt-5 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600">
-              <Loader2 className="animate-spin" size={18} />
-              Cargando creditos
+          {activeTab === 'statement' ? (
+            <div className="p-5 sm:p-7">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Estado de cuenta</p>
+                  <h2 className="mt-1 font-heading text-2xl font-black text-fonasin-deep sm:text-3xl">Creditos registrados</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={loadCredits}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-fonasin-green/20 bg-fonasin-surface px-4 py-2.5 text-sm font-bold text-fonasin-green transition hover:bg-fonasin-lime/20 focus-ring"
+                >
+                  <RefreshCw size={16} />
+                  Actualizar
+                </button>
+              </div>
+
+              {creditsState === 'loading' ? (
+                <div className="mt-5 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600">
+                  <Loader2 className="animate-spin" size={18} />
+                  Cargando creditos
+                </div>
+              ) : null}
+
+              {creditsState === 'error' ? (
+                <div className="mt-5 rounded-xl border border-amber-100 bg-amber-50 px-4 py-4 text-sm font-semibold text-amber-800">
+                  {error ?? 'No fue posible cargar tus creditos.'}
+                </div>
+              ) : null}
+
+              {creditsState === 'ready' && credits.length === 0 ? (
+                <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-10 text-center">
+                  <CreditCard className="mx-auto text-slate-300" size={36} />
+                  <p className="mt-3 font-black text-slate-950">No hay creditos registrados</p>
+                  <p className="mt-2 text-sm text-slate-600">Cuando FONASIN registre un credito asociado a tu perfil, aparecera aqui.</p>
+                </div>
+              ) : null}
+
+              {creditsState === 'ready' && credits.length > 0 ? (
+                <div className="mt-6 overflow-x-auto rounded-xl border border-slate-100 bg-slate-50/70 p-3 sm:p-4">
+                  <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.16em] text-slate-500">
+                        <th className="py-3 pr-4">Linea</th>
+                        <th className="py-3 pr-4">Saldo inicial</th>
+                        <th className="py-3 pr-4">Saldo actual</th>
+                        <th className="py-3 pr-4">Cuota</th>
+                        <th className="py-3 pr-4">Plazo</th>
+                        <th className="py-3 pr-4">Tasa</th>
+                        <th className="py-3">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {credits.map((credit) => (
+                        <tr key={credit.id} className="border-b border-slate-200/70 transition hover:bg-white last:border-b-0">
+                          <td className="py-4 pr-4 font-black text-slate-950">{credit.credit_line}</td>
+                          <td className="py-4 pr-4 text-slate-700">{formatMoney(credit.initial_balance)}</td>
+                          <td className="py-4 pr-4 font-bold text-slate-950">{formatMoney(credit.current_balance)}</td>
+                          <td className="py-4 pr-4 text-slate-700">{formatMoney(credit.installment_amount)}</td>
+                          <td className="py-4 pr-4 text-slate-700">{credit.term_months} meses</td>
+                          <td className="py-4 pr-4 text-slate-700">{credit.interest_rate}%</td>
+                          <td className="py-4">
+                            <span className="rounded-full bg-fonasin-surface px-3 py-1 text-xs font-bold text-fonasin-green">
+                              {statusLabel(credit.status)}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
             </div>
           ) : null}
 
-          {creditsState === 'error' ? (
-            <div className="mt-5 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-4 text-sm font-semibold text-amber-800">
-              {error ?? 'No fue posible cargar tus creditos.'}
+          {activeTab === 'contributions' ? (
+            <div className="p-5 sm:p-7">
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Estado de aportes</p>
+              <h2 className="mt-1 font-heading text-2xl font-black text-fonasin-deep sm:text-3xl">Aportes registrados</h2>
+              <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-10 text-center">
+                <PiggyBank className="mx-auto text-slate-300" size={40} />
+                <p className="mt-3 font-black text-slate-950">No hay aportes registrados</p>
+                <p className="mt-2 text-sm text-slate-600">Este modulo queda separado para conectar los aportes cuando el backend los entregue.</p>
+              </div>
             </div>
           ) : null}
 
-          {creditsState === 'ready' && credits.length === 0 ? (
-            <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-8 text-center">
-              <p className="font-black text-slate-950">Aun no tienes creditos activos registrados.</p>
-              <p className="mt-2 text-sm text-slate-600">Cuando FONASIN registre un credito asociado a tu perfil, aparecera aqui.</p>
-            </div>
-          ) : null}
-
-          {creditsState === 'ready' && credits.length > 0 ? (
-            <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-100 bg-slate-50/70 p-3 sm:p-4">
-              <table className="w-full min-w-[760px] border-collapse text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.16em] text-slate-500">
-                    <th className="py-3 pr-4">Linea</th>
-                    <th className="py-3 pr-4">Saldo inicial</th>
-                    <th className="py-3 pr-4">Saldo actual</th>
-                    <th className="py-3 pr-4">Cuota</th>
-                    <th className="py-3 pr-4">Plazo</th>
-                    <th className="py-3 pr-4">Tasa</th>
-                    <th className="py-3">Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {credits.map((credit) => (
-                    <tr key={credit.id} className="border-b border-slate-200/70 transition hover:bg-white last:border-b-0">
-                      <td className="py-4 pr-4 font-black text-slate-950">{credit.credit_line}</td>
-                      <td className="py-4 pr-4 text-slate-700">{formatMoney(credit.initial_balance)}</td>
-                      <td className="py-4 pr-4 font-bold text-slate-950">{formatMoney(credit.current_balance)}</td>
-                      <td className="py-4 pr-4 text-slate-700">{formatMoney(credit.installment_amount)}</td>
-                      <td className="py-4 pr-4 text-slate-700">{credit.term_months} meses</td>
-                      <td className="py-4 pr-4 text-slate-700">{credit.interest_rate}%</td>
-                      <td className="py-4">
-                        <span className="rounded-full bg-fonasin-surface px-3 py-1 text-xs font-bold text-fonasin-green">
-                          {statusLabel(credit.status)}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {activeTab === 'form' ? (
+            <div className="p-5 sm:p-7">
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Formulario</p>
+              <h2 className="mt-1 font-heading text-2xl font-black text-fonasin-deep sm:text-3xl">Informacion de afiliacion</h2>
+              <div className="mt-5 grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                  <FileText className="text-fonasin-green" size={28} />
+                  <p className="mt-4 font-black text-slate-950">Formulario pendiente de conectar</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    En el siguiente bloque este espacio consultara el formulario generado para el asociado y permitira abrirlo en vista interna si existe.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-fonasin-green">Proximo paso</p>
+                  <p className="mt-3 text-sm font-semibold leading-6 text-slate-700">
+                    Conectar los datos guardados de afiliacion, el PDF vigente y la entrada para solicitar actualizacion de datos.
+                  </p>
+                </div>
+              </div>
             </div>
           ) : null}
         </div>
