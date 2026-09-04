@@ -25,9 +25,9 @@
         .concept-table th { background: #eff8f2; border: 1px solid #d8e1dc; color: #004d26; font-size: 8.3px; padding: 6px; text-align: left; text-transform: uppercase; }
         .concept-table td { border: 1px solid #edf1ef; padding: 6px; vertical-align: top; }
         .total-row td { background: #f6fbf7; color: #004d26; font-weight: 900; }
-        .signature-box { border: 1px solid #ff6b00; margin-top: 16px; page-break-inside: avoid; }
-        .signature-title { background: #f05a00; color: #fff; font-size: 10px; font-weight: 900; letter-spacing: .04em; padding: 6px 10px; text-align: center; text-transform: uppercase; }
-        .signature-table td { border-bottom: 1px solid #f2e3d8; padding: 5px 10px; width: 50%; }
+        .signature-box { border: 1px solid #64b87c; margin-top: 16px; page-break-inside: avoid; }
+        .signature-title { background: #2f9b57; color: #fff; font-size: 10px; font-weight: 900; letter-spacing: .04em; padding: 6px 10px; text-align: center; text-transform: uppercase; }
+        .signature-table td { border-bottom: 1px solid #dcefe2; padding: 5px 10px; width: 50%; }
         .verified { background: #f1f8ef; border: 1px solid #7bbf8f; color: #004d26; font-weight: 900; margin: 8px 10px 10px; padding: 8px; text-align: center; text-transform: uppercase; }
         .verified small { color: #374151; display: block; font-size: 8px; font-weight: 400; margin-top: 3px; text-transform: none; }
         .signatures { margin-top: 28px; }
