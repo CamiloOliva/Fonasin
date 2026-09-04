@@ -68,7 +68,7 @@
 <div class="topbar">
     <table class="brand-table">
         <tr>
-            <td style="width: 64px;">@if (is_file($logoPath ?? ''))<img class="logo" src="{{ $logoPath }}" alt="FONASIN">@endif</td>
+            <td style="width: 64px;">@if (filled($logoDataUri ?? null))<img class="logo" src="{{ $logoDataUri }}" alt="FONASIN">@endif</td>
             <td>
                 <p class="brand-name">FONASIN</p>
                 <p class="brand-subtitle">Fondo de empleados del sector mineroenerg&eacute;tico</p>

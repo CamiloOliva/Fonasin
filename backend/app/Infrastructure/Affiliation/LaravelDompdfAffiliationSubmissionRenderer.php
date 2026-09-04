@@ -14,7 +14,7 @@ class LaravelDompdfAffiliationSubmissionRenderer implements RendersAffiliationSu
             'application' => $application,
             'sections' => $sections,
             'signature' => $signature,
-            'logoPath' => public_path('logotipo.png'),
+            'logoDataUri' => $this->logoDataUri(),
         ])->output();
     }
 
@@ -24,7 +24,20 @@ class LaravelDompdfAffiliationSubmissionRenderer implements RendersAffiliationSu
             'application' => $application,
             'sections' => $sections,
             'payroll' => $payroll,
-            'logoPath' => public_path('logotipo.png'),
+            'logoDataUri' => $this->logoDataUri(),
         ])->output();
+    }
+
+    private function logoDataUri(): ?string
+    {
+        $path = base_path('../public/logotipo.png');
+
+        if (! is_file($path)) {
+            return null;
+        }
+
+        $contents = file_get_contents($path);
+
+        return $contents === false ? null : 'data:image/png;base64,'.base64_encode($contents);
     }
 }

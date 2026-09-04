@@ -30,8 +30,9 @@
         .signature-table td { border-bottom: 1px solid #f2e3d8; padding: 5px 10px; width: 50%; }
         .verified { background: #f1f8ef; border: 1px solid #7bbf8f; color: #004d26; font-weight: 900; margin: 8px 10px 10px; padding: 8px; text-align: center; text-transform: uppercase; }
         .verified small { color: #374151; display: block; font-size: 8px; font-weight: 400; margin-top: 3px; text-transform: none; }
-        .signatures td { padding-top: 24px; text-align: center; vertical-align: top; width: 33.33%; }
-        .line { border-top: 1px solid #4b5563; margin: 0 auto 7px; width: 86%; }
+        .signatures { margin-top: 28px; }
+        .signatures td { padding-top: 24px; text-align: center; vertical-align: top; width: 100%; }
+        .line { border-top: 1px solid #4b5563; margin: 0 auto 9px; width: 62%; }
         .signature-label { color: #111827; font-size: 8.5px; font-weight: 900; text-transform: uppercase; }
         .footer { border-top: 1px solid #008039; color: #6b7280; font-size: 8px; margin-top: 14px; padding-top: 7px; text-align: center; }
     </style>
@@ -45,7 +46,7 @@
 <div class="topbar">
     <table class="brand-table">
         <tr>
-            <td style="width: 66px;">@if (is_file($logoPath ?? ''))<img class="logo" src="{{ $logoPath }}" alt="FONASIN">@endif</td>
+            <td style="width: 66px;">@if (filled($logoDataUri ?? null))<img class="logo" src="{{ $logoDataUri }}" alt="FONASIN">@endif</td>
             <td>
                 <p class="brand-name">FONASIN</p>
                 <p class="brand-subtitle">Fondo de empleados del sector mineroenerg&eacute;tico</p>
@@ -179,20 +180,8 @@
     <tr>
         <td>
             <div class="line"></div>
-            <div class="signature-label">Solicitante</div>
-            {{ $payroll['full_name'] ?: 'No registra' }}<br>
-            Documento: {{ $payroll['document_number'] ?: 'No registra' }}
-        </td>
-        <td>
-            <div class="line"></div>
-            <div class="signature-label">Recibido por FONASIN</div>
-            Sistema automatizado<br>
-            {{ $signature['signed_at_label'] ?? now('America/Bogota')->format('Y-m-d H:i:s') }}
-        </td>
-        <td>
-            <div class="line"></div>
             <div class="signature-label">Aprobado Pagador</div>
-            Firma manuscrita del pagador
+            Firma del pagador
         </td>
     </tr>
 </table>
