@@ -16,6 +16,11 @@ class CannotManageCreditAccount extends DomainException
         return new self('Authenticated user is not linked to an associate account.');
     }
 
+    public static function associateAccountIsInactive(): self
+    {
+        return new self('El asociado no se encuentra activo.');
+    }
+
     public static function associateMustBeActive(): self
     {
         return new self('Solo se pueden registrar creditos para asociados activos.');

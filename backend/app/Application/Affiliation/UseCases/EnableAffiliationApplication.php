@@ -62,10 +62,33 @@ class EnableAffiliationApplication
             $documentNumber = $this->requiredString($personalData, 'documentNumber');
             $email = $this->requiredString($personalData, 'email');
             $fullName = $this->fullName($personalData);
+            $normalizedEmail = strtolower(trim($email));
             $documentNumberHash = hash('sha256', strtoupper(trim($documentNumber)));
 
             $temporaryPassword = null;
-            $user = User::query()->firstOrNew(['email' => strtolower(trim($email))]);
+            $user = User::query()
+                ->with('associate')
+                ->where('email', $normalizedEmail)
+                ->first();
+            $associate = Associate::query()
+                ->where('document_number_hash', $documentNumberHash)
+                ->first();
+
+            if ($user && is_string($user->document_number_hash) && $user->document_number_hash !== $documentNumberHash) {
+                throw CannotReviewAffiliationApplication::identityConflict();
+            }
+
+            if ($user?->associate && $user->associate->document_number_hash !== $documentNumberHash) {
+                throw CannotReviewAffiliationApplication::identityConflict();
+            }
+
+            if ($associate && $associate->user_id && (! $user || $associate->user_id !== $user->id)) {
+                throw CannotReviewAffiliationApplication::identityConflict();
+            }
+
+            if (! $user) {
+                $user = new User(['email' => $normalizedEmail]);
+            }
 
             if (! $user->exists) {
                 $temporaryPassword = Str::random(16);
@@ -77,15 +100,23 @@ class EnableAffiliationApplication
                 ])->save();
             }
 
+            if (! is_string($user->document_number_hash) || $user->document_number_hash === '') {
+                $user->forceFill([
+                    'document_type' => $documentType,
+                    'document_number_hash' => $documentNumberHash,
+                    'document_number_encrypted' => $this->cipher->encryptArray([
+                        'document_number' => $documentNumber,
+                    ]),
+                ])->save();
+            }
+
             $associateRole = Role::query()->firstOrCreate(['name' => 'associate']);
             $user->roles()->syncWithoutDetaching([$associateRole->id]);
 
-            $associate = Associate::query()->firstOrNew([
-                'document_number_hash' => $documentNumberHash,
-            ]);
+            $associate ??= new Associate(['document_number_hash' => $documentNumberHash]);
 
             $associate->forceFill([
-                'user_id' => $associate->user_id ?? $user->id,
+                'user_id' => $user->id,
                 'document_type' => $documentType,
                 'document_number_encrypted' => $this->cipher->encryptArray([
                     'document_number' => $documentNumber,

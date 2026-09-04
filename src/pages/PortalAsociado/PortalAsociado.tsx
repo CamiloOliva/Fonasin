@@ -593,7 +593,7 @@ export default function PortalAsociado() {
                   <FileText className="mx-auto text-slate-300" size={40} />
                   <p className="mt-3 font-black text-slate-950">No hay formulario generado</p>
                   <p className="mt-2 text-sm text-slate-600">
-                    Cuando tu afiliacion quede habilitada, podras ver aqui el formulario y la libranza generados.
+                    Cuando tu afiliacion quede habilitada, podras ver aqui el formulario generado.
                   </p>
                 </div>
               ) : null}

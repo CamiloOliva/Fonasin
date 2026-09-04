@@ -170,6 +170,20 @@ class CreditAccountHttpTest extends TestCase
             ->assertUnprocessable();
     }
 
+    public function test_inactive_associate_cannot_view_portal_credits(): void
+    {
+        $user = $this->userWithRole('associate');
+        $this->createAssociate([
+            'user_id' => $user->id,
+            'status' => 'inactive',
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/portal/credits')
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'El asociado no se encuentra activo.');
+    }
+
     /**
      * @param  array<string, string>  $overrides
      */

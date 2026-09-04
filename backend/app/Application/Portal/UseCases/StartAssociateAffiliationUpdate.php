@@ -26,23 +26,27 @@ class StartAssociateAffiliationUpdate
         ?string $correlationId = null,
         ?string $ipHash = null,
     ): AffiliationApplication {
-        $associate = $actor->associate;
+        return DB::transaction(function () use ($actor, $correlationId, $ipHash): AffiliationApplication {
+            $associate = $actor->associate()->lockForUpdate()->first();
 
-        if (! $associate) {
-            throw CannotViewPortalAffiliation::associateAccountIsMissing();
-        }
+            if (! $associate) {
+                throw CannotViewPortalAffiliation::associateAccountIsMissing();
+            }
 
-        $sourceApplication = $associate->affiliationApplications()
-            ->with('sections')
-            ->where('status', AffiliationApplicationStatus::Enabled->value)
-            ->latest('updated_at')
-            ->first();
+            if ($associate->status !== 'active') {
+                throw CannotViewPortalAffiliation::associateAccountIsInactive();
+            }
 
-        if (! $sourceApplication) {
-            throw CannotViewPortalAffiliation::enabledApplicationIsMissing();
-        }
+            $sourceApplication = $associate->affiliationApplications()
+                ->with('sections')
+                ->where('status', AffiliationApplicationStatus::Enabled->value)
+                ->latest('updated_at')
+                ->first();
 
-        return DB::transaction(function () use ($actor, $associate, $sourceApplication, $correlationId, $ipHash): AffiliationApplication {
+            if (! $sourceApplication) {
+                throw CannotViewPortalAffiliation::enabledApplicationIsMissing();
+            }
+
             $draft = $associate->affiliationApplications()
                 ->where('status', AffiliationApplicationStatus::Draft->value)
                 ->latest('updated_at')

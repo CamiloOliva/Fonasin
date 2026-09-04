@@ -33,4 +33,9 @@ class CannotReviewAffiliationApplication extends DomainException
     {
         return new self("Application cannot create an associate because personal field [{$field}] is missing.");
     }
+
+    public static function identityConflict(): self
+    {
+        return new self('No se puede habilitar la afiliacion porque el correo o documento ya pertenece a otra identidad.');
+    }
 }

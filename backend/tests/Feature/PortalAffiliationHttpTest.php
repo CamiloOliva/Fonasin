@@ -54,6 +54,20 @@ class PortalAffiliationHttpTest extends TestCase
         ]);
     }
 
+    public function test_inactive_associate_cannot_view_portal_affiliation(): void
+    {
+        $user = $this->userWithRole('associate');
+        $this->createAssociate([
+            'user_id' => $user->id,
+            'status' => 'inactive',
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/portal/affiliation')
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'El asociado no se encuentra activo.');
+    }
+
     public function test_associate_can_view_only_own_enabled_affiliation_generated_documents(): void
     {
         $user = $this->userWithRole('associate');
@@ -134,6 +148,20 @@ class PortalAffiliationHttpTest extends TestCase
             1,
             $associate->affiliationApplications()->where('status', AffiliationApplicationStatus::Draft->value)->count(),
         );
+    }
+
+    public function test_inactive_associate_cannot_start_update_draft(): void
+    {
+        $user = $this->userWithRole('associate');
+        $this->createAssociate([
+            'user_id' => $user->id,
+            'status' => 'inactive',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson('/portal/affiliation/update-draft')
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'El asociado no se encuentra activo.');
     }
 
     /**
