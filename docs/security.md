@@ -19,7 +19,7 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 - Un asociado `inactive` no puede consultar creditos, documentos de afiliacion ni crear borradores de actualizacion aunque conserve una sesion abierta.
 - La habilitacion desde una solicitud de afiliacion rechaza conflictos entre correo, documento, usuario y asociado. No se reasignan relaciones existentes de forma silenciosa.
 - La creacion del borrador de actualizacion del asociado se ejecuta en transaccion y bloquea la fila del asociado mientras busca o crea el borrador activo.
-- La administracion manual de creditos requiere sesion, policy y auditoria. Solo permite asociados activos y lineas de credito aprobadas. El retiro operativo se maneja como estado `archived`, no como borrado fisico.
+- La administracion manual de creditos requiere sesion, policy, auditoria y paginacion en listados administrativos. Solo permite asociados activos y lineas de credito aprobadas. El retiro operativo se maneja como estado `archived`, no como borrado fisico; los cambios de estado usan transiciones permitidas.
 - Las cuentas creadas con contrasena temporal quedan marcadas con `must_change_password` y no pueden usar rutas privadas de portal o administracion hasta cambiarla. El cambio exige la contrasena actual, guarda solo hash y registra evento de autenticacion.
 - La recuperacion de contrasena usa correo y numero de documento. Para asociados se valida contra `associates`; para usuarios internos se valida contra el documento cifrado/hasheado en `users`. Los tokens se guardan hasheados, expiran y los eventos se registran sin exponer correo ni documento en claro.
 
