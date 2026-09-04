@@ -142,7 +142,7 @@ class SubmitAffiliationApplicationTest extends TestCase
         $this->assertSame('Bucaramanga', $capturedPayroll['signature']['city']);
         $this->assertSame('24 de agosto de 2026', $capturedPayroll['signature']['signature_date_label']);
         $this->assertSame('24 de agosto de 2026', $capturedSignature['signature_date_label']);
-        $this->assertSame('Firma electronica simple', $capturedSignature['mechanism']);
+        $this->assertSame('Aceptacion electronica del formulario', $capturedSignature['mechanism']);
     }
 
     public function test_it_rejects_submission_when_required_consents_are_missing(): void

@@ -115,7 +115,7 @@ class GenerateAffiliationSubmissionDocuments
             'signature_date_label' => $this->spanishDate($signedAt),
             'ip_reference' => $ipHash ? substr($ipHash, 0, 16) : 'Registrada en auditoria',
             'verification_hash' => substr($verificationHash, 0, 16),
-            'mechanism' => 'Firma electronica simple',
+            'mechanism' => 'Aceptacion electronica del formulario',
         ];
     }
 

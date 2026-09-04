@@ -27,11 +27,11 @@
         .total-row td { background: #f6fbf7; color: #004d26; font-weight: 900; }
         .signature-box { border: 1px solid #ff6b00; margin-top: 16px; page-break-inside: avoid; }
         .signature-title { background: #f05a00; color: #fff; font-size: 10px; font-weight: 900; letter-spacing: .04em; padding: 6px 10px; text-align: center; text-transform: uppercase; }
-        .signature-table td { border-bottom: 1px solid #f2e3d8; padding: 5px 10px; width: 25%; }
+        .signature-table td { border-bottom: 1px solid #f2e3d8; padding: 5px 10px; width: 50%; }
         .verified { background: #f1f8ef; border: 1px solid #7bbf8f; color: #004d26; font-weight: 900; margin: 8px 10px 10px; padding: 8px; text-align: center; text-transform: uppercase; }
         .verified small { color: #374151; display: block; font-size: 8px; font-weight: 400; margin-top: 3px; text-transform: none; }
-        .signatures td { padding-top: 22px; text-align: center; vertical-align: top; width: 50%; }
-        .line { border-top: 1px solid #4b5563; margin: 0 auto 7px; width: 82%; }
+        .signatures td { padding-top: 24px; text-align: center; vertical-align: top; width: 33.33%; }
+        .line { border-top: 1px solid #4b5563; margin: 0 auto 7px; width: 86%; }
         .signature-label { color: #111827; font-size: 8.5px; font-weight: 900; text-transform: uppercase; }
         .footer { border-top: 1px solid #008039; color: #6b7280; font-size: 8px; margin-top: 14px; padding-top: 7px; text-align: center; }
     </style>
@@ -48,13 +48,13 @@
             <td style="width: 66px;">@if (is_file($logoPath ?? ''))<img class="logo" src="{{ $logoPath }}" alt="FONASIN">@endif</td>
             <td>
                 <p class="brand-name">FONASIN</p>
-                <p class="brand-subtitle">Fondo de empleados del sector mineroenergético</p>
+                <p class="brand-subtitle">Fondo de empleados del sector mineroenerg&eacute;tico</p>
                 <p class="brand-subtitle">NIT 900.861.038-8</p>
             </td>
             <td class="meta" style="width: 240px;">
                 <strong>Solicitud:</strong> {{ $application->id }}<br>
                 <strong>Generada:</strong> {{ now('America/Bogota')->format('Y-m-d H:i') }}<br>
-                <strong>Documento:</strong> Autorización de descuento por nómina
+                <strong>Documento:</strong> Autorizaci&oacute;n de descuento por n&oacute;mina
             </td>
         </tr>
     </table>
@@ -63,12 +63,12 @@
 <p class="date-line">{{ $payroll['city'] }}, {{ $payroll['signature_date_label'] }}</p>
 
 <div class="salutation">
-    Señores<br>
-    DEPARTAMENTO DE NÓMINA
+    Se&ntilde;ores<br>
+    DEPARTAMENTO DE N&Oacute;MINA
 </div>
 
-<h1>Autorización descuento por nómina</h1>
-<p class="intro">Autorización expresa de descuentos con destino a FONASIN.</p>
+<h1>Autorizaci&oacute;n descuento por n&oacute;mina</h1>
+<p class="intro">Autorizaci&oacute;n expresa de descuentos con destino a FONASIN.</p>
 
 <div class="section">
     <div class="section-title">1. Datos del solicitante</div>
@@ -78,26 +78,26 @@
             <td><span class="label">Documento</span><span class="value">{{ $payroll['document_number'] ?: 'No registra' }}</span></td>
         </tr>
         <tr>
-            <td><span class="label">Lugar de expedición</span><span class="value">{{ $payroll['issue_place'] ?: 'No registra' }}</span></td>
+            <td><span class="label">Lugar de expedici&oacute;n</span><span class="value">{{ $payroll['issue_place'] ?: 'No registra' }}</span></td>
             <td><span class="label">Empresa donde labora</span><span class="value">{{ $payroll['employer'] ?: 'No registra' }}</span></td>
         </tr>
         <tr>
-            <td><span class="label">Teléfono / celular</span><span class="value">{{ $payroll['phone'] ?: 'No registra' }}</span></td>
-            <td><span class="label">Correo electrónico</span><span class="value">{{ $payroll['email'] ?: 'No registra' }}</span></td>
+            <td><span class="label">Tel&eacute;fono / celular</span><span class="value">{{ $payroll['phone'] ?: 'No registra' }}</span></td>
+            <td><span class="label">Correo electr&oacute;nico</span><span class="value">{{ $payroll['email'] ?: 'No registra' }}</span></td>
         </tr>
     </table>
 </div>
 
 <div class="section">
-    <div class="section-title">2. Autorización</div>
+    <div class="section-title">2. Autorizaci&oacute;n</div>
     <p class="paragraph">
         Yo, {{ $payroll['full_name'] ?: 'No registra' }}, identificado(a) con documento No.
         {{ $payroll['document_number'] ?: 'No registra' }}, autorizo de manera expresa, previa, libre e irrevocable a mi
-        empleador para realizar descuentos por nómina con destino a FONASIN, NIT 900.861.038-8, en mi calidad de afiliado(a).
+        empleador para realizar descuentos por n&oacute;mina con destino a FONASIN, NIT 900.861.038-8, en mi calidad de afiliado(a).
     </p>
     <p class="paragraph">
-        Autorizo igualmente que, en caso de terminación del vínculo laboral por cualquier causa, los valores pendientes sean
-        descontados de salarios, prestaciones sociales, liquidación final o cualquier otro pago a que tenga derecho, conforme a
+        Autorizo igualmente que, en caso de terminaci&oacute;n del v&iacute;nculo laboral por cualquier causa, los valores pendientes sean
+        descontados de salarios, prestaciones sociales, liquidaci&oacute;n final o cualquier otro pago a que tenga derecho, conforme a
         la normatividad vigente.
     </p>
 </div>
@@ -114,7 +114,7 @@
         <thead>
             <tr>
                 <th>Concepto</th>
-                <th>Base de cálculo</th>
+                <th>Base de c&aacute;lculo</th>
                 <th>Valor autorizado</th>
                 <th>Periodicidad</th>
             </tr>
@@ -142,32 +142,36 @@
 </div>
 
 <div class="section">
-    <div class="section-title">4. Tratamiento de datos y aceptación</div>
+    <div class="section-title">4. Tratamiento de datos y aceptaci&oacute;n</div>
     <p class="paragraph">
-        Autorizo a FONASIN para el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 y demás normas
-        aplicables, exclusivamente para fines relacionados con mi vinculación como asociado.
+        Autorizo a FONASIN para el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 y dem&aacute;s normas
+        aplicables, exclusivamente para fines relacionados con mi vinculaci&oacute;n como asociado.
     </p>
-    <p class="paragraph">Declaro que conozco y acepto las condiciones de la obligación adquirida y los reglamentos del Fondo.</p>
+    <p class="paragraph">Declaro que conozco y acepto las condiciones de la obligaci&oacute;n adquirida y los reglamentos del Fondo.</p>
 </div>
 
 <div class="signature-box">
-    <div class="signature-title">Documento firmado electrónicamente</div>
+    <div class="signature-title">Firmado electr&oacute;nicamente por</div>
     <table class="signature-table">
         <tr>
-            <td><span class="label">Solicitante</span><span class="value">{{ $signature['full_name'] ?? 'No registra' }}</span></td>
+            <td><span class="label">Nombre</span><span class="value">{{ $signature['full_name'] ?? 'No registra' }}</span></td>
             <td><span class="label">Documento</span><span class="value">{{ $signature['document'] ?? $payroll['document_number'] }}</span></td>
-            <td><span class="label">Fecha firma</span><span class="value">{{ $signature['signed_at_label'] ?? 'No registra' }}</span></td>
-            <td><span class="label">IP origen</span><span class="value">{{ $signature['ip_reference'] ?? 'Registrada en auditoría' }}</span></td>
         </tr>
         <tr>
-            <td colspan="2"><span class="label">Email</span><span class="value">{{ $signature['email'] ?? $payroll['email'] }}</span></td>
-            <td><span class="label">Mecanismo</span><span class="value">{{ $signature['mechanism'] ?? 'Firma electrónica simple' }}</span></td>
-            <td><span class="label">Hash</span><span class="value">{{ $signature['verification_hash'] ?? 'No registra' }}</span></td>
+            <td><span class="label">Correo</span><span class="value">{{ $signature['email'] ?? $payroll['email'] }}</span></td>
+            <td><span class="label">Fecha y hora</span><span class="value">{{ $signature['signed_at_label'] ?? 'No registra' }}</span></td>
+        </tr>
+        <tr>
+            <td><span class="label">M&eacute;todo</span><span class="value">Aceptaci&oacute;n electr&oacute;nica del formulario</span></td>
+            <td><span class="label">C&oacute;digo de verificaci&oacute;n</span><span class="value">{{ $signature['verification_hash'] ?? 'No registra' }}</span></td>
+        </tr>
+        <tr>
+            <td colspan="2"><span class="label">IP</span><span class="value">Registrada en auditor&iacute;a interna</span></td>
         </tr>
     </table>
     <div class="verified">
-        Firmado electrónicamente
-        <small>Este documento fue generado y firmado electrónicamente conforme al consentimiento registrado por el solicitante.</small>
+        Firmado electr&oacute;nicamente
+        <small>Este documento fue generado y firmado electr&oacute;nicamente conforme al consentimiento registrado por el solicitante.</small>
     </div>
 </div>
 
@@ -185,9 +189,14 @@
             Sistema automatizado<br>
             {{ $signature['signed_at_label'] ?? now('America/Bogota')->format('Y-m-d H:i:s') }}
         </td>
+        <td>
+            <div class="line"></div>
+            <div class="signature-label">Aprobado Pagador</div>
+            Firma manuscrita del pagador
+        </td>
     </tr>
 </table>
 
-<div class="footer">Documento interno generado por FONASIN. La IP completa permanece registrada de forma protegida en auditoría.</div>
+<div class="footer">Documento interno generado por FONASIN. La IP completa permanece registrada de forma protegida en auditor&iacute;a.</div>
 </body>
 </html>
