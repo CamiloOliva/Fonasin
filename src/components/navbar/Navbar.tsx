@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Menu, MessageCircle, X } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
-import { navigation } from '../../data/navigation';
+import { mainNavigation } from '../../data/navigation';
 import { siteConfig, WHATSAPP_URL } from '../../data/siteConfig';
 import WhatsAppIcon from '../ui/WhatsAppIcon';
 
@@ -29,7 +29,7 @@ export default function Navbar() {
         </Link>
 
         <nav className="ml-auto hidden shrink-0 items-center gap-0 lg:flex" aria-label="Navegación principal">
-          {navigation.map((item) => (
+          {mainNavigation.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -54,7 +54,7 @@ export default function Navbar() {
 
       {open && (
         <nav className="border-t bg-white p-4 lg:hidden" aria-label="Navegación móvil">
-          {navigation.map((item) => (
+          {mainNavigation.map((item) => (
             <NavLink onClick={() => setOpen(false)} key={item.to} to={item.to} className="block rounded-lg px-4 py-3 font-semibold hover:bg-fonasin-surface">
               {item.label}
             </NavLink>

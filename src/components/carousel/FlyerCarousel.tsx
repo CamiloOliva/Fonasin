@@ -17,21 +17,26 @@ export default function FlyerCarousel() {
   return (
     <section className="bg-fonasin-deep" aria-label="Comunicaciones destacadas">
       <div className="relative isolate overflow-hidden">
-        <div className="relative flex min-h-[clamp(240px,34vw,520px)] items-center justify-center overflow-hidden bg-fonasin-deep/95 px-2 sm:px-4">
+        <div
+          className="relative flex h-[clamp(240px,34vw,520px)] items-center justify-center overflow-hidden bg-fonasin-deep/95 px-2 sm:px-4"
+          style={{ backgroundImage: `url(${flyer.image})`, backgroundPosition: 'center', backgroundSize: 'cover' }}
+        >
+          <div className="pointer-events-none absolute inset-0 scale-110 bg-fonasin-deep/55 backdrop-blur-2xl" />
+          <div className="pointer-events-none absolute inset-0 bg-fonasin-deep/35" />
           <img
             src={flyer.image}
             alt={flyer.title}
-            className="block h-auto max-h-[70vh] w-full object-contain object-center"
+            className="relative z-10 block h-full w-full object-contain object-center drop-shadow-[0_10px_22px_rgba(0,0,0,0.2)]"
           />
         </div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-fonasin-deep/25 to-transparent" />
-        <button onClick={previous} aria-label="Flyer anterior" className="absolute left-4 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/30 bg-white/90 text-fonasin-deep shadow-lg transition hover:scale-105 hover:bg-white focus-ring sm:left-6 sm:h-12 sm:w-12">
+        <button onClick={previous} aria-label="Flyer anterior" className="absolute left-4 top-1/2 z-30 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/30 bg-white/90 text-fonasin-deep shadow-lg transition hover:scale-105 hover:bg-white focus-ring sm:left-6 sm:h-12 sm:w-12">
           <ChevronLeft size={22} />
         </button>
-        <button onClick={next} aria-label="Siguiente flyer" className="absolute right-4 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/30 bg-white/90 text-fonasin-deep shadow-lg transition hover:scale-105 hover:bg-white focus-ring sm:right-6 sm:h-12 sm:w-12">
+        <button onClick={next} aria-label="Siguiente flyer" className="absolute right-4 top-1/2 z-30 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/30 bg-white/90 text-fonasin-deep shadow-lg transition hover:scale-105 hover:bg-white focus-ring sm:right-6 sm:h-12 sm:w-12">
           <ChevronRight size={22} />
         </button>
-        <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 gap-2" aria-label="Seleccionar flyer">
+        <div className="absolute bottom-5 left-1/2 z-30 flex -translate-x-1/2 gap-2" aria-label="Seleccionar flyer">
           {flyers.map((item, itemIndex) => (
             <button
               key={item.id}
