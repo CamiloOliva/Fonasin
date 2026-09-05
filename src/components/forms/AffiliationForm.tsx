@@ -317,7 +317,7 @@ type RecoverableAffiliationDraft = Pick<AffiliationDraft, 'id'> & {
 
 function readStoredDraft(): RecoverableAffiliationDraft | null {
   try {
-    const raw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+    const raw = window.sessionStorage.getItem(DRAFT_STORAGE_KEY);
     if (!raw) return null;
 
     const stored = JSON.parse(raw) as StoredAffiliationDraft;
@@ -325,7 +325,7 @@ function readStoredDraft(): RecoverableAffiliationDraft | null {
     const readUrl = stored.readUrl ?? stored.draft?.links?.read;
 
     if (!draftId || !readUrl || Date.now() - stored.savedAt > DRAFT_STORAGE_TTL_MS) {
-      window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+      window.sessionStorage.removeItem(DRAFT_STORAGE_KEY);
       return null;
     }
 
@@ -359,7 +359,7 @@ function storeDraft(draft: AffiliationDraft): void {
   const draftAccessToken = draft.draft_access_token ?? readStoredDraftAccessToken();
 
   try {
-    window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
+    window.sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
       savedAt: Date.now(),
       id: draft.id,
       readUrl: draft.links.read,
@@ -373,7 +373,7 @@ function storeDraft(draft: AffiliationDraft): void {
 
 function clearStoredDraft(): void {
   try {
-    window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+    window.sessionStorage.removeItem(DRAFT_STORAGE_KEY);
   } catch {
     // No hay accion necesaria si el navegador bloquea storage local.
   }

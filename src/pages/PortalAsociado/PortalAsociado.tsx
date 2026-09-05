@@ -23,6 +23,7 @@ type CreditsState = 'idle' | 'loading' | 'ready' | 'error';
 type AffiliationState = 'idle' | 'loading' | 'ready' | 'error';
 type PortalTab = 'statement' | 'contributions' | 'form';
 const AFFILIATION_DRAFT_STORAGE_KEY = 'fonasin.affiliation.draft.v1';
+const AFFILIATION_DRAFT_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
 
 const currency = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -97,9 +98,33 @@ function ensureAssociatePortalUser(user: PortalUser): PortalUser {
   return user;
 }
 
+type StoredAffiliationUpdateDraft = {
+  savedAt: number;
+  id: string;
+  readUrl: string;
+  status: string;
+};
+
+function readStoredAffiliationUpdateDraft(): StoredAffiliationUpdateDraft | null {
+  try {
+    const raw = window.sessionStorage.getItem(AFFILIATION_DRAFT_STORAGE_KEY);
+    if (!raw) return null;
+
+    const stored = JSON.parse(raw) as Partial<StoredAffiliationUpdateDraft>;
+    if (!stored.id || !stored.readUrl || !stored.savedAt || Date.now() - stored.savedAt > AFFILIATION_DRAFT_STORAGE_TTL_MS) {
+      window.sessionStorage.removeItem(AFFILIATION_DRAFT_STORAGE_KEY);
+      return null;
+    }
+
+    return stored as StoredAffiliationUpdateDraft;
+  } catch {
+    return null;
+  }
+}
+
 function storeAffiliationUpdateDraft(draft: PortalAffiliationUpdateDraft): void {
   try {
-    window.localStorage.setItem(AFFILIATION_DRAFT_STORAGE_KEY, JSON.stringify({
+    window.sessionStorage.setItem(AFFILIATION_DRAFT_STORAGE_KEY, JSON.stringify({
       savedAt: Date.now(),
       id: draft.id,
       readUrl: draft.links.read,
@@ -107,7 +132,7 @@ function storeAffiliationUpdateDraft(draft: PortalAffiliationUpdateDraft): void 
       status: draft.status,
     }));
   } catch {
-    // El asociado puede abrir el formulario aunque el navegador bloquee storage local.
+    // El asociado puede abrir el formulario aunque el navegador bloquee el almacenamiento de sesión.
   }
 }
 
@@ -266,6 +291,13 @@ export default function PortalAsociado() {
     setMessage(null);
 
     try {
+      const storedDraft = readStoredAffiliationUpdateDraft();
+      if (storedDraft) {
+        setMessage('Retomando el borrador de actualizacion existente.');
+        navigate('/afiliacion');
+        return;
+      }
+
       const updateDraft = await startPortalAffiliationUpdate();
       storeAffiliationUpdateDraft(updateDraft);
       navigate('/afiliacion');
@@ -275,7 +307,6 @@ export default function PortalAsociado() {
       setStartingUpdate(false);
     }
   }
-
   if (sessionState === 'checking') {
     return (
       <section className="min-h-[58vh] bg-slate-50 py-16">
@@ -310,7 +341,7 @@ export default function PortalAsociado() {
               <div className="rounded-2xl border border-white/60 bg-slate-900/35 p-5 text-white shadow-lg backdrop-blur-md">
                 <CreditCard className="text-fonasin-lime" size={24} />
                 <p className="mt-3 font-black text-white drop-shadow-sm">Creditos asociados</p>
-                <p className="mt-1 text-sm leading-6 text-white drop-shadow-sm">Consulta saldos y condiciones de tus creditos activos.</p>
+                <p className="mt-1 text-sm leading-6 text-white drop-shadow-sm">Consulta saldos y condiciones de tus creditos registrados.</p>
               </div>
             </div>
           </div>
@@ -432,7 +463,7 @@ export default function PortalAsociado() {
             <p className="mt-3 text-2xl font-black text-slate-950">{currency.format(totalInitialBalance)}</p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Creditos activos</p>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Creditos registrados</p>
             <p className="mt-3 text-3xl font-black text-slate-950">{credits.length}</p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
