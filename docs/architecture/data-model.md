@@ -62,10 +62,13 @@ Representa la solicitud y sus metadatos operativos, no todos los datos sensibles
 | `associate_id` | UUID | FK nullable mientras no exista asociado |
 | `status` | varchar(30) | `draft`, `submitted`, `under_review`, `pending_correction`, `approved`, `enabled`, `disabled`, `withdrawn`, `rejected`, `cancelled` |
 | `current_step` | varchar(30) | etapa visible al solicitante: `personal`, `employment`, `financial`, `beneficiaries`, `sarlaft`, `documents`, `consents`, `summary` |
+| `access_token_hash` | char(64) | hash del token tecnico del borrador; nullable y se limpia al cerrar la solicitud |
 | `submitted_at` | timestamptz | nullable |
 | `reviewed_by_user_id` | UUID | FK nullable |
 | `reviewed_at` | timestamptz | nullable |
 | `rejection_reason` | text | nullable |
+
+Solo puede existir un borrador activo (`status = draft`) por asociado. Antes de crear el indice parcial, la migracion cancela borradores duplicados antiguos y conserva el mas reciente.
 
 ### `application_sections`
 
@@ -181,6 +184,7 @@ El caso de uso inicial de envio exige las secciones de formulario completas, los
 - `users(email)` unico.
 - `associates(document_number_hash)` unico.
 - `affiliation_applications(status, created_at)`.
+- `affiliation_applications(associate_id)` unico parcial cuando `status = draft` y `associate_id` no es nulo.
 - `application_documents(application_id, status)`.
 - `credit_accounts(associate_id, status)`.
 - `audit_events(subject_type, subject_id, occurred_at)`.

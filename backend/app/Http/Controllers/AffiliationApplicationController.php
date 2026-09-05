@@ -700,6 +700,10 @@ class AffiliationApplicationController extends Controller
 
         abort_unless($context === self::DOCUMENT_CONTEXT_PUBLIC, 403);
         abort_if($document->document_type === ApplicationDocumentType::SignedPayrollAuthorization->value, 404);
+        abort_unless(in_array($document->document_type, [
+            ApplicationDocumentType::AffiliationSummary->value,
+            ApplicationDocumentType::PayrollAuthorization->value,
+        ], true), 404);
 
         return null;
     }
@@ -745,9 +749,7 @@ class AffiliationApplicationController extends Controller
 
     private function ensureDraftAccess(Request $request, AffiliationApplication $application): void
     {
-        if ($application->status !== AffiliationApplicationStatus::Draft->value) {
-            return;
-        }
+        abort_if($application->status !== AffiliationApplicationStatus::Draft->value, 409, 'La solicitud ya fue enviada o cerrada.');
 
         $expectedHash = $application->access_token_hash;
         $token = $request->header('X-Affiliation-Draft-Token');

@@ -81,6 +81,7 @@ class SubmitAffiliationApplication
                 'status' => $toStatus->value,
                 'current_step' => AffiliationApplicationStep::Summary->value,
                 'submitted_at' => $submittedAt,
+                'access_token_hash' => null,
             ])->save();
 
             ($this->recordAuditEvent)(

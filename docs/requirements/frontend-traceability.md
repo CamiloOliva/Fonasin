@@ -46,7 +46,7 @@ El carrusel estatico de tres imagenes existe, pero permanece `En curso` hasta re
 | ID | Requisito | Estado | Bloqueador o siguiente paso |
 |---|---|---|---|
 | FE-AFI-001 | Pagina informativa | Bloqueado | Contenido, requisitos y soportes oficiales. |
-| FE-AFI-002 | Inicio o recuperacion de borrador | Implementado | La vista reutiliza por 24 horas el borrador local del mismo navegador, consulta el borrador firmado en Backend y repuebla secciones/documentos ya guardados; no persiste datos personales en storage del frontend y requiere token tecnico de borrador. |
+| FE-AFI-002 | Inicio o recuperacion de borrador | Implementado | La vista reutiliza por 24 horas el borrador local del mismo navegador, consulta el borrador firmado en Backend y repuebla secciones/documentos ya guardados; no persiste datos personales en storage del frontend, requiere token tecnico de borrador y el Backend invalida el token al enviar. |
 | FE-AFI-003 | Datos personales | Bloqueado | Esquema de campos aprobado. |
 | FE-AFI-004 | Informacion laboral | Bloqueado | Campos y reglas aprobados. |
 | FE-AFI-005 | Informacion financiera | Bloqueado | Campos y reglas aprobados. |
@@ -56,7 +56,7 @@ El carrusel estatico de tres imagenes existe, pero permanece `En curso` hasta re
 | FE-AFI-008 | Documentos generados | En curso | Backend genera formulario de afiliacion y autorizacion de descuento por nomina en PDF privado con firma electronica simple; falta aprobacion final de contenido juridico/diseno por FONASIN. |
 | FE-AFI-009 | Consentimientos | Bloqueado | Versiones oficiales de politica y estatutos. |
 | FE-AFI-010 | Revision antes de envio | En curso | La vista de afiliacion muestra revision previa y permite corregir antes de enviar; falta validacion final de UX y textos. |
-| FE-AFI-011 | Envio | Implementado | Endpoint de envio genera documentos, registra auditoria y cierra el borrador temporal. |
+| FE-AFI-011 | Envio | Implementado | Endpoint de envio genera documentos, registra auditoria, cierra el borrador temporal y revoca el token tecnico para evitar nuevas mutaciones con enlaces antiguos. |
 | FE-AFI-012 | Confirmacion | Implementado | Pantalla de confirmacion posterior al envio sin descarga directa obligatoria para el solicitante. |
 
 La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente la aprobacion formal de todos los textos, consentimientos y criterios documentales.
@@ -79,7 +79,7 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 | FE-OBQ-002 | Inicio privado | OBQ | En curso | Portal asociado existe con sesion, bloqueo por contrasena temporal y asociado activo; falta validacion visual final. |
 | FE-OBQ-003 | Creditos actuales | OBQ | En curso | Consulta creditos del asociado autenticado desde Backend; importacion de creditos sigue pendiente. |
 | FE-OBQ-004 | Aislamiento por sesion | OBQ | Implementado | Las consultas privadas resuelven el asociado desde la sesion y bloquean asociado inactivo; no se acepta `associate_id` del navegador. |
-| FE-EXT-004 | Actualizacion de datos | EXT | En curso | El asociado puede crear/reutilizar un borrador temporal de actualizacion por 24 horas; falta aprobacion final del flujo y de retencion. |
+| FE-EXT-004 | Actualizacion de datos | EXT | En curso | El asociado puede crear/reutilizar un borrador temporal de actualizacion por 24 horas; el Backend usa transaccion e indice unico parcial para evitar borradores duplicados activos. Falta aprobacion final del flujo y de retencion. |
 | FE-EXT-005 | Simulador | EXT | Pendiente | No iniciar sin formulas y advertencias aprobadas. |
 | FE-EXT-006 | Documentos privados | EXT | En curso | Storage privado y vista temporal autorizada para documentos visibles al asociado; la libranza no se muestra en el portal asociado. |
 
@@ -98,7 +98,7 @@ La pagina publica `/creditos` solo cubre informacion general de `FE-WEB-004`; no
 | Compilacion TypeScript/Vite | Implementado | `npm run build` local y workflow `.github/workflows/frontend-ci.yml` en cada push y pull request. |
 | Rutas SPA en Apache | Implementado | `public/.htaccess` incluido en `dist` y recarga directa verificada. |
 | Pruebas unitarias | En curso | Vitest y Testing Library cubren rutas y navegacion; ampliar a componentes y utilidades criticas. |
-| Pruebas de integracion | Pendiente | Formularios, archivos, errores y confirmaciones. |
+| Pruebas de integracion | En curso | Pruebas Feature cubren afiliacion publica, links vencidos, documentos protegidos, portal asociado, documentos y actualizacion de datos; falta prueba Browser visual end to end. |
 | Responsive | Pendiente | Matriz movil, tableta y escritorio. |
 | Accesibilidad | Pendiente | Teclado, foco, labels, contraste, semantica y auditoria. |
 | Permisos | Pendiente | Casos positivos y negativos por rol. |
