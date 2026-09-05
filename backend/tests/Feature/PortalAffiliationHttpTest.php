@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Application\Affiliation\UseCases\SaveApplicationSection;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
@@ -13,13 +14,18 @@ use App\Models\ApplicationSection;
 use App\Models\Associate;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Tests\Support\AffiliationSectionPayloads;
 use Tests\TestCase;
 
 class PortalAffiliationHttpTest extends TestCase
 {
     use RefreshDatabase;
+    use AffiliationSectionPayloads;
 
     public function test_guest_cannot_view_portal_affiliation(): void
     {
@@ -170,6 +176,72 @@ class PortalAffiliationHttpTest extends TestCase
         );
     }
 
+    public function test_associate_login_documents_and_update_draft_flow(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create([
+            'email' => 'associate.flow@example.test',
+            'password' => Hash::make('correct-password'),
+        ]);
+        $role = Role::query()->firstOrCreate(['name' => 'associate']);
+        $user->roles()->attach($role);
+
+        $associate = $this->createAssociate(['user_id' => $user->id]);
+        $application = $this->createAffiliationApplication($associate, AffiliationApplicationStatus::Enabled);
+        $this->saveCompletedSection($application, AffiliationApplicationStep::Personal);
+        $this->saveCompletedSection($application, AffiliationApplicationStep::Employment);
+
+        $document = $this->createDocument($application, ApplicationDocumentType::AffiliationSummary);
+        Storage::disk('local')->put($document->storage_key, '%PDF-1.4 portal-test');
+
+        $this->postJson('/login', [
+            'email' => 'associate.flow@example.test',
+            'password' => 'correct-password',
+        ])->assertOk()
+            ->assertJsonPath('data.roles.0', 'associate');
+
+        $portal = $this->getJson('/portal/affiliation')
+            ->assertOk()
+            ->assertJsonPath('data.id', $application->id)
+            ->assertJsonCount(1, 'data.documents')
+            ->json('data');
+
+        $this->get($portal['documents'][0]['links']['preview'])
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+
+        $draft = $this->postJson('/portal/affiliation/update-draft')
+            ->assertCreated()
+            ->assertJsonPath('data.status', AffiliationApplicationStatus::Draft->value)
+            ->json('data');
+
+        $readDraft = $this->getJson($draft['links']['read'], [
+            'X-Affiliation-Draft-Token' => $draft['draft_access_token'],
+        ])->assertOk()
+            ->assertJsonPath('data.id', $draft['id'])
+            ->json('data');
+
+        $personalSection = collect($readDraft['sections'])
+            ->firstWhere('section', AffiliationApplicationStep::Personal->value);
+
+        $this->assertSame('Persona', $personalSection['data']['firstName'] ?? null);
+
+        $this->postJson('/portal/affiliation/update-draft')
+            ->assertCreated()
+            ->assertJsonPath('data.id', $draft['id']);
+    }
+
+    public function test_database_rejects_duplicate_active_draft_for_same_associate(): void
+    {
+        $associate = $this->createAssociate();
+        $this->createAffiliationApplication($associate, AffiliationApplicationStatus::Draft);
+
+        $this->expectException(QueryException::class);
+
+        $this->createAffiliationApplication($associate, AffiliationApplicationStatus::Draft);
+    }
+
     public function test_inactive_associate_cannot_start_update_draft(): void
     {
         $user = $this->userWithRole('associate');
@@ -249,5 +321,18 @@ class PortalAffiliationHttpTest extends TestCase
             'data_encrypted' => "encrypted-{$section->value}",
             'completed_at' => now()->startOfSecond(),
         ]);
+    }
+
+    private function saveCompletedSection(
+        AffiliationApplication $application,
+        AffiliationApplicationStep $section,
+    ): ApplicationSection {
+        return app(SaveApplicationSection::class)(
+            application: $application,
+            section: $section,
+            schemaVersion: 1,
+            data: $this->validSectionPayload($section),
+            completedAt: now(),
+        );
     }
 }

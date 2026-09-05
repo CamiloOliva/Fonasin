@@ -375,6 +375,7 @@ class AffiliationApplicationHttpTest extends TestCase
 
         $this->assertSame(5, $application->sections()->whereNotNull('completed_at')->count());
         $this->assertSame(4, $application->documents()->count());
+        $this->assertNull($application->access_token_hash);
         $this->assertSame(2, $application->consentRecords()->count());
         $this->assertDatabaseHas('audit_events', [
             'subject_type' => 'affiliation_application',
@@ -382,9 +383,52 @@ class AffiliationApplicationHttpTest extends TestCase
             'action' => 'application.submitted',
         ]);
 
+        $this->postJson($draft['links']['sections']['personal'], [
+            'schema_version' => 1,
+            'data' => $this->validSectionPayload(AffiliationApplicationStep::Personal),
+        ], $headers)->assertStatus(409);
+
+        $identityDocument = $application->documents()
+            ->where('document_type', ApplicationDocumentType::Identity->value)
+            ->firstOrFail();
+        $identityPreviewUrl = URL::temporarySignedRoute(
+            'affiliation-applications.documents.preview',
+            now()->addMinutes(10),
+            [
+                'application' => $application,
+                'document' => $identityDocument,
+            ],
+            false,
+        );
+
+        $this->get($identityPreviewUrl)->assertNotFound();
+
         foreach ($application->documents as $document) {
             Storage::disk('local')->assertExists($document->getAttribute('storage_key'));
         }
+    }
+
+    public function test_it_rejects_expired_public_draft_links(): void
+    {
+        $application = AffiliationApplication::query()->forceCreate([
+            'status' => AffiliationApplicationStatus::Draft->value,
+            'current_step' => AffiliationApplicationStep::Personal->value,
+        ]);
+        $headers = $this->protectDraft($application);
+        $expiredUrl = URL::temporarySignedRoute(
+            'affiliation-applications.sections.store',
+            now()->subMinute(),
+            [
+                'application' => $application,
+                'section' => AffiliationApplicationStep::Personal->value,
+            ],
+            false,
+        );
+
+        $this->postJson($expiredUrl, [
+            'schema_version' => 1,
+            'data' => $this->validSectionPayload(AffiliationApplicationStep::Personal),
+        ], $headers)->assertForbidden();
     }
 
     public function test_it_downloads_generated_document_with_signed_url_and_audits_it(): void
