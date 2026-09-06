@@ -58,6 +58,8 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 - No colocar claves, contrasenas, tokens, rutas privadas ni correos de produccion en Markdown, codigo o issues.
 - Cada entorno usa una clave de aplicacion, credenciales PostgreSQL y storage propios.
 - Cambiar un secreto requiere invalidar el anterior y actualizar el entorno correspondiente, nunca editarlo en Git.
+- Laravel agrega cabeceras defensivas `X-Content-Type-Options`, `Referrer-Policy` y `X-Frame-Options` en respuestas web. La politica CSP se activa por entorno con `SECURITY_CSP_ENABLED=true` y `SECURITY_CSP_POLICY`.
+- El frontend estatico servido por Apache/cPanel requiere una CSP equivalente configurada en el virtual host, `.htaccess` aprobado o panel del proveedor, porque esos archivos no pasan por el middleware de Laravel.
 
 ## Lista de revision de seguridad
 

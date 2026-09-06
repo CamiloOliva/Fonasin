@@ -88,6 +88,9 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 - Aportes del asociado: pantalla visible sin datos reales ni importacion implementada.
 - Ahorro permanente y ahorro voluntario: no existe modelo operativo ni carga administrativa aprobada.
 - Importacion de Excel/XLSX: bloqueada hasta definir plantilla, validaciones, auditoria y manejo de errores.
+- Retencion automatica de FPQRS, documentos, solicitudes y auditoria: bloqueada hasta aprobacion juridica y operativa.
+- HMAC/pepper para hashes de documento y correo: pendiente de aprobacion de estrategia de cifrado, migracion y rotacion de secretos.
+- Auditoria append-only reforzada por PostgreSQL: pendiente de definicion de permisos/triggers en el entorno productivo.
 
 La pagina publica `/creditos` solo cubre informacion general de `FE-WEB-004`; no cuenta como consulta privada `FE-OBQ-003`.
 
