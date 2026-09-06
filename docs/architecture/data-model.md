@@ -33,6 +33,9 @@ users -> audit_events           un actor realiza una accion auditable
 | `status` | varchar(30) | `pending`, `active`, `blocked` |
 | `email_verified_at` | timestamptz | nullable |
 | `last_login_at` | timestamptz | nullable |
+| `document_type` | varchar(20) | nullable; requerido para recuperacion de usuarios internos |
+| `document_number_hash` | char(64) | nullable y unico cuando existe |
+| `document_number_encrypted` | text | nullable; numero cifrado |
 
 ### `roles` y `role_user`
 
@@ -68,7 +71,7 @@ Representa la solicitud y sus metadatos operativos, no todos los datos sensibles
 | `reviewed_at` | timestamptz | nullable |
 | `rejection_reason` | text | nullable |
 
-Solo puede existir un borrador activo (`status = draft`) por asociado. Antes de crear el indice parcial, la migracion cancela borradores duplicados antiguos y conserva el mas reciente.
+Solo puede existir un borrador activo (`status = draft`) por asociado. Antes de crear el indice parcial, la migracion cancela borradores duplicados antiguos y conserva el mas reciente. En produccion esta migracion requiere respaldo, reporte de borradores afectados y aprobacion funcional antes de ejecutarse.
 
 ### `application_sections`
 
@@ -182,6 +185,7 @@ El caso de uso inicial de envio exige las secciones de formulario completas, los
 ## Indices minimos
 
 - `users(email)` unico.
+- `users(document_number_hash)` unico parcial cuando el hash no es nulo.
 - `associates(document_number_hash)` unico.
 - `affiliation_applications(status, created_at)`.
 - `affiliation_applications(associate_id)` unico parcial cuando `status = draft` y `associate_id` no es nulo.
