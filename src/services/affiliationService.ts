@@ -109,7 +109,7 @@ function csrfToken(): string {
 
 function draftAccessToken(): string {
   try {
-    const raw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+    const raw = window.sessionStorage.getItem(DRAFT_STORAGE_KEY);
     if (!raw) return '';
 
     const stored = JSON.parse(raw) as { draftAccessToken?: unknown };

@@ -71,4 +71,32 @@ HAVING COUNT(*) > 1;
 
 La migracion puede continuar solamente si la consulta no devuelve filas. Si existen duplicados, detener el despliegue y revisar cada caso con el responsable funcional. Los consentimientos son evidencia y no deben eliminarse o consolidarse automaticamente.
 
+### Diagnostico previo de borradores de actualizacion
+
+Antes de ejecutar `2026_09_04_000002_add_unique_active_draft_per_associate_index.php` en una base que ya contenga solicitudes, generar respaldo y reporte con:
+
+```sql
+SELECT associate_id, COUNT(*) AS active_drafts
+FROM affiliation_applications
+WHERE status = 'draft' AND associate_id IS NOT NULL
+GROUP BY associate_id
+HAVING COUNT(*) > 1;
+```
+
+La migracion cancela borradores duplicados antiguos y conserva el mas reciente para permitir el indice unico parcial. Si la consulta devuelve filas en produccion, se debe guardar el reporte, confirmar respaldo restaurable y obtener aprobacion funcional antes de ejecutar la migracion.
+
+### Diagnostico previo de documentos de usuario
+
+Antes de ejecutar `2026_09_06_000001_add_unique_document_hash_index_to_users_table.php`, validar que no existan usuarios con el mismo documento hasheado:
+
+```sql
+SELECT document_number_hash, COUNT(*) AS users
+FROM users
+WHERE document_number_hash IS NOT NULL
+GROUP BY document_number_hash
+HAVING COUNT(*) > 1;
+```
+
+Si existen duplicados, detener el despliegue y resolver cada identidad con el responsable funcional. No reasignar usuarios ni asociados de forma silenciosa.
+
 No se configura despliegue automatico ni `.cpanel.yml` hasta confirmar usuario de cPanel, rutas reales, version de PHP, Composer, Node y disponibilidad de PostgreSQL.

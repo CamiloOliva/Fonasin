@@ -13,6 +13,7 @@ use App\Models\FpqrsSubmission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Tests\TestCase;
@@ -106,6 +107,33 @@ class FpqrsSubmissionTest extends TestCase
             'message' => 'Synthetic complaint body.',
             'attachment' => UploadedFile::fake()->create('script.exe', 1, 'application/x-msdownload'),
         ], ['Accept' => 'application/json'])->assertUnprocessable();
+    }
+
+    public function test_fpqrs_submission_is_rate_limited(): void
+    {
+        Mail::fake();
+        config(['services.fpqrs.recipient_email' => 'attention@example.test']);
+
+        $throttleKey = 'fpqrs-public|127.0.0.1|'.hash('sha256', 'citizen@example.test');
+        RateLimiter::clear($throttleKey);
+
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            $this->post('/fpqrs-submissions', [
+                'full_name' => 'Synthetic Citizen',
+                'email' => 'citizen@example.test',
+                'submission_type' => FpqrsSubmissionType::Petition->value,
+                'message' => 'Synthetic message body.',
+            ], ['Accept' => 'application/json'])->assertCreated();
+        }
+
+        $this->post('/fpqrs-submissions', [
+            'full_name' => 'Synthetic Citizen',
+            'email' => 'citizen@example.test',
+            'submission_type' => FpqrsSubmissionType::Petition->value,
+            'message' => 'Synthetic message body.',
+        ], ['Accept' => 'application/json'])->assertStatus(429);
+
+        RateLimiter::clear($throttleKey);
     }
 
     public function test_it_marks_submission_as_failed_when_delivery_fails(): void

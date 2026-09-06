@@ -342,7 +342,7 @@ function readStoredDraft(): RecoverableAffiliationDraft | null {
 
 function readStoredDraftAccessToken(): string {
   try {
-    const raw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+    const raw = window.sessionStorage.getItem(DRAFT_STORAGE_KEY);
     if (!raw) return '';
 
     const stored = JSON.parse(raw) as StoredAffiliationDraft;

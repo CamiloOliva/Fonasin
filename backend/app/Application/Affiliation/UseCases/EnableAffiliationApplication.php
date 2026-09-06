@@ -30,7 +30,7 @@ class EnableAffiliationApplication
     ) {}
 
     /**
-     * @return array{application: AffiliationApplication, associate: Associate, user: User, temporary_password: ?string}
+     * @return array{application: AffiliationApplication, associate: Associate, user: User, activation_required: bool}
      */
     public function __invoke(
         AffiliationApplication $application,
@@ -65,14 +65,22 @@ class EnableAffiliationApplication
             $normalizedEmail = strtolower(trim($email));
             $documentNumberHash = hash('sha256', strtoupper(trim($documentNumber)));
 
-            $temporaryPassword = null;
+            $createdUser = false;
             $user = User::query()
                 ->with('associate')
                 ->where('email', $normalizedEmail)
                 ->first();
+            $userWithSameDocument = User::query()
+                ->where('document_number_hash', $documentNumberHash)
+                ->where('email', '!=', $normalizedEmail)
+                ->first();
             $associate = Associate::query()
                 ->where('document_number_hash', $documentNumberHash)
                 ->first();
+
+            if ($userWithSameDocument) {
+                throw CannotReviewAffiliationApplication::identityConflict();
+            }
 
             if ($user && is_string($user->document_number_hash) && $user->document_number_hash !== $documentNumberHash) {
                 throw CannotReviewAffiliationApplication::identityConflict();
@@ -91,12 +99,11 @@ class EnableAffiliationApplication
             }
 
             if (! $user->exists) {
-                $temporaryPassword = Str::random(16);
+                $createdUser = true;
                 $user->forceFill([
-                    'password' => $temporaryPassword,
+                    'password' => Str::password(40),
                     'must_change_password' => true,
                     'status' => 'active',
-                    'email_verified_at' => now(),
                 ])->save();
             }
 
@@ -148,7 +155,7 @@ class EnableAffiliationApplication
                 metadata: [
                     'associate_id' => $associate->id,
                     'user_id' => $user->id,
-                    'created_user' => $temporaryPassword !== null,
+                    'created_user' => $createdUser,
                     'status' => [
                         'from' => $fromStatus->value,
                         'to' => $toStatus->value,
@@ -161,7 +168,7 @@ class EnableAffiliationApplication
                 'application' => $application->refresh(),
                 'associate' => $associate->refresh(),
                 'user' => $user->refresh(),
-                'temporary_password' => $temporaryPassword,
+                'activation_required' => $createdUser || $user->must_change_password,
             ];
         });
     }

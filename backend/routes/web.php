@@ -39,15 +39,16 @@ Route::post('/password/reset', [PasswordResetController::class, 'update'])
 
 Route::prefix('affiliation-applications')->group(function (): void {
     Route::post('/', [AffiliationApplicationController::class, 'store'])
+        ->middleware('throttle:affiliation-draft-create')
         ->name('affiliation-applications.store');
     Route::get('/{application}', [AffiliationApplicationController::class, 'readDraft'])
         ->middleware('signed:relative')
         ->name('affiliation-applications.read');
     Route::post('/{application}/sections/{section}', [AffiliationApplicationController::class, 'storeSection'])
-        ->middleware('signed:relative')
+        ->middleware(['signed:relative', 'throttle:affiliation-draft-write'])
         ->name('affiliation-applications.sections.store');
     Route::post('/{application}/documents', [AffiliationApplicationController::class, 'storeDocument'])
-        ->middleware('signed:relative')
+        ->middleware(['signed:relative', 'throttle:affiliation-document-upload'])
         ->name('affiliation-applications.documents.store');
     Route::get('/{application}/documents/{document}/download', [AffiliationApplicationController::class, 'downloadDocument'])
         ->middleware('signed:relative')
@@ -56,10 +57,10 @@ Route::prefix('affiliation-applications')->group(function (): void {
         ->middleware('signed:relative')
         ->name('affiliation-applications.documents.preview');
     Route::post('/{application}/consents', [AffiliationApplicationController::class, 'storeConsent'])
-        ->middleware('signed:relative')
+        ->middleware(['signed:relative', 'throttle:affiliation-draft-write'])
         ->name('affiliation-applications.consents.store');
     Route::post('/{application}/submit', [AffiliationApplicationController::class, 'submit'])
-        ->middleware('signed:relative')
+        ->middleware(['signed:relative', 'throttle:affiliation-submit'])
         ->name('affiliation-applications.submit');
 });
 
@@ -142,4 +143,5 @@ Route::middleware(['auth', 'password.changed'])
     ->name('portal.affiliation.update-draft.store');
 
 Route::post('/fpqrs-submissions', [FpqrsSubmissionController::class, 'store'])
+    ->middleware('throttle:fpqrs-public')
     ->name('fpqrs-submissions.store');

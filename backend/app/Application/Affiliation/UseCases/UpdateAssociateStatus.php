@@ -36,6 +36,20 @@ class UpdateAssociateStatus
                 'status' => $status,
             ])->save();
 
+            $linkedUser = $associate->user;
+
+            if ($linkedUser) {
+                $linkedUser->forceFill([
+                    'status' => $status === 'active' ? 'active' : 'inactive',
+                    'remember_token' => $status === 'active' ? $linkedUser->remember_token : null,
+                ])->save();
+
+                if ($status === 'inactive') {
+                    DB::table('sessions')->where('user_id', $linkedUser->id)->delete();
+                    DB::table('password_reset_tokens')->where('email', $linkedUser->email)->delete();
+                }
+            }
+
             ($this->recordAuditEvent)(
                 module: AuditModule::Affiliation,
                 action: $status === 'active'
@@ -52,6 +66,9 @@ class UpdateAssociateStatus
                         'from' => $fromStatus,
                         'to' => $status,
                     ],
+                    'linked_user_id' => $linkedUser?->id,
+                    'linked_user_status' => $linkedUser?->status,
+                    'sessions_revoked' => $status === 'inactive',
                 ],
             );
 

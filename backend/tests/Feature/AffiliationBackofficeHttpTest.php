@@ -66,6 +66,8 @@ class AffiliationBackofficeHttpTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.id', $application->id)
             ->assertJsonPath('data.0.status', AffiliationApplicationStatus::Submitted->value)
+            ->assertJsonPath('meta.per_page', 50)
+            ->assertJsonPath('meta.total', 1)
             ->assertJsonMissing(['id' => $draft->id]);
     }
 
@@ -232,7 +234,9 @@ class AffiliationBackofficeHttpTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.application.status', AffiliationApplicationStatus::Enabled->value)
             ->assertJsonPath('data.associate.full_name', 'Ana Maria Prueba Perez')
-            ->assertJsonPath('data.user.email', 'ana.prueba@example.test');
+            ->assertJsonPath('data.user.email', 'ana.prueba@example.test')
+            ->assertJsonPath('data.activation_required', true)
+            ->assertJsonMissingPath('data.temporary_password');
 
         $this->assertDatabaseHas('associates', [
             'document_type' => 'CC',
@@ -257,6 +261,28 @@ class AffiliationBackofficeHttpTest extends TestCase
             'email' => 'ana.prueba@example.test',
             'document_type' => 'CC',
             'document_number_hash' => hash('sha256', '999999999'),
+            'document_number_encrypted' => 'test-ciphertext',
+        ]);
+        $application = $this->applicationReadyForEnable();
+        $reviewer = $this->userWithRole('reviewer');
+
+        $this->actingAs($reviewer)
+            ->postJson("/admin/affiliation-applications/{$application->id}/enable")
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'No se puede habilitar la afiliacion porque el correo o documento ya pertenece a otra identidad.');
+
+        $this->assertDatabaseMissing('affiliation_applications', [
+            'id' => $application->id,
+            'status' => AffiliationApplicationStatus::Enabled->value,
+        ]);
+    }
+
+    public function test_enable_rejects_existing_document_on_another_user(): void
+    {
+        User::factory()->create([
+            'email' => 'otra.persona@example.test',
+            'document_type' => 'CC',
+            'document_number_hash' => hash('sha256', '123456789'),
             'document_number_encrypted' => 'test-ciphertext',
         ]);
         $application = $this->applicationReadyForEnable();

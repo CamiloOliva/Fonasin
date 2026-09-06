@@ -70,7 +70,7 @@ export type EnableAffiliationResult = {
     email: string;
     status: string;
   };
-  temporary_password: string | null;
+  activation_required: boolean;
 };
 
 type RequestOptions = {

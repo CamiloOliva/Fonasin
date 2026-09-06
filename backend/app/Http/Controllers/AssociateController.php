@@ -16,14 +16,23 @@ class AssociateController extends Controller
 {
     public function index(Request $request, EncryptsSensitiveData $cipher): JsonResponse
     {
+        $perPage = max(1, min(100, (int) $request->integer('per_page', 50)));
         $associates = Associate::query()
             ->with('user:id,email,status')
             ->withCount(['affiliationApplications', 'creditAccounts'])
             ->latest()
-            ->get();
+            ->paginate($perPage);
 
         return response()->json([
-            'data' => $associates->map(fn (Associate $associate): array => $this->associatePayload($associate, $cipher))->values(),
+            'data' => $associates->getCollection()
+                ->map(fn (Associate $associate): array => $this->associatePayload($associate, $cipher))
+                ->values(),
+            'meta' => [
+                'current_page' => $associates->currentPage(),
+                'per_page' => $associates->perPage(),
+                'total' => $associates->total(),
+                'last_page' => $associates->lastPage(),
+            ],
         ]);
     }
 
@@ -47,7 +56,7 @@ class AssociateController extends Controller
         return response()->json([
             'data' => [
                 ...$this->associatePayload($associate->load('user')->loadCount(['affiliationApplications', 'creditAccounts']), $cipher),
-                'temporary_password' => $result['temporary_password'],
+                'activation_required' => $result['activation_required'],
             ],
         ], 201);
     }
