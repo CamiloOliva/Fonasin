@@ -1,14 +1,15 @@
 import React from 'react';
-import { 
-  Users, 
-  PiggyBank, 
-  Calendar, 
-  ShieldCheck, 
-  FileText, 
-  Gift, 
-  Cake, 
-  Heart, 
-  Plane, 
+import { Link } from 'react-router-dom';
+import {
+  Users,
+  PiggyBank,
+  Calendar,
+  ShieldCheck,
+  FileText,
+  Gift,
+  Cake,
+  Heart,
+  Plane,
   Sparkles,
   ChevronRight
 } from 'lucide-react';
@@ -17,7 +18,7 @@ import styles from '../../modules/credits/styles/MiFondo.module.css';
 export const MiFondo: React.FC = () => {
   return (
     <div className={styles.container}>
-      
+
       {/* SECCIÓN: AHORRO PERMANENTE */}
       <section className={styles.cardPermanente}>
         <div className={styles.contentCol}>
@@ -109,12 +110,12 @@ export const MiFondo: React.FC = () => {
               </span>
             </div>
 
-            <button className={styles.btnPrimary}>
+            <Link to="/afiliacion" className={styles.btnPrimary}>
               <span>Quiero realizar un ahorro voluntario</span>
               <div className={styles.btnIcon}>
                 <ChevronRight size={18} />
               </div>
-            </button>
+            </Link>
           </div>
         </div>
 

@@ -1454,8 +1454,9 @@ export default function AffiliationForm() {
           setUploadedDocumentTypes(new Set());
         }
 
+        clearStoredDraft();
         setSubmitted(true);
-        setMessage('Solicitud enviada al backend.');
+        setMessage(backendMode === 'ready' ? 'Solicitud enviada al backend.' : 'Solicitud preparada en modo local.');
         return;
       }
 

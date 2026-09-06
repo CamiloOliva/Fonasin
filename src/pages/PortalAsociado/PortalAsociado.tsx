@@ -136,6 +136,13 @@ function storeAffiliationUpdateDraft(draft: PortalAffiliationUpdateDraft): void 
   }
 }
 
+function clearAffiliationUpdateDraft(): void {
+  try {
+    window.sessionStorage.removeItem(AFFILIATION_DRAFT_STORAGE_KEY);
+  } catch {
+    // No hay accion necesaria si el navegador bloquea el almacenamiento de sesión.
+  }
+}
 export default function PortalAsociado() {
   const navigate = useNavigate();
   const [sessionState, setSessionState] = useState<SessionState>('checking');
@@ -253,6 +260,7 @@ export default function PortalAsociado() {
   }
 
   async function handleLogout() {
+    clearAffiliationUpdateDraft();
     setError(null);
     setMessage(null);
 
