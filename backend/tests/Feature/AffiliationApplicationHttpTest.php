@@ -12,6 +12,7 @@ use App\Domain\Affiliation\Enums\ConsentType;
 use App\Models\AffiliationApplication;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Tests\Support\AffiliationSectionPayloads;
@@ -535,6 +536,20 @@ class AffiliationApplicationHttpTest extends TestCase
             'subject_id' => $submitted['generated_documents'][0]['id'],
             'action' => 'document.viewed',
         ]);
+    }
+
+    public function test_public_affiliation_draft_creation_is_rate_limited(): void
+    {
+        $throttleKey = 'affiliation-draft-create|127.0.0.1';
+        RateLimiter::clear($throttleKey);
+
+        for ($attempt = 0; $attempt < 30; $attempt++) {
+            $this->postJson('/affiliation-applications')->assertCreated();
+        }
+
+        $this->postJson('/affiliation-applications')->assertStatus(429);
+
+        RateLimiter::clear($throttleKey);
     }
 
     private function completeSections(AffiliationApplication $application): void
