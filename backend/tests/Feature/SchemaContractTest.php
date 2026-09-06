@@ -54,6 +54,7 @@ class SchemaContractTest extends TestCase
             'must_change_password',
             'status',
         ]));
+        $this->assertIndex('users', ['document_number_hash'], true);
         $this->assertTrue(Schema::hasTable('roles'));
         $this->assertTrue(Schema::hasColumns('roles', ['id', 'name']));
         $this->assertTrue(Schema::hasTable('role_user'));

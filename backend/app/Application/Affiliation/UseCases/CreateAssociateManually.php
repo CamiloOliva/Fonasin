@@ -22,8 +22,8 @@ class CreateAssociateManually
     ) {}
 
     /**
-     * @param  array{document_type: string, document_number: string, full_name: string, email: string, password?: string|null, status?: string}  $data
-     * @return array{associate: Associate, user: User, temporary_password: string|null}
+     * @param  array{document_type: string, document_number: string, full_name: string, email: string, status?: string}  $data
+     * @return array{associate: Associate, user: User, activation_required: bool}
      */
     public function __invoke(
         array $data,
@@ -47,25 +47,49 @@ class CreateAssociateManually
 
             $email = Str::lower(trim($data['email']));
             $user = User::query()->where('email', $email)->first();
+            $userWithSameDocument = User::query()
+                ->where('document_number_hash', $documentNumberHash)
+                ->where('email', '!=', $email)
+                ->first();
+
+            if ($userWithSameDocument) {
+                throw CannotManageAssociate::identityConflict();
+            }
 
             if ($user && Associate::query()->where('user_id', $user->id)->exists()) {
                 throw CannotManageAssociate::userAlreadyLinked();
             }
 
-            $temporaryPassword = null;
+            if ($user && is_string($user->document_number_hash) && $user->document_number_hash !== $documentNumberHash) {
+                throw CannotManageAssociate::identityConflict();
+            }
+
+            $activationRequired = false;
 
             if (! $user) {
-                $temporaryPassword = filled($data['password'] ?? null)
-                    ? null
-                    : Str::password(14, letters: true, numbers: true, symbols: false, spaces: false);
-                $password = filled($data['password'] ?? null) ? $data['password'] : $temporaryPassword;
+                $activationRequired = true;
 
                 $user = User::query()->create([
                     'email' => $email,
-                    'password' => $password,
+                    'document_type' => $data['document_type'],
+                    'document_number_hash' => $documentNumberHash,
+                    'document_number_encrypted' => $this->cipher->encryptArray([
+                        'document_number' => $documentNumber,
+                    ]),
+                    'password' => Str::password(40),
                     'must_change_password' => true,
                     'status' => 'active',
                 ]);
+            }
+
+            if (! is_string($user->document_number_hash) || $user->document_number_hash === '') {
+                $user->forceFill([
+                    'document_type' => $data['document_type'],
+                    'document_number_hash' => $documentNumberHash,
+                    'document_number_encrypted' => $this->cipher->encryptArray([
+                        'document_number' => $documentNumber,
+                    ]),
+                ])->save();
             }
 
             $associateRole = Role::query()->firstOrCreate(['name' => 'associate']);
@@ -104,7 +128,7 @@ class CreateAssociateManually
             return [
                 'associate' => $associate->refresh(),
                 'user' => $user->refresh(),
-                'temporary_password' => $temporaryPassword,
+                'activation_required' => $activationRequired || $user->must_change_password,
             ];
         });
     }

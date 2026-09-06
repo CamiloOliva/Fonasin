@@ -130,12 +130,11 @@ export default function AdminFonasin() {
     document_number: '',
     full_name: '',
     email: '',
-    password: '',
     status: 'active',
   });
   const [createdAssociateAccess, setCreatedAssociateAccess] = useState<{
     email: string;
-    temporaryPassword: string | null;
+    activationRequired: boolean;
   } | null>(null);
   const [creditForm, setCreditForm] = useState({
     associate_id: '',
@@ -379,21 +378,17 @@ export default function AdminFonasin() {
     setMessage(null);
 
     try {
-      const created = await createAdminAssociate({
-        ...associateForm,
-        password: associateForm.password.trim() || undefined,
-      });
+      const created = await createAdminAssociate(associateForm);
       setAssociateForm({
         document_type: 'CC',
         document_number: '',
         full_name: '',
         email: '',
-        password: '',
         status: 'active',
       });
       setCreatedAssociateAccess({
         email: created.user?.email ?? associateForm.email,
-        temporaryPassword: created.temporary_password ?? null,
+        activationRequired: Boolean(created.activation_required),
       });
       await loadAssociates();
       setMessage('Asociado creado correctamente.');
@@ -765,7 +760,6 @@ type AssociateFormState = {
   document_number: string;
   full_name: string;
   email: string;
-  password: string;
   status: string;
 };
 
@@ -781,7 +775,7 @@ function AssociatesPanel({
   associates: AdminAssociate[];
   dataState: DataState;
   form: AssociateFormState;
-  createdAccess: { email: string; temporaryPassword: string | null } | null;
+  createdAccess: { email: string; activationRequired: boolean } | null;
   onFormChange: (form: AssociateFormState) => void;
   onCreate: (event: FormEvent<HTMLFormElement>) => void;
   onStatusChange: (id: string, status: 'active' | 'inactive') => void;
@@ -846,27 +840,15 @@ function AssociatesPanel({
               className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
             />
           </label>
-          <label className="block">
-            <span className="text-sm font-bold text-slate-800">Contraseña inicial</span>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(event) => onFormChange({ ...form, password: event.target.value })}
-              minLength={8}
-              maxLength={128}
-              placeholder="Opcional: generar automaticamente"
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-            />
-          </label>
         </div>
 
         {createdAccess ? (
           <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
             <p className="font-black">Acceso creado para {createdAccess.email}</p>
             <p className="mt-1 font-semibold">
-              {createdAccess.temporaryPassword
-                ? `Contraseña temporal: ${createdAccess.temporaryPassword}`
-                : 'Se uso la contraseña definida por el administrador.'}
+              {createdAccess.activationRequired
+                ? 'Debe definir su contrasena desde Recuperar contrasena con correo y documento.'
+                : 'El usuario ya existia y conserva su acceso actual.'}
             </p>
           </div>
         ) : null}
@@ -1312,12 +1294,12 @@ function ApplicationDetail({
             <p className="font-black text-emerald-800">Asociado creado o vinculado</p>
             <p className="mt-1">Nombre: {enableResult.associate.full_name}</p>
             <p>Usuario: {enableResult.user.email}</p>
-            {enableResult.temporary_password ? (
+            {enableResult.activation_required ? (
               <p className="mt-2 rounded-xl bg-emerald-50 px-3 py-2 font-black text-emerald-800">
-                Contrasena temporal: {enableResult.temporary_password}
+                Debe definir su contrasena desde Recuperar contrasena con correo y documento.
               </p>
             ) : (
-              <p className="mt-2 font-semibold text-slate-600">El usuario ya existia; no se genero una contrasena nueva.</p>
+              <p className="mt-2 font-semibold text-slate-600">El usuario ya existia y conserva su acceso actual.</p>
             )}
           </div>
         ) : null}

@@ -51,6 +51,7 @@ class AffiliationApplicationController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $perPage = max(1, min(100, (int) $request->integer('per_page', 50)));
         $applications = AffiliationApplication::query()
             ->with(['reviewer'])
             ->where('status', '!=', AffiliationApplicationStatus::Draft->value)
@@ -60,13 +61,18 @@ class AffiliationApplicationController extends Controller
                 'consentRecords',
             ])
             ->latest('updated_at')
-            ->limit(100)
-            ->get();
+            ->paginate($perPage);
 
         return response()->json([
-            'data' => $applications
+            'data' => $applications->getCollection()
                 ->map(fn (AffiliationApplication $application): array => $this->adminApplicationListPayload($application))
                 ->all(),
+            'meta' => [
+                'current_page' => $applications->currentPage(),
+                'per_page' => $applications->perPage(),
+                'total' => $applications->total(),
+                'last_page' => $applications->lastPage(),
+            ],
         ]);
     }
 
@@ -430,7 +436,7 @@ class AffiliationApplicationController extends Controller
                     'email' => $result['user']->email,
                     'status' => $result['user']->status,
                 ],
-                'temporary_password' => $result['temporary_password'],
+                'activation_required' => $result['activation_required'],
             ],
         ]);
     }

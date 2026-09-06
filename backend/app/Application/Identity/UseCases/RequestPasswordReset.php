@@ -26,7 +26,7 @@ class RequestPasswordReset
 
         /** @var User|null $user */
         $user = User::query()
-            ->with('associate:id,user_id,document_number_hash')
+            ->with('associate:id,user_id,document_number_hash,status')
             ->where('email', $email)
             ->where('status', 'active')
             ->first();
@@ -35,20 +35,23 @@ class RequestPasswordReset
             $user->document_number_hash === $documentHash
             || $user->associate?->document_number_hash === $documentHash
         );
+        $canResetPassword = (bool) $matchesDocument
+            && (! $user->associate || $user->associate->status === 'active');
 
         ($this->recordAuthEvent)(
             eventType: AuthEventType::PasswordResetRequested,
-            user: $matchesDocument ? $user : null,
+            user: $canResetPassword ? $user : null,
             emailHash: hash('sha256', $email),
             ipHash: $ipHash,
             userAgentHash: $userAgentHash,
             correlationId: $correlationId,
             metadata: [
                 'matched_account' => (bool) $matchesDocument,
+                'eligible_account' => $canResetPassword,
             ],
         );
 
-        if (! $matchesDocument) {
+        if (! $canResetPassword) {
             return;
         }
 

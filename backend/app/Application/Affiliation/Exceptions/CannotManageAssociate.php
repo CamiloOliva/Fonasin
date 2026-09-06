@@ -20,4 +20,9 @@ class CannotManageAssociate extends DomainException
     {
         return new self('El correo indicado ya esta vinculado a otro asociado.');
     }
+
+    public static function identityConflict(): self
+    {
+        return new self('El correo indicado ya existe con un documento diferente.');
+    }
 }

@@ -285,6 +285,37 @@ class AuthenticationHttpTest extends TestCase
         ]);
     }
 
+    public function test_inactive_associate_cannot_request_password_reset(): void
+    {
+        Mail::fake();
+
+        $user = User::factory()->create([
+            'email' => 'asociado.inactivo@example.test',
+            'status' => 'active',
+        ]);
+        Associate::query()->create([
+            'user_id' => $user->id,
+            'document_type' => 'CC',
+            'document_number_hash' => hash('sha256', '1234567890'),
+            'document_number_encrypted' => 'encrypted',
+            'full_name' => 'Persona Inactiva',
+            'status' => 'inactive',
+        ]);
+
+        $this->postJson('/password/forgot', [
+            'email' => 'asociado.inactivo@example.test',
+            'document_number' => '1234567890',
+        ])->assertOk();
+
+        Mail::assertNothingSent();
+        $this->assertDatabaseMissing('password_reset_tokens', ['email' => 'asociado.inactivo@example.test']);
+        $this->assertDatabaseHas('auth_events', [
+            'event_type' => AuthEventType::PasswordResetRequested->value,
+            'metadata->matched_account' => true,
+            'metadata->eligible_account' => false,
+        ]);
+    }
+
     public function test_password_reset_request_does_not_reveal_mismatched_identity(): void
     {
         Mail::fake();
