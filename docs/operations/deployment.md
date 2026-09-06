@@ -25,6 +25,15 @@ Cuando el Backend entre en produccion, Apache debe apuntar exclusivamente a `bac
 
 XAMPP, PHP local, `vendor/` local y los archivos `.env` de desarrollo nunca se suben a `main` ni al servidor. En produccion se instala Composer en el servidor o mediante un artefacto de despliegue aprobado y se configura un `.env` propio.
 
+Para activar cabeceras de seguridad en Laravel:
+
+```text
+SECURITY_CSP_ENABLED=true
+SECURITY_CSP_POLICY="default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; img-src 'self' data: https:; font-src 'self' data:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'"
+```
+
+El frontend React compilado en `dist/` se sirve como archivos estaticos por Apache. Si el dominio principal sirve directamente `dist/`, configurar una CSP equivalente desde Apache/cPanel; el middleware de Laravel solo cubre respuestas que pasan por `backend/public/index.php`.
+
 ## Flujo de produccion actual
 
 ```text
@@ -57,6 +66,7 @@ React Router requiere el fallback de Apache incluido en `public/.htaccess`; este
 4. Revisar migraciones: deben ser compatibles hacia atras.
 5. Desplegar `main` y ejecutar migraciones de forma controlada.
 6. Verificar autenticacion, cargas documentales y funciones publicas.
+7. Verificar cabeceras HTTP en produccion: CSP, `X-Frame-Options`, `X-Content-Type-Options` y `Referrer-Policy`.
 
 ### Diagnostico previo de consentimientos
 

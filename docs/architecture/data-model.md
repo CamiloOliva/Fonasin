@@ -178,9 +178,9 @@ El caso de uso inicial de envio exige las secciones de formulario completas, los
 
 ## Contenido y FPQRS
 
-- `carousel_assets`: imagen, texto alternativo, enlace, orden, estado y publicacion.
-- `convenios`: nombre, categoria, logo, contenido y estado de publicacion.
-- `fpqrs_submissions`: nombre, correo, hash de correo, tipo, mensaje, adjunto opcional en storage privado, estado de entrega de correo y fecha. No implementa radicado ni seguimiento publico.
+- `carousel_assets`: entidad propuesta para imagen, texto alternativo, enlace, orden, estado y publicacion. No existe migracion/modelo en el alcance actual.
+- `convenios`: entidad propuesta para nombre, categoria, logo, contenido y estado de publicacion. No existe migracion/modelo en el alcance actual.
+- `fpqrs_submissions`: nombre, correo, hash de correo, tipo, mensaje, adjunto opcional en storage privado, estado de entrega de correo y fecha. No implementa radicado ni seguimiento publico. Nombre, correo, mensaje y adjunto permanecen en claro para operacion interna; antes de produccion se debe aprobar finalidad, retencion, responsable y procedimiento de eliminacion/anonimizacion si aplica.
 
 ## Indices minimos
 
