@@ -5,6 +5,7 @@ namespace App\Application\Affiliation\UseCases;
 use App\Application\Affiliation\Exceptions\CannotManageAssociate;
 use App\Application\Audit\UseCases\RecordAuditEvent;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
 use App\Domain\Audit\Enums\AuditActorType;
 use App\Domain\Audit\Enums\AuditModule;
@@ -18,6 +19,7 @@ class CreateAssociateManually
 {
     public function __construct(
         private readonly EncryptsSensitiveData $cipher,
+        private readonly HashesSensitiveData $hasher,
         private readonly RecordAuditEvent $recordAuditEvent,
     ) {}
 
@@ -33,7 +35,7 @@ class CreateAssociateManually
     ): array {
         return DB::transaction(function () use ($data, $actor, $correlationId, $ipHash): array {
             $documentNumber = strtoupper(trim($data['document_number']));
-            $documentNumberHash = hash('sha256', $documentNumber);
+            $documentNumberHash = $this->hasher->documentNumber($documentNumber);
 
             if (Associate::query()->where('document_number_hash', $documentNumberHash)->exists()) {
                 throw CannotManageAssociate::duplicateDocument();

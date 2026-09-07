@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Application\Portal\UseCases\ViewAssociateAffiliation;
 use App\Application\Portal\UseCases\StartAssociateAffiliationUpdate;
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Models\AffiliationApplication;
 use App\Models\ApplicationDocument;
 use DomainException;
@@ -117,7 +118,7 @@ class PortalAffiliationController extends Controller
     {
         $ip = $request->ip();
 
-        return $ip ? hash('sha256', $ip) : null;
+        return $ip ? app(HashesSensitiveData::class)->ip($ip) : null;
     }
 
     private function refreshDraftAccessToken(AffiliationApplication $application): string

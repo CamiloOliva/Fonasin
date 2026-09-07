@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Application\Audit\UseCases\RecordAuditEvent;
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Application\Credits\UseCases\ArchiveCreditAccount;
 use App\Application\Credits\UseCases\RegisterCreditAccount;
 use App\Application\Credits\UseCases\UpdateCreditAccount;
@@ -168,6 +169,6 @@ class CreditAccountController extends Controller
     {
         $ip = $request->ip();
 
-        return $ip ? hash('sha256', $ip) : null;
+        return $ip ? app(HashesSensitiveData::class)->ip($ip) : null;
     }
 }

@@ -34,7 +34,7 @@ users -> audit_events           un actor realiza una accion auditable
 | `email_verified_at` | timestamptz | nullable |
 | `last_login_at` | timestamptz | nullable |
 | `document_type` | varchar(20) | nullable; requerido para recuperacion de usuarios internos |
-| `document_number_hash` | char(64) | nullable y unico cuando existe |
+| `document_number_hash` | char(64) | HMAC-SHA256 con `DATA_HASH_PEPPER`; nullable y unico cuando existe |
 | `document_number_encrypted` | text | nullable; numero cifrado |
 
 ### `roles` y `role_user`
@@ -48,7 +48,7 @@ Roles iniciales: `admin`, `reviewer`, `associate`. La tabla pivote permite asign
 | `id` | UUID | PK |
 | `user_id` | UUID | FK nullable y unico; se asigna cuando existe cuenta de portal |
 | `document_type` | varchar(20) | tipo de identificacion |
-| `document_number_hash` | char(64) | unico; permite buscar sin exponer el numero |
+| `document_number_hash` | char(64) | HMAC-SHA256 con `DATA_HASH_PEPPER`; unico; permite buscar sin exponer el numero |
 | `document_number_encrypted` | text | numero cifrado |
 | `full_name` | varchar(255) | nombre para operacion |
 | `status` | varchar(30) | `applicant`, `active`, `inactive` |
@@ -119,7 +119,7 @@ Registra evidencia de aceptacion sin depender de que una politica cambie despues
 | `consent_type` | varchar(50) | catalogo de dominio inicial: `data_processing`, `bylaws` |
 | `policy_version` | varchar(50) | version exacta aceptada |
 | `accepted_at` | timestamptz | obligatorio |
-| `ip_hash` | char(64) | nullable; no se conserva la IP sin necesidad |
+| `ip_hash` | char(64) | HMAC-SHA256 nullable; no se conserva la IP sin necesidad |
 
 Una solicitud solo puede registrar una aceptacion por tipo y version de politica. Una nueva version permite una nueva aceptacion sin perder el historial anterior. Para envio se requieren `data_processing` y `bylaws` aceptados en la version de politica vigente.
 
@@ -180,7 +180,7 @@ El caso de uso inicial de envio exige las secciones de formulario completas, los
 
 - `carousel_assets`: entidad propuesta para imagen, texto alternativo, enlace, orden, estado y publicacion. No existe migracion/modelo en el alcance actual.
 - `convenios`: entidad propuesta para nombre, categoria, logo, contenido y estado de publicacion. No existe migracion/modelo en el alcance actual.
-- `fpqrs_submissions`: nombre, correo, hash de correo, tipo, mensaje, adjunto opcional en storage privado, estado de entrega de correo y fecha. No implementa radicado ni seguimiento publico. Nombre, correo, mensaje y adjunto permanecen en claro para operacion interna; antes de produccion se debe aprobar finalidad, retencion, responsable y procedimiento de eliminacion/anonimizacion si aplica.
+- `fpqrs_submissions`: nombre, correo, hash HMAC del correo, tipo, mensaje, adjunto opcional en storage privado, estado de entrega de correo y fecha. No implementa radicado ni seguimiento publico. Nombre, correo, mensaje y adjunto permanecen en claro para operacion interna; antes de produccion se debe aprobar finalidad, retencion, responsable y procedimiento de eliminacion/anonimizacion si aplica.
 
 ## Indices minimos
 

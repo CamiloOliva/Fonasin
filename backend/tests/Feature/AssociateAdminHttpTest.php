@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Models\Associate;
 use App\Models\Role;
 use App\Models\User;
@@ -34,7 +35,7 @@ class AssociateAdminHttpTest extends TestCase
     {
         $reviewer = $this->userWithRole('reviewer');
         $associate = $this->createAssociate([
-            'document_number_hash' => hash('sha256', '1234567890'),
+            'document_number_hash' => $this->documentHash('1234567890'),
             'document_number_encrypted' => app(EncryptsSensitiveData::class)->encryptArray([
                 'document_number' => '1234567890',
             ]),
@@ -141,7 +142,7 @@ class AssociateAdminHttpTest extends TestCase
         User::factory()->create([
             'email' => 'persona.existente@fonasin.test',
             'document_type' => 'CC',
-            'document_number_hash' => hash('sha256', '9999999999'),
+            'document_number_hash' => $this->documentHash('9999999999'),
             'document_number_encrypted' => app(EncryptsSensitiveData::class)->encryptArray([
                 'document_number' => '9999999999',
             ]),
@@ -164,7 +165,7 @@ class AssociateAdminHttpTest extends TestCase
         User::factory()->create([
             'email' => 'otra.persona@fonasin.test',
             'document_type' => 'CC',
-            'document_number_hash' => hash('sha256', '1234567890'),
+            'document_number_hash' => $this->documentHash('1234567890'),
             'document_number_encrypted' => app(EncryptsSensitiveData::class)->encryptArray([
                 'document_number' => '1234567890',
             ]),
@@ -276,11 +277,16 @@ class AssociateAdminHttpTest extends TestCase
 
         return Associate::query()->create([
             'document_type' => 'CC',
-            'document_number_hash' => hash('sha256', $reference),
+            'document_number_hash' => $this->documentHash($reference),
             'document_number_encrypted' => 'test-ciphertext',
             'full_name' => 'Synthetic Test Person',
             'status' => 'active',
             ...$overrides,
         ]);
+    }
+
+    private function documentHash(string $documentNumber): string
+    {
+        return app(HashesSensitiveData::class)->documentNumber($documentNumber);
     }
 }

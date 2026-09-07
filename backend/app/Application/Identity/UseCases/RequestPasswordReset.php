@@ -2,6 +2,7 @@
 
 namespace App\Application\Identity\UseCases;
 
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Domain\Identity\Enums\AuthEventType;
 use App\Mail\PasswordResetLinkMail;
 use App\Models\User;
@@ -12,7 +13,10 @@ use Illuminate\Support\Str;
 
 class RequestPasswordReset
 {
-    public function __construct(private readonly RecordAuthEvent $recordAuthEvent) {}
+    public function __construct(
+        private readonly RecordAuthEvent $recordAuthEvent,
+        private readonly HashesSensitiveData $hasher,
+    ) {}
 
     public function __invoke(
         string $email,
@@ -21,7 +25,7 @@ class RequestPasswordReset
         ?string $userAgentHash = null,
     ): void {
         $email = Str::lower(trim($email));
-        $documentHash = hash('sha256', strtoupper(trim($documentNumber)));
+        $documentHash = $this->hasher->documentNumber($documentNumber);
         $correlationId = (string) Str::uuid();
 
         /** @var User|null $user */
@@ -41,7 +45,7 @@ class RequestPasswordReset
         ($this->recordAuthEvent)(
             eventType: AuthEventType::PasswordResetRequested,
             user: $canResetPassword ? $user : null,
-            emailHash: hash('sha256', $email),
+            emailHash: $this->hasher->email($email),
             ipHash: $ipHash,
             userAgentHash: $userAgentHash,
             correlationId: $correlationId,

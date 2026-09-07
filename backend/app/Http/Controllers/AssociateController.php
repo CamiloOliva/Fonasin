@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Application\Affiliation\UseCases\CreateAssociateManually;
 use App\Application\Affiliation\UseCases\UpdateAssociateStatus;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Http\Requests\Associates\StoreAssociateRequest;
 use App\Models\Associate;
 use DomainException;
@@ -40,12 +41,13 @@ class AssociateController extends Controller
         StoreAssociateRequest $request,
         CreateAssociateManually $createAssociate,
         EncryptsSensitiveData $cipher,
+        HashesSensitiveData $hasher,
     ): JsonResponse {
         try {
             $result = $createAssociate(
                 data: $request->validated(),
                 actor: $request->user(),
-                ipHash: $this->ipHash($request),
+                ipHash: $this->ipHash($request, $hasher),
             );
         } catch (DomainException $exception) {
             return $this->domainError($exception);
@@ -66,8 +68,9 @@ class AssociateController extends Controller
         Associate $associate,
         UpdateAssociateStatus $updateAssociateStatus,
         EncryptsSensitiveData $cipher,
+        HashesSensitiveData $hasher,
     ): JsonResponse {
-        return $this->changeStatus($request, $associate, $updateAssociateStatus, $cipher, 'active');
+        return $this->changeStatus($request, $associate, $updateAssociateStatus, $cipher, $hasher, 'active');
     }
 
     public function deactivate(
@@ -75,8 +78,9 @@ class AssociateController extends Controller
         Associate $associate,
         UpdateAssociateStatus $updateAssociateStatus,
         EncryptsSensitiveData $cipher,
+        HashesSensitiveData $hasher,
     ): JsonResponse {
-        return $this->changeStatus($request, $associate, $updateAssociateStatus, $cipher, 'inactive');
+        return $this->changeStatus($request, $associate, $updateAssociateStatus, $cipher, $hasher, 'inactive');
     }
 
     /**
@@ -108,6 +112,7 @@ class AssociateController extends Controller
         Associate $associate,
         UpdateAssociateStatus $updateAssociateStatus,
         EncryptsSensitiveData $cipher,
+        HashesSensitiveData $hasher,
         string $status,
     ): JsonResponse {
         try {
@@ -115,7 +120,7 @@ class AssociateController extends Controller
                 associate: $associate,
                 status: $status,
                 actor: $request->user(),
-                ipHash: $this->ipHash($request),
+                ipHash: $this->ipHash($request, $hasher),
             );
         } catch (DomainException $exception) {
             return $this->domainError($exception);
@@ -162,10 +167,10 @@ class AssociateController extends Controller
         ], 422);
     }
 
-    private function ipHash(Request $request): ?string
+    private function ipHash(Request $request, HashesSensitiveData $hasher): ?string
     {
         $ip = $request->ip();
 
-        return $ip ? hash('sha256', $ip) : null;
+        return $ip ? $hasher->ip($ip) : null;
     }
 }

@@ -14,6 +14,7 @@ use App\Application\Affiliation\UseCases\StartAffiliationReview;
 use App\Application\Affiliation\UseCases\SubmitAffiliationApplication;
 use App\Application\Audit\UseCases\RecordAuditEvent;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
@@ -739,7 +740,7 @@ class AffiliationApplicationController extends Controller
     {
         $ip = $request->ip();
 
-        return $ip ? hash('sha256', $ip) : null;
+        return $ip ? app(HashesSensitiveData::class)->ip($ip) : null;
     }
 
     private function refreshDraftAccessToken(AffiliationApplication $application): string

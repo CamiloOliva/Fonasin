@@ -27,7 +27,8 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 ## Datos sensibles
 
 - Contraseñas: exclusivamente hashes administrados por Laravel.
-- Numeros de documento: version cifrada para consulta controlada y hash unico para busqueda. Antes de produccion debe evaluarse cambiar SHA-256 determinista por HMAC con secreto de entorno para reducir correlacion si se filtrara la base de datos.
+- Numeros de documento: version cifrada para consulta controlada y hash unico HMAC-SHA256 para busqueda. El HMAC usa `DATA_HASH_PEPPER`, secreto por entorno que no se versiona.
+- Correos, IP y agentes de usuario usados para correlacion tecnica se guardan como HMAC-SHA256 cuando se persisten en auditoria o tablas operativas.
 - Los usuarios internos pueden tener documento cifrado y hash de busqueda para soportar recuperacion de acceso sin depender de un perfil de asociado.
 - Datos de afiliacion, financieros y SARLAFT: cifrados antes de persistirse y nunca enviados a logs.
 - Los seeds, pruebas, capturas y entornos locales usan datos ficticios.
@@ -60,6 +61,7 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 - Cambiar un secreto requiere invalidar el anterior y actualizar el entorno correspondiente, nunca editarlo en Git.
 - Laravel agrega cabeceras defensivas `X-Content-Type-Options`, `Referrer-Policy` y `X-Frame-Options` en respuestas web. La politica CSP se activa por entorno con `SECURITY_CSP_ENABLED=true` y `SECURITY_CSP_POLICY`.
 - El frontend estatico servido por Apache/cPanel requiere una CSP equivalente configurada en el virtual host, `.htaccess` aprobado o panel del proveedor, porque esos archivos no pasan por el middleware de Laravel.
+- Produccion debe configurar `DATA_HASH_PEPPER` antes de ejecutar migraciones. Cambiarlo despues requiere un plan de remigracion de hashes; no debe rotarse como una contrasena normal sin coordinar el recalculo de datos existentes.
 
 ## Lista de revision de seguridad
 
