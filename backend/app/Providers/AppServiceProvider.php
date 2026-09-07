@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Application\Security\Contracts\EncryptsSensitiveData;
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Application\Affiliation\Contracts\RendersAffiliationSubmissionDocuments;
 use App\Application\Fpqrs\Contracts\DeliversFpqrsSubmissions;
 use App\Application\Storage\Contracts\GeneratesPrivateStorageKeys;
@@ -10,6 +11,7 @@ use App\Application\Storage\Contracts\StoresPrivateFiles;
 use App\Infrastructure\Mail\LaravelFpqrsSubmissionMailer;
 use App\Infrastructure\Affiliation\LaravelDompdfAffiliationSubmissionRenderer;
 use App\Infrastructure\Security\LaravelSensitiveDataCipher;
+use App\Infrastructure\Security\LaravelSensitiveDataHasher;
 use App\Infrastructure\Storage\LaravelPrivateFileStorage;
 use App\Infrastructure\Storage\LaravelPrivateStorageKeyGenerator;
 use App\Models\AffiliationApplication;
@@ -32,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(EncryptsSensitiveData::class, LaravelSensitiveDataCipher::class);
+        $this->app->bind(HashesSensitiveData::class, LaravelSensitiveDataHasher::class);
         $this->app->bind(RendersAffiliationSubmissionDocuments::class, LaravelDompdfAffiliationSubmissionRenderer::class);
         $this->app->bind(DeliversFpqrsSubmissions::class, LaravelFpqrsSubmissionMailer::class);
         $this->app->bind(GeneratesPrivateStorageKeys::class, LaravelPrivateStorageKeyGenerator::class);
@@ -65,8 +68,9 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('fpqrs-public', function (Request $request): Limit {
             $email = strtolower(trim((string) $request->input('email', '')));
+            $hasher = app(HashesSensitiveData::class);
 
-            return Limit::perMinute(3)->by('fpqrs-public|'.$request->ip().'|'.hash('sha256', $email));
+            return Limit::perMinute(3)->by('fpqrs-public|'.$hasher->ip((string) $request->ip()).'|'.$hasher->email($email));
         });
     }
 

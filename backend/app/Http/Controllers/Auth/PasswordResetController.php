@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Application\Identity\UseCases\RequestPasswordReset;
 use App\Application\Identity\UseCases\ResetPassword;
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
@@ -14,7 +15,11 @@ use Illuminate\Support\Str;
 
 class PasswordResetController extends Controller
 {
-    public function store(ForgotPasswordRequest $request, RequestPasswordReset $requestPasswordReset): JsonResponse
+    public function store(
+        ForgotPasswordRequest $request,
+        RequestPasswordReset $requestPasswordReset,
+        HashesSensitiveData $hasher,
+    ): JsonResponse
     {
         $email = Str::lower($request->string('email')->toString());
         $throttleKey = 'password-reset|'.$email.'|'.$request->ip();
@@ -30,8 +35,8 @@ class PasswordResetController extends Controller
         $requestPasswordReset(
             email: $email,
             documentNumber: $request->string('document_number')->toString(),
-            ipHash: $this->ipHash($request),
-            userAgentHash: $this->userAgentHash($request),
+            ipHash: $this->ipHash($request, $hasher),
+            userAgentHash: $this->userAgentHash($request, $hasher),
         );
 
         return response()->json([
@@ -39,14 +44,18 @@ class PasswordResetController extends Controller
         ]);
     }
 
-    public function update(ResetPasswordRequest $request, ResetPassword $resetPassword): JsonResponse
+    public function update(
+        ResetPasswordRequest $request,
+        ResetPassword $resetPassword,
+        HashesSensitiveData $hasher,
+    ): JsonResponse
     {
         $resetPassword(
             email: $request->string('email')->toString(),
             token: $request->string('token')->toString(),
             password: $request->string('password')->toString(),
-            ipHash: $this->ipHash($request),
-            userAgentHash: $this->userAgentHash($request),
+            ipHash: $this->ipHash($request, $hasher),
+            userAgentHash: $this->userAgentHash($request, $hasher),
         );
 
         return response()->json([
@@ -54,17 +63,17 @@ class PasswordResetController extends Controller
         ]);
     }
 
-    private function ipHash(Request $request): ?string
+    private function ipHash(Request $request, HashesSensitiveData $hasher): ?string
     {
         $ip = $request->ip();
 
-        return $ip ? hash('sha256', $ip) : null;
+        return $ip ? $hasher->ip($ip) : null;
     }
 
-    private function userAgentHash(Request $request): ?string
+    private function userAgentHash(Request $request, HashesSensitiveData $hasher): ?string
     {
         $userAgent = $request->userAgent();
 
-        return $userAgent ? hash('sha256', $userAgent) : null;
+        return $userAgent ? $hasher->userAgent($userAgent) : null;
     }
 }

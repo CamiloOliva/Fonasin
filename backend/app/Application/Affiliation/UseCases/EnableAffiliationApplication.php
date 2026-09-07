@@ -5,6 +5,7 @@ namespace App\Application\Affiliation\UseCases;
 use App\Application\Affiliation\Exceptions\CannotReviewAffiliationApplication;
 use App\Application\Audit\UseCases\RecordAuditEvent;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
@@ -26,6 +27,7 @@ class EnableAffiliationApplication
     public function __construct(
         private readonly AffiliationApplicationStateMachine $stateMachine,
         private readonly EncryptsSensitiveData $cipher,
+        private readonly HashesSensitiveData $hasher,
         private readonly RecordAuditEvent $recordAuditEvent,
     ) {}
 
@@ -63,7 +65,7 @@ class EnableAffiliationApplication
             $email = $this->requiredString($personalData, 'email');
             $fullName = $this->fullName($personalData);
             $normalizedEmail = strtolower(trim($email));
-            $documentNumberHash = hash('sha256', strtoupper(trim($documentNumber)));
+            $documentNumberHash = $this->hasher->documentNumber($documentNumber);
 
             $createdUser = false;
             $user = User::query()

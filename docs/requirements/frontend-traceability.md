@@ -6,7 +6,7 @@ Esta matriz conecta la especificacion funcional con el codigo, las pruebas y la 
 
 Fuente funcional: `02_GUIA_EQUIPO_FRONTEND_WEB_AFILIACION_PORTAL_V2.docx`, version 2.0 del 15 de agosto de 2026.
 
-Ultima revision tecnica: 6 de septiembre de 2026, rama `feature/public-security-hardening`, commit base `d27f102`.
+Ultima revision tecnica: 6 de septiembre de 2026, rama `feature/hmac-sensitive-hashes`, commit base `58675d7`.
 
 ## Estados permitidos
 
@@ -89,7 +89,7 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 - Ahorro permanente y ahorro voluntario: no existe modelo operativo ni carga administrativa aprobada.
 - Importacion de Excel/XLSX: bloqueada hasta definir plantilla, validaciones, auditoria y manejo de errores.
 - Retencion automatica de FPQRS, documentos, solicitudes y auditoria: bloqueada hasta aprobacion juridica y operativa.
-- HMAC/pepper para hashes de documento y correo: pendiente de aprobacion de estrategia de cifrado, migracion y rotacion de secretos.
+- Rotacion operativa de `DATA_HASH_PEPPER`: pendiente de procedimiento formal. Los hashes sensibles de documento, correo, IP y agente de usuario ya usan HMAC-SHA256 y requieren pepper estable por entorno.
 - Auditoria append-only reforzada por PostgreSQL: pendiente de definicion de permisos/triggers en el entorno productivo.
 
 La pagina publica `/creditos` solo cubre informacion general de `FE-WEB-004`; no cuenta como consulta privada `FE-OBQ-003`.

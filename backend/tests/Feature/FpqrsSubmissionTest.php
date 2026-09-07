@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Application\Fpqrs\Contracts\DeliversFpqrsSubmissions;
 use App\Application\Fpqrs\UseCases\SubmitFpqrsSubmission;
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Domain\Audit\Enums\AuditModule;
 use App\Domain\Fpqrs\Enums\FpqrsAuditAction;
 use App\Domain\Fpqrs\Enums\FpqrsDeliveryStatus;
@@ -34,11 +35,11 @@ class FpqrsSubmissionTest extends TestCase
                 'submission_type' => FpqrsSubmissionType::Petition,
                 'message' => 'Synthetic message body.',
             ],
-            ipHash: hash('sha256', '192.0.2.70'),
+            ipHash: $this->ipHash('192.0.2.70'),
         );
 
         $this->assertSame('citizen@example.test', $submission->email);
-        $this->assertSame(hash('sha256', 'citizen@example.test'), $submission->getAttribute('email_hash'));
+        $this->assertSame($this->emailHash('citizen@example.test'), $submission->getAttribute('email_hash'));
         $this->assertSame(FpqrsSubmissionType::Petition->value, $submission->submission_type);
         $this->assertSame(FpqrsDeliveryStatus::Sent->value, $submission->delivery_status);
         $this->assertArrayNotHasKey('email', $submission->toArray());
@@ -114,7 +115,7 @@ class FpqrsSubmissionTest extends TestCase
         Mail::fake();
         config(['services.fpqrs.recipient_email' => 'attention@example.test']);
 
-        $throttleKey = 'fpqrs-public|127.0.0.1|'.hash('sha256', 'citizen@example.test');
+        $throttleKey = 'fpqrs-public|'.$this->ipHash('127.0.0.1').'|'.$this->emailHash('citizen@example.test');
         RateLimiter::clear($throttleKey);
 
         for ($attempt = 0; $attempt < 3; $attempt++) {
@@ -161,5 +162,15 @@ class FpqrsSubmissionTest extends TestCase
             'action' => FpqrsAuditAction::DeliveryFailed->value,
             'subject_id' => $submission->id,
         ]);
+    }
+
+    private function emailHash(string $email): string
+    {
+        return app(HashesSensitiveData::class)->email($email);
+    }
+
+    private function ipHash(string $ip): string
+    {
+        return app(HashesSensitiveData::class)->ip($ip);
     }
 }

@@ -8,6 +8,7 @@ use App\Domain\Affiliation\Enums\AffiliationAuditAction;
 use App\Domain\Affiliation\Enums\ApplicationDocumentStatus;
 use App\Domain\Affiliation\Enums\ApplicationDocumentType;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Models\AffiliationApplication;
 use App\Models\ApplicationDocument;
 use App\Models\ApplicationSection;
@@ -240,7 +241,7 @@ class AffiliationBackofficeHttpTest extends TestCase
 
         $this->assertDatabaseHas('associates', [
             'document_type' => 'CC',
-            'document_number_hash' => hash('sha256', '123456789'),
+            'document_number_hash' => $this->documentHash('123456789'),
             'full_name' => 'Ana Maria Prueba Perez',
             'status' => 'active',
         ]);
@@ -260,7 +261,7 @@ class AffiliationBackofficeHttpTest extends TestCase
         User::factory()->create([
             'email' => 'ana.prueba@example.test',
             'document_type' => 'CC',
-            'document_number_hash' => hash('sha256', '999999999'),
+            'document_number_hash' => $this->documentHash('999999999'),
             'document_number_encrypted' => 'test-ciphertext',
         ]);
         $application = $this->applicationReadyForEnable();
@@ -282,7 +283,7 @@ class AffiliationBackofficeHttpTest extends TestCase
         User::factory()->create([
             'email' => 'otra.persona@example.test',
             'document_type' => 'CC',
-            'document_number_hash' => hash('sha256', '123456789'),
+            'document_number_hash' => $this->documentHash('123456789'),
             'document_number_encrypted' => 'test-ciphertext',
         ]);
         $application = $this->applicationReadyForEnable();
@@ -305,7 +306,7 @@ class AffiliationBackofficeHttpTest extends TestCase
         Associate::query()->create([
             'user_id' => $existingUser->id,
             'document_type' => 'CC',
-            'document_number_hash' => hash('sha256', '123456789'),
+            'document_number_hash' => $this->documentHash('123456789'),
             'document_number_encrypted' => 'test-ciphertext',
             'full_name' => 'Otra Persona',
             'status' => 'active',
@@ -424,5 +425,10 @@ class AffiliationBackofficeHttpTest extends TestCase
         $user->roles()->attach($role);
 
         return $user;
+    }
+
+    private function documentHash(string $documentNumber): string
+    {
+        return app(HashesSensitiveData::class)->documentNumber($documentNumber);
     }
 }

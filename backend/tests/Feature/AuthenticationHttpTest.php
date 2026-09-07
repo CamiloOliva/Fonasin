@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Identity\Enums\AuthEventType;
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Mail\PasswordResetLinkMail;
 use App\Models\Associate;
 use App\Models\AuthEvent;
@@ -239,7 +240,7 @@ class AuthenticationHttpTest extends TestCase
         Associate::query()->create([
             'user_id' => $user->id,
             'document_type' => 'CC',
-            'document_number_hash' => hash('sha256', '1234567890'),
+            'document_number_hash' => $this->documentHash('1234567890'),
             'document_number_encrypted' => 'encrypted',
             'full_name' => 'Persona Asociada',
             'status' => 'active',
@@ -268,7 +269,7 @@ class AuthenticationHttpTest extends TestCase
             'email' => 'admin@example.test',
             'status' => 'active',
             'document_type' => 'CC',
-            'document_number_hash' => hash('sha256', '987654321'),
+            'document_number_hash' => $this->documentHash('987654321'),
             'document_number_encrypted' => 'encrypted',
         ]);
 
@@ -296,7 +297,7 @@ class AuthenticationHttpTest extends TestCase
         Associate::query()->create([
             'user_id' => $user->id,
             'document_type' => 'CC',
-            'document_number_hash' => hash('sha256', '1234567890'),
+            'document_number_hash' => $this->documentHash('1234567890'),
             'document_number_encrypted' => 'encrypted',
             'full_name' => 'Persona Inactiva',
             'status' => 'inactive',
@@ -350,7 +351,7 @@ class AuthenticationHttpTest extends TestCase
         Associate::query()->create([
             'user_id' => $user->id,
             'document_type' => 'CC',
-            'document_number_hash' => hash('sha256', '1234567890'),
+            'document_number_hash' => $this->documentHash('1234567890'),
             'document_number_encrypted' => 'encrypted',
             'full_name' => 'Persona Asociada',
             'status' => 'active',
@@ -383,7 +384,7 @@ class AuthenticationHttpTest extends TestCase
         Associate::query()->create([
             'user_id' => $user->id,
             'document_type' => 'CC',
-            'document_number_hash' => hash('sha256', '1234567890'),
+            'document_number_hash' => $this->documentHash('1234567890'),
             'document_number_encrypted' => 'encrypted',
             'full_name' => 'Persona Asociada',
             'status' => 'active',
@@ -418,5 +419,10 @@ class AuthenticationHttpTest extends TestCase
             'user_id' => $user->id,
             'event_type' => AuthEventType::PasswordResetCompleted->value,
         ]);
+    }
+
+    private function documentHash(string $documentNumber): string
+    {
+        return app(HashesSensitiveData::class)->documentNumber($documentNumber);
     }
 }

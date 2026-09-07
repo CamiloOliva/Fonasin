@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Application\Identity\UseCases\RecordAuthEvent;
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Domain\Identity\Enums\AuthEventType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ChangePasswordRequest;
@@ -27,14 +28,14 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
-    public function store(LoginRequest $request, RecordAuthEvent $recordAuthEvent): JsonResponse
+    public function store(LoginRequest $request, RecordAuthEvent $recordAuthEvent, HashesSensitiveData $hasher): JsonResponse
     {
         $email = Str::lower($request->string('email')->toString());
         $password = $request->string('password')->toString();
         $correlationId = (string) Str::uuid();
-        $emailHash = hash('sha256', $email);
-        $ipHash = $this->ipHash($request);
-        $userAgentHash = $this->userAgentHash($request);
+        $emailHash = $hasher->email($email);
+        $ipHash = $this->ipHash($request, $hasher);
+        $userAgentHash = $this->userAgentHash($request, $hasher);
         $throttleKey = $this->throttleKey($email, $request);
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
@@ -114,7 +115,7 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
-    public function updatePassword(ChangePasswordRequest $request, RecordAuthEvent $recordAuthEvent): JsonResponse
+    public function updatePassword(ChangePasswordRequest $request, RecordAuthEvent $recordAuthEvent, HashesSensitiveData $hasher): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
@@ -127,9 +128,9 @@ class AuthenticatedSessionController extends Controller
         ($recordAuthEvent)(
             eventType: AuthEventType::PasswordChanged,
             user: $user,
-            emailHash: hash('sha256', Str::lower($user->email)),
-            ipHash: $this->ipHash($request),
-            userAgentHash: $this->userAgentHash($request),
+            emailHash: $hasher->email($user->email),
+            ipHash: $this->ipHash($request, $hasher),
+            userAgentHash: $this->userAgentHash($request, $hasher),
             metadata: ['reason' => 'required_first_login'],
         );
 
@@ -138,7 +139,7 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
-    public function destroy(Request $request, RecordAuthEvent $recordAuthEvent): JsonResponse
+    public function destroy(Request $request, RecordAuthEvent $recordAuthEvent, HashesSensitiveData $hasher): JsonResponse
     {
         /** @var User|null $user */
         $user = $request->user();
@@ -147,9 +148,9 @@ class AuthenticatedSessionController extends Controller
             ($recordAuthEvent)(
                 eventType: AuthEventType::Logout,
                 user: $user,
-                emailHash: hash('sha256', Str::lower($user->email)),
-                ipHash: $this->ipHash($request),
-                userAgentHash: $this->userAgentHash($request),
+                emailHash: $hasher->email($user->email),
+                ipHash: $this->ipHash($request, $hasher),
+                userAgentHash: $this->userAgentHash($request, $hasher),
                 metadata: ['method' => 'session'],
             );
         }
@@ -163,18 +164,18 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
-    private function ipHash(Request $request): ?string
+    private function ipHash(Request $request, HashesSensitiveData $hasher): ?string
     {
         $ip = $request->ip();
 
-        return $ip ? hash('sha256', $ip) : null;
+        return $ip ? $hasher->ip($ip) : null;
     }
 
-    private function userAgentHash(Request $request): ?string
+    private function userAgentHash(Request $request, HashesSensitiveData $hasher): ?string
     {
         $userAgent = $request->userAgent();
 
-        return $userAgent ? hash('sha256', $userAgent) : null;
+        return $userAgent ? $hasher->userAgent($userAgent) : null;
     }
 
     private function throttleKey(string $email, Request $request): string

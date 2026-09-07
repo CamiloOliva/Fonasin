@@ -28,11 +28,14 @@ XAMPP, PHP local, `vendor/` local y los archivos `.env` de desarrollo nunca se s
 Para activar cabeceras de seguridad en Laravel:
 
 ```text
+DATA_HASH_PEPPER=generar_valor_largo_y_secreto_por_entorno
 SECURITY_CSP_ENABLED=true
 SECURITY_CSP_POLICY="default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; img-src 'self' data: https:; font-src 'self' data:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'"
 ```
 
 El frontend React compilado en `dist/` se sirve como archivos estaticos por Apache. Si el dominio principal sirve directamente `dist/`, configurar una CSP equivalente desde Apache/cPanel; el middleware de Laravel solo cubre respuestas que pasan por `backend/public/index.php`.
+
+`DATA_HASH_PEPPER` protege hashes de busqueda de documento, correo, IP y agente de usuario. Debe existir antes de migrar datos reales y debe mantenerse estable por entorno; si cambia, las busquedas de identidad y recuperacion de contrasena no coincidiran hasta recalcular los hashes.
 
 ## Flujo de produccion actual
 
@@ -108,5 +111,16 @@ HAVING COUNT(*) > 1;
 ```
 
 Si existen duplicados, detener el despliegue y resolver cada identidad con el responsable funcional. No reasignar usuarios ni asociados de forma silenciosa.
+
+### Diagnostico previo de remigracion HMAC
+
+Antes de ejecutar `2026_09_06_000002_rehash_sensitive_lookup_values_with_hmac.php`, confirmar:
+
+- respaldo restaurable de PostgreSQL;
+- `DATA_HASH_PEPPER` definido en el `.env` productivo;
+- ausencia de duplicados de documento en `users` y `associates`;
+- validacion funcional posterior de login, recuperacion de contrasena, alta manual de asociados, habilitacion de afiliacion y FPQRS.
+
+La migracion recalcula hashes de busqueda desde valores cifrados o campos operativos ya existentes. No exponer ni copiar el pepper a GitHub, Markdown, capturas o tickets.
 
 No se configura despliegue automatico ni `.cpanel.yml` hasta confirmar usuario de cPanel, rutas reales, version de PHP, Composer, Node y disponibilidad de PostgreSQL.

@@ -2,6 +2,7 @@
 
 namespace App\Application\Identity\UseCases;
 
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Domain\Identity\Enums\AuthEventType;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -12,7 +13,10 @@ use Illuminate\Validation\ValidationException;
 
 class ResetPassword
 {
-    public function __construct(private readonly RecordAuthEvent $recordAuthEvent) {}
+    public function __construct(
+        private readonly RecordAuthEvent $recordAuthEvent,
+        private readonly HashesSensitiveData $hasher,
+    ) {}
 
     public function __invoke(
         string $email,
@@ -54,7 +58,7 @@ class ResetPassword
             ($this->recordAuthEvent)(
                 eventType: AuthEventType::PasswordResetCompleted,
                 user: $user,
-                emailHash: hash('sha256', $email),
+                emailHash: $this->hasher->email($email),
                 ipHash: $ipHash,
                 userAgentHash: $userAgentHash,
                 metadata: ['method' => 'email_token'],
