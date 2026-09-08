@@ -248,6 +248,33 @@ class SpreadsheetImportHttpTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_admin_can_download_import_templates(): void
+    {
+        $admin = $this->userWithRole('admin');
+
+        $credits = $this->actingAs($admin)
+            ->get('/admin/import-batches/templates/credits')
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+        $contributions = $this->actingAs($admin)
+            ->get('/admin/import-batches/templates/contributions')
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+        $this->assertStringContainsString('no-store', (string) $credits->headers->get('Cache-Control'));
+        $this->assertStringContainsString('no-store', (string) $contributions->headers->get('Cache-Control'));
+    }
+
+    public function test_reviewer_cannot_download_import_templates(): void
+    {
+        $reviewer = $this->userWithRole('reviewer', 'reviewer.template@example.test');
+
+        $this->actingAs($reviewer)
+            ->get('/admin/import-batches/templates/credits')
+            ->assertForbidden();
+    }
+
     /**
      * @param  array<int, array<int, string>>  $rows
      */

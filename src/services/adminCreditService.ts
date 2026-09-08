@@ -199,3 +199,26 @@ export async function importAdminContributions(file: File): Promise<AdminImportB
 
   return response.data;
 }
+
+export async function downloadAdminImportTemplate(type: 'credits' | 'contributions'): Promise<void> {
+  const response = await fetch(buildUrl(`/admin/import-batches/templates/${type}`), {
+    credentials: 'include',
+    headers: { Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+  });
+
+  if (!response.ok) {
+    throw new Error(response.status === 403
+      ? 'Tu usuario no tiene permisos para descargar plantillas de importacion.'
+      : 'No fue posible descargar la plantilla.');
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = type === 'credits' ? 'plantilla-creditos.xlsx' : 'plantilla-aportes.xlsx';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}

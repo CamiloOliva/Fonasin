@@ -132,6 +132,16 @@ No se exponen `storage_key` ni `file_hash`.
 
 ## Importacion XLSX de creditos
 
+Plantilla:
+
+```text
+GET /admin/import-batches/templates/credits
+Autenticacion: sesion Laravel
+Middleware: auth, password.changed
+Autorizacion: admin
+Respuesta: attachment XLSX, no-store
+```
+
 ```text
 POST /admin/import-batches/credits
 Autenticacion: sesion Laravel
@@ -199,6 +209,16 @@ Respuesta:
 ```
 
 ## Importacion XLSX de aportes
+
+Plantilla:
+
+```text
+GET /admin/import-batches/templates/contributions
+Autenticacion: sesion Laravel
+Middleware: auth, password.changed
+Autorizacion: admin
+Respuesta: attachment XLSX, no-store
+```
 
 ```text
 POST /admin/import-batches/contributions
