@@ -142,7 +142,7 @@ Una solicitud solo puede registrar una aceptacion por tipo y version de politica
 | `status` | varchar(30) | `active`, `settled`, `archived` |
 | `registered_by_user_id` | UUID | FK al administrador responsable |
 
-Un asociado puede tener varios creditos. No se deben borrar; una correccion crea auditoria y un credito no vigente se archiva. Los casos de uso iniciales de Credits permiten registrar, actualizar campos existentes, archivar y consultar creditos propios desde la sesion del asociado; no aceptan `associate_id` del navegador para consultas privadas.
+Un asociado puede tener varios creditos. No se deben borrar; una correccion crea auditoria y un credito no vigente se archiva. Los casos de uso iniciales de Credits permiten registrar, actualizar campos existentes, archivar, importar desde XLSX y consultar creditos propios desde la sesion del asociado; no aceptan `associate_id` del navegador para consultas privadas. La importacion XLSX actualiza por asociado activo y `credit_line` cuando existe un credito no archivado; de lo contrario crea un nuevo registro.
 
 ## Aportes e importaciones
 
@@ -164,7 +164,7 @@ Representa el saldo operativo de aportes por asociado. Es una cuenta por asociad
 
 ### `contribution_movements`
 
-Cada fila representa un movimiento historico de aportes. Las importaciones futuras deben crear o actualizar movimientos sin perder historial ni mezclar estos datos con `credit_accounts`.
+Cada fila representa un movimiento historico de aportes. Las importaciones XLSX crean movimientos sin mezclar estos datos con `credit_accounts`. Cuando llega una correccion con la misma combinacion asociado, tipo, periodo y referencia, el movimiento registrado anterior se marca `reversed` y se crea uno nuevo para conservar trazabilidad.
 
 | Campo | Tipo | Regla |
 |---|---|---|
@@ -179,7 +179,7 @@ Cada fila representa un movimiento historico de aportes. Las importaciones futur
 | `amount` | numeric(14,2) | mayor o igual a cero |
 | `balance_after` | numeric(14,2) | saldo despues del movimiento |
 | `status` | varchar(30) | `registered`, `reversed` |
-| `source` | varchar(30) | `manual`, `import` |
+| `source` | varchar(30) | `manual`, `xlsx` |
 | `reference` | varchar(120) nullable | referencia operativa sin datos sensibles |
 | `source_row_hash` | char(64) nullable | llave tecnica de idempotencia por fila |
 | `recorded_at` | timestamptz | momento de registro operativo |
@@ -206,6 +206,8 @@ Registra la trazabilidad de cargas masivas. El archivo se almacena de forma priv
 | `errors` | jsonb nullable | errores por fila sin datos sensibles |
 | `started_at` | timestamptz nullable | inicio de procesamiento |
 | `completed_at` | timestamptz nullable | fin de procesamiento |
+
+Las cargas aceptan solo `.xlsx` con tamano maximo de 5 MB. `storage_key` y `file_hash` son internos y no se exponen por JSON. Los errores por fila no deben incluir documentos, correos ni valores sensibles en claro.
 
 ## Convenciones de migracion
 
