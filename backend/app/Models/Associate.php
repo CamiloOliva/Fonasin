@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Associate extends Model
 {
@@ -38,5 +39,15 @@ class Associate extends Model
     public function creditAccounts(): HasMany
     {
         return $this->hasMany(CreditAccount::class);
+    }
+
+    public function contributionAccount(): HasOne
+    {
+        return $this->hasOne(ContributionAccount::class);
+    }
+
+    public function contributionMovements(): HasMany
+    {
+        return $this->hasMany(ContributionMovement::class);
     }
 }
