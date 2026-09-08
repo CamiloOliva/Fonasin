@@ -222,3 +222,26 @@ export async function downloadAdminImportTemplate(type: 'credits' | 'contributio
   link.remove();
   URL.revokeObjectURL(url);
 }
+
+export async function downloadAdminImportErrorReport(batchId: string): Promise<void> {
+  const response = await fetch(buildUrl(`/admin/import-batches/${batchId}/errors`), {
+    credentials: 'include',
+    headers: { Accept: 'text/csv' },
+  });
+
+  if (!response.ok) {
+    throw new Error(response.status === 403
+      ? 'Tu usuario no tiene permisos para descargar el reporte.'
+      : 'No fue posible descargar el reporte de errores.');
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `errores-importacion-${batchId}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}

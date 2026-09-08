@@ -113,6 +113,33 @@ class ImportBatchController extends Controller
         ]);
     }
 
+    public function errorReport(ImportBatch $batch): Response
+    {
+        $errors = collect($batch->errors ?? []);
+        $handle = fopen('php://temp', 'w+');
+
+        fputcsv($handle, ['fila', 'error']);
+
+        foreach ($errors as $error) {
+            fputcsv($handle, [
+                $error['row'] ?? 'archivo',
+                $error['message'] ?? 'Error no especificado.',
+            ]);
+        }
+
+        rewind($handle);
+        $contents = stream_get_contents($handle);
+        fclose($handle);
+
+        $filename = 'errores-importacion-'.$batch->id.'.csv';
+
+        return response(is_string($contents) ? $contents : '', 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            'Cache-Control' => 'no-store, max-age=0',
+        ]);
+    }
+
     /**
      * @return array<string, mixed>
      */

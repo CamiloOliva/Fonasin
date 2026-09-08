@@ -42,6 +42,7 @@ import {
 } from '../../services/adminAssociateService';
 import {
   archiveAdminCredit,
+  downloadAdminImportErrorReport,
   createAdminCredit,
   downloadAdminImportTemplate,
   fetchAdminCredits,
@@ -557,6 +558,17 @@ export default function AdminFonasin() {
     }
   }
 
+  async function handleDownloadImportErrorReport(batchId: string) {
+    setError(null);
+    setMessage(null);
+
+    try {
+      await downloadAdminImportErrorReport(batchId);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible descargar el reporte de errores.');
+    }
+  }
+
   if (sessionState === 'checking') {
     return (
       <section className="min-h-[58vh] bg-slate-50 py-16">
@@ -874,6 +886,7 @@ export default function AdminFonasin() {
               void loadImportBatches(value, 1);
             }}
             onPageChange={(page) => loadImportBatches(importTypeFilter, page)}
+            onDownloadErrors={handleDownloadImportErrorReport}
           />
         )}
       </div>
@@ -1408,6 +1421,7 @@ function ImportHistoryPanel({
   typeFilter,
   onTypeFilterChange,
   onPageChange,
+  onDownloadErrors,
 }: {
   batches: AdminImportBatch[];
   meta: AdminImportBatchPage['meta'];
@@ -1415,6 +1429,7 @@ function ImportHistoryPanel({
   typeFilter: string;
   onTypeFilterChange: (value: string) => void;
   onPageChange: (page: number) => void;
+  onDownloadErrors: (batchId: string) => void;
 }) {
   const canGoBack = meta.current_page > 1 && dataState !== 'loading';
   const canGoNext = meta.current_page < meta.last_page && dataState !== 'loading';
@@ -1485,6 +1500,16 @@ function ImportHistoryPanel({
                         </li>
                       ))}
                     </ul>
+                  ) : null}
+                  {batch.rows_rejected > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => onDownloadErrors(batch.id)}
+                      className="mt-3 inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black text-amber-800 transition hover:bg-amber-100"
+                    >
+                      Descargar errores
+                      <FileText size={15} />
+                    </button>
                   ) : null}
                 </td>
                 <td className="py-4 pr-4 text-slate-700">{batch.imported_by?.email ?? 'Sistema'}</td>

@@ -80,6 +80,66 @@ class ImportBatchAdminHttpTest extends TestCase
         $this->assertFalse(Gate::forUser($associate)->allows('import', ImportBatch::class));
     }
 
+    public function test_backoffice_user_can_download_import_error_report_without_private_values(): void
+    {
+        $admin = $this->userWithRole('admin', 'admin@example.test');
+        $reviewer = $this->userWithRole('reviewer', 'reviewer@example.test');
+        $batch = ImportBatch::query()->create([
+            'imported_by_user_id' => $admin->id,
+            'import_type' => 'credits',
+            'original_filename' => 'creditos.xlsx',
+            'storage_key' => 'private/imports/credits/private.xlsx',
+            'file_hash' => hash('sha256', 'synthetic-file'),
+            'mime_type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'byte_size' => 4096,
+            'status' => 'completed_with_errors',
+            'rows_total' => 2,
+            'rows_created' => 1,
+            'rows_updated' => 0,
+            'rows_rejected' => 1,
+            'errors' => [['row' => 3, 'message' => 'No existe un asociado activo para el documento informado.']],
+            'started_at' => now(),
+            'completed_at' => now(),
+        ]);
+
+        $response = $this->actingAs($reviewer)->get("/admin/import-batches/{$batch->id}/errors");
+        $content = $response->content();
+
+        $response->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $this->assertStringContainsString('fila,error', $content);
+        $this->assertStringContainsString('No existe un asociado activo', $content);
+        $this->assertStringNotContainsString('private/imports', $content);
+        $this->assertStringNotContainsString(hash('sha256', 'synthetic-file'), $content);
+    }
+
+    public function test_associate_cannot_download_import_error_report(): void
+    {
+        $admin = $this->userWithRole('admin', 'admin@example.test');
+        $associate = $this->userWithRole('associate', 'associate@example.test');
+        $batch = ImportBatch::query()->create([
+            'imported_by_user_id' => $admin->id,
+            'import_type' => 'credits',
+            'original_filename' => 'creditos.xlsx',
+            'storage_key' => 'private/imports/credits/private.xlsx',
+            'file_hash' => hash('sha256', 'synthetic-file'),
+            'mime_type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'byte_size' => 4096,
+            'status' => 'completed_with_errors',
+            'rows_total' => 1,
+            'rows_created' => 0,
+            'rows_updated' => 0,
+            'rows_rejected' => 1,
+            'errors' => [['row' => 2, 'message' => 'Error de prueba.']],
+            'started_at' => now(),
+            'completed_at' => now(),
+        ]);
+
+        $this->actingAs($associate)
+            ->get("/admin/import-batches/{$batch->id}/errors")
+            ->assertForbidden();
+    }
+
     private function userWithRole(string $roleName, ?string $email = null): User
     {
         $user = User::factory()->create([
