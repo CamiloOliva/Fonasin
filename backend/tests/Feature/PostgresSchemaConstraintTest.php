@@ -32,6 +32,8 @@ class PostgresSchemaConstraintTest extends TestCase
             'credit_accounts_term_months_positive_check' => ['term_months', '>'],
             'credit_accounts_interest_rate_nonnegative_check' => ['interest_rate', '>='],
             'credit_accounts_installment_amount_nonnegative_check' => ['installment_amount', '>='],
+            'contribution_accounts_balances_nonnegative_check' => ['total_balance', '>='],
+            'contribution_movements_amount_nonnegative_check' => ['amount', '>='],
         ];
 
         foreach ($constraints as $constraint => [$column, $operator]) {
@@ -52,6 +54,7 @@ class PostgresSchemaConstraintTest extends TestCase
     {
         $this->assertSame('jsonb', Schema::getColumnType('audit_events', 'metadata', true));
         $this->assertSame('jsonb', Schema::getColumnType('auth_events', 'metadata', true));
+        $this->assertSame('jsonb', Schema::getColumnType('import_batches', 'errors', true));
     }
 
     #[DataProvider('invalidDocumentSizes')]

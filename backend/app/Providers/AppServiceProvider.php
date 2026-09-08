@@ -16,10 +16,14 @@ use App\Infrastructure\Storage\LaravelPrivateFileStorage;
 use App\Infrastructure\Storage\LaravelPrivateStorageKeyGenerator;
 use App\Models\AffiliationApplication;
 use App\Models\Associate;
+use App\Models\ContributionAccount;
 use App\Models\CreditAccount;
+use App\Models\ImportBatch;
 use App\Policies\AffiliationApplicationPolicy;
 use App\Policies\AssociatePolicy;
+use App\Policies\ContributionAccountPolicy;
 use App\Policies\CreditAccountPolicy;
+use App\Policies\ImportBatchPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -48,7 +52,9 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(AffiliationApplication::class, AffiliationApplicationPolicy::class);
         Gate::policy(Associate::class, AssociatePolicy::class);
+        Gate::policy(ContributionAccount::class, ContributionAccountPolicy::class);
         Gate::policy(CreditAccount::class, CreditAccountPolicy::class);
+        Gate::policy(ImportBatch::class, ImportBatchPolicy::class);
 
         RateLimiter::for('affiliation-draft-create', function (Request $request): Limit {
             return Limit::perMinute(30)->by('affiliation-draft-create|'.$request->ip());

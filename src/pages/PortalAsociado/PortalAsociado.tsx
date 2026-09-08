@@ -6,6 +6,7 @@ import {
   changeOwnPassword,
   currentPortalUser,
   fetchPortalAffiliation,
+  fetchPortalContributions,
   fetchPortalCredits,
   loginPortal,
   logoutPortal,
@@ -14,12 +15,14 @@ import {
   type PortalAffiliation,
   type PortalAffiliationDocument,
   type PortalAffiliationUpdateDraft,
+  type PortalContributions,
   type PortalCredit,
   type PortalUser,
 } from '../../services/portalService';
 
 type SessionState = 'checking' | 'guest' | 'authenticated';
 type CreditsState = 'idle' | 'loading' | 'ready' | 'error';
+type ContributionsState = 'idle' | 'loading' | 'ready' | 'error';
 type AffiliationState = 'idle' | 'loading' | 'ready' | 'error';
 type PortalTab = 'statement' | 'contributions' | 'form';
 const AFFILIATION_DRAFT_STORAGE_KEY = 'fonasin.affiliation.draft.v1';
@@ -42,6 +45,26 @@ function statusLabel(status: string): string {
     active: 'Activo',
     settled: 'Pagado',
     archived: 'Archivado',
+  };
+
+  return labels[status] ?? status;
+}
+
+function movementTypeLabel(type: string): string {
+  const labels: Record<string, string> = {
+    permanent_savings: 'Ahorro permanente',
+    voluntary_savings: 'Ahorro voluntario',
+    contribution: 'Aporte',
+    adjustment: 'Ajuste',
+  };
+
+  return labels[type] ?? type;
+}
+
+function movementStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    registered: 'Registrado',
+    reversed: 'Reversado',
   };
 
   return labels[status] ?? status;
@@ -147,9 +170,11 @@ export default function PortalAsociado() {
   const navigate = useNavigate();
   const [sessionState, setSessionState] = useState<SessionState>('checking');
   const [creditsState, setCreditsState] = useState<CreditsState>('idle');
+  const [contributionsState, setContributionsState] = useState<ContributionsState>('idle');
   const [affiliationState, setAffiliationState] = useState<AffiliationState>('idle');
   const [user, setUser] = useState<PortalUser | null>(null);
   const [credits, setCredits] = useState<PortalCredit[]>([]);
+  const [contributions, setContributions] = useState<PortalContributions | null>(null);
   const [affiliation, setAffiliation] = useState<PortalAffiliation | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -180,6 +205,21 @@ export default function PortalAsociado() {
       setCredits([]);
       setCreditsState('error');
       setError(caught instanceof Error ? caught.message : 'No fue posible cargar tus creditos.');
+    }
+  }
+
+  async function loadContributions() {
+    setContributionsState('loading');
+    setError(null);
+
+    try {
+      const result = await fetchPortalContributions();
+      setContributions(result);
+      setContributionsState('ready');
+    } catch (caught) {
+      setContributions(null);
+      setContributionsState('error');
+      setError(caught instanceof Error ? caught.message : 'No fue posible cargar tus aportes.');
     }
   }
 
@@ -225,6 +265,17 @@ export default function PortalAsociado() {
     if (
       sessionState === 'authenticated'
       && !user?.must_change_password
+      && activeTab === 'contributions'
+      && contributionsState === 'idle'
+    ) {
+      void loadContributions();
+    }
+  }, [activeTab, contributionsState, sessionState, user?.must_change_password]);
+
+  useEffect(() => {
+    if (
+      sessionState === 'authenticated'
+      && !user?.must_change_password
       && activeTab === 'form'
       && affiliationState === 'idle'
     ) {
@@ -251,9 +302,11 @@ export default function PortalAsociado() {
       await logoutPortal().catch(() => undefined);
       setUser(null);
       setCredits([]);
+      setContributions(null);
       setAffiliation(null);
       setSessionState('guest');
       setCreditsState('idle');
+      setContributionsState('idle');
       setAffiliationState('idle');
       setError(caught instanceof Error ? caught.message : 'No fue posible iniciar sesion.');
     }
@@ -272,12 +325,14 @@ export default function PortalAsociado() {
 
     setUser(null);
     setCredits([]);
+    setContributions(null);
     setAffiliation(null);
     setEmail('');
     setPassword('');
     setRemember(false);
     setSessionState('guest');
     setCreditsState('idle');
+    setContributionsState('idle');
     setAffiliationState('idle');
     setMessage('Sesion cerrada.');
   }
@@ -587,13 +642,99 @@ export default function PortalAsociado() {
 
           {activeTab === 'contributions' ? (
             <div className="p-5 sm:p-7">
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Estado de aportes</p>
-              <h2 className="mt-1 font-heading text-2xl font-black text-fonasin-deep sm:text-3xl">Aportes registrados</h2>
-              <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-10 text-center">
-                <PiggyBank className="mx-auto text-slate-300" size={40} />
-                <p className="mt-3 font-black text-slate-950">No hay aportes registrados</p>
-                <p className="mt-2 text-sm text-slate-600">Este modulo queda separado para conectar los aportes cuando el backend los entregue.</p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Estado de aportes</p>
+                  <h2 className="mt-1 font-heading text-2xl font-black text-fonasin-deep sm:text-3xl">Aportes registrados</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={loadContributions}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-fonasin-green/20 bg-fonasin-surface px-4 py-2.5 text-sm font-bold text-fonasin-green transition hover:bg-fonasin-lime/20 focus-ring"
+                >
+                  <RefreshCw size={16} />
+                  Actualizar
+                </button>
               </div>
+
+              {contributionsState === 'loading' ? (
+                <div className="mt-5 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600">
+                  <Loader2 className="animate-spin" size={18} />
+                  Cargando aportes
+                </div>
+              ) : null}
+
+              {contributionsState === 'error' ? (
+                <div className="mt-5 rounded-xl border border-amber-100 bg-amber-50 px-4 py-4 text-sm font-semibold text-amber-800">
+                  {error ?? 'No fue posible cargar tus aportes.'}
+                </div>
+              ) : null}
+
+              {contributionsState === 'ready' && contributions?.state === 'module_disabled' ? (
+                <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-10 text-center">
+                  <PiggyBank className="mx-auto text-slate-300" size={40} />
+                  <p className="mt-3 font-black text-slate-950">Modulo de aportes no habilitado</p>
+                  <p className="mt-2 text-sm text-slate-600">FONASIN aun no ha habilitado la consulta de aportes en el portal.</p>
+                </div>
+              ) : null}
+
+              {contributionsState === 'ready' && contributions?.state === 'empty' ? (
+                <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-10 text-center">
+                  <PiggyBank className="mx-auto text-slate-300" size={40} />
+                  <p className="mt-3 font-black text-slate-950">No hay aportes registrados</p>
+                  <p className="mt-2 text-sm text-slate-600">Cuando FONASIN registre movimientos de aportes asociados a tu perfil, apareceran aqui.</p>
+                </div>
+              ) : null}
+
+              {contributionsState === 'ready' && contributions?.state === 'available' && contributions.account ? (
+                <div className="mt-6 space-y-5">
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
+                      <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Ahorro permanente</p>
+                      <p className="mt-3 text-2xl font-black text-fonasin-deep">{formatMoney(contributions.account.permanent_savings_balance)}</p>
+                    </div>
+                    <div className="rounded-xl border border-emerald-100 bg-white p-5">
+                      <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Ahorro voluntario</p>
+                      <p className="mt-3 text-2xl font-black text-fonasin-deep">{formatMoney(contributions.account.voluntary_savings_balance)}</p>
+                    </div>
+                    <div className="rounded-xl border border-emerald-100 bg-white p-5">
+                      <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Saldo total</p>
+                      <p className="mt-3 text-2xl font-black text-fonasin-deep">{formatMoney(contributions.account.total_balance)}</p>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto rounded-xl border border-slate-100 bg-slate-50/70 p-3 sm:p-4">
+                    <table className="w-full min-w-[720px] border-collapse text-left text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.16em] text-slate-500">
+                          <th className="py-3 pr-4">Periodo</th>
+                          <th className="py-3 pr-4">Fecha de corte</th>
+                          <th className="py-3 pr-4">Tipo</th>
+                          <th className="py-3 pr-4">Valor</th>
+                          <th className="py-3 pr-4">Saldo</th>
+                          <th className="py-3">Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {contributions.movements.map((movement) => (
+                          <tr key={movement.id} className="border-b border-slate-200/70 transition hover:bg-white last:border-b-0">
+                            <td className="py-4 pr-4 font-bold text-slate-950">{formatPortalDate(movement.period)}</td>
+                            <td className="py-4 pr-4 text-slate-700">{formatPortalDate(movement.cut_off_date)}</td>
+                            <td className="py-4 pr-4 text-slate-700">{movementTypeLabel(movement.movement_type)}</td>
+                            <td className="py-4 pr-4 font-bold text-slate-950">{formatMoney(movement.amount)}</td>
+                            <td className="py-4 pr-4 text-slate-700">{formatMoney(movement.balance_after)}</td>
+                            <td className="py-4">
+                              <span className="rounded-full bg-fonasin-surface px-3 py-1 text-xs font-bold text-fonasin-green">
+                                {movementStatusLabel(movement.status)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : null}
             </div>
           ) : null}
 

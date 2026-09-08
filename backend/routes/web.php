@@ -4,8 +4,10 @@ use App\Http\Controllers\AffiliationApplicationController;
 use App\Http\Controllers\AssociateController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\ContributionController;
 use App\Http\Controllers\CreditAccountController;
 use App\Http\Controllers\FpqrsSubmissionController;
+use App\Http\Controllers\ImportBatchController;
 use App\Http\Controllers\PortalAffiliationController;
 use Illuminate\Support\Facades\Route;
 
@@ -131,8 +133,21 @@ Route::middleware(['auth', 'password.changed'])
     });
 
 Route::middleware(['auth', 'password.changed'])
+    ->prefix('admin/import-batches')
+    ->name('admin.import-batches.')
+    ->group(function (): void {
+        Route::get('/', [ImportBatchController::class, 'index'])
+            ->middleware('can:viewAny,App\Models\ImportBatch')
+            ->name('index');
+    });
+
+Route::middleware(['auth', 'password.changed'])
     ->get('/portal/credits', [CreditAccountController::class, 'mine'])
     ->name('portal.credits.index');
+
+Route::middleware(['auth', 'password.changed'])
+    ->get('/portal/contributions', [ContributionController::class, 'mine'])
+    ->name('portal.contributions.index');
 
 Route::middleware(['auth', 'password.changed'])
     ->get('/portal/affiliation', [PortalAffiliationController::class, 'show'])

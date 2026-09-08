@@ -67,8 +67,8 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 |---|---|---|---|
 | FE-ADM-001 a FE-ADM-009 | Gestion de afiliaciones y asociados | En curso | `/admin-fonasin`, endpoints paginados `GET /admin/affiliation-applications` y `GET /admin/associates`, acciones de revision, carga de libranza externa, habilitacion de asociado, deteccion de conflictos de identidad, modulo administrativo de asociados con alta manual, usuario de portal, desactivacion logica, invalidacion de sesiones y sin exposicion de contrasenas temporales por API. Falta validacion visual final con FONASIN. |
 | FE-ADM-009A | Gestion manual de creditos | En curso | `/admin-fonasin`, endpoints `GET/POST/PATCH /admin/credits`, listado paginado, lineas cerradas de credito, solo asociados activos, transiciones basicas de estado y archivado logico. Falta validacion visual final con FONASIN. |
-| FE-ADM-010 | Importar creditos XLSX | Bloqueado | Plantilla, columnas, validaciones y contrato de importacion aprobados. |
-| FE-ADM-011 | Historial de importaciones | Pendiente | Depende del caso de uso de importacion y auditoria. |
+| FE-ADM-010 | Importar creditos XLSX | Bloqueado | Existen tablas base e historial de importaciones; falta plantilla, columnas, validaciones y caso de uso XLSX aprobado. |
+| FE-ADM-011 | Historial de importaciones | En curso | Backend expone `GET /admin/import-batches` con paginacion, permisos y auditoria; falta conectar la vista administrativa y los importadores reales. |
 | FE-ADM-012 | Prohibir alta manual irregular | Pendiente | Debe imponerse con permisos y casos de uso del Backend. |
 
 ## Portal y creditos privados
@@ -78,6 +78,7 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 | FE-OBQ-001 | Ingreso y ciclo de contraseña | OBQ | En curso | Login con sesion Laravel, cambio obligatorio de clave inicial y recuperacion con correo, cedula, link temporal y bloqueo para asociados inactivos. Las altas nuevas no devuelven contrasenas temporales por API. | Validar SMTP de produccion y flujo visual final. |
 | FE-OBQ-002 | Inicio privado | OBQ | En curso | Portal asociado existe con sesion, bloqueo por contrasena temporal y asociado activo; falta validacion visual final. |
 | FE-OBQ-003 | Creditos actuales | OBQ | En curso | Consulta creditos del asociado autenticado desde Backend; importacion de creditos sigue pendiente. |
+| FE-OBQ-003A | Aportes actuales | OBQ | En curso | Backend define cuentas y movimientos de aportes, endpoint privado `GET /portal/contributions`, aislamiento por sesion y estados `module_disabled`, `empty`, `available`; falta importacion real y validacion visual final. |
 | FE-OBQ-004 | Aislamiento por sesion | OBQ | Implementado | Las consultas privadas resuelven el asociado desde la sesion y bloquean asociado inactivo; no se acepta `associate_id` del navegador. |
 | FE-EXT-004 | Actualizacion de datos | EXT | En curso | El asociado puede crear/reutilizar un borrador temporal de actualizacion por 24 horas; el Backend usa transaccion e indice unico parcial para evitar borradores duplicados activos. Falta aprobacion final del flujo y de retencion. |
 | FE-EXT-005 | Simulador | EXT | Pendiente | No iniciar sin formulas y advertencias aprobadas. |
@@ -85,8 +86,8 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 
 ## Pendientes explicitamente fuera de la entrega actual
 
-- Aportes del asociado: pantalla visible sin datos reales ni importacion implementada.
-- Ahorro permanente y ahorro voluntario: no existe modelo operativo ni carga administrativa aprobada.
+- Aportes del asociado: ya existe modelo operativo base y consulta privada; falta carga masiva y datos reales.
+- Ahorro permanente y ahorro voluntario: existe cuenta base con saldos separados; falta regla final de importacion, ajuste y conciliacion.
 - Importacion de Excel/XLSX: bloqueada hasta definir plantilla, validaciones, auditoria y manejo de errores.
 - Retencion automatica de FPQRS, documentos, solicitudes y auditoria: bloqueada hasta aprobacion juridica y operativa.
 - Rotacion operativa de `DATA_HASH_PEPPER`: pendiente de procedimiento formal. Los hashes sensibles de documento, correo, IP y agente de usuario ya usan HMAC-SHA256 y requieren pepper estable por entorno.
