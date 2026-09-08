@@ -145,6 +145,9 @@ Route::middleware(['auth', 'password.changed'])
         Route::get('/templates/contributions', [ImportBatchController::class, 'contributionTemplate'])
             ->middleware('can:import,App\Models\ImportBatch')
             ->name('templates.contributions');
+        Route::get('/{batch}/errors', [ImportBatchController::class, 'errorReport'])
+            ->middleware('can:viewAny,App\Models\ImportBatch')
+            ->name('errors');
         Route::post('/credits', [ImportBatchController::class, 'importCredits'])
             ->middleware('can:import,App\Models\ImportBatch')
             ->name('credits.store');

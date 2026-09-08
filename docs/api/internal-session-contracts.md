@@ -130,6 +130,25 @@ Respuesta:
 
 No se exponen `storage_key` ni `file_hash`.
 
+## Reporte de errores de importacion
+
+```text
+GET /admin/import-batches/{batch}/errors
+Autenticacion: sesion Laravel
+Middleware: auth, password.changed
+Autorizacion: admin o reviewer
+Respuesta: attachment CSV, no-store
+```
+
+Columnas del CSV:
+
+```text
+fila
+error
+```
+
+El reporte usa los errores ya registrados en `import_batches.errors`. No incluye `storage_key`, `file_hash`, documentos, correos ni valores sensibles en claro.
+
 ## Importacion XLSX de creditos
 
 Plantilla:
