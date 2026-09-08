@@ -69,7 +69,7 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 | FE-ADM-009A | Gestion manual de creditos | En curso | `/admin-fonasin`, endpoints `GET/POST/PATCH /admin/credits`, listado paginado, lineas cerradas de credito, solo asociados activos, transiciones basicas de estado y archivado logico. Falta validacion visual final con FONASIN. |
 | FE-ADM-010 | Importar creditos XLSX | En curso | Backend importa XLSX por `POST /admin/import-batches/credits`, valida columnas/tipos/duplicados, guarda archivo privado, registra historial y permite carga desde `/admin-fonasin`. Falta plantilla oficial aprobada por FONASIN. |
 | FE-ADM-010A | Importar aportes XLSX | En curso | Backend importa XLSX por `POST /admin/import-batches/contributions`, crea/actualiza cuentas y movimientos, conserva historial por reversion de correcciones, registra errores por fila y permite carga desde `/admin-fonasin`. Falta plantilla oficial aprobada por FONASIN. |
-| FE-ADM-011 | Historial de importaciones | En curso | Backend expone `GET /admin/import-batches` con paginacion, permisos, auditoria y resumen de importaciones; `/admin-fonasin` incluye vista interna de historial con filtro por tipo y errores resumidos. Falta paginacion visual avanzada y descarga de reportes. |
+| FE-ADM-011 | Historial de importaciones | En curso | Backend expone `GET /admin/import-batches` con paginacion, permisos, auditoria y resumen de importaciones; `/admin-fonasin` incluye vista interna de historial con filtro por tipo, paginacion y errores resumidos. Falta descarga de reportes. |
 | FE-ADM-012 | Prohibir alta manual irregular | Pendiente | Debe imponerse con permisos y casos de uso del Backend. |
 
 ## Portal y creditos privados

@@ -50,6 +50,7 @@ import {
   updateAdminCredit,
   type AdminCredit,
   type AdminImportBatch,
+  type AdminImportBatchPage,
 } from '../../services/adminCreditService';
 import { changeOwnPassword, type PortalUser } from '../../services/portalService';
 
@@ -83,6 +84,12 @@ const documentLabels: Record<string, string> = {
 };
 
 const creditLineOptions = ['FONALIBRE', 'FONAPEN', 'FONAPRIMA', 'FONAROTATIVO', 'FONAPORTES'];
+const defaultImportMeta: AdminImportBatchPage['meta'] = {
+  current_page: 1,
+  last_page: 1,
+  per_page: 50,
+  total: 0,
+};
 
 function formatDate(value: string | null): string {
   if (!value) return 'Pendiente';
@@ -123,6 +130,7 @@ export default function AdminFonasin() {
   const [associates, setAssociates] = useState<AdminAssociate[]>([]);
   const [credits, setCredits] = useState<AdminCredit[]>([]);
   const [importBatches, setImportBatches] = useState<AdminImportBatch[]>([]);
+  const [importMeta, setImportMeta] = useState<AdminImportBatchPage['meta']>(defaultImportMeta);
   const [importState, setImportState] = useState<DataState>('idle');
   const [lastImport, setLastImport] = useState<AdminImportBatch | null>(null);
   const [importTypeFilter, setImportTypeFilter] = useState('');
@@ -241,16 +249,19 @@ export default function AdminFonasin() {
     }
   }
 
-  async function loadImportBatches(type = importTypeFilter) {
+  async function loadImportBatches(type = importTypeFilter, page = 1) {
     setImportHistoryState('loading');
     setError(null);
 
     try {
-      setImportBatches(await fetchAdminImportBatches(type));
+      const response = await fetchAdminImportBatches(type, page);
+      setImportBatches(response.data);
+      setImportMeta(response.meta);
       setImportHistoryState('ready');
     } catch (caught) {
       setImportHistoryState('error');
       setImportBatches([]);
+      setImportMeta(defaultImportMeta);
       setError(caught instanceof Error ? caught.message : 'No fue posible cargar el historial de importaciones.');
     }
   }
@@ -519,7 +530,7 @@ export default function AdminFonasin() {
       }
 
       if (activeView === 'imports') {
-        await loadImportBatches(importTypeFilter);
+        await loadImportBatches(importTypeFilter, importMeta.current_page);
       } else {
         setImportBatches((current) => [batch, ...current].slice(0, 50));
       }
@@ -842,12 +853,14 @@ export default function AdminFonasin() {
         ) : (
           <ImportHistoryPanel
             batches={importBatches}
+            meta={importMeta}
             dataState={importHistoryState}
             typeFilter={importTypeFilter}
             onTypeFilterChange={(value) => {
               setImportTypeFilter(value);
-              void loadImportBatches(value);
+              void loadImportBatches(value, 1);
             }}
+            onPageChange={(page) => loadImportBatches(importTypeFilter, page)}
           />
         )}
       </div>
@@ -1363,21 +1376,29 @@ function ImportForm({
 
 function ImportHistoryPanel({
   batches,
+  meta,
   dataState,
   typeFilter,
   onTypeFilterChange,
+  onPageChange,
 }: {
   batches: AdminImportBatch[];
+  meta: AdminImportBatchPage['meta'];
   dataState: DataState;
   typeFilter: string;
   onTypeFilterChange: (value: string) => void;
+  onPageChange: (page: number) => void;
 }) {
+  const canGoBack = meta.current_page > 1 && dataState !== 'loading';
+  const canGoNext = meta.current_page < meta.last_page && dataState !== 'loading';
+
   return (
     <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Historial</p>
           <h2 className="mt-1 text-2xl font-black text-slate-950">Importaciones operativas</h2>
+          <p className="mt-1 text-sm font-semibold text-slate-500">{meta.total} registros encontrados</p>
         </div>
         <label className="w-full max-w-xs">
           <span className="text-sm font-bold text-slate-800">Tipo de carga</span>
@@ -1451,6 +1472,30 @@ function ImportHistoryPanel({
             No hay importaciones registradas.
           </p>
         ) : null}
+      </div>
+
+      <div className="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm font-bold text-slate-600">
+          Pagina {meta.current_page} de {meta.last_page}
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            disabled={!canGoBack}
+            onClick={() => onPageChange(meta.current_page - 1)}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
+          >
+            Anterior
+          </button>
+          <button
+            type="button"
+            disabled={!canGoNext}
+            onClick={() => onPageChange(meta.current_page + 1)}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
+          >
+            Siguiente
+          </button>
+        </div>
       </div>
     </section>
   );
