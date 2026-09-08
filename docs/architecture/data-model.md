@@ -16,6 +16,8 @@
 users <-> roles                 mediante role_user
 users -> associates             una cuenta puede representar un asociado
 associates -> credit_accounts   un asociado puede tener varios creditos
+associates -> contribution_accounts, contribution_movements
+users -> import_batches          un administrador registra una carga operativa
 associates -> affiliation_applications
 applications -> sections, documents, consent_records
 users -> audit_events           un actor realiza una accion auditable
@@ -142,6 +144,69 @@ Una solicitud solo puede registrar una aceptacion por tipo y version de politica
 
 Un asociado puede tener varios creditos. No se deben borrar; una correccion crea auditoria y un credito no vigente se archiva. Los casos de uso iniciales de Credits permiten registrar, actualizar campos existentes, archivar y consultar creditos propios desde la sesion del asociado; no aceptan `associate_id` del navegador para consultas privadas.
 
+## Aportes e importaciones
+
+### `contribution_accounts`
+
+Representa el saldo operativo de aportes por asociado. Es una cuenta por asociado y se actualiza desde movimientos; no reemplaza el historial.
+
+| Campo | Tipo | Regla |
+|---|---|---|
+| `id` | UUID | PK |
+| `associate_id` | UUID | FK unico a `associates` |
+| `permanent_savings_balance` | numeric(14,2) | mayor o igual a cero |
+| `voluntary_savings_balance` | numeric(14,2) | mayor o igual a cero |
+| `total_balance` | numeric(14,2) | mayor o igual a cero |
+| `status` | varchar(30) | `active`, `inactive` |
+| `last_period` | date nullable | periodo operativo mas reciente |
+| `last_cut_off_date` | date nullable | fecha de corte mas reciente |
+| `last_movement_at` | timestamptz nullable | ultimo movimiento registrado |
+
+### `contribution_movements`
+
+Cada fila representa un movimiento historico de aportes. Las importaciones futuras deben crear o actualizar movimientos sin perder historial ni mezclar estos datos con `credit_accounts`.
+
+| Campo | Tipo | Regla |
+|---|---|---|
+| `id` | UUID | PK |
+| `contribution_account_id` | UUID | FK a cuenta de aportes |
+| `associate_id` | UUID | FK a asociado para consultas e indices |
+| `import_batch_id` | UUID nullable | FK a lote de importacion |
+| `recorded_by_user_id` | UUID nullable | usuario que registro la operacion |
+| `movement_type` | varchar(40) | `permanent_savings`, `voluntary_savings`, `contribution`, `adjustment` |
+| `period` | date | periodo informado como primer dia del mes |
+| `cut_off_date` | date | fecha de corte reportada |
+| `amount` | numeric(14,2) | mayor o igual a cero |
+| `balance_after` | numeric(14,2) | saldo despues del movimiento |
+| `status` | varchar(30) | `registered`, `reversed` |
+| `source` | varchar(30) | `manual`, `import` |
+| `reference` | varchar(120) nullable | referencia operativa sin datos sensibles |
+| `source_row_hash` | char(64) nullable | llave tecnica de idempotencia por fila |
+| `recorded_at` | timestamptz | momento de registro operativo |
+
+### `import_batches`
+
+Registra la trazabilidad de cargas masivas. El archivo se almacena de forma privada y el hash permite detectar repetidos sin confiar en el nombre original.
+
+| Campo | Tipo | Regla |
+|---|---|---|
+| `id` | UUID | PK |
+| `imported_by_user_id` | UUID | FK al usuario administrador |
+| `import_type` | varchar(40) | `credits`, `contributions` |
+| `original_filename` | varchar(255) | referencia visual, no ruta |
+| `storage_key` | varchar(500) | ruta privada generada por servidor |
+| `file_hash` | char(64) | hash del contenido del archivo |
+| `mime_type` | varchar(120) | validado por servidor |
+| `byte_size` | bigint | mayor a cero |
+| `status` | varchar(40) | `pending`, `processing`, `completed`, `completed_with_errors`, `failed` |
+| `rows_total` | integer | filas leidas |
+| `rows_created` | integer | registros creados |
+| `rows_updated` | integer | registros actualizados |
+| `rows_rejected` | integer | filas rechazadas |
+| `errors` | jsonb nullable | errores por fila sin datos sensibles |
+| `started_at` | timestamptz nullable | inicio de procesamiento |
+| `completed_at` | timestamptz nullable | fin de procesamiento |
+
 ## Convenciones de migracion
 
 - Crear una migracion por cambio logico, con nombre descriptivo.
@@ -175,6 +240,8 @@ El caso de uso inicial de envio exige las secciones de formulario completas, los
 5. Retencion aprobada para solicitudes, documentos y eventos de auditoria.
 6. Catalogos definitivos y si su integridad se aplica solo en dominio o tambien mediante restricciones de base de datos.
 7. Moneda, fechas, limites de tasa y demas invariantes financieras de `credit_accounts`.
+8. Plantilla oficial XLSX para creditos y aportes, incluyendo columnas, formatos, duplicados permitidos y regla de actualizacion.
+9. Regla final para calcular y reconciliar saldos de aportes cuando una carga corrige periodos anteriores.
 
 ## Contenido y FPQRS
 
@@ -191,6 +258,11 @@ El caso de uso inicial de envio exige las secciones de formulario completas, los
 - `affiliation_applications(associate_id)` unico parcial cuando `status = draft` y `associate_id` no es nulo.
 - `application_documents(application_id, status)`.
 - `credit_accounts(associate_id, status)`.
+- `contribution_accounts(associate_id)` unico.
+- `contribution_movements(associate_id, period)`.
+- `contribution_movements(contribution_account_id, recorded_at)`.
+- `import_batches(import_type, status, created_at)`.
+- `import_batches(import_type, file_hash)` unico.
 - `audit_events(subject_type, subject_id, occurred_at)`.
 - `audit_events(actor_user_id, occurred_at)`.
 - `auth_events(user_id, occurred_at)`.
