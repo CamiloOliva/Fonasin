@@ -125,6 +125,21 @@ export async function fetchAdminCredits(page = 1, perPage = 50): Promise<AdminCr
   return response.data;
 }
 
+export async function fetchAdminImportBatches(type = '', page = 1, perPage = 50): Promise<AdminImportBatch[]> {
+  const params = new URLSearchParams({
+    page: String(page),
+    per_page: String(perPage),
+  });
+
+  if (type) {
+    params.set('type', type);
+  }
+
+  const response = await requestJson<{ data: AdminImportBatch[] }>(`/admin/import-batches?${params.toString()}`);
+
+  return response.data;
+}
+
 export async function createAdminCredit(payload: CreateCreditPayload): Promise<AdminCredit> {
   const response = await requestJson<{ data: AdminCredit }>('/admin/credits', {
     method: 'POST',
