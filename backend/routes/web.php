@@ -139,6 +139,12 @@ Route::middleware(['auth', 'password.changed'])
         Route::get('/', [ImportBatchController::class, 'index'])
             ->middleware('can:viewAny,App\Models\ImportBatch')
             ->name('index');
+        Route::get('/templates/credits', [ImportBatchController::class, 'creditTemplate'])
+            ->middleware('can:import,App\Models\ImportBatch')
+            ->name('templates.credits');
+        Route::get('/templates/contributions', [ImportBatchController::class, 'contributionTemplate'])
+            ->middleware('can:import,App\Models\ImportBatch')
+            ->name('templates.contributions');
         Route::post('/credits', [ImportBatchController::class, 'importCredits'])
             ->middleware('can:import,App\Models\ImportBatch')
             ->name('credits.store');

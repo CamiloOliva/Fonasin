@@ -14,6 +14,8 @@ use App\Http\Requests\Imports\ImportSpreadsheetRequest;
 use App\Models\ImportBatch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Shuchkin\SimpleXLSXGen;
+use Symfony\Component\HttpFoundation\Response;
 
 class ImportBatchController extends Controller
 {
@@ -94,6 +96,23 @@ class ImportBatchController extends Controller
         return response()->json(['data' => $this->batchPayload($batch)], 201);
     }
 
+    public function creditTemplate(): Response
+    {
+        return $this->templateResponse('plantilla-creditos.xlsx', [
+            ['documento', 'linea_credito', 'valor_inicial', 'saldo_actual', 'plazo_meses', 'tasa_interes', 'valor_cuota', 'estado'],
+            ['123456789', 'FONALIBRE', '1000000.00', '800000.00', '24', '1.2500', '50000.00', 'active'],
+        ]);
+    }
+
+    public function contributionTemplate(): Response
+    {
+        return $this->templateResponse('plantilla-aportes.xlsx', [
+            ['documento', 'periodo', 'fecha_corte', 'tipo_aporte', 'valor', 'saldo_despues', 'estado', 'referencia'],
+            ['123456789', '2026-09-01', '2026-09-30', 'permanent_savings', '100000.00', '400000.00', 'registered', 'AP-001'],
+            ['123456789', '2026-09-01', '2026-09-30', 'voluntary_savings', '50000.00', '150000.00', 'registered', 'AV-001'],
+        ]);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -133,5 +152,19 @@ class ImportBatchController extends Controller
         return response()->json([
             'message' => $exception->getMessage(),
         ], 422);
+    }
+
+    /**
+     * @param  array<int, array<int, string>>  $rows
+     */
+    private function templateResponse(string $filename, array $rows): Response
+    {
+        $contents = (string) SimpleXLSXGen::fromArray($rows);
+
+        return response($contents, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            'Cache-Control' => 'no-store, max-age=0',
+        ]);
     }
 }

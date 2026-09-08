@@ -43,6 +43,7 @@ import {
 import {
   archiveAdminCredit,
   createAdminCredit,
+  downloadAdminImportTemplate,
   fetchAdminCredits,
   fetchAdminImportBatches,
   importAdminContributions,
@@ -545,6 +546,17 @@ export default function AdminFonasin() {
     }
   }
 
+  async function handleDownloadImportTemplate(type: 'credits' | 'contributions') {
+    setError(null);
+    setMessage(null);
+
+    try {
+      await downloadAdminImportTemplate(type);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible descargar la plantilla.');
+    }
+  }
+
   if (sessionState === 'checking') {
     return (
       <section className="min-h-[58vh] bg-slate-50 py-16">
@@ -849,6 +861,7 @@ export default function AdminFonasin() {
             importState={importState}
             lastImport={lastImport}
             onImport={handleImportSpreadsheet}
+            onDownloadTemplate={handleDownloadImportTemplate}
           />
         ) : (
           <ImportHistoryPanel
@@ -1076,6 +1089,7 @@ function CreditsPanel({
   importState,
   lastImport,
   onImport,
+  onDownloadTemplate,
 }: {
   credits: AdminCredit[];
   associates: AdminAssociate[];
@@ -1087,6 +1101,7 @@ function CreditsPanel({
   importState: DataState;
   lastImport: AdminImportBatch | null;
   onImport: (type: 'credits' | 'contributions', event: FormEvent<HTMLFormElement>) => void;
+  onDownloadTemplate: (type: 'credits' | 'contributions') => void;
 }) {
   const activeAssociates = associates.filter((associate) => associate.status === 'active');
 
@@ -1224,12 +1239,14 @@ function CreditsPanel({
               description="Columnas: documento, linea_credito, valor_inicial, saldo_actual, plazo_meses, tasa_interes, valor_cuota, estado."
               disabled={importState === 'loading'}
               onSubmit={(event) => onImport('credits', event)}
+              onDownloadTemplate={() => onDownloadTemplate('credits')}
             />
             <ImportForm
               title="Aportes"
               description="Columnas: documento, periodo, fecha_corte, tipo_aporte, valor, saldo_despues, estado, referencia."
               disabled={importState === 'loading'}
               onSubmit={(event) => onImport('contributions', event)}
+              onDownloadTemplate={() => onDownloadTemplate('contributions')}
             />
           </div>
 
@@ -1344,11 +1361,13 @@ function ImportForm({
   description,
   disabled,
   onSubmit,
+  onDownloadTemplate,
 }: {
   title: string;
   description: string;
   disabled: boolean;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onDownloadTemplate: () => void;
 }) {
   return (
     <form onSubmit={onSubmit} className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -1369,6 +1388,14 @@ function ImportForm({
       >
         Importar {title.toLowerCase()}
         <UploadCloud size={17} />
+      </button>
+      <button
+        type="button"
+        onClick={onDownloadTemplate}
+        className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50"
+      >
+        Descargar plantilla
+        <FileText size={17} />
       </button>
     </form>
   );
