@@ -6,7 +6,7 @@ Esta matriz conecta la especificacion funcional con el codigo, las pruebas y la 
 
 Fuente funcional: `02_GUIA_EQUIPO_FRONTEND_WEB_AFILIACION_PORTAL_V2.docx`, version 2.0 del 15 de agosto de 2026.
 
-Ultima revision tecnica: 6 de septiembre de 2026, rama `feature/hmac-sensitive-hashes`, commit base `58675d7`.
+Ultima revision tecnica: 8 de septiembre de 2026, rama `feature/xlsx-credit-contribution-imports`, commit base `6069df8`.
 
 ## Estados permitidos
 
@@ -67,8 +67,9 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 |---|---|---|---|
 | FE-ADM-001 a FE-ADM-009 | Gestion de afiliaciones y asociados | En curso | `/admin-fonasin`, endpoints paginados `GET /admin/affiliation-applications` y `GET /admin/associates`, acciones de revision, carga de libranza externa, habilitacion de asociado, deteccion de conflictos de identidad, modulo administrativo de asociados con alta manual, usuario de portal, desactivacion logica, invalidacion de sesiones y sin exposicion de contrasenas temporales por API. Falta validacion visual final con FONASIN. |
 | FE-ADM-009A | Gestion manual de creditos | En curso | `/admin-fonasin`, endpoints `GET/POST/PATCH /admin/credits`, listado paginado, lineas cerradas de credito, solo asociados activos, transiciones basicas de estado y archivado logico. Falta validacion visual final con FONASIN. |
-| FE-ADM-010 | Importar creditos XLSX | Bloqueado | Existen tablas base e historial de importaciones; falta plantilla, columnas, validaciones y caso de uso XLSX aprobado. |
-| FE-ADM-011 | Historial de importaciones | En curso | Backend expone `GET /admin/import-batches` con paginacion, permisos y auditoria; falta conectar la vista administrativa y los importadores reales. |
+| FE-ADM-010 | Importar creditos XLSX | En curso | Backend importa XLSX por `POST /admin/import-batches/credits`, valida columnas/tipos/duplicados, guarda archivo privado, registra historial y permite carga desde `/admin-fonasin`. Falta plantilla oficial aprobada por FONASIN. |
+| FE-ADM-010A | Importar aportes XLSX | En curso | Backend importa XLSX por `POST /admin/import-batches/contributions`, crea/actualiza cuentas y movimientos, conserva historial por reversion de correcciones, registra errores por fila y permite carga desde `/admin-fonasin`. Falta plantilla oficial aprobada por FONASIN. |
+| FE-ADM-011 | Historial de importaciones | En curso | Backend expone `GET /admin/import-batches` con paginacion, permisos, auditoria y resumen de importaciones; la vista administrativa muestra el resultado de la ultima carga. Falta pantalla dedicada de historico/filtros. |
 | FE-ADM-012 | Prohibir alta manual irregular | Pendiente | Debe imponerse con permisos y casos de uso del Backend. |
 
 ## Portal y creditos privados
@@ -86,9 +87,9 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 
 ## Pendientes explicitamente fuera de la entrega actual
 
-- Aportes del asociado: ya existe modelo operativo base y consulta privada; falta carga masiva y datos reales.
-- Ahorro permanente y ahorro voluntario: existe cuenta base con saldos separados; falta regla final de importacion, ajuste y conciliacion.
-- Importacion de Excel/XLSX: bloqueada hasta definir plantilla, validaciones, auditoria y manejo de errores.
+- Aportes del asociado: ya existe modelo operativo base, consulta privada y carga XLSX inicial; faltan datos reales y plantilla oficial aprobada.
+- Ahorro permanente y ahorro voluntario: existe cuenta base con saldos separados e importacion XLSX inicial; falta regla final de conciliacion.
+- Importacion de Excel/XLSX: implementada como flujo inicial para creditos y aportes con validaciones, auditoria, storage privado y reporte por fila; falta plantilla institucional final.
 - Retencion automatica de FPQRS, documentos, solicitudes y auditoria: bloqueada hasta aprobacion juridica y operativa.
 - Rotacion operativa de `DATA_HASH_PEPPER`: pendiente de procedimiento formal. Los hashes sensibles de documento, correo, IP y agente de usuario ya usan HMAC-SHA256 y requieren pepper estable por entorno.
 - Auditoria append-only reforzada por PostgreSQL: pendiente de definicion de permisos/triggers en el entorno productivo.

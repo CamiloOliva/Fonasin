@@ -2,14 +2,16 @@
 
 namespace App\Providers;
 
-use App\Application\Security\Contracts\EncryptsSensitiveData;
-use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Application\Affiliation\Contracts\RendersAffiliationSubmissionDocuments;
 use App\Application\Fpqrs\Contracts\DeliversFpqrsSubmissions;
+use App\Application\Imports\Contracts\ReadsSpreadsheetRows;
+use App\Application\Security\Contracts\EncryptsSensitiveData;
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Application\Storage\Contracts\GeneratesPrivateStorageKeys;
 use App\Application\Storage\Contracts\StoresPrivateFiles;
-use App\Infrastructure\Mail\LaravelFpqrsSubmissionMailer;
 use App\Infrastructure\Affiliation\LaravelDompdfAffiliationSubmissionRenderer;
+use App\Infrastructure\Imports\SimpleXlsxSpreadsheetReader;
+use App\Infrastructure\Mail\LaravelFpqrsSubmissionMailer;
 use App\Infrastructure\Security\LaravelSensitiveDataCipher;
 use App\Infrastructure\Security\LaravelSensitiveDataHasher;
 use App\Infrastructure\Storage\LaravelPrivateFileStorage;
@@ -39,6 +41,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(EncryptsSensitiveData::class, LaravelSensitiveDataCipher::class);
         $this->app->bind(HashesSensitiveData::class, LaravelSensitiveDataHasher::class);
+        $this->app->bind(ReadsSpreadsheetRows::class, SimpleXlsxSpreadsheetReader::class);
         $this->app->bind(RendersAffiliationSubmissionDocuments::class, LaravelDompdfAffiliationSubmissionRenderer::class);
         $this->app->bind(DeliversFpqrsSubmissions::class, LaravelFpqrsSubmissionMailer::class);
         $this->app->bind(GeneratesPrivateStorageKeys::class, LaravelPrivateStorageKeyGenerator::class);

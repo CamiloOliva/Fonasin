@@ -44,8 +44,11 @@ import {
   archiveAdminCredit,
   createAdminCredit,
   fetchAdminCredits,
+  importAdminContributions,
+  importAdminCredits,
   updateAdminCredit,
   type AdminCredit,
+  type AdminImportBatch,
 } from '../../services/adminCreditService';
 import { changeOwnPassword, type PortalUser } from '../../services/portalService';
 
@@ -117,6 +120,8 @@ export default function AdminFonasin() {
   const [applications, setApplications] = useState<AdminAffiliationApplication[]>([]);
   const [associates, setAssociates] = useState<AdminAssociate[]>([]);
   const [credits, setCredits] = useState<AdminCredit[]>([]);
+  const [importState, setImportState] = useState<DataState>('idle');
+  const [lastImport, setLastImport] = useState<AdminImportBatch | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<AdminAffiliationDetail | null>(null);
   const [email, setEmail] = useState('');
@@ -462,6 +467,44 @@ export default function AdminFonasin() {
     }
   }
 
+  async function handleImportSpreadsheet(type: 'credits' | 'contributions', event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setMessage(null);
+    setImportState('loading');
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const file = formData.get('file');
+
+    if (!(file instanceof File) || file.size === 0) {
+      setImportState('error');
+      setError('Selecciona un archivo XLSX para importar.');
+      return;
+    }
+
+    try {
+      const batch = type === 'credits'
+        ? await importAdminCredits(file)
+        : await importAdminContributions(file);
+      setLastImport(batch);
+      setImportState('ready');
+      form.reset();
+
+      if (type === 'credits') {
+        await loadCredits();
+      }
+
+      setMessage(batch.status === 'completed'
+        ? 'Importacion completada correctamente.'
+        : 'Importacion procesada con observaciones.');
+    } catch (caught) {
+      setImportState('error');
+      setLastImport(null);
+      setError(caught instanceof Error ? caught.message : 'No fue posible importar el archivo.');
+    }
+  }
+
   if (sessionState === 'checking') {
     return (
       <section className="min-h-[58vh] bg-slate-50 py-16">
@@ -748,6 +791,9 @@ export default function AdminFonasin() {
             onFormChange={setCreditForm}
             onCreate={handleCreateCredit}
             onStatusChange={handleCreditStatus}
+            importState={importState}
+            lastImport={lastImport}
+            onImport={handleImportSpreadsheet}
           />
         )}
       </div>
@@ -960,6 +1006,9 @@ function CreditsPanel({
   onFormChange,
   onCreate,
   onStatusChange,
+  importState,
+  lastImport,
+  onImport,
 }: {
   credits: AdminCredit[];
   associates: AdminAssociate[];
@@ -968,124 +1017,181 @@ function CreditsPanel({
   onFormChange: (form: CreditFormState) => void;
   onCreate: (event: FormEvent<HTMLFormElement>) => void;
   onStatusChange: (id: string, status: 'active' | 'settled' | 'archived') => void;
+  importState: DataState;
+  lastImport: AdminImportBatch | null;
+  onImport: (type: 'credits' | 'contributions', event: FormEvent<HTMLFormElement>) => void;
 }) {
   const activeAssociates = associates.filter((associate) => associate.status === 'active');
 
   return (
     <div className="grid gap-5 xl:grid-cols-[380px_1fr]">
-      <form onSubmit={onCreate} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-100 text-emerald-700">
-            <WalletCards size={22} />
+      <div className="space-y-5">
+        <form onSubmit={onCreate} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-100 text-emerald-700">
+              <WalletCards size={22} />
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Nuevo credito</p>
+              <h2 className="text-xl font-black text-slate-950">Registro administrativo</h2>
+            </div>
           </div>
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Nuevo credito</p>
-            <h2 className="text-xl font-black text-slate-950">Registro administrativo</h2>
-          </div>
-        </div>
 
-        <div className="mt-5 space-y-4">
-          <label className="block">
-            <span className="text-sm font-bold text-slate-800">Asociado</span>
-            <select
-              value={form.associate_id}
-              onChange={(event) => onFormChange({ ...form, associate_id: event.target.value })}
-              required
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-            >
-              {activeAssociates.length === 0 ? <option value="">No hay asociados activos</option> : null}
-              {activeAssociates.map((associate) => (
-                <option key={associate.id} value={associate.id}>{associate.full_name}</option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className="text-sm font-bold text-slate-800">Linea</span>
-            <select
-              value={form.credit_line}
-              onChange={(event) => onFormChange({ ...form, credit_line: event.target.value })}
-              required
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-            >
-              {creditLineOptions.map((line) => (
-                <option key={line} value={line}>{line}</option>
-              ))}
-            </select>
-          </label>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="mt-5 space-y-4">
             <label className="block">
-              <span className="text-sm font-bold text-slate-800">Saldo inicial</span>
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                value={form.initial_balance}
-                onChange={(event) => onFormChange({ ...form, initial_balance: event.target.value })}
+              <span className="text-sm font-bold text-slate-800">Asociado</span>
+              <select
+                value={form.associate_id}
+                onChange={(event) => onFormChange({ ...form, associate_id: event.target.value })}
                 required
                 className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-              />
+              >
+                {activeAssociates.length === 0 ? <option value="">No hay asociados activos</option> : null}
+                {activeAssociates.map((associate) => (
+                  <option key={associate.id} value={associate.id}>{associate.full_name}</option>
+                ))}
+              </select>
             </label>
             <label className="block">
-              <span className="text-sm font-bold text-slate-800">Saldo actual</span>
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                value={form.current_balance}
-                onChange={(event) => onFormChange({ ...form, current_balance: event.target.value })}
-                placeholder="Igual al inicial"
+              <span className="text-sm font-bold text-slate-800">Linea</span>
+              <select
+                value={form.credit_line}
+                onChange={(event) => onFormChange({ ...form, credit_line: event.target.value })}
+                required
                 className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-              />
+              >
+                {creditLineOptions.map((line) => (
+                  <option key={line} value={line}>{line}</option>
+                ))}
+              </select>
             </label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="text-sm font-bold text-slate-800">Saldo inicial</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={form.initial_balance}
+                  onChange={(event) => onFormChange({ ...form, initial_balance: event.target.value })}
+                  required
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-bold text-slate-800">Saldo actual</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={form.current_balance}
+                  onChange={(event) => onFormChange({ ...form, current_balance: event.target.value })}
+                  placeholder="Igual al inicial"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                />
+              </label>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <label className="block">
+                <span className="text-sm font-bold text-slate-800">Plazo</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={form.term_months}
+                  onChange={(event) => onFormChange({ ...form, term_months: event.target.value })}
+                  required
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-bold text-slate-800">Tasa</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.0001"
+                  value={form.interest_rate}
+                  onChange={(event) => onFormChange({ ...form, interest_rate: event.target.value })}
+                  required
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-bold text-slate-800">Cuota</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={form.installment_amount}
+                  onChange={(event) => onFormChange({ ...form, installment_amount: event.target.value })}
+                  required
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                />
+              </label>
+            </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <label className="block">
-              <span className="text-sm font-bold text-slate-800">Plazo</span>
-              <input
-                type="number"
-                min={1}
-                value={form.term_months}
-                onChange={(event) => onFormChange({ ...form, term_months: event.target.value })}
-                required
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm font-bold text-slate-800">Tasa</span>
-              <input
-                type="number"
-                min={0}
-                step="0.0001"
-                value={form.interest_rate}
-                onChange={(event) => onFormChange({ ...form, interest_rate: event.target.value })}
-                required
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm font-bold text-slate-800">Cuota</span>
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                value={form.installment_amount}
-                onChange={(event) => onFormChange({ ...form, installment_amount: event.target.value })}
-                required
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-              />
-            </label>
-          </div>
-        </div>
 
-        <button
-          type="submit"
-          disabled={activeAssociates.length === 0}
-          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-        >
-          Registrar credito
-          <WalletCards size={18} />
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={activeAssociates.length === 0}
+            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            Registrar credito
+            <WalletCards size={18} />
+          </button>
+        </form>
+
+        <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-slate-100 text-slate-700">
+              <UploadCloud size={22} />
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Carga masiva</p>
+              <h2 className="text-xl font-black text-slate-950">Importar XLSX</h2>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3">
+            <ImportForm
+              title="Creditos"
+              description="Columnas: documento, linea_credito, valor_inicial, saldo_actual, plazo_meses, tasa_interes, valor_cuota, estado."
+              disabled={importState === 'loading'}
+              onSubmit={(event) => onImport('credits', event)}
+            />
+            <ImportForm
+              title="Aportes"
+              description="Columnas: documento, periodo, fecha_corte, tipo_aporte, valor, saldo_despues, estado, referencia."
+              disabled={importState === 'loading'}
+              onSubmit={(event) => onImport('contributions', event)}
+            />
+          </div>
+
+          {importState === 'loading' ? (
+            <div className="mt-4 flex items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">
+              <Loader2 className="animate-spin" size={18} />
+              Procesando archivo
+            </div>
+          ) : null}
+
+          {lastImport ? (
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              <p className="font-black text-slate-950">{lastImport.original_filename}</p>
+              <p className="mt-1">
+                {lastImport.rows_created} creados, {lastImport.rows_updated} actualizados, {lastImport.rows_rejected} rechazados.
+              </p>
+              {lastImport.errors?.length ? (
+                <ul className="mt-2 space-y-1">
+                  {lastImport.errors.slice(0, 3).map((item, index) => (
+                    <li key={`${item.row ?? 'general'}-${index}`}>
+                      Fila {item.row ?? 'archivo'}: {item.message}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
+        </section>
+      </div>
 
       <section className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between gap-3">
@@ -1163,6 +1269,41 @@ function CreditsPanel({
         </div>
       </section>
     </div>
+  );
+}
+
+function ImportForm({
+  title,
+  description,
+  disabled,
+  onSubmit,
+}: {
+  title: string;
+  description: string;
+  disabled: boolean;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <form onSubmit={onSubmit} className="rounded-2xl border border-slate-200 bg-white p-4">
+      <p className="font-black text-slate-950">{title}</p>
+      <p className="mt-1 text-xs font-semibold leading-relaxed text-slate-500">{description}</p>
+      <input
+        type="file"
+        name="file"
+        accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        required
+        disabled={disabled}
+        className="mt-3 block w-full text-sm font-semibold text-slate-600 file:mr-3 file:rounded-xl file:border-0 file:bg-emerald-50 file:px-3 file:py-2 file:text-sm file:font-black file:text-emerald-700 disabled:cursor-not-allowed"
+      />
+      <button
+        type="submit"
+        disabled={disabled}
+        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+      >
+        Importar {title.toLowerCase()}
+        <UploadCloud size={17} />
+      </button>
+    </form>
   );
 }
 

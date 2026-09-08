@@ -17,6 +17,27 @@ export type AdminCredit = {
   } | null;
 };
 
+export type AdminImportBatch = {
+  id: string;
+  import_type: 'credits' | 'contributions' | string;
+  original_filename: string;
+  mime_type: string;
+  byte_size: number;
+  status: string;
+  rows_total: number;
+  rows_created: number;
+  rows_updated: number;
+  rows_rejected: number;
+  errors: Array<{ row: number | null; message: string }> | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string | null;
+  imported_by: {
+    id: string;
+    email: string;
+  } | null;
+};
+
 export type CreateCreditPayload = {
   associate_id: string;
   credit_line: string;
@@ -125,6 +146,30 @@ export async function updateAdminCredit(id: string, payload: UpdateCreditPayload
 export async function archiveAdminCredit(id: string): Promise<AdminCredit> {
   const response = await requestJson<{ data: AdminCredit }>(`/admin/credits/${id}/archive`, {
     method: 'POST',
+  });
+
+  return response.data;
+}
+
+export async function importAdminCredits(file: File): Promise<AdminImportBatch> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await requestJson<{ data: AdminImportBatch }>('/admin/import-batches/credits', {
+    method: 'POST',
+    body: formData,
+  });
+
+  return response.data;
+}
+
+export async function importAdminContributions(file: File): Promise<AdminImportBatch> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await requestJson<{ data: AdminImportBatch }>('/admin/import-batches/contributions', {
+    method: 'POST',
+    body: formData,
   });
 
   return response.data;

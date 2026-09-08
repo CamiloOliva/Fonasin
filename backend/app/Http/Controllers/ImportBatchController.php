@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Application\Audit\UseCases\RecordAuditEvent;
+use App\Application\Imports\Exceptions\CannotImportSpreadsheet;
+use App\Application\Imports\UseCases\ImportContributionMovements;
+use App\Application\Imports\UseCases\ImportCreditAccounts;
 use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Domain\Audit\Enums\AuditActorType;
 use App\Domain\Audit\Enums\AuditModule;
 use App\Domain\Imports\Enums\ImportAuditAction;
+use App\Http\Requests\Imports\ImportSpreadsheetRequest;
 use App\Models\ImportBatch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -56,6 +60,40 @@ class ImportBatchController extends Controller
         ]);
     }
 
+    public function importCredits(
+        ImportSpreadsheetRequest $request,
+        ImportCreditAccounts $importCreditAccounts,
+    ): JsonResponse {
+        try {
+            $batch = $importCreditAccounts(
+                file: $request->spreadsheet(),
+                actor: $request->user(),
+                ipHash: $this->ipHash($request),
+            );
+        } catch (CannotImportSpreadsheet $exception) {
+            return $this->importError($exception);
+        }
+
+        return response()->json(['data' => $this->batchPayload($batch)], 201);
+    }
+
+    public function importContributions(
+        ImportSpreadsheetRequest $request,
+        ImportContributionMovements $importContributionMovements,
+    ): JsonResponse {
+        try {
+            $batch = $importContributionMovements(
+                file: $request->spreadsheet(),
+                actor: $request->user(),
+                ipHash: $this->ipHash($request),
+            );
+        } catch (CannotImportSpreadsheet $exception) {
+            return $this->importError($exception);
+        }
+
+        return response()->json(['data' => $this->batchPayload($batch)], 201);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -88,5 +126,12 @@ class ImportBatchController extends Controller
         $ip = $request->ip();
 
         return $ip ? app(HashesSensitiveData::class)->ip($ip) : null;
+    }
+
+    private function importError(CannotImportSpreadsheet $exception): JsonResponse
+    {
+        return response()->json([
+            'message' => $exception->getMessage(),
+        ], 422);
     }
 }

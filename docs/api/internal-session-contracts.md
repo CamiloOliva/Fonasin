@@ -130,6 +130,107 @@ Respuesta:
 
 No se exponen `storage_key` ni `file_hash`.
 
-## Importacion XLSX pendiente
+## Importacion XLSX de creditos
 
-Los endpoints de carga masiva de creditos y aportes quedan para el siguiente bloque. Deben usar `import_batches`, almacenar el Excel en storage privado, calcular hash de archivo, validar columnas y devolver resumen de creados, actualizados y rechazados.
+```text
+POST /admin/import-batches/credits
+Autenticacion: sesion Laravel
+Middleware: auth, password.changed
+Autorizacion: admin
+Content-Type: multipart/form-data
+Campo: file
+Formato: XLSX, maximo 5 MB
+Auditoria: imports / import.completed o import.rejected
+```
+
+Columnas obligatorias:
+
+```text
+documento
+linea_credito
+valor_inicial
+saldo_actual
+plazo_meses
+tasa_interes
+valor_cuota
+estado
+```
+
+Reglas:
+
+- `documento` se usa solo para busqueda HMAC de asociado activo.
+- `linea_credito` debe ser una linea aprobada.
+- valores numericos no negativos.
+- `plazo_meses` entero mayor a cero.
+- `estado`: `active`, `settled` o `archived`.
+- documento + linea duplicado dentro del archivo se rechaza por fila.
+- un archivo ya importado para creditos se rechaza por hash.
+
+Respuesta:
+
+```json
+{
+  "data": {
+    "id": "uuid",
+    "import_type": "credits",
+    "original_filename": "creditos.xlsx",
+    "mime_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "byte_size": 4096,
+    "status": "completed_with_errors",
+    "rows_total": 10,
+    "rows_created": 8,
+    "rows_updated": 1,
+    "rows_rejected": 1,
+    "errors": [
+      {
+        "row": 7,
+        "message": "No existe un asociado activo para el documento informado."
+      }
+    ],
+    "started_at": "2026-09-30T15:00:00.000000Z",
+    "completed_at": "2026-09-30T15:01:00.000000Z",
+    "created_at": "2026-09-30T15:00:00.000000Z",
+    "imported_by": {
+      "id": "uuid",
+      "email": "admin@example.test"
+    }
+  }
+}
+```
+
+## Importacion XLSX de aportes
+
+```text
+POST /admin/import-batches/contributions
+Autenticacion: sesion Laravel
+Middleware: auth, password.changed
+Autorizacion: admin
+Content-Type: multipart/form-data
+Campo: file
+Formato: XLSX, maximo 5 MB
+Auditoria: imports / import.completed o import.rejected
+```
+
+Columnas obligatorias:
+
+```text
+documento
+periodo
+fecha_corte
+tipo_aporte
+valor
+saldo_despues
+estado
+referencia
+```
+
+Reglas:
+
+- `documento` se usa solo para busqueda HMAC de asociado activo.
+- `periodo` y `fecha_corte` usan formato `YYYY-MM-DD`.
+- `tipo_aporte`: `permanent_savings` o `voluntary_savings`.
+- `estado`: `registered`.
+- valores numericos no negativos.
+- documento + tipo + periodo + referencia duplicado dentro del archivo se rechaza por fila.
+- un archivo ya importado para aportes se rechaza por hash.
+- una correccion con la misma referencia revierte el movimiento anterior y registra el nuevo movimiento para no perder historial.
