@@ -44,17 +44,19 @@ import {
   archiveAdminCredit,
   createAdminCredit,
   fetchAdminCredits,
+  fetchAdminImportBatches,
   importAdminContributions,
   importAdminCredits,
   updateAdminCredit,
   type AdminCredit,
   type AdminImportBatch,
+  type AdminImportBatchPage,
 } from '../../services/adminCreditService';
 import { changeOwnPassword, type PortalUser } from '../../services/portalService';
 
 type SessionState = 'checking' | 'guest' | 'authenticated';
 type DataState = 'idle' | 'loading' | 'ready' | 'error';
-type AdminPanelView = 'applications' | 'associates' | 'credits';
+type AdminPanelView = 'applications' | 'associates' | 'credits' | 'imports';
 
 const statusLabels: Record<string, string> = {
   draft: 'Borrador',
@@ -82,6 +84,12 @@ const documentLabels: Record<string, string> = {
 };
 
 const creditLineOptions = ['FONALIBRE', 'FONAPEN', 'FONAPRIMA', 'FONAROTATIVO', 'FONAPORTES'];
+const defaultImportMeta: AdminImportBatchPage['meta'] = {
+  current_page: 1,
+  last_page: 1,
+  per_page: 50,
+  total: 0,
+};
 
 function formatDate(value: string | null): string {
   if (!value) return 'Pendiente';
@@ -115,13 +123,17 @@ export default function AdminFonasin() {
   const [dataState, setDataState] = useState<DataState>('idle');
   const [associateDataState, setAssociateDataState] = useState<DataState>('idle');
   const [creditDataState, setCreditDataState] = useState<DataState>('idle');
+  const [importHistoryState, setImportHistoryState] = useState<DataState>('idle');
   const [activeView, setActiveView] = useState<AdminPanelView>('applications');
   const [user, setUser] = useState<PortalUser | null>(null);
   const [applications, setApplications] = useState<AdminAffiliationApplication[]>([]);
   const [associates, setAssociates] = useState<AdminAssociate[]>([]);
   const [credits, setCredits] = useState<AdminCredit[]>([]);
+  const [importBatches, setImportBatches] = useState<AdminImportBatch[]>([]);
+  const [importMeta, setImportMeta] = useState<AdminImportBatchPage['meta']>(defaultImportMeta);
   const [importState, setImportState] = useState<DataState>('idle');
   const [lastImport, setLastImport] = useState<AdminImportBatch | null>(null);
+  const [importTypeFilter, setImportTypeFilter] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<AdminAffiliationDetail | null>(null);
   const [email, setEmail] = useState('');
@@ -237,6 +249,23 @@ export default function AdminFonasin() {
     }
   }
 
+  async function loadImportBatches(type = importTypeFilter, page = 1) {
+    setImportHistoryState('loading');
+    setError(null);
+
+    try {
+      const response = await fetchAdminImportBatches(type, page);
+      setImportBatches(response.data);
+      setImportMeta(response.meta);
+      setImportHistoryState('ready');
+    } catch (caught) {
+      setImportHistoryState('error');
+      setImportBatches([]);
+      setImportMeta(defaultImportMeta);
+      setError(caught instanceof Error ? caught.message : 'No fue posible cargar el historial de importaciones.');
+    }
+  }
+
   async function openApplications() {
     setActiveView('applications');
     await loadApplications(selectedId);
@@ -250,6 +279,11 @@ export default function AdminFonasin() {
   async function openCredits() {
     setActiveView('credits');
     await loadCredits();
+  }
+
+  async function openImports() {
+    setActiveView('imports');
+    await loadImportBatches();
   }
 
   useEffect(() => {
@@ -495,6 +529,12 @@ export default function AdminFonasin() {
         await loadCredits();
       }
 
+      if (activeView === 'imports') {
+        await loadImportBatches(importTypeFilter, importMeta.current_page);
+      } else {
+        setImportBatches((current) => [batch, ...current].slice(0, 50));
+      }
+
       setMessage(batch.status === 'completed'
         ? 'Importacion completada correctamente.'
         : 'Importacion procesada con observaciones.');
@@ -617,7 +657,9 @@ export default function AdminFonasin() {
                   ? 'Solicitudes de afiliacion'
                   : activeView === 'associates'
                     ? 'Administracion de asociados'
-                    : 'Administracion de creditos'}
+                    : activeView === 'credits'
+                      ? 'Administracion de creditos'
+                      : 'Historial de importaciones'}
               </h1>
               <div className="mt-3 flex flex-wrap gap-2">
                 {(user?.roles ?? []).map((role) => (
@@ -633,6 +675,7 @@ export default function AdminFonasin() {
                 onClick={() => {
                   if (activeView === 'applications') return loadApplications(selectedId);
                   if (activeView === 'associates') return loadAssociates();
+                  if (activeView === 'imports') return loadImportBatches();
 
                   return loadCredits();
                 }}
@@ -692,6 +735,18 @@ export default function AdminFonasin() {
           >
             <WalletCards size={16} />
             Creditos
+          </button>
+          <button
+            type="button"
+            onClick={openImports}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black transition ${
+              activeView === 'imports'
+                ? 'bg-emerald-600 text-white'
+                : 'bg-white text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <UploadCloud size={16} />
+            Importaciones
           </button>
         </nav>
 
@@ -782,7 +837,7 @@ export default function AdminFonasin() {
             onCreate={handleCreateAssociate}
             onStatusChange={handleAssociateStatus}
           />
-        ) : (
+        ) : activeView === 'credits' ? (
           <CreditsPanel
             credits={credits}
             associates={associates}
@@ -794,6 +849,18 @@ export default function AdminFonasin() {
             importState={importState}
             lastImport={lastImport}
             onImport={handleImportSpreadsheet}
+          />
+        ) : (
+          <ImportHistoryPanel
+            batches={importBatches}
+            meta={importMeta}
+            dataState={importHistoryState}
+            typeFilter={importTypeFilter}
+            onTypeFilterChange={(value) => {
+              setImportTypeFilter(value);
+              void loadImportBatches(value, 1);
+            }}
+            onPageChange={(page) => loadImportBatches(importTypeFilter, page)}
           />
         )}
       </div>
@@ -1305,6 +1372,160 @@ function ImportForm({
       </button>
     </form>
   );
+}
+
+function ImportHistoryPanel({
+  batches,
+  meta,
+  dataState,
+  typeFilter,
+  onTypeFilterChange,
+  onPageChange,
+}: {
+  batches: AdminImportBatch[];
+  meta: AdminImportBatchPage['meta'];
+  dataState: DataState;
+  typeFilter: string;
+  onTypeFilterChange: (value: string) => void;
+  onPageChange: (page: number) => void;
+}) {
+  const canGoBack = meta.current_page > 1 && dataState !== 'loading';
+  const canGoNext = meta.current_page < meta.last_page && dataState !== 'loading';
+
+  return (
+    <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Historial</p>
+          <h2 className="mt-1 text-2xl font-black text-slate-950">Importaciones operativas</h2>
+          <p className="mt-1 text-sm font-semibold text-slate-500">{meta.total} registros encontrados</p>
+        </div>
+        <label className="w-full max-w-xs">
+          <span className="text-sm font-bold text-slate-800">Tipo de carga</span>
+          <select
+            value={typeFilter}
+            onChange={(event) => onTypeFilterChange(event.target.value)}
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+          >
+            <option value="">Todas</option>
+            <option value="credits">Creditos</option>
+            <option value="contributions">Aportes</option>
+          </select>
+        </label>
+      </div>
+
+      {dataState === 'loading' ? (
+        <div className="mt-5 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600">
+          <Loader2 className="animate-spin" size={18} />
+          Cargando importaciones
+        </div>
+      ) : null}
+
+      <div className="mt-5 overflow-x-auto">
+        <table className="w-full min-w-[960px] text-left text-sm">
+          <thead>
+            <tr className="border-b border-slate-200 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+              <th className="py-3 pr-4">Archivo</th>
+              <th className="py-3 pr-4">Tipo</th>
+              <th className="py-3 pr-4">Estado</th>
+              <th className="py-3 pr-4">Filas</th>
+              <th className="py-3 pr-4">Resultado</th>
+              <th className="py-3 pr-4">Responsable</th>
+              <th className="py-3 pr-4">Fecha</th>
+            </tr>
+          </thead>
+          <tbody>
+            {batches.map((batch) => (
+              <tr key={batch.id} className="border-b border-slate-100 align-top last:border-0">
+                <td className="py-4 pr-4">
+                  <p className="font-black text-slate-950">{batch.original_filename}</p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">{formatBytes(batch.byte_size)}</p>
+                </td>
+                <td className="py-4 pr-4 text-slate-700">{importTypeLabel(batch.import_type)}</td>
+                <td className="py-4 pr-4">
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-700">
+                    {importStatusLabel(batch.status)}
+                  </span>
+                </td>
+                <td className="py-4 pr-4 text-slate-700">{batch.rows_total}</td>
+                <td className="py-4 pr-4 text-slate-700">
+                  <p>{batch.rows_created} creadas / {batch.rows_updated} actualizadas / {batch.rows_rejected} rechazadas</p>
+                  {batch.errors?.length ? (
+                    <ul className="mt-2 space-y-1 text-xs text-amber-700">
+                      {batch.errors.slice(0, 3).map((item, index) => (
+                        <li key={`${batch.id}-${item.row ?? 'archivo'}-${index}`}>
+                          Fila {item.row ?? 'archivo'}: {item.message}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </td>
+                <td className="py-4 pr-4 text-slate-700">{batch.imported_by?.email ?? 'Sistema'}</td>
+                <td className="py-4 pr-4 text-slate-700">{formatDate(batch.completed_at ?? batch.created_at)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {batches.length === 0 && dataState !== 'loading' ? (
+          <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">
+            No hay importaciones registradas.
+          </p>
+        ) : null}
+      </div>
+
+      <div className="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm font-bold text-slate-600">
+          Pagina {meta.current_page} de {meta.last_page}
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            disabled={!canGoBack}
+            onClick={() => onPageChange(meta.current_page - 1)}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
+          >
+            Anterior
+          </button>
+          <button
+            type="button"
+            disabled={!canGoNext}
+            onClick={() => onPageChange(meta.current_page + 1)}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function importTypeLabel(type: string): string {
+  const labels: Record<string, string> = {
+    credits: 'Creditos',
+    contributions: 'Aportes',
+  };
+
+  return labels[type] ?? type;
+}
+
+function importStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    processing: 'Procesando',
+    completed: 'Completada',
+    completed_with_errors: 'Con observaciones',
+    failed: 'Fallida',
+  };
+
+  return labels[status] ?? status;
+}
+
+function formatBytes(value: number): string {
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
+
+  return `${(value / 1024 / 1024).toFixed(1)} MB`;
 }
 
 type ApplicationDetailProps = {
