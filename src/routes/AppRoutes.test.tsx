@@ -17,6 +17,7 @@ vi.mock('../services/portalService', () => ({
   changeOwnPassword: vi.fn(),
   currentPortalUser: vi.fn().mockRejectedValue(new Error('guest')),
   fetchPortalAffiliation: vi.fn().mockResolvedValue(null),
+  fetchPortalContributions: vi.fn().mockResolvedValue({ state: 'module_disabled', account: null, movements: [] }),
   fetchPortalCredits: vi.fn().mockResolvedValue([]),
   loginPortal: vi.fn(),
   logoutPortal: vi.fn(),
@@ -197,4 +198,30 @@ describe('AppRoutes', () => {
 
     expect(screen.getByRole('heading', { name: /un fondo que te acompa/i })).toBeInTheDocument();
   });
-});
+
+  it('limpia el borrador temporal al cerrar sesion', async () => {
+    const user = userEvent.setup();
+    window.sessionStorage.setItem('fonasin.affiliation.draft.v1', JSON.stringify({
+      savedAt: Date.now(),
+      id: 'draft-1',
+      readUrl: '/signed-read-url',
+      status: 'draft',
+    }));
+    vi.mocked(portalService.currentPortalUser).mockResolvedValueOnce({
+      id: 'associate-user',
+      email: 'associate@fonasin.test',
+      roles: ['associate'],
+      must_change_password: false,
+    });
+    vi.mocked(portalService.fetchPortalCredits).mockResolvedValueOnce([]);
+    vi.mocked(portalService.logoutPortal).mockResolvedValueOnce();
+
+    renderRoute('/portal-asociado');
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /cerrar sesion/i })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('button', { name: /cerrar sesion/i }));
+
+    expect(window.sessionStorage.getItem('fonasin.affiliation.draft.v1')).toBeNull();
+  });});

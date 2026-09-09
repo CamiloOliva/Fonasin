@@ -18,12 +18,14 @@ import {
   type PortalContributions,
   type PortalCredit,
   type PortalUser,
+  PortalServiceError,
 } from '../../services/portalService';
 
 type SessionState = 'checking' | 'guest' | 'authenticated';
-type CreditsState = 'idle' | 'loading' | 'ready' | 'error';
-type ContributionsState = 'idle' | 'loading' | 'ready' | 'error';
-type AffiliationState = 'idle' | 'loading' | 'ready' | 'error';
+type PrivateDataState = 'idle' | 'loading' | 'ready' | 'error' | 'forbidden' | 'expired';
+type CreditsState = PrivateDataState;
+type ContributionsState = PrivateDataState;
+type AffiliationState = PrivateDataState;
 type PortalTab = 'statement' | 'contributions' | 'form';
 const AFFILIATION_DRAFT_STORAGE_KEY = 'fonasin.affiliation.draft.v1';
 const AFFILIATION_DRAFT_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -166,6 +168,11 @@ function clearAffiliationUpdateDraft(): void {
     // No hay accion necesaria si el navegador bloquea el almacenamiento de sesión.
   }
 }
+function privateDataErrorState(caught: unknown): 'error' | 'forbidden' | 'expired' {
+  if (caught instanceof PortalServiceError && caught.status === 403) return 'forbidden';
+  if (caught instanceof PortalServiceError && (caught.status === 401 || caught.status === 419)) return 'expired';
+  return 'error';
+}
 export default function PortalAsociado() {
   const navigate = useNavigate();
   const [sessionState, setSessionState] = useState<SessionState>('checking');
@@ -203,7 +210,7 @@ export default function PortalAsociado() {
       setCreditsState('ready');
     } catch (caught) {
       setCredits([]);
-      setCreditsState('error');
+      setCreditsState(privateDataErrorState(caught));
       setError(caught instanceof Error ? caught.message : 'No fue posible cargar tus creditos.');
     }
   }
@@ -218,7 +225,7 @@ export default function PortalAsociado() {
       setContributionsState('ready');
     } catch (caught) {
       setContributions(null);
-      setContributionsState('error');
+      setContributionsState(privateDataErrorState(caught));
       setError(caught instanceof Error ? caught.message : 'No fue posible cargar tus aportes.');
     }
   }
@@ -233,7 +240,7 @@ export default function PortalAsociado() {
       setAffiliationState('ready');
     } catch (caught) {
       setAffiliation(null);
-      setAffiliationState('error');
+      setAffiliationState(privateDataErrorState(caught));
       setError(caught instanceof Error ? caught.message : 'No fue posible cargar tu formulario.');
     }
   }
@@ -589,9 +596,9 @@ export default function PortalAsociado() {
                 </div>
               ) : null}
 
-              {creditsState === 'error' ? (
+              {creditsState === 'error' || creditsState === 'forbidden' || creditsState === 'expired' ? (
                 <div className="mt-5 rounded-xl border border-amber-100 bg-amber-50 px-4 py-4 text-sm font-semibold text-amber-800">
-                  {error ?? 'No fue posible cargar tus creditos.'}
+                  {creditsState === 'forbidden' ? 'No tienes permisos para consultar tus creditos.' : creditsState === 'expired' ? 'Tu sesion vencio. Cierra sesion e inicia nuevamente.' : error ?? 'No fue posible cargar tus creditos.'}
                 </div>
               ) : null}
 
@@ -664,9 +671,9 @@ export default function PortalAsociado() {
                 </div>
               ) : null}
 
-              {contributionsState === 'error' ? (
+              {contributionsState === 'error' || contributionsState === 'forbidden' || contributionsState === 'expired' ? (
                 <div className="mt-5 rounded-xl border border-amber-100 bg-amber-50 px-4 py-4 text-sm font-semibold text-amber-800">
-                  {error ?? 'No fue posible cargar tus aportes.'}
+                  {contributionsState === 'forbidden' ? 'No tienes permisos para consultar tus aportes.' : contributionsState === 'expired' ? 'Tu sesion vencio. Cierra sesion e inicia nuevamente.' : error ?? 'No fue posible cargar tus aportes.'}
                 </div>
               ) : null}
 
@@ -762,9 +769,9 @@ export default function PortalAsociado() {
                 </div>
               ) : null}
 
-              {affiliationState === 'error' ? (
+              {affiliationState === 'error' || affiliationState === 'forbidden' || affiliationState === 'expired' ? (
                 <div className="mt-5 rounded-xl border border-amber-100 bg-amber-50 px-4 py-4 text-sm font-semibold text-amber-800">
-                  {error ?? 'No fue posible cargar tu formulario.'}
+                  {affiliationState === 'forbidden' ? 'No tienes permisos para consultar tus documentos.' : affiliationState === 'expired' ? 'Tu sesion vencio. Cierra sesion e inicia nuevamente.' : error ?? 'No fue posible cargar tu formulario.'}
                 </div>
               ) : null}
 

@@ -33,7 +33,7 @@ import economicActivitiesCatalog from '../../data/catalogs/actividades_economica
 import nationalitiesCatalog from '../../data/catalogs/nacionalidades.json';
 import countriesCatalog from '../../data/catalogs/paises.json';
 
-type BackendMode = 'loading' | 'ready' | 'local';
+type BackendMode = 'loading' | 'ready' | 'local' | 'unavailable';
 type StepKey = 'personal' | 'employment' | 'financial' | 'beneficiaries' | 'sarlaft' | 'final' | 'review';
 type RequiredDocumentType = 'identity' | 'employment_certificate';
 
@@ -218,6 +218,7 @@ const MIN_MONTHLY_SALARY = 1750905;
 const MONEY_MAX_VALUE = 100000000;
 const MONEY_MAX_DIGITS = String(MONEY_MAX_VALUE).length;
 const MONEY_MAX_DISPLAY_LENGTH = '100.000.000'.length;
+const MAX_DOCUMENT_BYTES = 5 * 1024 * 1024;
 const currencyFieldKeys = new Set([
   'monthlySalary',
   'principalIncome',
@@ -1313,6 +1314,26 @@ export default function AffiliationForm() {
   const [selectedLegalDocument, setSelectedLegalDocument] = useState<(typeof legalDocuments)[number]>(legalDocuments[0]);
   const [state, setState] = useState<SectionState>(createInitialState);
 
+  function handleDocumentSelection(key: 'identityDocumentFile' | 'employmentCertificateFile', file: File | null): void {
+    setError(null);
+    if (!file) {
+      setState((current) => ({ ...current, finalStep: { ...current.finalStep, [key]: null } }));
+      return;
+    }
+
+    if (file.type !== 'application/pdf' || !file.name.toLowerCase().endsWith('.pdf')) {
+      setError('El documento debe estar en formato PDF.');
+      return;
+    }
+
+    if (file.size > MAX_DOCUMENT_BYTES) {
+      setError('Cada documento debe pesar maximo 5 MB.');
+      return;
+    }
+
+    setState((current) => ({ ...current, finalStep: { ...current.finalStep, [key]: file } }));
+  }
+
   const progress = useMemo(() => Math.round(((step + 1) / stepLabels.length) * 100), [step]);
   const uploadedDocumentNames = useMemo(() => new Map(
     (draft?.documents ?? []).map((document) => [document.document_type, document.original_filename]),
@@ -1353,8 +1374,13 @@ export default function AffiliationForm() {
         setBackendMessage(`Borrador ${response.id} listo para sincronizar secciones.`);
       } catch {
         if (!active) return;
-        setBackendMode('local');
-        setBackendMessage('Modo local activo. El backend aun no responde en este entorno.');
+        if (import.meta.env.DEV) {
+          setBackendMode('local');
+          setBackendMessage('Modo local de desarrollo activo. El backend aun no responde en este entorno.');
+        } else {
+          setBackendMode('unavailable');
+          setBackendMessage('No fue posible conectar con el backend. El formulario no puede enviarse en este momento.');
+        }
       }
     })();
     return () => {
@@ -1421,6 +1447,10 @@ export default function AffiliationForm() {
           || (!state.finalStep.employmentCertificateFile && !uploadedDocumentTypes.has('employment_certificate'))
         ) {
           throw new Error('Debes adjuntar documento de identidad y certificado laboral en PDF.');
+        }
+
+        if (backendMode === 'unavailable') {
+          throw new Error('El backend no esta disponible. Intenta nuevamente mas tarde.');
         }
 
         if (draft && backendMode === 'ready') {
@@ -2539,12 +2569,7 @@ export default function AffiliationForm() {
                           type="file"
                           accept=".pdf,application/pdf"
                           className="sr-only"
-                          onChange={(event) =>
-                            setState((current) => ({
-                              ...current,
-                              finalStep: { ...current.finalStep, [document.key]: event.target.files?.[0] ?? null },
-                            }))
-                          }
+                          onChange={(event) => handleDocumentSelection(document.key, event.target.files?.[0] ?? null)}
                         />
                       </span>
                     </div>

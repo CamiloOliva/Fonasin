@@ -96,6 +96,16 @@ type RequestOptions = {
   headers?: HeadersInit;
 };
 
+export class PortalServiceError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'PortalServiceError';
+    this.status = status;
+  }
+}
+
 const backendBaseUrl = import.meta.env.VITE_BACKEND_BASE_URL?.trim().replace(/\/$/, '') ?? '';
 let cachedCsrfToken = '';
 
@@ -158,7 +168,7 @@ async function requestJson<T>(path: string, options: RequestOptions = {}, retrie
       ? payload.message
       : 'No fue posible completar la solicitud.';
 
-    throw new Error(translatePortalError(message, response.status));
+    throw new PortalServiceError(translatePortalError(message, response.status), response.status);
   }
 
   return payload as T;
