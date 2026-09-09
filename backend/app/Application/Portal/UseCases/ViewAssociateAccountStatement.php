@@ -30,8 +30,8 @@ class ViewAssociateAccountStatement
      */
     public function __invoke(User $actor, ?string $ipHash = null): array
     {
-        $credits = ($this->viewAssociateCredits)($actor, $ipHash);
-        $contributions = ($this->viewAssociateContributions)($actor, $ipHash);
+        $credits = ($this->viewAssociateCredits)($actor, ipHash: $ipHash);
+        $contributions = ($this->viewAssociateContributions)($actor, ipHash: $ipHash);
         $hasCredits = $credits->isNotEmpty();
         $hasContributions = $contributions['state'] === 'available';
 
