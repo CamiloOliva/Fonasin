@@ -2,6 +2,97 @@
 
 Estas rutas no son API publica externa. Son contratos usados por el frontend React actual contra Laravel con cookie de sesion, CSRF cuando aplica y autorizacion en servidor.
 
+## Estado de cuenta consolidado del asociado
+
+```text
+GET /portal/account-statement
+Autenticacion: sesion Laravel
+Middleware: auth, password.changed
+Actor: usuario con asociado activo
+Autorizacion: el asociado se resuelve desde la sesion; no se acepta associate_id del navegador
+Auditoria: portal / portal.account_statement.viewed, mas los eventos internos de creditos y aportes
+```
+
+Respuesta sin datos:
+
+```json
+{
+  "data": {
+    "state": "empty",
+    "generated_at": "2026-09-30T15:00:00.000000Z",
+    "associate": {
+      "id": "uuid",
+      "full_name": "Persona Asociada",
+      "document_type": "CC",
+      "status": "active"
+    },
+    "credits": {
+      "state": "empty",
+      "total_current_balance": 0,
+      "items": []
+    },
+    "contributions": {
+      "state": "empty",
+      "account": null,
+      "movements": []
+    }
+  }
+}
+```
+
+Respuesta con datos:
+
+```json
+{
+  "data": {
+    "state": "available",
+    "generated_at": "2026-09-30T15:00:00.000000Z",
+    "associate": {
+      "id": "uuid",
+      "full_name": "Persona Asociada",
+      "document_type": "CC",
+      "status": "active"
+    },
+    "credits": {
+      "state": "available",
+      "total_current_balance": 1200000,
+      "items": [
+        {
+          "id": "uuid",
+          "credit_line": "Libre inversion",
+          "initial_balance": "1500000.00",
+          "current_balance": "1200000.00",
+          "term_months": 12,
+          "interest_rate": "1.2000",
+          "installment_amount": "125000.00",
+          "status": "active"
+        }
+      ]
+    },
+    "contributions": {
+      "state": "available",
+      "account": {
+        "id": "uuid",
+        "permanent_savings_balance": "300000.00",
+        "voluntary_savings_balance": "50000.00",
+        "total_balance": "350000.00",
+        "status": "active",
+        "last_period": "2026-09-01",
+        "last_cut_off_date": "2026-09-30",
+        "last_movement_at": "2026-09-30T15:00:00.000000Z"
+      },
+      "movements": []
+    }
+  }
+}
+```
+
+Errores:
+
+- `401`: sesion ausente.
+- `423`: debe cambiar contrasena temporal.
+- `422`: usuario sin asociado o asociado inactivo.
+
 ## Consulta de aportes del asociado
 
 ```text

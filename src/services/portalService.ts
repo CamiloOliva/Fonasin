@@ -19,7 +19,6 @@ export type ChangePasswordPayload = {
 
 export type PortalCredit = {
   id: string;
-  associate_id: string;
   credit_line: string;
   initial_balance: string;
   current_balance: string;
@@ -27,12 +26,10 @@ export type PortalCredit = {
   interest_rate: string;
   installment_amount: string;
   status: string;
-  registered_by_user_id: string;
 };
 
 export type PortalContributionAccount = {
   id: string;
-  associate_id: string;
   permanent_savings_balance: string;
   voluntary_savings_balance: string;
   total_balance: string;
@@ -59,6 +56,23 @@ export type PortalContributions = {
   state: 'module_disabled' | 'empty' | 'available';
   account: PortalContributionAccount | null;
   movements: PortalContributionMovement[];
+};
+
+export type PortalAccountStatement = {
+  state: 'empty' | 'available';
+  generated_at: string;
+  associate: {
+    id: string;
+    full_name: string;
+    document_type: string;
+    status: string;
+  };
+  credits: {
+    state: 'empty' | 'available';
+    total_current_balance: number;
+    items: PortalCredit[];
+  };
+  contributions: PortalContributions;
 };
 
 export type PortalAffiliationDocument = {
@@ -230,6 +244,12 @@ export async function fetchPortalCredits(): Promise<PortalCredit[]> {
 
 export async function fetchPortalContributions(): Promise<PortalContributions> {
   const response = await requestJson<{ data: PortalContributions }>('/portal/contributions');
+
+  return response.data;
+}
+
+export async function fetchPortalAccountStatement(): Promise<PortalAccountStatement> {
+  const response = await requestJson<{ data: PortalAccountStatement }>('/portal/account-statement');
 
   return response.data;
 }

@@ -3,15 +3,20 @@
 namespace Tests\Feature;
 
 use App\Application\Affiliation\UseCases\SaveApplicationSection;
+use App\Domain\Audit\Enums\AuditModule;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
 use App\Domain\Affiliation\Enums\ApplicationDocumentStatus;
 use App\Domain\Affiliation\Enums\ApplicationDocumentType;
+use App\Domain\Portal\Enums\PortalAuditAction;
 use App\Models\AffiliationApplication;
 use App\Models\ApplicationDocument;
 use App\Models\ApplicationSection;
 use App\Models\Associate;
+use App\Models\ContributionAccount;
+use App\Models\ContributionMovement;
+use App\Models\CreditAccount;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\QueryException;
@@ -182,12 +187,26 @@ class PortalAffiliationHttpTest extends TestCase
 
         $user = User::factory()->create([
             'email' => 'associate.flow@example.test',
-            'password' => Hash::make('correct-password'),
+            'password' => Hash::make('temporary-123'),
+            'must_change_password' => true,
         ]);
         $role = Role::query()->firstOrCreate(['name' => 'associate']);
         $user->roles()->attach($role);
 
         $associate = $this->createAssociate(['user_id' => $user->id]);
+        $this->createCredit($associate, [
+            'credit_line' => 'Libre inversion',
+            'current_balance' => 1200000,
+        ]);
+        $contributionAccount = $this->createContributionAccount($associate, [
+            'permanent_savings_balance' => 300000,
+            'voluntary_savings_balance' => 50000,
+            'total_balance' => 350000,
+        ]);
+        $this->createContributionMovement($contributionAccount, [
+            'reference' => 'APORTE-001',
+            'balance_after' => 350000,
+        ]);
         $application = $this->createAffiliationApplication($associate, AffiliationApplicationStatus::Enabled);
         $this->saveCompletedSection($application, AffiliationApplicationStep::Personal);
         $this->saveCompletedSection($application, AffiliationApplicationStep::Employment);
@@ -197,9 +216,32 @@ class PortalAffiliationHttpTest extends TestCase
 
         $this->postJson('/login', [
             'email' => 'associate.flow@example.test',
-            'password' => 'correct-password',
+            'password' => 'temporary-123',
         ])->assertOk()
+            ->assertJsonPath('data.must_change_password', true)
             ->assertJsonPath('data.roles.0', 'associate');
+
+        $this->getJson('/portal/account-statement')
+            ->assertStatus(423)
+            ->assertJsonPath('message', 'Password change is required before continuing.');
+
+        $this->postJson('/auth/password', [
+            'current_password' => 'temporary-123',
+            'password' => 'NuevaClave123',
+            'password_confirmation' => 'NuevaClave123',
+        ])->assertOk()
+            ->assertJsonPath('data.must_change_password', false);
+
+        $this->getJson('/portal/account-statement?associate_id='.Str::uuid())
+            ->assertOk()
+            ->assertJsonPath('data.state', 'available')
+            ->assertJsonPath('data.associate.id', $associate->id)
+            ->assertJsonPath('data.credits.state', 'available')
+            ->assertJsonPath('data.credits.total_current_balance', 1200000)
+            ->assertJsonPath('data.credits.items.0.credit_line', 'Libre inversion')
+            ->assertJsonPath('data.contributions.state', 'available')
+            ->assertJsonPath('data.contributions.account.total_balance', '350000.00')
+            ->assertJsonPath('data.contributions.movements.0.reference', 'APORTE-001');
 
         $portal = $this->getJson('/portal/affiliation')
             ->assertOk()
@@ -230,6 +272,20 @@ class PortalAffiliationHttpTest extends TestCase
         $this->postJson('/portal/affiliation/update-draft')
             ->assertCreated()
             ->assertJsonPath('data.id', $draft['id']);
+
+        $this->postJson('/logout')
+            ->assertOk()
+            ->assertJsonPath('message', 'Logged out.');
+
+        $this->getJson('/portal/account-statement')->assertUnauthorized();
+
+        $this->assertDatabaseHas('audit_events', [
+            'module' => AuditModule::Portal->value,
+            'actor_user_id' => $user->id,
+            'action' => PortalAuditAction::AccountStatementViewed->value,
+            'subject_type' => 'associate',
+            'subject_id' => $associate->id,
+        ]);
     }
 
     public function test_database_rejects_duplicate_active_draft_for_same_associate(): void
@@ -307,6 +363,52 @@ class PortalAffiliationHttpTest extends TestCase
             'byte_size' => 2048,
             'status' => ApplicationDocumentStatus::Uploaded->value,
             'uploaded_at' => now()->startOfSecond(),
+        ]);
+    }
+
+    private function createCredit(Associate $associate, array $overrides = []): CreditAccount
+    {
+        return CreditAccount::query()->create([
+            'associate_id' => $associate->id,
+            'credit_line' => 'Libre inversion',
+            'initial_balance' => 1500000,
+            'current_balance' => 1000000,
+            'term_months' => 12,
+            'interest_rate' => 1.2,
+            'installment_amount' => 125000,
+            'status' => 'active',
+            'registered_by_user_id' => $associate->user_id,
+            ...$overrides,
+        ]);
+    }
+
+    private function createContributionAccount(Associate $associate, array $overrides = []): ContributionAccount
+    {
+        return ContributionAccount::query()->create([
+            'associate_id' => $associate->id,
+            'permanent_savings_balance' => 0,
+            'voluntary_savings_balance' => 0,
+            'total_balance' => 0,
+            'status' => 'active',
+            ...$overrides,
+        ]);
+    }
+
+    private function createContributionMovement(ContributionAccount $account, array $overrides = []): ContributionMovement
+    {
+        return ContributionMovement::query()->create([
+            'contribution_account_id' => $account->id,
+            'associate_id' => $account->associate_id,
+            'movement_type' => 'permanent_savings',
+            'period' => '2026-09-01',
+            'cut_off_date' => '2026-09-30',
+            'amount' => 350000,
+            'balance_after' => 350000,
+            'status' => 'registered',
+            'source' => 'manual',
+            'reference' => 'APORTE-001',
+            'recorded_at' => now(),
+            ...$overrides,
         ]);
     }
 
