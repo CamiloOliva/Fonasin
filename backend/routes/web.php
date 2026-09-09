@@ -8,6 +8,7 @@ use App\Http\Controllers\ContributionController;
 use App\Http\Controllers\CreditAccountController;
 use App\Http\Controllers\FpqrsSubmissionController;
 use App\Http\Controllers\ImportBatchController;
+use App\Http\Controllers\PortalAccountStatementController;
 use App\Http\Controllers\PortalAffiliationController;
 use Illuminate\Support\Facades\Route;
 
@@ -155,6 +156,10 @@ Route::middleware(['auth', 'password.changed'])
             ->middleware('can:import,App\Models\ImportBatch')
             ->name('contributions.store');
     });
+
+Route::middleware(['auth', 'password.changed'])
+    ->get('/portal/account-statement', [PortalAccountStatementController::class, 'show'])
+    ->name('portal.account-statement.show');
 
 Route::middleware(['auth', 'password.changed'])
     ->get('/portal/credits', [CreditAccountController::class, 'mine'])
