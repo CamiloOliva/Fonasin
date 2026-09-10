@@ -68,6 +68,8 @@ Si el cambio o la auditoria fallan, se revierte todo. No registrar diffs complet
 
 La primera implementacion reutilizable es `App\Application\Audit\UseCases\RecordAuditEvent`. Los casos de uso sensibles deben invocarla dentro de su propia transaccion de negocio. El envio de afiliacion registra `application.submitted` con metadatos redactados de cambio de estado y version de politica. La generacion automatica del resumen de afiliacion y la autorizacion de descuento por nomina registra `document.generated` sin incluir datos personales o financieros en `metadata`. Las acciones de backoffice de afiliacion registran `application.review_started`, `application.correction_requested`, `application.approved`, `application.enabled` y `application.rejected` sin guardar razones completas ni documentos en `metadata`. La carga de libranza externa firmada registra `document.uploaded` con metadatos tecnicos del archivo y archivado logico de versiones previas. FPQRS registra `submission.received`, `delivery.sent` o `delivery.failed` sin guardar correo, mensaje completo ni contenido del adjunto en auditoria.
 
+Las importaciones XLSX registran el resultado del lote y eventos `credit.registered` o `credit.updated` por credito afectado con el mismo `correlation_id`. Los eventos de actualizacion incluyen solo nombres de campos cambiados y, cuando aplica, la transicion de estado; nunca incluyen saldos, tasas, cuotas ni documentos.
+
 ## Consulta operativa
 
 Las vistas administrativas deben filtrar eventos por modulo, recurso, actor, accion y rango de fechas. El detalle se trata como evidencia operativa y es de solo lectura.

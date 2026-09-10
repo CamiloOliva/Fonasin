@@ -191,6 +191,10 @@ class SchemaContractTest extends TestCase
         $this->assertIndex('contribution_movements', ['associate_id', 'period']);
         $this->assertIndex('contribution_movements', ['contribution_account_id', 'recorded_at']);
         $this->assertIndex('contribution_movements', ['associate_id', 'movement_type', 'period', 'source_row_hash'], true);
+
+        $columns = collect(Schema::getColumns('contribution_movements'))->keyBy('name');
+        $this->assertFalse($columns->get('reference')['nullable']);
+        $this->assertFalse($columns->get('source_row_hash')['nullable']);
     }
 
     public function test_import_batches_have_the_expected_contract(): void

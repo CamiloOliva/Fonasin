@@ -3,9 +3,11 @@
 namespace App\Application\Imports\UseCases;
 
 use App\Application\Audit\UseCases\RecordAuditEvent;
+use App\Application\Contributions\UseCases\RebuildContributionAccountBalances;
 use App\Application\Imports\Contracts\ReadsSpreadsheetRows;
 use App\Application\Imports\DTO\UploadedSpreadsheet;
 use App\Application\Imports\Exceptions\CannotImportSpreadsheet;
+use App\Application\Imports\Support\LocalizedNumberParser;
 use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Application\Storage\Contracts\StoresPrivateFiles;
 use App\Domain\Audit\Enums\AuditActorType;
@@ -48,10 +50,13 @@ class ImportContributionMovements
         private readonly StoresPrivateFiles $storage,
         private readonly HashesSensitiveData $hasher,
         private readonly RecordAuditEvent $recordAuditEvent,
+        private readonly LocalizedNumberParser $numberParser,
+        private readonly RebuildContributionAccountBalances $rebuildAccountBalances,
     ) {}
 
     public function __invoke(UploadedSpreadsheet $file, User $actor, ?string $ipHash = null): ImportBatch
     {
+        $startedAt = hrtime(true);
         $fileHash = hash('sha256', $file->contents);
 
         if (ImportBatch::query()->where('import_type', self::IMPORT_TYPE)->where('file_hash', $fileHash)->exists()) {
@@ -60,124 +65,132 @@ class ImportContributionMovements
             throw CannotImportSpreadsheet::duplicateFile();
         }
 
-        return DB::transaction(function () use ($file, $actor, $ipHash, $fileHash): ImportBatch {
-            $batch = $this->createBatch($file, $actor, $fileHash);
+        $batch = $this->createBatch($file, $actor, $fileHash);
 
-            try {
-                $rows = $this->reader->read($file->path);
-                $this->ensureColumns($rows);
-            } catch (CannotImportSpreadsheet $exception) {
+        try {
+            $rows = $this->reader->read($file->path);
+            $this->ensureColumns($rows);
+
+            return DB::transaction(function () use ($rows, $batch, $actor, $ipHash, $startedAt): ImportBatch {
+                $created = 0;
+                $updated = 0;
+                $errors = [];
+                $seen = [];
+                $affectedAccounts = [];
+
+                foreach ($rows as $row) {
+                    $this->ensureProcessingTime($startedAt);
+                    $rowNumber = (int) $row['__row'];
+                    $validated = $this->validateRow($row, $rowNumber);
+
+                    if (isset($validated['error'])) {
+                        $errors[] = $validated['error'];
+
+                        continue;
+                    }
+
+                    $duplicateKey = implode('|', [
+                        $validated['document_hash'],
+                        $validated['movement_type'],
+                        $validated['period'],
+                        $validated['reference'],
+                    ]);
+
+                    if (isset($seen[$duplicateKey])) {
+                        $errors[] = $this->rowError($rowNumber, 'La combinacion documento + tipo + periodo + referencia esta duplicada en el archivo.');
+
+                        continue;
+                    }
+
+                    $seen[$duplicateKey] = true;
+                    $associate = Associate::query()
+                        ->where('document_number_hash', $validated['document_hash'])
+                        ->where('status', 'active')
+                        ->first();
+
+                    if (! $associate) {
+                        $errors[] = $this->rowError($rowNumber, 'No existe un asociado activo para el documento informado.');
+
+                        continue;
+                    }
+
+                    $account = ContributionAccount::query()->firstOrCreate(
+                        ['associate_id' => $associate->id],
+                        [
+                            'permanent_savings_balance' => 0,
+                            'voluntary_savings_balance' => 0,
+                            'total_balance' => 0,
+                            'status' => ContributionAccountStatus::Active->value,
+                        ],
+                    );
+
+                    $sourceRowHash = hash('sha256', implode('|', [
+                        $associate->id,
+                        $validated['movement_type'],
+                        $validated['period'],
+                        $validated['cut_off_date'],
+                        $validated['amount'],
+                        $validated['balance_after'],
+                        $validated['reference'],
+                    ]));
+
+                    $existing = ContributionMovement::query()
+                        ->where('associate_id', $associate->id)
+                        ->where('movement_type', $validated['movement_type'])
+                        ->whereDate('period', $validated['period'])
+                        ->where('reference', $validated['reference'])
+                        ->where('status', ContributionMovementStatus::Registered->value)
+                        ->first();
+
+                    if ($existing && $existing->source_row_hash !== $sourceRowHash) {
+                        $existing->forceFill(['status' => ContributionMovementStatus::Reversed->value])->save();
+                    }
+
+                    $movement = ContributionMovement::query()->firstOrNew([
+                        'associate_id' => $associate->id,
+                        'movement_type' => $validated['movement_type'],
+                        'period' => $validated['period'],
+                        'source_row_hash' => $sourceRowHash,
+                    ]);
+
+                    $movement->forceFill([
+                        'contribution_account_id' => $account->id,
+                        'associate_id' => $associate->id,
+                        'import_batch_id' => $batch->id,
+                        'recorded_by_user_id' => $actor->id,
+                        'movement_type' => $validated['movement_type'],
+                        'period' => $validated['period'],
+                        'cut_off_date' => $validated['cut_off_date'],
+                        'amount' => $validated['amount'],
+                        'balance_after' => $validated['balance_after'],
+                        'status' => $validated['status'],
+                        'source' => 'xlsx',
+                        'reference' => $validated['reference'],
+                        'source_row_hash' => $sourceRowHash,
+                        'recorded_at' => now(),
+                    ])->save();
+
+                    $movement->wasRecentlyCreated ? $created++ : $updated++;
+                    $affectedAccounts[$account->id] = $account;
+                }
+
+                foreach ($affectedAccounts as $account) {
+                    ($this->rebuildAccountBalances)($account);
+                }
+
+                $this->completeBatch($batch, count($rows), $created, $updated, $errors);
+                $this->auditCompleted($batch, $actor, $ipHash);
+
+                return $batch->refresh();
+            });
+        } catch (CannotImportSpreadsheet $exception) {
+            return DB::transaction(function () use ($batch, $exception, $actor, $ipHash): ImportBatch {
                 $this->failBatch($batch, $exception->getMessage());
                 $this->auditCompleted($batch->refresh(), $actor, $ipHash);
 
                 return $batch->refresh();
-            }
-
-            $created = 0;
-            $updated = 0;
-            $errors = [];
-            $seen = [];
-
-            foreach ($rows as $row) {
-                $rowNumber = (int) $row['__row'];
-                $validated = $this->validateRow($row, $rowNumber);
-
-                if (isset($validated['error'])) {
-                    $errors[] = $validated['error'];
-
-                    continue;
-                }
-
-                $duplicateKey = implode('|', [
-                    $validated['document_hash'],
-                    $validated['movement_type'],
-                    $validated['period'],
-                    $validated['reference'],
-                ]);
-
-                if (isset($seen[$duplicateKey])) {
-                    $errors[] = $this->rowError($rowNumber, 'La combinacion documento + tipo + periodo + referencia esta duplicada en el archivo.');
-
-                    continue;
-                }
-
-                $seen[$duplicateKey] = true;
-                $associate = Associate::query()
-                    ->where('document_number_hash', $validated['document_hash'])
-                    ->where('status', 'active')
-                    ->first();
-
-                if (! $associate) {
-                    $errors[] = $this->rowError($rowNumber, 'No existe un asociado activo para el documento informado.');
-
-                    continue;
-                }
-
-                $account = ContributionAccount::query()->firstOrCreate(
-                    ['associate_id' => $associate->id],
-                    [
-                        'permanent_savings_balance' => 0,
-                        'voluntary_savings_balance' => 0,
-                        'total_balance' => 0,
-                        'status' => ContributionAccountStatus::Active->value,
-                    ],
-                );
-
-                $sourceRowHash = hash('sha256', implode('|', [
-                    $associate->id,
-                    $validated['movement_type'],
-                    $validated['period'],
-                    $validated['cut_off_date'],
-                    $validated['amount'],
-                    $validated['balance_after'],
-                    $validated['reference'],
-                ]));
-
-                $existing = ContributionMovement::query()
-                    ->where('associate_id', $associate->id)
-                    ->where('movement_type', $validated['movement_type'])
-                    ->whereDate('period', $validated['period'])
-                    ->where('reference', $validated['reference'])
-                    ->where('status', ContributionMovementStatus::Registered->value)
-                    ->first();
-
-                if ($existing && $existing->source_row_hash !== $sourceRowHash) {
-                    $existing->forceFill(['status' => ContributionMovementStatus::Reversed->value])->save();
-                }
-
-                $movement = ContributionMovement::query()->firstOrNew([
-                    'associate_id' => $associate->id,
-                    'movement_type' => $validated['movement_type'],
-                    'period' => $validated['period'],
-                    'source_row_hash' => $sourceRowHash,
-                ]);
-
-                $movement->forceFill([
-                    'contribution_account_id' => $account->id,
-                    'associate_id' => $associate->id,
-                    'import_batch_id' => $batch->id,
-                    'recorded_by_user_id' => $actor->id,
-                    'movement_type' => $validated['movement_type'],
-                    'period' => $validated['period'],
-                    'cut_off_date' => $validated['cut_off_date'],
-                    'amount' => $validated['amount'],
-                    'balance_after' => $validated['balance_after'],
-                    'status' => $validated['status'],
-                    'source' => 'xlsx',
-                    'reference' => $validated['reference'],
-                    'source_row_hash' => $sourceRowHash,
-                    'recorded_at' => now(),
-                ])->save();
-
-                $movement->wasRecentlyCreated ? $created++ : $updated++;
-                $this->updateAccountBalance($account, $validated);
-            }
-
-            $this->completeBatch($batch, count($rows), $created, $updated, $errors);
-            $this->auditCompleted($batch, $actor, $ipHash);
-
-            return $batch->refresh();
-        });
+            });
+        }
     }
 
     private function createBatch(UploadedSpreadsheet $file, User $actor, string $fileHash): ImportBatch
@@ -219,10 +232,11 @@ class ImportContributionMovements
     {
         $type = strtolower($row['tipo_aporte'] ?? '');
         $status = strtolower($row['estado'] ?? ContributionMovementStatus::Registered->value);
-        $amount = $this->parseMoney($row['valor'] ?? '');
-        $balanceAfter = $this->parseMoney($row['saldo_despues'] ?? '');
+        $amount = $this->numberParser->parse($row['valor'] ?? '', 2);
+        $balanceAfter = $this->numberParser->parse($row['saldo_despues'] ?? '', 2);
         $period = $this->parseDate($row['periodo'] ?? '');
         $cutOffDate = $this->parseDate($row['fecha_corte'] ?? '');
+        $reference = trim($row['referencia'] ?? '');
 
         if (($row['documento'] ?? '') === '') {
             return ['error' => $this->rowError($rowNumber, 'El documento es obligatorio.')];
@@ -236,8 +250,16 @@ class ImportContributionMovements
             return ['error' => $this->rowError($rowNumber, 'El estado permitido para importacion es registered.')];
         }
 
-        if ($amount === null || $balanceAfter === null || $amount < 0 || $balanceAfter < 0) {
+        if ($amount === null || $balanceAfter === null || (float) $amount < 0 || (float) $balanceAfter < 0) {
             return ['error' => $this->rowError($rowNumber, 'Los valores numericos deben ser validos y no negativos.')];
+        }
+
+        if ($reference === '') {
+            return ['error' => $this->rowError($rowNumber, 'La referencia es obligatoria.')];
+        }
+
+        if (mb_strlen($reference) > 120) {
+            return ['error' => $this->rowError($rowNumber, 'La referencia no puede superar 120 caracteres.')];
         }
 
         if (! $period || ! $cutOffDate) {
@@ -249,38 +271,11 @@ class ImportContributionMovements
             'movement_type' => $type,
             'period' => $period->toDateString(),
             'cut_off_date' => $cutOffDate->toDateString(),
-            'amount' => number_format($amount, 2, '.', ''),
-            'balance_after' => number_format($balanceAfter, 2, '.', ''),
+            'amount' => $amount,
+            'balance_after' => $balanceAfter,
             'status' => $status,
-            'reference' => trim($row['referencia'] ?? ''),
+            'reference' => $reference,
         ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $validated
-     */
-    private function updateAccountBalance(ContributionAccount $account, array $validated): void
-    {
-        $field = $validated['movement_type'] === ContributionMovementType::PermanentSavings->value
-            ? 'permanent_savings_balance'
-            : 'voluntary_savings_balance';
-
-        $account->forceFill([
-            $field => $validated['balance_after'],
-            'last_period' => $validated['period'],
-            'last_cut_off_date' => $validated['cut_off_date'],
-            'last_movement_at' => now(),
-        ]);
-
-        $account->total_balance = (float) $account->permanent_savings_balance + (float) $account->voluntary_savings_balance;
-        $account->save();
-    }
-
-    private function parseMoney(string $value): ?float
-    {
-        $normalized = str_replace(['$', ' ', ','], ['', '', '.'], trim($value));
-
-        return is_numeric($normalized) ? (float) $normalized : null;
     }
 
     private function parseDate(string $value): ?Carbon
@@ -356,6 +351,16 @@ class ImportContributionMovements
                 'rows_rejected' => $batch->rows_rejected,
             ],
         );
+    }
+
+    private function ensureProcessingTime(int $startedAt): void
+    {
+        $maxSeconds = max(1, (int) config('imports.max_processing_seconds', 30));
+        $elapsedSeconds = (hrtime(true) - $startedAt) / 1_000_000_000;
+
+        if ($elapsedSeconds > $maxSeconds) {
+            throw CannotImportSpreadsheet::invalidFile('La importacion supero el limite de tiempo configurado.');
+        }
     }
 
     private function auditRejected(User $actor, ?string $ipHash, string $reason): void

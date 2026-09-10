@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class ContributionMovement extends Model
 {
@@ -30,6 +31,24 @@ class ContributionMovement extends Model
     protected $hidden = [
         'source_row_hash',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (ContributionMovement $movement): void {
+            $movement->id ??= (string) Str::uuid();
+
+            if (! $movement->source_row_hash) {
+                $movement->source_row_hash = hash('sha256', implode('|', [
+                    'movement',
+                    $movement->id,
+                    $movement->associate_id,
+                    $movement->movement_type,
+                    $movement->period,
+                    $movement->reference,
+                ]));
+            }
+        });
+    }
 
     protected function casts(): array
     {

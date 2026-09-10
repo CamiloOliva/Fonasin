@@ -142,7 +142,7 @@ Una solicitud solo puede registrar una aceptacion por tipo y version de politica
 | `status` | varchar(30) | `active`, `settled`, `archived` |
 | `registered_by_user_id` | UUID | FK al administrador responsable |
 
-Un asociado puede tener varios creditos. No se deben borrar; una correccion crea auditoria y un credito no vigente se archiva. Los casos de uso iniciales de Credits permiten registrar, actualizar campos existentes, archivar, importar desde XLSX y consultar creditos propios desde la sesion del asociado; no aceptan `associate_id` del navegador para consultas privadas. La importacion XLSX actualiza por asociado activo y `credit_line` cuando existe un credito no archivado; de lo contrario crea un nuevo registro.
+Un asociado puede tener varios creditos. No se deben borrar; una correccion crea auditoria y un credito no vigente se archiva. Los casos de uso iniciales de Credits permiten registrar, actualizar campos existentes, archivar, importar desde XLSX y consultar creditos propios desde la sesion del asociado; no aceptan `associate_id` del navegador para consultas privadas. La importacion XLSX actualiza por asociado activo y `credit_line` cuando existe un credito no archivado; de lo contrario crea un nuevo registro. Cada alta o modificacion importada registra un evento del credito, correlacionado con el lote, con los nombres de los campos cambiados pero sin copiar valores financieros a auditoria.
 
 ## Aportes e importaciones
 
@@ -164,7 +164,7 @@ Representa el saldo operativo de aportes por asociado. Es una cuenta por asociad
 
 ### `contribution_movements`
 
-Cada fila representa un movimiento historico de aportes. Las importaciones XLSX crean movimientos sin mezclar estos datos con `credit_accounts`. Cuando llega una correccion con la misma combinacion asociado, tipo, periodo y referencia, el movimiento registrado anterior se marca `reversed` y se crea uno nuevo para conservar trazabilidad.
+Cada fila representa un movimiento historico de aportes. Las importaciones XLSX crean movimientos sin mezclar estos datos con `credit_accounts`. Cuando llega una correccion con la misma combinacion asociado, tipo, periodo y referencia, el movimiento registrado anterior se marca `reversed` y se crea uno nuevo para conservar trazabilidad. Al finalizar cada carga se reconstruyen los saldos de las cuentas afectadas desde todos sus movimientos `registered`; el orden de las filas del archivo no determina el resultado.
 
 | Campo | Tipo | Regla |
 |---|---|---|
@@ -180,8 +180,8 @@ Cada fila representa un movimiento historico de aportes. Las importaciones XLSX 
 | `balance_after` | numeric(14,2) | saldo despues del movimiento |
 | `status` | varchar(30) | `registered`, `reversed` |
 | `source` | varchar(30) | `manual`, `xlsx` |
-| `reference` | varchar(120) nullable | referencia operativa sin datos sensibles |
-| `source_row_hash` | char(64) nullable | llave tecnica de idempotencia por fila |
+| `reference` | varchar(120) | referencia operativa obligatoria sin datos sensibles |
+| `source_row_hash` | char(64) | llave tecnica obligatoria de idempotencia por fila |
 | `recorded_at` | timestamptz | momento de registro operativo |
 
 ### `import_batches`
@@ -207,7 +207,9 @@ Registra la trazabilidad de cargas masivas. El archivo se almacena de forma priv
 | `started_at` | timestamptz nullable | inicio de procesamiento |
 | `completed_at` | timestamptz nullable | fin de procesamiento |
 
-Las cargas aceptan solo `.xlsx` con tamano maximo de 5 MB. `storage_key` y `file_hash` son internos y no se exponen por JSON. Los errores por fila no deben incluir documentos, correos ni valores sensibles en claro.
+Las cargas aceptan solo `.xlsx` con limites configurables de tamano, contenido descomprimido, filas, tiempo de procesamiento y memoria incremental; los valores iniciales son 5 MB, 64 MB descomprimidos, 5000 filas, 30 segundos y 64 MB de memoria incremental. `storage_key` y `file_hash` son internos y no se exponen por JSON. Los errores por fila no deben incluir documentos, correos ni valores sensibles en claro.
+
+Hasta que FONASIN apruebe una regla institucional de conciliacion, `balance_after` se trata como el saldo reportado por la fuente. Para cada tipo de aporte, la cuenta toma el saldo del movimiento `registered` con periodo y fecha de corte mas recientes. Esta regla tecnica evita resultados dependientes del orden del XLSX, pero no reemplaza la aprobacion funcional pendiente.
 
 ## Convenciones de migracion
 
