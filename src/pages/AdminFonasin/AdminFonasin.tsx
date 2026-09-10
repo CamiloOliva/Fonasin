@@ -6,6 +6,7 @@ import {
   FileText,
   Loader2,
   LogOut,
+  PiggyBank,
   RefreshCw,
   ShieldCheck,
   UploadCloud,
@@ -54,11 +55,21 @@ import {
   type AdminImportBatch,
   type AdminImportBatchPage,
 } from '../../services/adminCreditService';
+import {
+  fetchAdminContributionAccounts,
+  fetchAdminContributionMovements,
+  type AdminContributionAccount,
+  type AdminContributionAccountFilters,
+  type AdminContributionAccountPage,
+  type AdminContributionMovement,
+  type AdminContributionMovementFilters,
+  type AdminContributionMovementPage,
+} from '../../services/adminContributionService';
 import { changeOwnPassword, type PortalUser } from '../../services/portalService';
 
 type SessionState = 'checking' | 'guest' | 'authenticated';
 type DataState = 'idle' | 'loading' | 'ready' | 'error';
-type AdminPanelView = 'applications' | 'associates' | 'credits' | 'imports';
+type AdminPanelView = 'applications' | 'associates' | 'credits' | 'contributions' | 'imports';
 
 const statusLabels: Record<string, string> = {
   draft: 'Borrador',
@@ -90,6 +101,12 @@ const defaultImportMeta: AdminImportBatchPage['meta'] = {
   current_page: 1,
   last_page: 1,
   per_page: 50,
+  total: 0,
+};
+const defaultContributionMeta: AdminContributionAccountPage['meta'] = {
+  current_page: 1,
+  last_page: 1,
+  per_page: 25,
   total: 0,
 };
 
@@ -125,12 +142,21 @@ export default function AdminFonasin() {
   const [dataState, setDataState] = useState<DataState>('idle');
   const [associateDataState, setAssociateDataState] = useState<DataState>('idle');
   const [creditDataState, setCreditDataState] = useState<DataState>('idle');
+  const [contributionDataState, setContributionDataState] = useState<DataState>('idle');
+  const [contributionMovementState, setContributionMovementState] = useState<DataState>('idle');
   const [importHistoryState, setImportHistoryState] = useState<DataState>('idle');
   const [activeView, setActiveView] = useState<AdminPanelView>('applications');
   const [user, setUser] = useState<PortalUser | null>(null);
   const [applications, setApplications] = useState<AdminAffiliationApplication[]>([]);
   const [associates, setAssociates] = useState<AdminAssociate[]>([]);
   const [credits, setCredits] = useState<AdminCredit[]>([]);
+  const [contributionAccounts, setContributionAccounts] = useState<AdminContributionAccount[]>([]);
+  const [contributionMovements, setContributionMovements] = useState<AdminContributionMovement[]>([]);
+  const [contributionMeta, setContributionMeta] = useState<AdminContributionAccountPage['meta']>(defaultContributionMeta);
+  const [contributionMovementMeta, setContributionMovementMeta] = useState<AdminContributionMovementPage['meta']>(defaultContributionMeta);
+  const [selectedContributionAccountId, setSelectedContributionAccountId] = useState<string | null>(null);
+  const [contributionFilters, setContributionFilters] = useState<AdminContributionAccountFilters>({});
+  const [contributionMovementFilters, setContributionMovementFilters] = useState<AdminContributionMovementFilters>({});
   const [importBatches, setImportBatches] = useState<AdminImportBatch[]>([]);
   const [importMeta, setImportMeta] = useState<AdminImportBatchPage['meta']>(defaultImportMeta);
   const [importState, setImportState] = useState<DataState>('idle');
@@ -251,6 +277,63 @@ export default function AdminFonasin() {
     }
   }
 
+  async function loadContributionMovements(
+    accountId: string,
+    filters = contributionMovementFilters,
+    page = 1,
+  ) {
+    setContributionMovementState('loading');
+    setError(null);
+
+    try {
+      const response = await fetchAdminContributionMovements(accountId, { ...filters, page });
+      setContributionMovements(response.data);
+      setContributionMovementMeta(response.meta);
+      setSelectedContributionAccountId(accountId);
+      setContributionMovementState('ready');
+    } catch (caught) {
+      setContributionMovements([]);
+      setContributionMovementMeta(defaultContributionMeta);
+      setContributionMovementState('error');
+      setError(caught instanceof Error ? caught.message : 'No fue posible cargar los movimientos de aportes.');
+    }
+  }
+
+  async function loadContributionAccounts(filters = contributionFilters, page = 1) {
+    setContributionDataState('loading');
+    setError(null);
+
+    try {
+      const [response, nextAssociates] = await Promise.all([
+        fetchAdminContributionAccounts({ ...filters, page }),
+        associates.length > 0 ? Promise.resolve(associates) : fetchAdminAssociates(),
+      ]);
+      setContributionAccounts(response.data);
+      setContributionMeta(response.meta);
+      setAssociates(nextAssociates);
+
+      const targetAccount = response.data.find((account) => account.id === selectedContributionAccountId)
+        ?? response.data[0]
+        ?? null;
+
+      if (targetAccount) {
+        await loadContributionMovements(targetAccount.id, contributionMovementFilters, 1);
+      } else {
+        setSelectedContributionAccountId(null);
+        setContributionMovements([]);
+        setContributionMovementMeta(defaultContributionMeta);
+        setContributionMovementState('ready');
+      }
+
+      setContributionDataState('ready');
+    } catch (caught) {
+      setContributionAccounts([]);
+      setContributionMeta(defaultContributionMeta);
+      setContributionDataState('error');
+      setError(caught instanceof Error ? caught.message : 'No fue posible cargar las cuentas de aportes.');
+    }
+  }
+
   async function loadImportBatches(type = importTypeFilter, page = 1) {
     setImportHistoryState('loading');
     setError(null);
@@ -281,6 +364,11 @@ export default function AdminFonasin() {
   async function openCredits() {
     setActiveView('credits');
     await loadCredits();
+  }
+
+  async function openContributions() {
+    setActiveView('contributions');
+    await loadContributionAccounts();
   }
 
   async function openImports() {
@@ -683,7 +771,9 @@ export default function AdminFonasin() {
                     ? 'Administracion de asociados'
                     : activeView === 'credits'
                       ? 'Administracion de creditos'
-                      : 'Historial de importaciones'}
+                      : activeView === 'contributions'
+                        ? 'Administracion de aportes'
+                        : 'Historial de importaciones'}
               </h1>
               <div className="mt-3 flex flex-wrap gap-2">
                 {(user?.roles ?? []).map((role) => (
@@ -699,6 +789,7 @@ export default function AdminFonasin() {
                 onClick={() => {
                   if (activeView === 'applications') return loadApplications(selectedId);
                   if (activeView === 'associates') return loadAssociates();
+                  if (activeView === 'contributions') return loadContributionAccounts(contributionFilters, contributionMeta.current_page);
                   if (activeView === 'imports') return loadImportBatches();
 
                   return loadCredits();
@@ -771,6 +862,18 @@ export default function AdminFonasin() {
           >
             <UploadCloud size={16} />
             Importaciones
+          </button>
+          <button
+            type="button"
+            onClick={openContributions}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black transition ${
+              activeView === 'contributions'
+                ? 'bg-emerald-600 text-white'
+                : 'bg-white text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <PiggyBank size={16} />
+            Aportes
           </button>
         </nav>
 
@@ -874,6 +977,34 @@ export default function AdminFonasin() {
             lastImport={lastImport}
             onImport={handleImportSpreadsheet}
             onDownloadTemplate={handleDownloadImportTemplate}
+          />
+        ) : activeView === 'contributions' ? (
+          <ContributionsPanel
+            accounts={contributionAccounts}
+            movements={contributionMovements}
+            associates={associates}
+            accountMeta={contributionMeta}
+            movementMeta={contributionMovementMeta}
+            accountState={contributionDataState}
+            movementState={contributionMovementState}
+            selectedAccountId={selectedContributionAccountId}
+            accountFilters={contributionFilters}
+            movementFilters={contributionMovementFilters}
+            onAccountFiltersChange={(filters) => {
+              setContributionFilters(filters);
+              void loadContributionAccounts(filters, 1);
+            }}
+            onMovementFiltersChange={(filters) => {
+              setContributionMovementFilters(filters);
+              if (selectedContributionAccountId) {
+                void loadContributionMovements(selectedContributionAccountId, filters, 1);
+              }
+            }}
+            onAccountPageChange={(page) => loadContributionAccounts(contributionFilters, page)}
+            onMovementPageChange={(page) => selectedContributionAccountId
+              ? loadContributionMovements(selectedContributionAccountId, contributionMovementFilters, page)
+              : Promise.resolve()}
+            onSelectAccount={(accountId) => loadContributionMovements(accountId, contributionMovementFilters, 1)}
           />
         ) : (
           <ImportHistoryPanel
@@ -1367,6 +1498,330 @@ function CreditsPanel({
       </section>
     </div>
   );
+}
+
+function ContributionsPanel({
+  accounts,
+  movements,
+  associates,
+  accountMeta,
+  movementMeta,
+  accountState,
+  movementState,
+  selectedAccountId,
+  accountFilters,
+  movementFilters,
+  onAccountFiltersChange,
+  onMovementFiltersChange,
+  onAccountPageChange,
+  onMovementPageChange,
+  onSelectAccount,
+}: {
+  accounts: AdminContributionAccount[];
+  movements: AdminContributionMovement[];
+  associates: AdminAssociate[];
+  accountMeta: AdminContributionAccountPage['meta'];
+  movementMeta: AdminContributionMovementPage['meta'];
+  accountState: DataState;
+  movementState: DataState;
+  selectedAccountId: string | null;
+  accountFilters: AdminContributionAccountFilters;
+  movementFilters: AdminContributionMovementFilters;
+  onAccountFiltersChange: (filters: AdminContributionAccountFilters) => void;
+  onMovementFiltersChange: (filters: AdminContributionMovementFilters) => void;
+  onAccountPageChange: (page: number) => void;
+  onMovementPageChange: (page: number) => void;
+  onSelectAccount: (accountId: string) => void;
+}) {
+  const selectedAccount = accounts.find((account) => account.id === selectedAccountId) ?? null;
+
+  return (
+    <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+      <aside className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Cuentas</p>
+            <h2 className="mt-1 text-2xl font-black text-slate-950">{accountMeta.total} asociados</h2>
+          </div>
+          <PiggyBank className="text-emerald-700" size={28} />
+        </div>
+
+        <div className="mt-5 space-y-3 border-y border-slate-100 py-4">
+          <label className="block">
+            <span className="text-sm font-bold text-slate-800">Asociado</span>
+            <select
+              value={accountFilters.associateId ?? ''}
+              onChange={(event) => onAccountFiltersChange({ ...accountFilters, associateId: event.target.value })}
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+            >
+              <option value="">Todos</option>
+              {associates.map((associate) => (
+                <option key={associate.id} value={associate.id}>{associate.full_name}</option>
+              ))}
+            </select>
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block">
+              <span className="text-sm font-bold text-slate-800">Estado</span>
+              <select
+                value={accountFilters.status ?? ''}
+                onChange={(event) => onAccountFiltersChange({ ...accountFilters, status: event.target.value })}
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+              >
+                <option value="">Todos</option>
+                <option value="active">Activo</option>
+                <option value="inactive">Inactivo</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-sm font-bold text-slate-800">Periodo</span>
+              <input
+                type="month"
+                value={accountFilters.period ?? ''}
+                onChange={(event) => onAccountFiltersChange({ ...accountFilters, period: event.target.value })}
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+              />
+            </label>
+          </div>
+        </div>
+
+        {accountState === 'loading' ? (
+          <div className="mt-4 flex items-center gap-3 px-2 py-4 text-sm font-semibold text-slate-600">
+            <Loader2 className="animate-spin" size={18} />
+            Cargando cuentas
+          </div>
+        ) : null}
+
+        <div className="mt-4 space-y-2">
+          {accounts.map((account) => (
+            <button
+              key={account.id}
+              type="button"
+              onClick={() => onSelectAccount(account.id)}
+              className={`w-full rounded-xl border px-4 py-3 text-left transition ${
+                selectedAccountId === account.id
+                  ? 'border-emerald-300 bg-emerald-50'
+                  : 'border-slate-200 bg-white hover:bg-slate-50'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <p className="min-w-0 truncate text-sm font-black text-slate-950">
+                  {account.associate?.full_name ?? 'Asociado no disponible'}
+                </p>
+                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-700">
+                  {statusLabel(account.status)}
+                </span>
+              </div>
+              <p className="mt-2 text-lg font-black text-emerald-800">{formatCurrency(account.total_balance)}</p>
+              <p className="mt-1 text-xs font-semibold text-slate-500">
+                {account.movements_count ?? 0} movimientos · {formatContributionPeriod(account.last_period)}
+              </p>
+            </button>
+          ))}
+
+          {accounts.length === 0 && accountState !== 'loading' ? (
+            <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">
+              No hay cuentas que coincidan con los filtros.
+            </p>
+          ) : null}
+        </div>
+
+        <PaginationControls meta={accountMeta} state={accountState} onPageChange={onAccountPageChange} />
+      </aside>
+
+      <section className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+        {selectedAccount ? (
+          <>
+            <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Libro de movimientos</p>
+                <h2 className="mt-1 text-2xl font-black text-slate-950">
+                  {selectedAccount.associate?.full_name ?? 'Asociado no disponible'}
+                </h2>
+                <p className="mt-1 text-sm font-semibold text-slate-500">
+                  Corte {formatContributionDate(selectedAccount.last_cut_off_date)}
+                </p>
+              </div>
+              <span className="w-fit rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-800">
+                {statusLabel(selectedAccount.status)}
+              </span>
+            </div>
+
+            <div className="grid gap-3 py-5 sm:grid-cols-3">
+              <BalanceSummary label="Ahorro permanente" value={selectedAccount.permanent_savings_balance} />
+              <BalanceSummary label="Ahorro voluntario" value={selectedAccount.voluntary_savings_balance} />
+              <BalanceSummary label="Saldo total" value={selectedAccount.total_balance} emphasized />
+            </div>
+
+            <div className="grid gap-3 border-y border-slate-100 py-4 md:grid-cols-3">
+              <label className="block">
+                <span className="text-sm font-bold text-slate-800">Tipo</span>
+                <select
+                  value={movementFilters.movementType ?? ''}
+                  onChange={(event) => onMovementFiltersChange({ ...movementFilters, movementType: event.target.value })}
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                >
+                  <option value="">Todos</option>
+                  <option value="permanent_savings">Ahorro permanente</option>
+                  <option value="voluntary_savings">Ahorro voluntario</option>
+                  <option value="contribution">Aporte</option>
+                  <option value="adjustment">Ajuste</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-sm font-bold text-slate-800">Estado</span>
+                <select
+                  value={movementFilters.status ?? ''}
+                  onChange={(event) => onMovementFiltersChange({ ...movementFilters, status: event.target.value })}
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                >
+                  <option value="">Todos</option>
+                  <option value="registered">Registrado</option>
+                  <option value="reversed">Reversado</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-sm font-bold text-slate-800">Periodo</span>
+                <input
+                  type="month"
+                  value={movementFilters.period ?? ''}
+                  onChange={(event) => onMovementFiltersChange({ ...movementFilters, period: event.target.value })}
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                />
+              </label>
+            </div>
+
+            {movementState === 'loading' ? (
+              <div className="mt-5 flex items-center gap-3 px-2 py-4 text-sm font-semibold text-slate-600">
+                <Loader2 className="animate-spin" size={18} />
+                Cargando movimientos
+              </div>
+            ) : null}
+
+            <div className="mt-5 overflow-x-auto">
+              <table className="w-full min-w-[900px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                    <th className="py-3 pr-4">Periodo</th>
+                    <th className="py-3 pr-4">Tipo</th>
+                    <th className="py-3 pr-4">Valor</th>
+                    <th className="py-3 pr-4">Saldo posterior</th>
+                    <th className="py-3 pr-4">Referencia</th>
+                    <th className="py-3 pr-4">Origen</th>
+                    <th className="py-3">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {movements.map((movement) => (
+                    <tr key={movement.id} className="border-b border-slate-100 last:border-0">
+                      <td className="py-4 pr-4 text-slate-700">{formatContributionPeriod(movement.period)}</td>
+                      <td className="py-4 pr-4 font-bold text-slate-950">{contributionTypeLabel(movement.movement_type)}</td>
+                      <td className="py-4 pr-4 text-slate-700">{formatCurrency(movement.amount)}</td>
+                      <td className="py-4 pr-4 font-black text-slate-950">{formatCurrency(movement.balance_after)}</td>
+                      <td className="py-4 pr-4 text-slate-700">{movement.reference}</td>
+                      <td className="py-4 pr-4 text-slate-700">{contributionSourceLabel(movement.source)}</td>
+                      <td className="py-4">
+                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-700">
+                          {movement.status === 'registered' ? 'Registrado' : 'Reversado'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {movements.length === 0 && movementState !== 'loading' ? (
+                <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">
+                  No hay movimientos que coincidan con los filtros.
+                </p>
+              ) : null}
+            </div>
+
+            <PaginationControls meta={movementMeta} state={movementState} onPageChange={onMovementPageChange} />
+          </>
+        ) : (
+          <div className="grid min-h-64 place-items-center text-center">
+            <div>
+              <PiggyBank className="mx-auto text-slate-300" size={40} />
+              <p className="mt-3 font-black text-slate-950">Selecciona una cuenta de aportes</p>
+              <p className="mt-1 text-sm font-semibold text-slate-500">Aquí aparecerán sus saldos y movimientos.</p>
+            </div>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function BalanceSummary({ label, value, emphasized = false }: { label: string; value: string; emphasized?: boolean }) {
+  return (
+    <div className={`rounded-xl border px-4 py-4 ${emphasized ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-slate-50'}`}>
+      <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{label}</p>
+      <p className={`mt-2 text-xl font-black ${emphasized ? 'text-emerald-800' : 'text-slate-950'}`}>{formatCurrency(value)}</p>
+    </div>
+  );
+}
+
+function PaginationControls({
+  meta,
+  state,
+  onPageChange,
+}: {
+  meta: AdminContributionAccountPage['meta'];
+  state: DataState;
+  onPageChange: (page: number) => void;
+}) {
+  return (
+    <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
+      <p className="text-sm font-bold text-slate-600">Página {meta.current_page} de {meta.last_page}</p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={meta.current_page <= 1 || state === 'loading'}
+          onClick={() => onPageChange(meta.current_page - 1)}
+          className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-black text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
+        >
+          Anterior
+        </button>
+        <button
+          type="button"
+          disabled={meta.current_page >= meta.last_page || state === 'loading'}
+          onClick={() => onPageChange(meta.current_page + 1)}
+          className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-black text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
+        >
+          Siguiente
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function formatContributionDate(value: string | null): string {
+  if (!value) return 'pendiente';
+
+  return new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`));
+}
+
+function formatContributionPeriod(value: string | null): string {
+  if (!value) return 'Sin periodo';
+
+  return new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+    .format(new Date(`${value}T00:00:00Z`));
+}
+
+function contributionTypeLabel(type: string): string {
+  const labels: Record<string, string> = {
+    permanent_savings: 'Ahorro permanente',
+    voluntary_savings: 'Ahorro voluntario',
+    contribution: 'Aporte',
+    adjustment: 'Ajuste',
+  };
+
+  return labels[type] ?? type;
+}
+
+function contributionSourceLabel(source: string): string {
+  return source === 'xlsx' ? 'Importación XLSX' : source === 'manual' ? 'Registro manual' : source;
 }
 
 function ImportForm({

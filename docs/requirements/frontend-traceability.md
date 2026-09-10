@@ -6,7 +6,7 @@ Esta matriz conecta la especificacion funcional con el codigo, las pruebas y la 
 
 Fuente funcional: `02_GUIA_EQUIPO_FRONTEND_WEB_AFILIACION_PORTAL_V2.docx`, version 2.0 del 15 de agosto de 2026.
 
-Ultima revision tecnica: 10 de septiembre de 2026, rama `feature/contribution-ledger-integrity`, commit base `7861a90`.
+Ultima revision tecnica: 10 de septiembre de 2026, rama `feature/admin-contribution-management`, commit base `27776e4`.
 
 ## Estados permitidos
 
@@ -69,6 +69,7 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 | FE-ADM-009A | Gestion manual de creditos | En curso | `/admin-fonasin`, endpoints `GET/POST/PATCH /admin/credits`, listado paginado, lineas cerradas de credito, solo asociados activos, transiciones basicas de estado y archivado logico. Falta validacion visual final con FONASIN. |
 | FE-ADM-010 | Importar creditos XLSX | En curso | Backend importa XLSX por `POST /admin/import-batches/credits`, valida columnas/tipos/duplicados y formatos colombianos, aplica limites configurables, guarda archivo privado y audita cada credito afectado sin exponer valores financieros. Falta plantilla oficial aprobada por FONASIN. |
 | FE-ADM-010A | Importar aportes XLSX | En curso | Backend importa XLSX por `POST /admin/import-batches/contributions`, exige referencia e idempotencia, conserva correcciones por reversion y reconstruye saldos sin depender del orden de filas. Falta regla de conciliacion y plantilla oficial aprobadas por FONASIN. |
+| FE-ADM-010B | Consultar cuentas y movimientos de aportes | Implementado | `/admin-fonasin` incluye cuentas, saldos y libro de movimientos con filtros por asociado, estado, tipo y periodo; Backend expone consultas paginadas solo para admin/reviewer, valida filtros y audita accesos sin exponer hashes privados. |
 | FE-ADM-011 | Historial de importaciones | En curso | Backend expone `GET /admin/import-batches` con paginacion, permisos, auditoria y resumen de importaciones; `/admin-fonasin` incluye vista interna de historial con filtro por tipo, paginacion, errores resumidos y descarga CSV de filas rechazadas. Falta aprobacion final de operacion. |
 | FE-ADM-012 | Prohibir alta manual irregular | Pendiente | Debe imponerse con permisos y casos de uso del Backend. |
 

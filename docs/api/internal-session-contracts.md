@@ -169,6 +169,35 @@ Errores:
 - `423`: debe cambiar contrasena temporal.
 - `422`: usuario sin asociado o asociado inactivo.
 
+## Consulta administrativa de aportes
+
+```text
+GET /admin/contributions?associate_id=uuid&status=active&period=2026-09&page=1&per_page=25
+Autenticacion: sesion Laravel
+Middleware: auth, password.changed
+Autorizacion: admin o reviewer
+Auditoria: contributions / contribution.account_collection.viewed
+```
+
+Los filtros son opcionales. `status` acepta `active` o `inactive`, `period` usa `YYYY-MM` y `per_page` admite de 1 a 100 registros. La respuesta contiene cuentas con datos publicables del asociado, saldos consolidados, fecha de corte, cantidad de movimientos y metadatos de paginacion. No expone documento cifrado, hash de documento ni hashes de filas importadas.
+
+```text
+GET /admin/contributions/{account}/movements?movement_type=permanent_savings&status=registered&period=2026-09&page=1&per_page=25
+Autenticacion: sesion Laravel
+Middleware: auth, password.changed
+Autorizacion: admin o reviewer sobre la cuenta
+Auditoria: contributions / contribution.movement_collection.viewed
+```
+
+`movement_type` acepta `permanent_savings`, `voluntary_savings`, `contribution` o `adjustment`; `status` acepta `registered` o `reversed`. La respuesta incluye solamente movimientos pertenecientes a la cuenta indicada, el resumen de esa cuenta y metadatos de paginacion. El responsable se limita a identificador y correo institucional; `source_row_hash` nunca se expone.
+
+Errores comunes:
+
+- `401`: sesion ausente.
+- `403`: rol sin permiso de backoffice.
+- `404`: cuenta inexistente.
+- `422`: filtro invalido.
+
 ## Historial de importaciones
 
 ```text

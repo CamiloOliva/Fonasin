@@ -70,6 +70,8 @@ La primera implementacion reutilizable es `App\Application\Audit\UseCases\Record
 
 Las importaciones XLSX registran el resultado del lote y eventos `credit.registered` o `credit.updated` por credito afectado con el mismo `correlation_id`. Los eventos de actualizacion incluyen solo nombres de campos cambiados y, cuando aplica, la transicion de estado; nunca incluyen saldos, tasas, cuotas ni documentos.
 
+Las consultas administrativas de aportes registran `contribution.account_collection.viewed` y `contribution.movement_collection.viewed`. Los metadatos se limitan al alcance administrativo, filtros operativos no sensibles y conteos paginados; no copian nombres, documentos, referencias ni valores financieros.
+
 ## Consulta operativa
 
 Las vistas administrativas deben filtrar eventos por modulo, recurso, actor, accion y rango de fechas. El detalle se trata como evidencia operativa y es de solo lectura.

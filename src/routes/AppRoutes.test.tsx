@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AppRoutes from './AppRoutes';
+import * as adminAffiliationService from '../services/adminAffiliationService';
+import * as adminContributionService from '../services/adminContributionService';
 import * as portalService from '../services/portalService';
 
 vi.mock('../components/sections/StatutesBookViewer', () => ({
@@ -51,6 +53,14 @@ vi.mock('../services/adminCreditService', () => ({
   createAdminCredit: vi.fn(),
   fetchAdminCredits: vi.fn().mockResolvedValue([]),
   updateAdminCredit: vi.fn(),
+}));
+
+vi.mock('../services/adminContributionService', () => ({
+  fetchAdminContributionAccounts: vi.fn().mockResolvedValue({
+    data: [],
+    meta: { current_page: 1, last_page: 1, per_page: 25, total: 0 },
+  }),
+  fetchAdminContributionMovements: vi.fn(),
 }));
 
 vi.mock('../services/passwordRecoveryService', () => ({
@@ -172,6 +182,73 @@ describe('AppRoutes', () => {
       expect(screen.getByRole('heading', { name: /iniciar sesion administrativa/i })).toBeInTheDocument();
     });
     expect(screen.getByRole('heading', { name: /revision interna de afiliaciones/i })).toBeInTheDocument();
+  });
+
+  it('loads contribution accounts and movements from the administrative panel', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminAffiliationService.currentAdminUser).mockResolvedValueOnce({
+      id: 'admin-user',
+      email: 'admin@fonasin.test',
+      roles: ['admin'],
+      must_change_password: false,
+    });
+    vi.mocked(adminContributionService.fetchAdminContributionAccounts).mockResolvedValueOnce({
+      data: [{
+        id: 'account-1',
+        associate_id: 'associate-1',
+        permanent_savings_balance: '150000.00',
+        voluntary_savings_balance: '50000.00',
+        total_balance: '200000.00',
+        status: 'active',
+        last_period: '2026-09-01',
+        last_cut_off_date: '2026-09-30',
+        last_movement_at: '2026-09-30T12:00:00Z',
+        movements_count: 1,
+        associate: { id: 'associate-1', full_name: 'Asociado Demo', document_type: 'CC', status: 'active' },
+      }],
+      meta: { current_page: 1, last_page: 1, per_page: 25, total: 1 },
+    });
+    vi.mocked(adminContributionService.fetchAdminContributionMovements).mockResolvedValueOnce({
+      data: [{
+        id: 'movement-1',
+        movement_type: 'permanent_savings',
+        period: '2026-09-01',
+        cut_off_date: '2026-09-30',
+        amount: '150000.00',
+        balance_after: '150000.00',
+        status: 'registered',
+        source: 'xlsx',
+        reference: 'AP-001',
+        recorded_at: '2026-09-30T12:00:00Z',
+        recorded_by: { id: 'admin-user', email: 'admin@fonasin.test' },
+      }],
+      account: {
+        id: 'account-1',
+        associate_id: 'associate-1',
+        permanent_savings_balance: '150000.00',
+        voluntary_savings_balance: '50000.00',
+        total_balance: '200000.00',
+        status: 'active',
+        last_period: '2026-09-01',
+        last_cut_off_date: '2026-09-30',
+        last_movement_at: '2026-09-30T12:00:00Z',
+        movements_count: 1,
+        associate: { id: 'associate-1', full_name: 'Asociado Demo', document_type: 'CC', status: 'active' },
+      },
+      meta: { current_page: 1, last_page: 1, per_page: 25, total: 1 },
+    });
+
+    renderRoute('/admin-fonasin');
+
+    await user.click(await screen.findByRole('button', { name: /^aportes$/i }));
+
+    expect(await screen.findByRole('heading', { name: /administracion de aportes/i })).toBeInTheDocument();
+    expect(await screen.findByText('AP-001')).toBeInTheDocument();
+    expect(adminContributionService.fetchAdminContributionAccounts).toHaveBeenCalled();
+    expect(adminContributionService.fetchAdminContributionMovements).toHaveBeenCalledWith(
+      'account-1',
+      expect.any(Object),
+    );
   });
 
   it('renders the password recovery route', () => {
