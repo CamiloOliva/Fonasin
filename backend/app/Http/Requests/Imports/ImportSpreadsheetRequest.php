@@ -9,8 +9,6 @@ use Illuminate\Validation\Validator;
 
 class ImportSpreadsheetRequest extends FormRequest
 {
-    public const MAX_KILOBYTES = 5120;
-
     public function authorize(): bool
     {
         return true;
@@ -22,7 +20,7 @@ class ImportSpreadsheetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'file' => ['required', 'file', 'max:'.self::MAX_KILOBYTES],
+            'file' => ['required', 'file', 'max:'.max(1, (int) config('imports.max_file_kilobytes', 5120))],
         ];
     }
 

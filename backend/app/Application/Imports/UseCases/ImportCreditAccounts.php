@@ -6,11 +6,13 @@ use App\Application\Audit\UseCases\RecordAuditEvent;
 use App\Application\Imports\Contracts\ReadsSpreadsheetRows;
 use App\Application\Imports\DTO\UploadedSpreadsheet;
 use App\Application\Imports\Exceptions\CannotImportSpreadsheet;
+use App\Application\Imports\Support\LocalizedNumberParser;
 use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Application\Storage\Contracts\StoresPrivateFiles;
 use App\Domain\Audit\Enums\AuditActorType;
 use App\Domain\Audit\Enums\AuditModule;
 use App\Domain\Credits\Enums\CreditAccountStatus;
+use App\Domain\Credits\Enums\CreditAuditAction;
 use App\Domain\Imports\Enums\ImportAuditAction;
 use App\Models\Associate;
 use App\Models\CreditAccount;
@@ -41,11 +43,14 @@ class ImportCreditAccounts
         private readonly StoresPrivateFiles $storage,
         private readonly HashesSensitiveData $hasher,
         private readonly RecordAuditEvent $recordAuditEvent,
+        private readonly LocalizedNumberParser $numberParser,
     ) {}
 
     public function __invoke(UploadedSpreadsheet $file, User $actor, ?string $ipHash = null): ImportBatch
     {
+        $startedAt = hrtime(true);
         $fileHash = hash('sha256', $file->contents);
+        $correlationId = (string) Str::uuid();
 
         if (ImportBatch::query()->where('import_type', self::IMPORT_TYPE)->where('file_hash', $fileHash)->exists()) {
             $this->auditRejected($actor, $ipHash, 'duplicate_file');
@@ -53,92 +58,119 @@ class ImportCreditAccounts
             throw CannotImportSpreadsheet::duplicateFile();
         }
 
-        return DB::transaction(function () use ($file, $actor, $ipHash, $fileHash): ImportBatch {
-            $batch = $this->createBatch($file, $actor, $fileHash);
+        $batch = $this->createBatch($file, $actor, $fileHash);
 
-            try {
-                $rows = $this->reader->read($file->path);
-                $this->ensureColumns($rows);
-            } catch (CannotImportSpreadsheet $exception) {
-                $this->failBatch($batch, $exception->getMessage());
-                $this->auditCompleted($batch->refresh(), $actor, $ipHash);
+        try {
+            $rows = $this->reader->read($file->path);
+            $this->ensureColumns($rows);
 
-                return $batch->refresh();
-            }
+            return DB::transaction(function () use ($rows, $batch, $actor, $ipHash, $correlationId, $startedAt): ImportBatch {
+                $created = 0;
+                $updated = 0;
+                $errors = [];
+                $seen = [];
 
-            $created = 0;
-            $updated = 0;
-            $errors = [];
-            $seen = [];
+                foreach ($rows as $row) {
+                    $this->ensureProcessingTime($startedAt);
+                    $rowNumber = (int) $row['__row'];
+                    $validated = $this->validateRow($row, $rowNumber);
 
-            foreach ($rows as $row) {
-                $rowNumber = (int) $row['__row'];
-                $validated = $this->validateRow($row, $rowNumber);
-
-                if (isset($validated['error'])) {
-                    $errors[] = $validated['error'];
-
-                    continue;
-                }
-
-                $duplicateKey = $validated['document_hash'].'|'.$validated['credit_line'];
-
-                if (isset($seen[$duplicateKey])) {
-                    $errors[] = $this->rowError($rowNumber, 'La combinacion documento + linea de credito esta duplicada en el archivo.');
-
-                    continue;
-                }
-
-                $seen[$duplicateKey] = true;
-                $associate = Associate::query()
-                    ->where('document_number_hash', $validated['document_hash'])
-                    ->where('status', 'active')
-                    ->first();
-
-                if (! $associate) {
-                    $errors[] = $this->rowError($rowNumber, 'No existe un asociado activo para el documento informado.');
-
-                    continue;
-                }
-
-                $credit = CreditAccount::query()
-                    ->where('associate_id', $associate->id)
-                    ->where('credit_line', $validated['credit_line'])
-                    ->where('status', '!=', CreditAccountStatus::Archived->value)
-                    ->first();
-
-                $payload = [
-                    'associate_id' => $associate->id,
-                    'credit_line' => $validated['credit_line'],
-                    'initial_balance' => $validated['initial_balance'],
-                    'current_balance' => $validated['current_balance'],
-                    'term_months' => $validated['term_months'],
-                    'interest_rate' => $validated['interest_rate'],
-                    'installment_amount' => $validated['installment_amount'],
-                    'status' => $validated['status'],
-                    'registered_by_user_id' => $actor->id,
-                ];
-
-                if ($credit) {
-                    if (! $this->statusTransitionAllowed((string) $credit->status, $validated['status'])) {
-                        $errors[] = $this->rowError($rowNumber, 'La transicion de estado del credito no es valida.');
+                    if (isset($validated['error'])) {
+                        $errors[] = $validated['error'];
 
                         continue;
                     }
 
-                    $credit->forceFill($payload)->save();
-                    $updated++;
-                } else {
-                    CreditAccount::query()->create($payload);
-                    $created++;
+                    $duplicateKey = $validated['document_hash'].'|'.$validated['credit_line'];
+
+                    if (isset($seen[$duplicateKey])) {
+                        $errors[] = $this->rowError($rowNumber, 'La combinacion documento + linea de credito esta duplicada en el archivo.');
+
+                        continue;
+                    }
+
+                    $seen[$duplicateKey] = true;
+                    $associate = Associate::query()
+                        ->where('document_number_hash', $validated['document_hash'])
+                        ->where('status', 'active')
+                        ->first();
+
+                    if (! $associate) {
+                        $errors[] = $this->rowError($rowNumber, 'No existe un asociado activo para el documento informado.');
+
+                        continue;
+                    }
+
+                    $credit = CreditAccount::query()
+                        ->where('associate_id', $associate->id)
+                        ->where('credit_line', $validated['credit_line'])
+                        ->where('status', '!=', CreditAccountStatus::Archived->value)
+                        ->first();
+
+                    $payload = [
+                        'associate_id' => $associate->id,
+                        'credit_line' => $validated['credit_line'],
+                        'initial_balance' => $validated['initial_balance'],
+                        'current_balance' => $validated['current_balance'],
+                        'term_months' => $validated['term_months'],
+                        'interest_rate' => $validated['interest_rate'],
+                        'installment_amount' => $validated['installment_amount'],
+                        'status' => $validated['status'],
+                        'registered_by_user_id' => $actor->id,
+                    ];
+
+                    if ($credit) {
+                        if (! $this->statusTransitionAllowed((string) $credit->status, $validated['status'])) {
+                            $errors[] = $this->rowError($rowNumber, 'La transicion de estado del credito no es valida.');
+
+                            continue;
+                        }
+
+                        $changedFields = $this->changedFields($credit, $payload);
+                        $previousStatus = (string) $credit->status;
+                        $credit->forceFill($payload)->save();
+
+                        if ($changedFields !== []) {
+                            $this->auditCreditMutation(
+                                credit: $credit,
+                                batch: $batch,
+                                actor: $actor,
+                                action: CreditAuditAction::CreditUpdated,
+                                correlationId: $correlationId,
+                                ipHash: $ipHash,
+                                changedFields: $changedFields,
+                                previousStatus: $previousStatus,
+                            );
+                        }
+
+                        $updated++;
+                    } else {
+                        $credit = CreditAccount::query()->create($payload);
+                        $this->auditCreditMutation(
+                            credit: $credit,
+                            batch: $batch,
+                            actor: $actor,
+                            action: CreditAuditAction::CreditRegistered,
+                            correlationId: $correlationId,
+                            ipHash: $ipHash,
+                        );
+                        $created++;
+                    }
                 }
-            }
 
-            $this->completeBatch($batch, count($rows), $created, $updated, $errors);
-            $this->auditCompleted($batch, $actor, $ipHash);
+                $this->completeBatch($batch, count($rows), $created, $updated, $errors);
+                $this->auditCompleted($batch, $actor, $ipHash, $correlationId);
 
-            return $batch->refresh();
-        });
+                return $batch->refresh();
+            });
+        } catch (CannotImportSpreadsheet $exception) {
+            return DB::transaction(function () use ($batch, $exception, $actor, $ipHash, $correlationId): ImportBatch {
+                $this->failBatch($batch, $exception->getMessage());
+                $this->auditCompleted($batch->refresh(), $actor, $ipHash, $correlationId);
+
+                return $batch->refresh();
+            });
+        }
     }
 
     private function createBatch(UploadedSpreadsheet $file, User $actor, string $fileHash): ImportBatch
@@ -194,14 +226,14 @@ class ImportCreditAccounts
         }
 
         $numbers = [
-            'initial_balance' => $this->parseMoney($row['valor_inicial'] ?? ''),
-            'current_balance' => $this->parseMoney($row['saldo_actual'] ?? ''),
-            'interest_rate' => $this->parseDecimal($row['tasa_interes'] ?? ''),
-            'installment_amount' => $this->parseMoney($row['valor_cuota'] ?? ''),
+            'initial_balance' => $this->numberParser->parse($row['valor_inicial'] ?? '', 2),
+            'current_balance' => $this->numberParser->parse($row['saldo_actual'] ?? '', 2),
+            'interest_rate' => $this->numberParser->parse($row['tasa_interes'] ?? '', 4),
+            'installment_amount' => $this->numberParser->parse($row['valor_cuota'] ?? '', 2),
         ];
 
         foreach ($numbers as $field => $value) {
-            if ($value === null || $value < 0) {
+            if ($value === null || (float) $value < 0) {
                 return ['error' => $this->rowError($rowNumber, 'Los valores numericos deben ser validos y no negativos.')];
             }
         }
@@ -215,25 +247,13 @@ class ImportCreditAccounts
         return [
             'document_hash' => $this->hasher->documentNumber($row['documento']),
             'credit_line' => $line,
-            'initial_balance' => number_format($numbers['initial_balance'], 2, '.', ''),
-            'current_balance' => number_format($numbers['current_balance'], 2, '.', ''),
+            'initial_balance' => $numbers['initial_balance'],
+            'current_balance' => $numbers['current_balance'],
             'term_months' => $termMonths,
-            'interest_rate' => number_format($numbers['interest_rate'], 4, '.', ''),
-            'installment_amount' => number_format($numbers['installment_amount'], 2, '.', ''),
+            'interest_rate' => $numbers['interest_rate'],
+            'installment_amount' => $numbers['installment_amount'],
             'status' => $status,
         ];
-    }
-
-    private function parseMoney(string $value): ?float
-    {
-        return $this->parseDecimal(str_replace(['$', ' '], '', $value));
-    }
-
-    private function parseDecimal(string $value): ?float
-    {
-        $normalized = str_replace(',', '.', trim($value));
-
-        return is_numeric($normalized) ? (float) $normalized : null;
     }
 
     /**
@@ -273,8 +293,12 @@ class ImportCreditAccounts
         return ['row' => $row, 'message' => $message];
     }
 
-    private function auditCompleted(ImportBatch $batch, User $actor, ?string $ipHash): void
-    {
+    private function auditCompleted(
+        ImportBatch $batch,
+        User $actor,
+        ?string $ipHash,
+        ?string $correlationId = null,
+    ): void {
         ($this->recordAuditEvent)(
             module: AuditModule::Imports,
             action: ImportAuditAction::ImportCompleted->value,
@@ -282,6 +306,7 @@ class ImportCreditAccounts
             subjectId: $batch->id,
             actor: $actor,
             actorType: AuditActorType::User,
+            correlationId: $correlationId,
             ipHash: $ipHash,
             metadata: [
                 'type' => self::IMPORT_TYPE,
@@ -291,6 +316,58 @@ class ImportCreditAccounts
                 'rows_updated' => $batch->rows_updated,
                 'rows_rejected' => $batch->rows_rejected,
             ],
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<int, string>
+     */
+    private function changedFields(CreditAccount $credit, array $payload): array
+    {
+        return collect($payload)
+            ->except(['associate_id', 'registered_by_user_id'])
+            ->filter(
+                fn (mixed $value, string $field): bool => (string) $credit->getAttribute($field) !== (string) $value,
+            )
+            ->keys()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<int, string>  $changedFields
+     */
+    private function auditCreditMutation(
+        CreditAccount $credit,
+        ImportBatch $batch,
+        User $actor,
+        CreditAuditAction $action,
+        string $correlationId,
+        ?string $ipHash,
+        array $changedFields = [],
+        ?string $previousStatus = null,
+    ): void {
+        $metadata = [
+            'source' => 'xlsx',
+            'import_batch_id' => $batch->id,
+            'changed_fields' => $changedFields,
+        ];
+
+        if ($previousStatus !== null && $previousStatus !== (string) $credit->status) {
+            $metadata['status_transition'] = $previousStatus.' -> '.$credit->status;
+        }
+
+        ($this->recordAuditEvent)(
+            module: AuditModule::Credits,
+            action: $action->value,
+            subjectType: 'credit_account',
+            subjectId: $credit->id,
+            actor: $actor,
+            actorType: AuditActorType::User,
+            correlationId: $correlationId,
+            ipHash: $ipHash,
+            metadata: $metadata,
         );
     }
 
@@ -311,6 +388,16 @@ class ImportCreditAccounts
         ];
 
         return in_array($to, $allowed[$from] ?? [], true);
+    }
+
+    private function ensureProcessingTime(int $startedAt): void
+    {
+        $maxSeconds = max(1, (int) config('imports.max_processing_seconds', 30));
+        $elapsedSeconds = (hrtime(true) - $startedAt) / 1_000_000_000;
+
+        if ($elapsedSeconds > $maxSeconds) {
+            throw CannotImportSpreadsheet::invalidFile('La importacion supero el limite de tiempo configurado.');
+        }
     }
 
     private function auditRejected(User $actor, ?string $ipHash, string $reason): void
