@@ -6,7 +6,7 @@ Esta matriz conecta la especificacion funcional con el codigo, las pruebas y la 
 
 Fuente funcional: `02_GUIA_EQUIPO_FRONTEND_WEB_AFILIACION_PORTAL_V2.docx`, version 2.0 del 15 de agosto de 2026.
 
-Ultima revision tecnica: 9 de septiembre de 2026, rama `feature/backend-security-validation-closeout`, commit base `878220d`.
+Ultima revision tecnica: 10 de septiembre de 2026, rama `feature/contribution-ledger-integrity`, commit base `7861a90`.
 
 ## Estados permitidos
 
@@ -67,8 +67,8 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 |---|---|---|---|
 | FE-ADM-001 a FE-ADM-009 | Gestion de afiliaciones y asociados | En curso | `/admin-fonasin`, endpoints paginados `GET /admin/affiliation-applications` y `GET /admin/associates`, acciones de revision, carga de libranza externa, habilitacion de asociado, deteccion de conflictos de identidad, modulo administrativo de asociados con alta manual, usuario de portal, desactivacion logica, invalidacion de sesiones y sin exposicion de contrasenas temporales por API. Falta validacion visual final con FONASIN. |
 | FE-ADM-009A | Gestion manual de creditos | En curso | `/admin-fonasin`, endpoints `GET/POST/PATCH /admin/credits`, listado paginado, lineas cerradas de credito, solo asociados activos, transiciones basicas de estado y archivado logico. Falta validacion visual final con FONASIN. |
-| FE-ADM-010 | Importar creditos XLSX | En curso | Backend importa XLSX por `POST /admin/import-batches/credits`, valida columnas/tipos/duplicados, guarda archivo privado, registra historial, expone plantilla descargable y permite carga desde `/admin-fonasin`. Falta plantilla oficial aprobada por FONASIN. |
-| FE-ADM-010A | Importar aportes XLSX | En curso | Backend importa XLSX por `POST /admin/import-batches/contributions`, crea/actualiza cuentas y movimientos, conserva historial por reversion de correcciones, registra errores por fila, expone plantilla descargable y permite carga desde `/admin-fonasin`. Falta plantilla oficial aprobada por FONASIN. |
+| FE-ADM-010 | Importar creditos XLSX | En curso | Backend importa XLSX por `POST /admin/import-batches/credits`, valida columnas/tipos/duplicados y formatos colombianos, aplica limites configurables, guarda archivo privado y audita cada credito afectado sin exponer valores financieros. Falta plantilla oficial aprobada por FONASIN. |
+| FE-ADM-010A | Importar aportes XLSX | En curso | Backend importa XLSX por `POST /admin/import-batches/contributions`, exige referencia e idempotencia, conserva correcciones por reversion y reconstruye saldos sin depender del orden de filas. Falta regla de conciliacion y plantilla oficial aprobadas por FONASIN. |
 | FE-ADM-011 | Historial de importaciones | En curso | Backend expone `GET /admin/import-batches` con paginacion, permisos, auditoria y resumen de importaciones; `/admin-fonasin` incluye vista interna de historial con filtro por tipo, paginacion, errores resumidos y descarga CSV de filas rechazadas. Falta aprobacion final de operacion. |
 | FE-ADM-012 | Prohibir alta manual irregular | Pendiente | Debe imponerse con permisos y casos de uso del Backend. |
 

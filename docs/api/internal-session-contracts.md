@@ -259,7 +259,9 @@ Middleware: auth, password.changed
 Autorizacion: admin
 Content-Type: multipart/form-data
 Campo: file
-Formato: XLSX, maximo 5 MB
+Formato: XLSX, maximo configurable (5 MB por defecto)
+Contenido descomprimido: maximo configurable (64 MB por defecto)
+Filas: maximo configurable (5000 por defecto)
 Auditoria: imports / import.completed o import.rejected
 ```
 
@@ -281,10 +283,12 @@ Reglas:
 - `documento` se usa solo para busqueda HMAC de asociado activo.
 - `linea_credito` debe ser una linea aprobada.
 - valores numericos no negativos.
+- se aceptan formatos `1250.00`, `1250,00` y `1.250,00`.
 - `plazo_meses` entero mayor a cero.
 - `estado`: `active`, `settled` o `archived`.
 - documento + linea duplicado dentro del archivo se rechaza por fila.
 - un archivo ya importado para creditos se rechaza por hash.
+- cada credito creado o modificado registra auditoria correlacionada con el lote; se guardan nombres de campos cambiados, no valores financieros.
 
 Respuesta:
 
@@ -337,7 +341,9 @@ Middleware: auth, password.changed
 Autorizacion: admin
 Content-Type: multipart/form-data
 Campo: file
-Formato: XLSX, maximo 5 MB
+Formato: XLSX, maximo configurable (5 MB por defecto)
+Contenido descomprimido: maximo configurable (64 MB por defecto)
+Filas: maximo configurable (5000 por defecto)
 Auditoria: imports / import.completed o import.rejected
 ```
 
@@ -361,6 +367,9 @@ Reglas:
 - `tipo_aporte`: `permanent_savings` o `voluntary_savings`.
 - `estado`: `registered`.
 - valores numericos no negativos.
+- `referencia` es obligatoria y no puede estar vacia.
+- se aceptan formatos `1250.00`, `1250,00` y `1.250,00`.
 - documento + tipo + periodo + referencia duplicado dentro del archivo se rechaza por fila.
 - un archivo ya importado para aportes se rechaza por hash.
 - una correccion con la misma referencia revierte el movimiento anterior y registra el nuevo movimiento para no perder historial.
+- los saldos de las cuentas afectadas se reconstruyen al terminar la carga usando el movimiento registrado cronologicamente mas reciente de cada tipo, sin depender del orden de filas.
