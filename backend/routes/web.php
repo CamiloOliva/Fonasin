@@ -134,6 +134,18 @@ Route::middleware(['auth', 'password.changed'])
     });
 
 Route::middleware(['auth', 'password.changed'])
+    ->prefix('admin/contributions')
+    ->name('admin.contributions.')
+    ->group(function (): void {
+        Route::get('/', [ContributionController::class, 'index'])
+            ->middleware('can:viewAny,App\Models\ContributionAccount')
+            ->name('index');
+        Route::get('/{account}/movements', [ContributionController::class, 'movements'])
+            ->middleware('can:view,account')
+            ->name('movements.index');
+    });
+
+Route::middleware(['auth', 'password.changed'])
     ->prefix('admin/import-batches')
     ->name('admin.import-batches.')
     ->group(function (): void {
