@@ -49,6 +49,14 @@ export default defineConfig(({ mode }) => {
           target: backendTarget,
           changeOrigin: true,
         },
+        '/admin/contributions': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
+        '/admin/import-batches': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
         '/fpqrs-submissions': {
           target: backendTarget,
           changeOrigin: true,
