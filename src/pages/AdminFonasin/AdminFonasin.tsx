@@ -127,6 +127,14 @@ function documentLabel(documentType: string): string {
   return documentLabels[documentType] ?? documentType;
 }
 
+export function canManageAdminData(user: PortalUser | null): boolean {
+  return user?.roles.includes('admin') ?? false;
+}
+
+export function isAcceptedSpreadsheet(file: File): boolean {
+  return file.name.toLowerCase().endsWith('.xlsx')
+    && (file.type === '' || file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+}
 function roleLabel(role: string): string {
   const labels: Record<string, string> = {
     admin: 'Administrador',
@@ -193,6 +201,7 @@ export default function AdminFonasin() {
   });
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const isAdmin = canManageAdminData(user);
 
   const submittedCount = useMemo(
     () => applications.filter((application) => ['submitted', 'under_review'].includes(application.status)).length,
@@ -357,11 +366,13 @@ export default function AdminFonasin() {
   }
 
   async function openAssociates() {
+    if (!isAdmin) return;
     setActiveView('associates');
     await loadAssociates();
   }
 
   async function openCredits() {
+    if (!isAdmin) return;
     setActiveView('credits');
     await loadCredits();
   }
@@ -372,6 +383,7 @@ export default function AdminFonasin() {
   }
 
   async function openImports() {
+    if (!isAdmin) return;
     setActiveView('imports');
     await loadImportBatches();
   }
@@ -502,6 +514,7 @@ export default function AdminFonasin() {
   }
 
   async function handleCreateAssociate(event: FormEvent<HTMLFormElement>) {
+    if (!isAdmin) return;
     event.preventDefault();
     setError(null);
     setMessage(null);
@@ -527,6 +540,7 @@ export default function AdminFonasin() {
   }
 
   async function handleAssociateStatus(id: string, status: 'active' | 'inactive') {
+    if (!isAdmin) return;
     setError(null);
     setMessage(null);
 
@@ -545,6 +559,7 @@ export default function AdminFonasin() {
   }
 
   async function handleCreateCredit(event: FormEvent<HTMLFormElement>) {
+    if (!isAdmin) return;
     event.preventDefault();
     setError(null);
     setMessage(null);
@@ -574,6 +589,7 @@ export default function AdminFonasin() {
   }
 
   async function handleCreditStatus(id: string, status: 'active' | 'settled' | 'archived') {
+    if (!isAdmin) return;
     setError(null);
     setMessage(null);
 
@@ -592,6 +608,7 @@ export default function AdminFonasin() {
   }
 
   async function handleImportSpreadsheet(type: 'credits' | 'contributions', event: FormEvent<HTMLFormElement>) {
+    if (!isAdmin) return;
     event.preventDefault();
     setError(null);
     setMessage(null);
@@ -604,6 +621,12 @@ export default function AdminFonasin() {
     if (!(file instanceof File) || file.size === 0) {
       setImportState('error');
       setError('Selecciona un archivo XLSX para importar.');
+      return;
+    }
+
+    if (!isAcceptedSpreadsheet(file)) {
+      setImportState('error');
+      setError('El archivo debe tener formato XLSX.');
       return;
     }
 
@@ -636,6 +659,7 @@ export default function AdminFonasin() {
   }
 
   async function handleDownloadImportTemplate(type: 'credits' | 'contributions') {
+    if (!isAdmin) return;
     setError(null);
     setMessage(null);
 
@@ -647,6 +671,7 @@ export default function AdminFonasin() {
   }
 
   async function handleDownloadImportErrorReport(batchId: string) {
+    if (!isAdmin) return;
     setError(null);
     setMessage(null);
 
@@ -830,6 +855,7 @@ export default function AdminFonasin() {
           <button
             type="button"
             onClick={openAssociates}
+            disabled={!isAdmin}
             className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black transition ${
               activeView === 'associates'
                 ? 'bg-emerald-600 text-white'
@@ -842,6 +868,7 @@ export default function AdminFonasin() {
           <button
             type="button"
             onClick={openCredits}
+            disabled={!isAdmin}
             className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black transition ${
               activeView === 'credits'
                 ? 'bg-emerald-600 text-white'
@@ -854,6 +881,7 @@ export default function AdminFonasin() {
           <button
             type="button"
             onClick={openImports}
+            disabled={!isAdmin}
             className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black transition ${
               activeView === 'imports'
                 ? 'bg-emerald-600 text-white'
@@ -977,6 +1005,7 @@ export default function AdminFonasin() {
             lastImport={lastImport}
             onImport={handleImportSpreadsheet}
             onDownloadTemplate={handleDownloadImportTemplate}
+            canManage={isAdmin}
           />
         ) : activeView === 'contributions' ? (
           <ContributionsPanel
@@ -1234,6 +1263,7 @@ function CreditsPanel({
   lastImport,
   onImport,
   onDownloadTemplate,
+  canManage,
 }: {
   credits: AdminCredit[];
   associates: AdminAssociate[];
@@ -1246,6 +1276,7 @@ function CreditsPanel({
   lastImport: AdminImportBatch | null;
   onImport: (type: 'credits' | 'contributions', event: FormEvent<HTMLFormElement>) => void;
   onDownloadTemplate: (type: 'credits' | 'contributions') => void;
+  canManage: boolean;
 }) {
   const activeAssociates = associates.filter((associate) => associate.status === 'active');
 
@@ -1381,14 +1412,14 @@ function CreditsPanel({
             <ImportForm
               title="Creditos"
               description="Columnas: documento, linea_credito, valor_inicial, saldo_actual, plazo_meses, tasa_interes, valor_cuota, estado."
-              disabled={importState === 'loading'}
+              disabled={!canManage || importState === 'loading'}
               onSubmit={(event) => onImport('credits', event)}
               onDownloadTemplate={() => onDownloadTemplate('credits')}
             />
             <ImportForm
               title="Aportes"
               description="Columnas: documento, periodo, fecha_corte, tipo_aporte, valor, saldo_despues, estado, referencia."
-              disabled={importState === 'loading'}
+              disabled={!canManage || importState === 'loading'}
               onSubmit={(event) => onImport('contributions', event)}
               onDownloadTemplate={() => onDownloadTemplate('contributions')}
             />
@@ -1860,7 +1891,8 @@ function ImportForm({
       <button
         type="button"
         onClick={onDownloadTemplate}
-        className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50"
+        disabled={disabled}
+        className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
       >
         Descargar plantilla
         <FileText size={17} />

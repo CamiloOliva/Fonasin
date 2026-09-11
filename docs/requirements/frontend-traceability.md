@@ -6,7 +6,7 @@ Esta matriz conecta la especificacion funcional con el codigo, las pruebas y la 
 
 Fuente funcional: `02_GUIA_EQUIPO_FRONTEND_WEB_AFILIACION_PORTAL_V2.docx`, version 2.0 del 15 de agosto de 2026.
 
-Ultima revision tecnica: 10 de septiembre de 2026, rama `feature/admin-contribution-management`, commit base `27776e4`.
+Ultima revision tecnica: 11 de septiembre de 2026, rama de trabajo frontend.
 
 ## Estados permitidos
 
@@ -67,8 +67,8 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 |---|---|---|---|
 | FE-ADM-001 a FE-ADM-009 | Gestion de afiliaciones y asociados | En curso | `/admin-fonasin`, endpoints paginados `GET /admin/affiliation-applications` y `GET /admin/associates`, acciones de revision, carga de libranza externa, habilitacion de asociado, deteccion de conflictos de identidad, modulo administrativo de asociados con alta manual, usuario de portal, desactivacion logica, invalidacion de sesiones y sin exposicion de contrasenas temporales por API. Falta validacion visual final con FONASIN. |
 | FE-ADM-009A | Gestion manual de creditos | En curso | `/admin-fonasin`, endpoints `GET/POST/PATCH /admin/credits`, listado paginado, lineas cerradas de credito, solo asociados activos, transiciones basicas de estado y archivado logico. Falta validacion visual final con FONASIN. |
-| FE-ADM-010 | Importar creditos XLSX | En curso | Backend importa XLSX por `POST /admin/import-batches/credits`, valida columnas/tipos/duplicados y formatos colombianos, aplica limites configurables, guarda archivo privado y audita cada credito afectado sin exponer valores financieros. Falta plantilla oficial aprobada por FONASIN. |
-| FE-ADM-010A | Importar aportes XLSX | En curso | Backend importa XLSX por `POST /admin/import-batches/contributions`, exige referencia e idempotencia, conserva correcciones por reversion y reconstruye saldos sin depender del orden de filas. Falta regla de conciliacion y plantilla oficial aprobadas por FONASIN. |
+| FE-ADM-010 | Importar creditos XLSX | En curso | Frontend muestra columnas esperadas, valida extension XLSX y restringe carga/plantilla a rol `admin`; Backend importa por `POST /admin/import-batches/credits`, valida columnas/tipos/duplicados y formatos colombianos, guarda archivo privado y audita cada credito afectado. Falta plantilla oficial aprobada por FONASIN. |
+| FE-ADM-010A | Importar aportes XLSX | En curso | Frontend separa la carga de aportes de creditos, valida extension XLSX y restringe carga/plantilla a rol `admin`; Backend importa por `POST /admin/import-batches/contributions`, exige referencia e idempotencia, registra errores por fila y reconstruye saldos. Falta regla de conciliacion y plantilla oficial aprobadas por FONASIN. |
 | FE-ADM-010B | Consultar cuentas y movimientos de aportes | Implementado | `/admin-fonasin` incluye cuentas, saldos y libro de movimientos con filtros por asociado, estado, tipo y periodo; Backend expone consultas paginadas solo para admin/reviewer, valida filtros y audita accesos sin exponer hashes privados. |
 | FE-ADM-011 | Historial de importaciones | En curso | Backend expone `GET /admin/import-batches` con paginacion, permisos, auditoria y resumen de importaciones; `/admin-fonasin` incluye vista interna de historial con filtro por tipo, paginacion, errores resumidos y descarga CSV de filas rechazadas. Falta aprobacion final de operacion. |
 | FE-ADM-012 | Prohibir alta manual irregular | Pendiente | Debe imponerse con permisos y casos de uso del Backend. |
@@ -80,7 +80,7 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 | FE-OBQ-001 | Ingreso y ciclo de contraseña | OBQ | En curso | Login con sesion Laravel, cambio obligatorio de clave inicial y recuperacion con correo, cedula, link temporal y bloqueo para asociados inactivos. Las altas nuevas no devuelven contrasenas temporales por API. | Validar SMTP de produccion y flujo visual final. |
 | FE-OBQ-002 | Inicio privado | OBQ | En curso | Portal asociado existe con sesion, bloqueo por contrasena temporal y asociado activo; falta validacion visual final. |
 | FE-OBQ-003 | Creditos actuales | OBQ | En curso | Consulta creditos del asociado autenticado desde Backend y contrato consolidado `GET /portal/account-statement`; importacion XLSX inicial disponible. Falta validacion visual final con datos reales. |
-| FE-OBQ-003A | Aportes actuales | OBQ | En curso | Backend define cuentas y movimientos de aportes, endpoints privados `GET /portal/contributions` y `GET /portal/account-statement`, aislamiento por sesion y estados `module_disabled`, `empty`, `available`; importacion XLSX inicial disponible. Falta validacion visual final con datos reales. |
+| FE-OBQ-003A | Aportes actuales | OBQ | En curso | Frontend representa `module_disabled`, `empty` y `available` sin mezclar aportes con creditos; los textos finales requieren aprobacion institucional y validacion con datos representativos. Backend expone `GET /portal/contributions` y `GET /portal/account-statement`. |
 | FE-OBQ-004 | Aislamiento por sesion | OBQ | Implementado | Las consultas privadas resuelven el asociado desde la sesion y bloquean asociado inactivo; no se acepta `associate_id` del navegador. |
 | FE-EXT-004 | Actualizacion de datos | EXT | En curso | El asociado puede crear/reutilizar un borrador temporal de actualizacion por 24 horas; el Backend usa transaccion e indice unico parcial para evitar borradores duplicados activos. Falta aprobacion final del flujo y de retencion. |
 | FE-EXT-005 | Simulador | EXT | Pendiente | No iniciar sin formulas y advertencias aprobadas. |
@@ -103,7 +103,7 @@ La pagina publica `/creditos` solo cubre informacion general de `FE-WEB-004`; no
 |---|---|---|
 | Compilacion TypeScript/Vite | Implementado | `npm run build` local y workflow `.github/workflows/frontend-ci.yml` en cada push y pull request. |
 | Rutas SPA en Apache | Implementado | `public/.htaccess` incluido en `dist` y recarga directa verificada. |
-| Pruebas unitarias | En curso | Vitest y Testing Library cubren rutas y navegacion; ampliar a componentes y utilidades criticas. |
+| Pruebas unitarias | En curso | Vitest y Testing Library cubren rutas, roles admin/reviewer, validacion XLSX, navegacion y estados del portal; falta complementar con Browser/E2E contra contratos reales. |
 | Pruebas de integracion | En curso | Pruebas Feature cubren afiliacion publica, links vencidos, documentos protegidos, portal asociado, estado de cuenta, documentos, actualizacion de datos y cierre de sesion; falta prueba Browser visual end to end. |
 | Responsive | Pendiente | Matriz movil, tableta y escritorio. |
 | Accesibilidad | Pendiente | Teclado, foco, labels, contraste, semantica y auditoria. |
