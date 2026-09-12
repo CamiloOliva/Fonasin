@@ -6,6 +6,8 @@ interface HashesSensitiveData
 {
     public function documentNumber(string $documentNumber): string;
 
+    public function financialReference(string $reference): string;
+
     public function email(string $email): string;
 
     public function ip(string $ip): string;

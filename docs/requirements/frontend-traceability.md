@@ -67,8 +67,8 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 |---|---|---|---|
 | FE-ADM-001 a FE-ADM-009 | Gestion de afiliaciones y asociados | En curso | `/admin-fonasin`, endpoints paginados `GET /admin/affiliation-applications` y `GET /admin/associates`, acciones de revision, carga de libranza externa, habilitacion de asociado, deteccion de conflictos de identidad, modulo administrativo de asociados con alta manual, usuario de portal, desactivacion logica, invalidacion de sesiones y sin exposicion de contrasenas temporales por API. Falta validacion visual final con FONASIN. |
 | FE-ADM-009A | Gestion manual de creditos | En curso | `/admin-fonasin`, endpoints `GET/POST/PATCH /admin/credits`, listado paginado, lineas cerradas de credito, solo asociados activos, transiciones basicas de estado y archivado logico. Falta validacion visual final con FONASIN. |
-| FE-ADM-010 | Importar creditos XLSX | En curso | Frontend muestra columnas esperadas, valida extension XLSX y restringe carga/plantilla a rol `admin`; Backend importa por `POST /admin/import-batches/credits`, valida columnas/tipos/duplicados y formatos colombianos, guarda archivo privado y audita cada credito afectado. Falta plantilla oficial aprobada por FONASIN. |
-| FE-ADM-010A | Importar aportes XLSX | En curso | Frontend separa la carga de aportes de creditos, valida extension XLSX y restringe carga/plantilla a rol `admin`; Backend importa por `POST /admin/import-batches/contributions`, exige referencia e idempotencia, registra errores por fila y reconstruye saldos. Falta regla de conciliacion y plantilla oficial aprobadas por FONASIN. |
+| FE-ADM-010 | Importar cartera XLSX | En curso | Frontend y Backend usan la estructura operativa de ocho columnas: documento, nombre, linea, pagare, saldos, cuota y ultimo pago. El pagare se cifra y se identifica por HMAC; la carga valida identidad, formatos colombianos, duplicados y audita cambios. Falta aprobacion institucional final de la plantilla. |
+| FE-ADM-010A | Importar aportes y ahorros XLSX | En curso | Frontend ofrece plantillas y cargas separadas para aporte ordinario, ahorro voluntario y ahorro permanente, cada una con documento, nombre, valor mensual, saldo y ultimo pago. Backend conserva historial, revierte correcciones y reconstruye los tres saldos sin depender del orden del archivo. Falta aprobacion institucional final y regla definitiva de conciliacion. |
 | FE-ADM-010B | Consultar cuentas y movimientos de aportes | Implementado | `/admin-fonasin` incluye cuentas, saldos y libro de movimientos con filtros por asociado, estado, tipo y periodo; Backend expone consultas paginadas solo para admin/reviewer, valida filtros y audita accesos sin exponer hashes privados. |
 | FE-ADM-011 | Historial de importaciones | En curso | Backend expone `GET /admin/import-batches` con paginacion, permisos, auditoria y resumen de importaciones; `/admin-fonasin` incluye vista interna de historial con filtro por tipo, paginacion, errores resumidos y descarga CSV de filas rechazadas. Falta aprobacion final de operacion. |
 | FE-ADM-012 | Prohibir alta manual irregular | Pendiente | Debe imponerse con permisos y casos de uso del Backend. |
@@ -88,9 +88,9 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 
 ## Pendientes explicitamente fuera de la entrega actual
 
-- Aportes del asociado: ya existe modelo operativo base, consulta privada y carga XLSX inicial; faltan datos reales y plantilla oficial aprobada.
-- Ahorro permanente y ahorro voluntario: existe cuenta base con saldos separados e importacion XLSX inicial; falta regla final de conciliacion.
-- Importacion de Excel/XLSX: implementada como flujo inicial para creditos y aportes con validaciones, auditoria, storage privado y reporte por fila; falta plantilla institucional final.
+- Aportes del asociado: existe saldo separado, consulta privada y carga XLSX; faltan datos representativos y aprobacion institucional final.
+- Ahorro permanente y ahorro voluntario: existen saldos e importaciones separadas; falta regla final de conciliacion.
+- Importacion de Excel/XLSX: implementada para cartera, aportes y ambos ahorros con plantillas separadas, validaciones, auditoria, storage privado y reporte por fila; falta aprobacion institucional final.
 - Retencion automatica de FPQRS, documentos, solicitudes y auditoria: bloqueada hasta aprobacion juridica y operativa.
 - Rotacion operativa de `DATA_HASH_PEPPER`: pendiente de procedimiento formal. Los hashes sensibles de documento, correo, IP y agente de usuario ya usan HMAC-SHA256 y requieren pepper estable por entorno.
 - Auditoria append-only reforzada por PostgreSQL: pendiente de definicion de permisos/triggers en el entorno productivo.

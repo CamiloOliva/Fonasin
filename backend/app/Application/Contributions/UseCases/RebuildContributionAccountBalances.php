@@ -27,17 +27,23 @@ class RebuildContributionAccountBalances
             'movement_type',
             ContributionMovementType::VoluntarySavings->value,
         );
+        $contribution = $movements->firstWhere(
+            'movement_type',
+            ContributionMovementType::Contribution->value,
+        );
         /** @var ContributionMovement|null $latest */
         $latest = $movements->first();
 
+        $contributionBalance = $contribution?->balance_after ?? '0.00';
         $permanentBalance = $permanent?->balance_after ?? '0.00';
         $voluntaryBalance = $voluntary?->balance_after ?? '0.00';
 
         $account->forceFill([
+            'contribution_balance' => $contributionBalance,
             'permanent_savings_balance' => $permanentBalance,
             'voluntary_savings_balance' => $voluntaryBalance,
             'total_balance' => number_format(
-                (float) $permanentBalance + (float) $voluntaryBalance,
+                (float) $contributionBalance + (float) $permanentBalance + (float) $voluntaryBalance,
                 2,
                 '.',
                 '',

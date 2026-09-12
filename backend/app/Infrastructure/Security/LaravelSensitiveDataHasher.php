@@ -12,6 +12,11 @@ class LaravelSensitiveDataHasher implements HashesSensitiveData
         return $this->hmac(strtoupper(trim($documentNumber)));
     }
 
+    public function financialReference(string $reference): string
+    {
+        return $this->hmac(strtoupper(trim($reference)));
+    }
+
     public function email(string $email): string
     {
         return $this->hmac(strtolower(trim($email)));

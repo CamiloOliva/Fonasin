@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Application\Audit\UseCases\RecordAuditEvent;
-use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Application\Credits\UseCases\ArchiveCreditAccount;
 use App\Application\Credits\UseCases\RegisterCreditAccount;
 use App\Application\Credits\UseCases\UpdateCreditAccount;
 use App\Application\Credits\UseCases\ViewAssociateCredits;
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Domain\Audit\Enums\AuditActorType;
 use App\Domain\Audit\Enums\AuditModule;
 use App\Domain\Credits\Enums\CreditAuditAction;
@@ -147,6 +147,7 @@ class CreditAccountController extends Controller
             'term_months' => $credit->term_months,
             'interest_rate' => $credit->interest_rate,
             'installment_amount' => $credit->installment_amount,
+            'last_payment_date' => $credit->last_payment_date?->toDateString(),
             'status' => $credit->status,
             'registered_by_user_id' => $credit->registered_by_user_id,
             'associate' => $credit->associate ? [

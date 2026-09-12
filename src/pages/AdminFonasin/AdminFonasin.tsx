@@ -50,10 +50,12 @@ import {
   fetchAdminImportBatches,
   importAdminContributions,
   importAdminCredits,
+  importAdminSpreadsheet,
   updateAdminCredit,
   type AdminCredit,
   type AdminImportBatch,
   type AdminImportBatchPage,
+  type AdminImportType,
 } from '../../services/adminCreditService';
 import {
   fetchAdminContributionAccounts,
@@ -607,7 +609,7 @@ export default function AdminFonasin() {
     }
   }
 
-  async function handleImportSpreadsheet(type: 'credits' | 'contributions', event: FormEvent<HTMLFormElement>) {
+  async function handleImportSpreadsheet(type: AdminImportType, event: FormEvent<HTMLFormElement>) {
     if (!isAdmin) return;
     event.preventDefault();
     setError(null);
@@ -633,7 +635,9 @@ export default function AdminFonasin() {
     try {
       const batch = type === 'credits'
         ? await importAdminCredits(file)
-        : await importAdminContributions(file);
+        : type === 'contributions'
+          ? await importAdminContributions(file)
+          : await importAdminSpreadsheet(type, file);
       setLastImport(batch);
       setImportState('ready');
       form.reset();
@@ -658,7 +662,7 @@ export default function AdminFonasin() {
     }
   }
 
-  async function handleDownloadImportTemplate(type: 'credits' | 'contributions') {
+  async function handleDownloadImportTemplate(type: AdminImportType) {
     if (!isAdmin) return;
     setError(null);
     setMessage(null);
@@ -1274,8 +1278,8 @@ function CreditsPanel({
   onStatusChange: (id: string, status: 'active' | 'settled' | 'archived') => void;
   importState: DataState;
   lastImport: AdminImportBatch | null;
-  onImport: (type: 'credits' | 'contributions', event: FormEvent<HTMLFormElement>) => void;
-  onDownloadTemplate: (type: 'credits' | 'contributions') => void;
+  onImport: (type: AdminImportType, event: FormEvent<HTMLFormElement>) => void;
+  onDownloadTemplate: (type: AdminImportType) => void;
   canManage: boolean;
 }) {
   const activeAssociates = associates.filter((associate) => associate.status === 'active');
@@ -1410,18 +1414,32 @@ function CreditsPanel({
 
           <div className="mt-5 grid gap-3">
             <ImportForm
-              title="Creditos"
-              description="Columnas: documento, linea_credito, valor_inicial, saldo_actual, plazo_meses, tasa_interes, valor_cuota, estado."
+              title="Cartera"
+              description="Columnas: documento, nombre_completo, linea_credito, numero_pagare, valor_inicial, valor_cuota, saldo_actual, fecha_ultimo_pago."
               disabled={!canManage || importState === 'loading'}
               onSubmit={(event) => onImport('credits', event)}
               onDownloadTemplate={() => onDownloadTemplate('credits')}
             />
             <ImportForm
               title="Aportes"
-              description="Columnas: documento, periodo, fecha_corte, tipo_aporte, valor, saldo_despues, estado, referencia."
+              description="Columnas: documento, nombre_completo, valor_mensual, saldo, fecha_ultimo_pago."
               disabled={!canManage || importState === 'loading'}
               onSubmit={(event) => onImport('contributions', event)}
               onDownloadTemplate={() => onDownloadTemplate('contributions')}
+            />
+            <ImportForm
+              title="Ahorro voluntario"
+              description="Columnas: documento, nombre_completo, valor_mensual, saldo, fecha_ultimo_pago."
+              disabled={!canManage || importState === 'loading'}
+              onSubmit={(event) => onImport('voluntary_savings', event)}
+              onDownloadTemplate={() => onDownloadTemplate('voluntary_savings')}
+            />
+            <ImportForm
+              title="Ahorro permanente"
+              description="Columnas: documento, nombre_completo, valor_mensual, saldo, fecha_ultimo_pago."
+              disabled={!canManage || importState === 'loading'}
+              onSubmit={(event) => onImport('permanent_savings', event)}
+              onDownloadTemplate={() => onDownloadTemplate('permanent_savings')}
             />
           </div>
 
@@ -1490,7 +1508,7 @@ function CreditsPanel({
                   <td className="py-4 pr-4 text-slate-700">{formatCurrency(credit.initial_balance)}</td>
                   <td className="py-4 pr-4 font-black text-slate-950">{formatCurrency(credit.current_balance)}</td>
                   <td className="py-4 pr-4 text-slate-700">{formatCurrency(credit.installment_amount)}</td>
-                  <td className="py-4 pr-4 text-slate-700">{credit.term_months} meses</td>
+                  <td className="py-4 pr-4 text-slate-700">{credit.term_months ? `${credit.term_months} meses` : 'No informado'}</td>
                   <td className="py-4 pr-4">
                     <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-700">
                       {statusLabel(credit.status)}
@@ -1680,6 +1698,7 @@ function ContributionsPanel({
 
             <div className="grid gap-3 py-5 sm:grid-cols-3">
               <BalanceSummary label="Ahorro permanente" value={selectedAccount.permanent_savings_balance} />
+              <BalanceSummary label="Aportes" value={selectedAccount.contribution_balance} />
               <BalanceSummary label="Ahorro voluntario" value={selectedAccount.voluntary_savings_balance} />
               <BalanceSummary label="Saldo total" value={selectedAccount.total_balance} emphasized />
             </div>
@@ -1939,6 +1958,8 @@ function ImportHistoryPanel({
             <option value="">Todas</option>
             <option value="credits">Creditos</option>
             <option value="contributions">Aportes</option>
+            <option value="voluntary_savings">Ahorro voluntario</option>
+            <option value="permanent_savings">Ahorro permanente</option>
           </select>
         </label>
       </div>
@@ -2044,6 +2065,8 @@ function importTypeLabel(type: string): string {
   const labels: Record<string, string> = {
     credits: 'Creditos',
     contributions: 'Aportes',
+    voluntary_savings: 'Ahorro voluntario',
+    permanent_savings: 'Ahorro permanente',
   };
 
   return labels[type] ?? type;

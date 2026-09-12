@@ -127,6 +127,7 @@ class ContributionController extends Controller
         $payload = [
             'id' => $account->id,
             'associate_id' => $account->associate_id,
+            'contribution_balance' => $account->contribution_balance,
             'permanent_savings_balance' => $account->permanent_savings_balance,
             'voluntary_savings_balance' => $account->voluntary_savings_balance,
             'total_balance' => $account->total_balance,

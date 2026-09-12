@@ -7,6 +7,7 @@ use App\Application\Imports\Contracts\ReadsSpreadsheetRows;
 use App\Application\Imports\DTO\UploadedSpreadsheet;
 use App\Application\Imports\Exceptions\CannotImportSpreadsheet;
 use App\Application\Imports\Support\LocalizedNumberParser;
+use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Application\Storage\Contracts\StoresPrivateFiles;
 use App\Domain\Audit\Enums\AuditActorType;
@@ -18,6 +19,7 @@ use App\Models\Associate;
 use App\Models\CreditAccount;
 use App\Models\ImportBatch;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -27,13 +29,13 @@ class ImportCreditAccounts
 
     private const REQUIRED_COLUMNS = [
         'documento',
+        'nombre_completo',
         'linea_credito',
+        'numero_pagare',
         'valor_inicial',
-        'saldo_actual',
-        'plazo_meses',
-        'tasa_interes',
         'valor_cuota',
-        'estado',
+        'saldo_actual',
+        'fecha_ultimo_pago',
     ];
 
     private const CREDIT_LINES = ['FONALIBRE', 'FONAPEN', 'FONAPRIMA', 'FONAROTATIVO', 'FONAPORTES'];
@@ -42,6 +44,7 @@ class ImportCreditAccounts
         private readonly ReadsSpreadsheetRows $reader,
         private readonly StoresPrivateFiles $storage,
         private readonly HashesSensitiveData $hasher,
+        private readonly EncryptsSensitiveData $cipher,
         private readonly RecordAuditEvent $recordAuditEvent,
         private readonly LocalizedNumberParser $numberParser,
     ) {}
@@ -81,10 +84,10 @@ class ImportCreditAccounts
                         continue;
                     }
 
-                    $duplicateKey = $validated['document_hash'].'|'.$validated['credit_line'];
+                    $duplicateKey = $validated['promissory_note_hash'];
 
                     if (isset($seen[$duplicateKey])) {
-                        $errors[] = $this->rowError($rowNumber, 'La combinacion documento + linea de credito esta duplicada en el archivo.');
+                        $errors[] = $this->rowError($rowNumber, 'El numero de pagare esta duplicado en el archivo.');
 
                         continue;
                     }
@@ -101,31 +104,62 @@ class ImportCreditAccounts
                         continue;
                     }
 
+                    if ($this->normalizedName($associate->full_name) !== $this->normalizedName($validated['full_name'])) {
+                        $errors[] = $this->rowError($rowNumber, 'El nombre completo no coincide con el asociado del documento informado.');
+
+                        continue;
+                    }
+
                     $credit = CreditAccount::query()
+                        ->where('promissory_note_number_hash', $validated['promissory_note_hash'])
+                        ->first();
+
+                    if ($credit && $credit->associate_id !== $associate->id) {
+                        $errors[] = $this->rowError($rowNumber, 'El numero de pagare pertenece a otro asociado.');
+
+                        continue;
+                    }
+
+                    if ($credit?->status === CreditAccountStatus::Archived->value) {
+                        $errors[] = $this->rowError($rowNumber, 'El credito asociado al pagare esta archivado.');
+
+                        continue;
+                    }
+
+                    $legacyCredits = CreditAccount::query()
                         ->where('associate_id', $associate->id)
                         ->where('credit_line', $validated['credit_line'])
+                        ->whereNull('promissory_note_number_hash')
                         ->where('status', '!=', CreditAccountStatus::Archived->value)
-                        ->first();
+                        ->limit(2)
+                        ->get();
+
+                    if (! $credit && $legacyCredits->count() > 1) {
+                        $errors[] = $this->rowError($rowNumber, 'Existen varios creditos anteriores sin numero de pagare para este asociado y linea.');
+
+                        continue;
+                    }
+
+                    $credit ??= $legacyCredits->first();
 
                     $payload = [
                         'associate_id' => $associate->id,
                         'credit_line' => $validated['credit_line'],
+                        'promissory_note_number_hash' => $validated['promissory_note_hash'],
+                        'promissory_note_number_encrypted' => $this->cipher->encryptArray([
+                            'promissory_note_number' => $validated['promissory_note_number'],
+                        ]),
                         'initial_balance' => $validated['initial_balance'],
                         'current_balance' => $validated['current_balance'],
-                        'term_months' => $validated['term_months'],
-                        'interest_rate' => $validated['interest_rate'],
+                        'term_months' => $credit?->term_months,
+                        'interest_rate' => $credit?->interest_rate,
                         'installment_amount' => $validated['installment_amount'],
-                        'status' => $validated['status'],
+                        'last_payment_date' => $validated['last_payment_date'],
+                        'status' => $credit?->status ?? CreditAccountStatus::Active->value,
                         'registered_by_user_id' => $actor->id,
                     ];
 
                     if ($credit) {
-                        if (! $this->statusTransitionAllowed((string) $credit->status, $validated['status'])) {
-                            $errors[] = $this->rowError($rowNumber, 'La transicion de estado del credito no es valida.');
-
-                            continue;
-                        }
-
                         $changedFields = $this->changedFields($credit, $payload);
                         $previousStatus = (string) $credit->status;
                         $credit->forceFill($payload)->save();
@@ -211,24 +245,28 @@ class ImportCreditAccounts
     private function validateRow(array $row, int $rowNumber): array
     {
         $line = strtoupper($row['linea_credito'] ?? '');
-        $status = strtolower($row['estado'] ?? CreditAccountStatus::Active->value);
+        $fullName = trim($row['nombre_completo'] ?? '');
+        $promissoryNoteNumber = strtoupper(trim($row['numero_pagare'] ?? ''));
 
         if (($row['documento'] ?? '') === '') {
             return ['error' => $this->rowError($rowNumber, 'El documento es obligatorio.')];
+        }
+
+        if ($fullName === '' || mb_strlen($fullName) > 255) {
+            return ['error' => $this->rowError($rowNumber, 'El nombre completo es obligatorio y no puede superar 255 caracteres.')];
+        }
+
+        if ($promissoryNoteNumber === '' || mb_strlen($promissoryNoteNumber) > 120) {
+            return ['error' => $this->rowError($rowNumber, 'El numero de pagare es obligatorio y no puede superar 120 caracteres.')];
         }
 
         if (! in_array($line, self::CREDIT_LINES, true)) {
             return ['error' => $this->rowError($rowNumber, 'La linea de credito no es valida.')];
         }
 
-        if (! in_array($status, array_column(CreditAccountStatus::cases(), 'value'), true)) {
-            return ['error' => $this->rowError($rowNumber, 'El estado del credito no es valido.')];
-        }
-
         $numbers = [
             'initial_balance' => $this->numberParser->parse($row['valor_inicial'] ?? '', 2),
             'current_balance' => $this->numberParser->parse($row['saldo_actual'] ?? '', 2),
-            'interest_rate' => $this->numberParser->parse($row['tasa_interes'] ?? '', 4),
             'installment_amount' => $this->numberParser->parse($row['valor_cuota'] ?? '', 2),
         ];
 
@@ -238,22 +276,45 @@ class ImportCreditAccounts
             }
         }
 
-        $termMonths = filter_var($row['plazo_meses'] ?? null, FILTER_VALIDATE_INT);
+        $lastPaymentDate = $this->parseDate($row['fecha_ultimo_pago'] ?? '');
 
-        if (! is_int($termMonths) || $termMonths < 1) {
-            return ['error' => $this->rowError($rowNumber, 'El plazo en meses debe ser un entero mayor a cero.')];
+        if (! $lastPaymentDate) {
+            return ['error' => $this->rowError($rowNumber, 'La fecha del ultimo pago debe tener formato YYYY-MM-DD.')];
         }
 
         return [
             'document_hash' => $this->hasher->documentNumber($row['documento']),
+            'full_name' => $fullName,
+            'promissory_note_number' => $promissoryNoteNumber,
+            'promissory_note_hash' => $this->hasher->financialReference($promissoryNoteNumber),
             'credit_line' => $line,
             'initial_balance' => $numbers['initial_balance'],
             'current_balance' => $numbers['current_balance'],
-            'term_months' => $termMonths,
-            'interest_rate' => $numbers['interest_rate'],
             'installment_amount' => $numbers['installment_amount'],
-            'status' => $status,
+            'last_payment_date' => $lastPaymentDate->toDateString(),
         ];
+    }
+
+    private function normalizedName(string $name): string
+    {
+        return Str::of($name)->ascii()->upper()->squish()->toString();
+    }
+
+    private function parseDate(string $value): ?Carbon
+    {
+        $date = substr(trim($value), 0, 10);
+
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            return null;
+        }
+
+        try {
+            $parsed = Carbon::createFromFormat('Y-m-d', $date)->startOfDay();
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return $parsed->toDateString() === $date ? $parsed : null;
     }
 
     /**
@@ -369,25 +430,6 @@ class ImportCreditAccounts
             ipHash: $ipHash,
             metadata: $metadata,
         );
-    }
-
-    private function statusTransitionAllowed(string $from, string $to): bool
-    {
-        if ($from === $to) {
-            return true;
-        }
-
-        $allowed = [
-            CreditAccountStatus::Active->value => [
-                CreditAccountStatus::Settled->value,
-                CreditAccountStatus::Archived->value,
-            ],
-            CreditAccountStatus::Settled->value => [
-                CreditAccountStatus::Archived->value,
-            ],
-        ];
-
-        return in_array($to, $allowed[$from] ?? [], true);
     }
 
     private function ensureProcessingTime(int $startedAt): void

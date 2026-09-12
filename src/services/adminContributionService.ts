@@ -8,6 +8,7 @@ export type PaginationMeta = {
 export type AdminContributionAccount = {
   id: string;
   associate_id: string;
+  contribution_balance: string;
   permanent_savings_balance: string;
   voluntary_savings_balance: string;
   total_balance: string;

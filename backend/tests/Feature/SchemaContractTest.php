@@ -135,11 +135,14 @@ class SchemaContractTest extends TestCase
             'id',
             'associate_id',
             'credit_line',
+            'promissory_note_number_hash',
+            'promissory_note_number_encrypted',
             'initial_balance',
             'current_balance',
             'term_months',
             'interest_rate',
             'installment_amount',
+            'last_payment_date',
             'status',
             'registered_by_user_id',
         ]));
@@ -154,6 +157,7 @@ class SchemaContractTest extends TestCase
         $this->assertTrue(Schema::hasColumns('contribution_accounts', [
             'id',
             'associate_id',
+            'contribution_balance',
             'permanent_savings_balance',
             'voluntary_savings_balance',
             'total_balance',
