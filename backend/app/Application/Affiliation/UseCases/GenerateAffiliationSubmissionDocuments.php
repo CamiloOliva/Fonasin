@@ -52,7 +52,7 @@ class GenerateAffiliationSubmissionDocuments
             ),
         ];
 
-        if ($application->isDataUpdate()) {
+        if ($application->isFormOnly()) {
             return $documents;
         }
 

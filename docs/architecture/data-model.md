@@ -65,7 +65,7 @@ Representa la solicitud y sus metadatos operativos, no todos los datos sensibles
 |---|---|---|
 | `id` | UUID | PK |
 | `associate_id` | UUID | FK nullable mientras no exista asociado |
-| `purpose` | varchar(40) | `initial_affiliation` o `data_update`; las actualizaciones no reemplazan soportes ni generan libranza |
+| `purpose` | varchar(40) | `initial_affiliation`, `data_update` o `profile_completion`; los dos ultimos son solo formulario, no reemplazan soportes ni generan libranza |
 | `source_application_id` | UUID | FK nullable a la version habilitada desde la cual parte una actualizacion |
 | `status` | varchar(30) | `draft`, `submitted`, `under_review`, `pending_correction`, `approved`, `enabled`, `disabled`, `withdrawn`, `rejected`, `cancelled` |
 | `current_step` | varchar(30) | etapa visible al solicitante: `personal`, `employment`, `financial`, `beneficiaries`, `sarlaft`, `documents`, `consents`, `summary` |

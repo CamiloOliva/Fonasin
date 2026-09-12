@@ -18,7 +18,7 @@ export type AdminCredit = {
   } | null;
 };
 
-export type AdminImportType = 'credits' | 'contributions' | 'voluntary_savings' | 'permanent_savings';
+export type AdminImportType = 'associates' | 'credits' | 'contributions' | 'voluntary_savings' | 'permanent_savings';
 
 export type AdminImportBatch = {
   id: string;
@@ -227,6 +227,7 @@ export async function downloadAdminImportTemplate(type: AdminImportType): Promis
   const link = document.createElement('a');
   link.href = url;
   const filenames: Record<AdminImportType, string> = {
+    associates: 'plantilla-asociados.xlsx',
     credits: 'plantilla-cartera.xlsx',
     contributions: 'plantilla-aportes.xlsx',
     voluntary_savings: 'plantilla-ahorro-voluntario.xlsx',

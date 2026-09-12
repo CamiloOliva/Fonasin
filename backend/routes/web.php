@@ -117,6 +117,9 @@ Route::middleware(['auth', 'password.changed'])
         Route::post('/{associate}/deactivate', [AssociateController::class, 'deactivate'])
             ->middleware('can:updateStatus,associate')
             ->name('deactivate');
+        Route::post('/{associate}/activation', [AssociateController::class, 'sendActivation'])
+            ->middleware(['can:sendActivation,associate', 'throttle:associate-activation'])
+            ->name('activation.send');
         Route::get('/{associate}/profile', [AssociateProfileController::class, 'show'])
             ->middleware('can:viewProfile,associate')
             ->name('profile.show');
@@ -165,6 +168,9 @@ Route::middleware(['auth', 'password.changed'])
         Route::get('/templates/credits', [ImportBatchController::class, 'creditTemplate'])
             ->middleware('can:import,App\Models\ImportBatch')
             ->name('templates.credits');
+        Route::get('/templates/associates', [ImportBatchController::class, 'associateTemplate'])
+            ->middleware('can:import,App\Models\ImportBatch')
+            ->name('templates.associates');
         Route::get('/templates/contributions', [ImportBatchController::class, 'contributionTemplate'])
             ->middleware('can:import,App\Models\ImportBatch')
             ->name('templates.contributions');
@@ -180,6 +186,9 @@ Route::middleware(['auth', 'password.changed'])
         Route::post('/credits', [ImportBatchController::class, 'importCredits'])
             ->middleware('can:import,App\Models\ImportBatch')
             ->name('credits.store');
+        Route::post('/associates', [ImportBatchController::class, 'importAssociates'])
+            ->middleware('can:import,App\Models\ImportBatch')
+            ->name('associates.store');
         Route::post('/contributions', [ImportBatchController::class, 'importContributions'])
             ->middleware('can:import,App\Models\ImportBatch')
             ->name('contributions.store');

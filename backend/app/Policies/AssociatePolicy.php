@@ -37,6 +37,11 @@ class AssociatePolicy
         return $this->canManageAssociates($user);
     }
 
+    public function sendActivation(User $user, Associate $associate): bool
+    {
+        return $user->hasRole('admin');
+    }
+
     private function canManageAssociates(User $user): bool
     {
         return $user->hasAnyRole(['admin', 'reviewer']);

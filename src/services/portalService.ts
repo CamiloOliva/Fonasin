@@ -3,6 +3,8 @@ export type PortalUser = {
   email: string;
   roles: string[];
   must_change_password: boolean;
+  requires_profile_completion?: boolean;
+  profile_completion_status?: string | null;
 };
 
 export type LoginPayload = {

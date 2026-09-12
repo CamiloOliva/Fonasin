@@ -10,6 +10,7 @@ import {
   PiggyBank,
   RefreshCw,
   Search,
+  Send,
   ShieldCheck,
   UploadCloud,
   UserPlus,
@@ -44,6 +45,7 @@ import {
   fetchAdminAssociateProfile,
   fetchAdminAssociates,
   searchAdminAssociateProfile,
+  sendAdminAssociateActivation,
   type AdminAssociate,
   type AdminAssociateProfile,
 } from '../../services/adminAssociateService';
@@ -696,6 +698,10 @@ export default function AdminFonasin() {
         await loadCredits();
       }
 
+      if (type === 'associates') {
+        await loadAssociates();
+      }
+
       if (activeView === 'imports') {
         await loadImportBatches(importTypeFilter, importMeta.current_page);
       } else {
@@ -733,6 +739,19 @@ export default function AdminFonasin() {
       await downloadAdminImportErrorReport(batchId);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible descargar el reporte de errores.');
+    }
+  }
+
+  async function handleAssociateActivation(id: string) {
+    if (!isAdmin) return;
+    setError(null);
+    setMessage(null);
+
+    try {
+      await sendAdminAssociateActivation(id);
+      setMessage('Enlace de activacion enviado al correo registrado.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible enviar la activacion.');
     }
   }
 
@@ -1052,6 +1071,10 @@ export default function AdminFonasin() {
             onSearch={handleAssociateSearch}
             onSelectProfile={loadAssociateProfile}
             onDownloadProfile={handleAssociateProfileDownload}
+            importState={importState}
+            onImport={handleImportSpreadsheet}
+            onDownloadTemplate={handleDownloadImportTemplate}
+            onSendActivation={handleAssociateActivation}
             onFormChange={setAssociateForm}
             onCreate={handleCreateAssociate}
             onStatusChange={handleAssociateStatus}
@@ -1138,6 +1161,10 @@ function AssociatesPanel({
   onSearch,
   onSelectProfile,
   onDownloadProfile,
+  importState,
+  onImport,
+  onDownloadTemplate,
+  onSendActivation,
   onFormChange,
   onCreate,
   onStatusChange,
@@ -1153,12 +1180,17 @@ function AssociatesPanel({
   onSearch: (event: FormEvent<HTMLFormElement>) => void;
   onSelectProfile: (id: string) => void;
   onDownloadProfile: () => void;
+  importState: DataState;
+  onImport: (type: AdminImportType, event: FormEvent<HTMLFormElement>) => void;
+  onDownloadTemplate: (type: AdminImportType) => void;
+  onSendActivation: (id: string) => void;
   onFormChange: (form: AssociateFormState) => void;
   onCreate: (event: FormEvent<HTMLFormElement>) => void;
   onStatusChange: (id: string, status: 'active' | 'inactive') => void;
 }) {
   return (
     <div className="grid gap-5 xl:grid-cols-[380px_1fr]">
+      <div className="space-y-5">
       <form onSubmit={onCreate} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-100 text-emerald-700">
@@ -1239,6 +1271,15 @@ function AssociatesPanel({
         </button>
       </form>
 
+      <ImportForm
+        title="Asociados"
+        description="Columnas: documento, nombre_completo y correo. La carga crea accesos pendientes, pero no envia correos automaticamente."
+        disabled={importState === 'loading'}
+        onSubmit={(event) => onImport('associates', event)}
+        onDownloadTemplate={() => onDownloadTemplate('associates')}
+      />
+      </div>
+
       <section className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -1315,6 +1356,17 @@ function AssociatesPanel({
                         <FileText size={15} />
                         Ver ficha
                       </button>
+                      {associate.activation_required ? (
+                        <button
+                          type="button"
+                          title="Enviar activacion"
+                          onClick={() => onSendActivation(associate.id)}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-sky-200 px-3 py-2 text-xs font-black text-sky-800 transition hover:bg-sky-50"
+                        >
+                          <Send size={15} />
+                          Activar
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => onStatusChange(associate.id, associate.status === 'active' ? 'inactive' : 'active')}
@@ -2250,6 +2302,7 @@ function ImportHistoryPanel({
             className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
           >
             <option value="">Todas</option>
+            <option value="associates">Asociados</option>
             <option value="credits">Creditos</option>
             <option value="contributions">Aportes</option>
             <option value="voluntary_savings">Ahorro voluntario</option>
@@ -2357,6 +2410,7 @@ function ImportHistoryPanel({
 
 function importTypeLabel(type: string): string {
   const labels: Record<string, string> = {
+    associates: 'Asociados',
     credits: 'Creditos',
     contributions: 'Aportes',
     voluntary_savings: 'Ahorro voluntario',

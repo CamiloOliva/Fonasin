@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Application\Audit\UseCases\RecordAuditEvent;
 use App\Application\Imports\Exceptions\CannotImportSpreadsheet;
+use App\Application\Imports\UseCases\ImportAssociates;
 use App\Application\Imports\UseCases\ImportContributionMovements;
 use App\Application\Imports\UseCases\ImportCreditAccounts;
 use App\Application\Security\Contracts\HashesSensitiveData;
@@ -80,6 +81,23 @@ class ImportBatchController extends Controller
         return response()->json(['data' => $this->batchPayload($batch)], 201);
     }
 
+    public function importAssociates(
+        ImportSpreadsheetRequest $request,
+        ImportAssociates $importAssociates,
+    ): JsonResponse {
+        try {
+            $batch = $importAssociates(
+                file: $request->spreadsheet(),
+                actor: $request->user(),
+                ipHash: $this->ipHash($request),
+            );
+        } catch (CannotImportSpreadsheet $exception) {
+            return $this->importError($exception);
+        }
+
+        return response()->json(['data' => $this->batchPayload($batch)], 201);
+    }
+
     public function importContributions(
         ImportSpreadsheetRequest $request,
         ImportContributionMovements $importContributionMovements,
@@ -128,6 +146,14 @@ class ImportBatchController extends Controller
         return $this->templateResponse('plantilla-cartera.xlsx', [
             ['documento', 'nombre_completo', 'linea_credito', 'numero_pagare', 'valor_inicial', 'valor_cuota', 'saldo_actual', 'fecha_ultimo_pago'],
             ['123456789', 'Asociado de ejemplo', 'FONALIBRE', 'PAG-001', '1000000.00', '50000.00', '800000.00', '2026-09-30'],
+        ]);
+    }
+
+    public function associateTemplate(): Response
+    {
+        return $this->templateResponse('plantilla-asociados.xlsx', [
+            ['documento', 'nombre_completo', 'correo'],
+            ['123456789', 'Asociado de ejemplo', 'asociado.ejemplo@fonasin.test'],
         ]);
     }
 

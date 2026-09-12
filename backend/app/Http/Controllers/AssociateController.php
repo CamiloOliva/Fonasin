@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Application\Affiliation\UseCases\CreateAssociateManually;
 use App\Application\Affiliation\UseCases\UpdateAssociateStatus;
+use App\Application\Identity\UseCases\SendAssociateActivationLink;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Http\Requests\Associates\StoreAssociateRequest;
@@ -19,7 +20,7 @@ class AssociateController extends Controller
     {
         $perPage = max(1, min(100, (int) $request->integer('per_page', 50)));
         $associates = Associate::query()
-            ->with('user:id,email,status')
+            ->with('user:id,email,status,must_change_password')
             ->withCount(['affiliationApplications', 'creditAccounts'])
             ->latest()
             ->paginate($perPage);
@@ -100,6 +101,7 @@ class AssociateController extends Controller
                 'email' => $associate->user->email,
                 'status' => $associate->user->status,
             ] : null,
+            'activation_required' => (bool) $associate->user?->must_change_password,
             'affiliation_applications_count' => $associate->affiliation_applications_count ?? 0,
             'credit_accounts_count' => $associate->credit_accounts_count ?? 0,
             'created_at' => $associate->created_at?->toJSON(),
@@ -131,6 +133,27 @@ class AssociateController extends Controller
                 $updated->load('user')->loadCount(['affiliationApplications', 'creditAccounts']),
                 $cipher,
             ),
+        ]);
+    }
+
+    public function sendActivation(
+        Request $request,
+        Associate $associate,
+        SendAssociateActivationLink $sendActivationLink,
+        HashesSensitiveData $hasher,
+    ): JsonResponse {
+        try {
+            $sendActivationLink(
+                associate: $associate,
+                actor: $request->user(),
+                ipHash: $this->ipHash($request, $hasher),
+            );
+        } catch (DomainException $exception) {
+            return $this->domainError($exception);
+        }
+
+        return response()->json([
+            'message' => 'Enlace de activacion enviado al correo registrado.',
         ]);
     }
 

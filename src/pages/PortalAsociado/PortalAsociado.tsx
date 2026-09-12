@@ -123,6 +123,13 @@ function ensureAssociatePortalUser(user: PortalUser): PortalUser {
   return user;
 }
 
+function shouldOpenProfileCompletion(user: PortalUser): boolean {
+  return user.requires_profile_completion === true
+    && (user.profile_completion_status === null
+      || user.profile_completion_status === 'draft'
+      || user.profile_completion_status === 'pending_correction');
+}
+
 type StoredAffiliationUpdateDraft = {
   savedAt: number;
   id: string;
@@ -255,7 +262,11 @@ export default function PortalAsociado() {
         setUser(currentUser);
         setSessionState('authenticated');
         if (!currentUser.must_change_password) {
-          await loadCredits();
+          if (shouldOpenProfileCompletion(currentUser)) {
+            await openProfileCompletion();
+          } else {
+            await loadCredits();
+          }
         }
       } catch {
         if (!active) return;
@@ -303,7 +314,11 @@ export default function PortalAsociado() {
       setPassword('');
       setMessage('Sesion iniciada correctamente.');
       if (!loggedUser.must_change_password) {
-        await loadCredits();
+        if (shouldOpenProfileCompletion(loggedUser)) {
+          await openProfileCompletion();
+        } else {
+          await loadCredits();
+        }
       }
     } catch (caught) {
       await logoutPortal().catch(() => undefined);
@@ -352,7 +367,17 @@ export default function PortalAsociado() {
     const updatedUser = await changeOwnPassword(payload);
     setUser(updatedUser);
     setMessage('Contrasena actualizada correctamente.');
-    await loadCredits();
+    if (shouldOpenProfileCompletion(updatedUser)) {
+      await openProfileCompletion();
+    } else {
+      await loadCredits();
+    }
+  }
+
+  async function openProfileCompletion() {
+    const updateDraft = await startPortalAffiliationUpdate();
+    storeAffiliationUpdateDraft(updateDraft);
+    navigate('/afiliacion');
   }
 
   async function handleStartAffiliationUpdate() {

@@ -52,7 +52,7 @@ class SubmitAffiliationApplication
                 throw CannotSubmitAffiliationApplication::missingSections($missingSections);
             }
 
-            $missingDocuments = $application->isDataUpdate()
+            $missingDocuments = $application->isFormOnly()
                 ? []
                 : $this->verifyRequiredDocuments->missingDocumentTypes($application);
 

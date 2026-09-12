@@ -4,6 +4,7 @@ namespace App\Application\Portal\UseCases;
 
 use App\Application\Audit\UseCases\RecordAuditEvent;
 use App\Application\Portal\Exceptions\CannotViewPortalAffiliation;
+use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationPurpose;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
@@ -20,6 +21,7 @@ class StartAssociateAffiliationUpdate
 {
     public function __construct(
         private readonly RecordAuditEvent $recordAuditEvent,
+        private readonly EncryptsSensitiveData $cipher,
     ) {}
 
     public function __invoke(
@@ -44,41 +46,45 @@ class StartAssociateAffiliationUpdate
                 ->latest('updated_at')
                 ->first();
 
-            if (! $sourceApplication) {
-                throw CannotViewPortalAffiliation::enabledApplicationIsMissing();
-            }
+            $purpose = $sourceApplication
+                ? AffiliationApplicationPurpose::DataUpdate
+                : AffiliationApplicationPurpose::ProfileCompletion;
 
             $draft = $associate->affiliationApplications()
                 ->where('status', AffiliationApplicationStatus::Draft->value)
-                ->where('purpose', AffiliationApplicationPurpose::DataUpdate->value)
+                ->where('purpose', $purpose->value)
                 ->latest('updated_at')
                 ->first();
 
             if (! $draft) {
                 $draft = AffiliationApplication::query()->create([
                     'associate_id' => $associate->id,
-                    'purpose' => AffiliationApplicationPurpose::DataUpdate->value,
-                    'source_application_id' => $sourceApplication->id,
+                    'purpose' => $purpose->value,
+                    'source_application_id' => $sourceApplication?->id,
                     'status' => AffiliationApplicationStatus::Draft->value,
                     'current_step' => AffiliationApplicationStep::Personal->value,
                 ]);
             }
 
-            foreach ($sourceApplication->sections as $sourceSection) {
-                $draftSection = ApplicationSection::query()->firstOrNew([
-                    'application_id' => $draft->id,
-                    'section' => $sourceSection->section,
-                ]);
+            if ($sourceApplication) {
+                foreach ($sourceApplication->sections as $sourceSection) {
+                    $draftSection = ApplicationSection::query()->firstOrNew([
+                        'application_id' => $draft->id,
+                        'section' => $sourceSection->section,
+                    ]);
 
-                $draftSection->forceFill([
-                    'schema_version' => $sourceSection->schema_version,
-                    'data_encrypted' => $sourceSection->getAttribute('data_encrypted'),
-                    'completed_at' => null,
-                ])->save();
+                    $draftSection->forceFill([
+                        'schema_version' => $sourceSection->schema_version,
+                        'data_encrypted' => $sourceSection->getAttribute('data_encrypted'),
+                        'completed_at' => null,
+                    ])->save();
+                }
+            } else {
+                $this->prefillImportedAssociateIdentity($draft, $associate->document_type, $associate->getAttribute('document_number_encrypted'), $actor->email);
             }
 
             $draft->forceFill([
-                'source_application_id' => $sourceApplication->id,
+                'source_application_id' => $sourceApplication?->id,
                 'current_step' => AffiliationApplicationStep::Personal->value,
             ])->save();
 
@@ -93,11 +99,40 @@ class StartAssociateAffiliationUpdate
                 ipHash: $ipHash,
                 metadata: [
                     'associate_id' => $associate->id,
-                    'source_application_id' => $sourceApplication->id,
+                    'purpose' => $purpose->value,
+                    'source_application_id' => $sourceApplication?->id,
                 ],
             );
 
             return $draft->load('sections', 'documents', 'consentRecords');
         });
+    }
+
+    private function prefillImportedAssociateIdentity(
+        AffiliationApplication $draft,
+        string $documentType,
+        mixed $encryptedDocument,
+        string $email,
+    ): void {
+        $documentNumber = '';
+
+        if (is_string($encryptedDocument) && $encryptedDocument !== '') {
+            $documentNumber = (string) ($this->cipher->decryptArray($encryptedDocument)['document_number'] ?? '');
+        }
+
+        $section = ApplicationSection::query()->firstOrNew([
+            'application_id' => $draft->id,
+            'section' => AffiliationApplicationStep::Personal->value,
+        ]);
+
+        $section->forceFill([
+            'schema_version' => 1,
+            'data_encrypted' => $this->cipher->encryptArray([
+                'documentType' => $documentType,
+                'documentNumber' => $documentNumber,
+                'email' => $email,
+            ]),
+            'completed_at' => null,
+        ])->save();
     }
 }

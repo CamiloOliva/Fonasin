@@ -55,7 +55,7 @@ class EnableAffiliationApplication
                 ->where('status', ApplicationDocumentStatus::Uploaded->value)
                 ->exists();
 
-            if (! $application->isDataUpdate() && ! $hasSignedPayrollAuthorization) {
+            if (! $application->isFormOnly() && ! $hasSignedPayrollAuthorization) {
                 throw CannotReviewAffiliationApplication::missingSignedPayrollAuthorization();
             }
 
@@ -67,7 +67,7 @@ class EnableAffiliationApplication
             $normalizedEmail = strtolower(trim($email));
             $documentNumberHash = $this->hasher->documentNumber($documentNumber);
 
-            if ($application->isDataUpdate()) {
+            if ($application->isFormOnly()) {
                 [$associate, $user] = $this->updateExistingIdentity(
                     $application,
                     $documentType,

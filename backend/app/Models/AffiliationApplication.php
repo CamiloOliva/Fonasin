@@ -52,6 +52,16 @@ class AffiliationApplication extends Model
         return $this->purpose === AffiliationApplicationPurpose::DataUpdate->value;
     }
 
+    public function isProfileCompletion(): bool
+    {
+        return $this->purpose === AffiliationApplicationPurpose::ProfileCompletion->value;
+    }
+
+    public function isFormOnly(): bool
+    {
+        return $this->isDataUpdate() || $this->isProfileCompletion();
+    }
+
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by_user_id');

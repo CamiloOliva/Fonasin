@@ -186,6 +186,12 @@ export async function deactivateAdminAssociate(id: string): Promise<AdminAssocia
   return response.data;
 }
 
+export async function sendAdminAssociateActivation(id: string): Promise<void> {
+  await requestJson<{ message: string }>(`/admin/associates/${id}/activation`, {
+    method: 'POST',
+  });
+}
+
 export async function fetchAdminAssociateProfile(id: string): Promise<AdminAssociateProfile> {
   const response = await requestJson<{ data: AdminAssociateProfile }>(`/admin/associates/${id}/profile`);
 

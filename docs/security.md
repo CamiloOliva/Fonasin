@@ -23,9 +23,11 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 - La administracion manual de creditos requiere sesion, policy, auditoria y paginacion en listados administrativos. Solo permite asociados activos y lineas de credito aprobadas. El retiro operativo se maneja como estado `archived`, no como borrado fisico; los cambios de estado usan transiciones permitidas.
 - La consulta de aportes del portal resuelve siempre el asociado desde la sesion. No acepta `associate_id` del navegador y diferencia modulo deshabilitado, asociado sin datos y datos disponibles.
 - El historial de importaciones no expone `storage_key` ni `file_hash`. La carga masiva queda reservada a `admin`; `reviewer` puede consultar historial, pero no importar salvo aprobacion expresa.
+- La importacion XLSX de asociados solo prepara cuentas con nombre completo, cedula y correo; no intenta dividir nombres ni envia mensajes masivos. Cada correo de activacion requiere una accion individual del administrador, tiene limite de frecuencia, token temporal hasheado y auditoria sin correo o documento en claro.
 - Las cargas XLSX de cartera, aportes y ahorros validan extension, MIME, tamano, columnas obligatorias, tipos, valores, coincidencia de documento y nombre, duplicados dentro del archivo y repeticion por hash de archivo. El numero de pagare se cifra y se identifica mediante HMAC. El archivo queda en storage privado bajo una clave generada por servidor, no en `public/`.
 - Las cuentas creadas con clave inicial interna quedan marcadas con `must_change_password` y no pueden usar rutas privadas de portal o administracion hasta cambiarla. El cambio exige la contrasena actual, guarda solo hash y registra evento de autenticacion.
 - La recuperacion de contrasena usa correo y numero de documento. Para asociados se valida contra `associates`; para usuarios internos se valida contra el documento cifrado/hasheado en `users`. Los tokens se guardan hasheados, expiran y los eventos se registran sin exponer correo ni documento en claro.
+- Un asociado cargado desde XLSX que todavia no tiene formulario habilitado recibe `requires_profile_completion`. Despues de definir su contrasena, el portal crea o reutiliza un borrador `profile_completion`, precarga la identidad cifrada y bloquea cargas documentales y libranzas.
 
 ## Datos sensibles
 
