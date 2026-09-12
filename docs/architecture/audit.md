@@ -14,7 +14,7 @@ Registrar quien hizo una accion, sobre que registro, cuando ocurrio y cual fue e
 | `occurred_at` | timestamptz | fecha y hora UTC |
 | `actor_user_id` | UUID nullable | usuario que realizo la accion; null si fue sistema |
 | `actor_type` | varchar(20) | `user` o `system` |
-| `module` | varchar(40) | `identity`, `affiliation`, `credits`, `portal`, `content`, `fpqrs` |
+| `module` | varchar(40) | `identity`, `affiliation`, `credits`, `contributions`, `imports`, `portal`, `content`, `fpqrs` |
 | `action` | varchar(80) | accion semantica registrada |
 | `subject_type` | varchar(80) | tipo del recurso afectado |
 | `subject_id` | UUID | recurso afectado |
@@ -71,6 +71,8 @@ La primera implementacion reutilizable es `App\Application\Audit\UseCases\Record
 Las importaciones XLSX registran el resultado del lote y eventos `credit.registered` o `credit.updated` por credito afectado con el mismo `correlation_id`. Los eventos de actualizacion incluyen solo nombres de campos cambiados y, cuando aplica, la transicion de estado; nunca incluyen saldos, tasas, cuotas ni documentos.
 
 Las consultas administrativas de aportes registran `contribution.account_collection.viewed` y `contribution.movement_collection.viewed`. Los metadatos se limitan al alcance administrativo, filtros operativos no sensibles y conteos paginados; no copian nombres, documentos, referencias ni valores financieros.
+
+La ficha consolidada del asociado registra `admin.associate_profile.viewed` y `admin.associate_profile.exported`. Sus metadatos solo indican alcance, disponibilidad y conteos; nunca incluyen cedula, correo, datos del formulario, numero de pagare, referencias ni valores financieros.
 
 ## Consulta operativa
 

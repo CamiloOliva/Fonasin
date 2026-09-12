@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AffiliationApplicationController;
 use App\Http\Controllers\AssociateController;
+use App\Http\Controllers\AssociateProfileController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\ContributionController;
@@ -101,6 +102,9 @@ Route::middleware(['auth', 'password.changed'])
     ->prefix('admin/associates')
     ->name('admin.associates.')
     ->group(function (): void {
+        Route::post('/profile/search', [AssociateProfileController::class, 'search'])
+            ->middleware('can:viewSensitiveProfiles,App\\Models\\Associate')
+            ->name('profile.search');
         Route::get('/', [AssociateController::class, 'index'])
             ->middleware('can:viewAny,App\Models\Associate')
             ->name('index');
@@ -113,6 +117,12 @@ Route::middleware(['auth', 'password.changed'])
         Route::post('/{associate}/deactivate', [AssociateController::class, 'deactivate'])
             ->middleware('can:updateStatus,associate')
             ->name('deactivate');
+        Route::get('/{associate}/profile', [AssociateProfileController::class, 'show'])
+            ->middleware('can:viewProfile,associate')
+            ->name('profile.show');
+        Route::get('/{associate}/profile/export', [AssociateProfileController::class, 'export'])
+            ->middleware('can:exportProfile,associate')
+            ->name('profile.export');
     });
 
 Route::middleware(['auth', 'password.changed'])

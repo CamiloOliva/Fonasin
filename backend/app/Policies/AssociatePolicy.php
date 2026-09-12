@@ -7,6 +7,21 @@ use App\Models\User;
 
 class AssociatePolicy
 {
+    public function viewSensitiveProfiles(User $user): bool
+    {
+        return $user->hasRole('admin');
+    }
+
+    public function viewProfile(User $user, Associate $associate): bool
+    {
+        return $this->viewSensitiveProfiles($user);
+    }
+
+    public function exportProfile(User $user, Associate $associate): bool
+    {
+        return $this->viewSensitiveProfiles($user);
+    }
+
     public function viewAny(User $user): bool
     {
         return $this->canManageAssociates($user);
