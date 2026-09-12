@@ -13,6 +13,7 @@ class ContributionAccount extends Model
 
     protected $fillable = [
         'associate_id',
+        'contribution_balance',
         'permanent_savings_balance',
         'voluntary_savings_balance',
         'total_balance',
@@ -25,6 +26,7 @@ class ContributionAccount extends Model
     protected function casts(): array
     {
         return [
+            'contribution_balance' => 'decimal:2',
             'permanent_savings_balance' => 'decimal:2',
             'voluntary_savings_balance' => 'decimal:2',
             'total_balance' => 'decimal:2',

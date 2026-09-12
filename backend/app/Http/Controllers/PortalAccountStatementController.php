@@ -73,6 +73,7 @@ class PortalAccountStatementController extends Controller
             'term_months' => $credit->term_months,
             'interest_rate' => $credit->interest_rate,
             'installment_amount' => $credit->installment_amount,
+            'last_payment_date' => $credit->last_payment_date?->toDateString(),
             'status' => $credit->status,
         ];
     }
@@ -84,6 +85,7 @@ class PortalAccountStatementController extends Controller
     {
         return [
             'id' => $account->id,
+            'contribution_balance' => $account->contribution_balance,
             'permanent_savings_balance' => $account->permanent_savings_balance,
             'voluntary_savings_balance' => $account->voluntary_savings_balance,
             'total_balance' => $account->total_balance,
