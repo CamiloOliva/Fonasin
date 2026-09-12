@@ -208,15 +208,19 @@ class SpreadsheetImportHttpTest extends TestCase
         $admin = $this->userWithRole('admin');
         $this->createAssociate('123456789');
         $rows = [$this->contributionHeaders(), ['123456789', 'Synthetic Associate', '100000', '300000', '2026-09-30']];
+        $file = $this->xlsx('movimientos.xlsx', $rows);
+        $contents = file_get_contents($file->getRealPath());
+
+        $this->assertIsString($contents);
 
         $this->actingAs($admin)->postJson('/admin/import-batches/contributions', [
-            'file' => $this->xlsx('movimientos.xlsx', $rows),
+            'file' => $this->xlsxFromContents('movimientos.xlsx', $contents),
         ])->assertCreated();
         $this->actingAs($admin)->postJson('/admin/import-batches/contributions', [
-            'file' => $this->xlsx('movimientos.xlsx', $rows),
+            'file' => $this->xlsxFromContents('movimientos.xlsx', $contents),
         ])->assertUnprocessable();
         $this->actingAs($admin)->postJson('/admin/import-batches/voluntary-savings', [
-            'file' => $this->xlsx('movimientos.xlsx', $rows),
+            'file' => $this->xlsxFromContents('movimientos.xlsx', $contents),
         ])->assertCreated();
     }
 
@@ -283,6 +287,14 @@ class SpreadsheetImportHttpTest extends TestCase
     {
         $path = tempnam(sys_get_temp_dir(), 'fonasin-xlsx-').'.xlsx';
         SimpleXLSXGen::fromArray($rows)->saveAs($path);
+
+        return new UploadedFile($path, $filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+    }
+
+    private function xlsxFromContents(string $filename, string $contents): UploadedFile
+    {
+        $path = tempnam(sys_get_temp_dir(), 'fonasin-xlsx-copy-').'.xlsx';
+        file_put_contents($path, $contents);
 
         return new UploadedFile($path, $filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
     }
