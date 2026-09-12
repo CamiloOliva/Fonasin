@@ -134,15 +134,18 @@ Una solicitud solo puede registrar una aceptacion por tipo y version de politica
 | `id` | UUID | PK |
 | `associate_id` | UUID | FK |
 | `credit_line` | varchar(120) | linea de credito |
+| `promissory_note_number_hash` | char(64) nullable | HMAC unico para identificar el pagare |
+| `promissory_note_number_encrypted` | text nullable | numero de pagare cifrado |
 | `initial_balance` | numeric(14,2) | mayor o igual a cero |
 | `current_balance` | numeric(14,2) | mayor o igual a cero |
-| `term_months` | integer | mayor que cero |
-| `interest_rate` | numeric(7,4) | tasa registrada |
+| `term_months` | integer nullable | mayor que cero cuando se informa |
+| `interest_rate` | numeric(7,4) nullable | tasa registrada cuando se informa |
 | `installment_amount` | numeric(14,2) | mayor o igual a cero |
+| `last_payment_date` | date nullable | fecha del ultimo pago reportado |
 | `status` | varchar(30) | `active`, `settled`, `archived` |
 | `registered_by_user_id` | UUID | FK al administrador responsable |
 
-Un asociado puede tener varios creditos. No se deben borrar; una correccion crea auditoria y un credito no vigente se archiva. Los casos de uso iniciales de Credits permiten registrar, actualizar campos existentes, archivar, importar desde XLSX y consultar creditos propios desde la sesion del asociado; no aceptan `associate_id` del navegador para consultas privadas. La importacion XLSX actualiza por asociado activo y `credit_line` cuando existe un credito no archivado; de lo contrario crea un nuevo registro. Cada alta o modificacion importada registra un evento del credito, correlacionado con el lote, con los nombres de los campos cambiados pero sin copiar valores financieros a auditoria.
+Un asociado puede tener varios creditos. No se deben borrar; una correccion crea auditoria y un credito no vigente se archiva. Los casos de uso iniciales de Credits permiten registrar, actualizar campos existentes, archivar, importar desde XLSX y consultar creditos propios desde la sesion del asociado; no aceptan `associate_id` del navegador para consultas privadas. La importacion XLSX identifica cada obligacion por el HMAC unico del numero de pagare y valida que documento y nombre correspondan a un asociado activo. Cada alta o modificacion importada registra un evento del credito, correlacionado con el lote, con los nombres de los campos cambiados pero sin copiar valores financieros a auditoria.
 
 ## Aportes e importaciones
 
@@ -154,6 +157,7 @@ Representa el saldo operativo de aportes por asociado. Es una cuenta por asociad
 |---|---|---|
 | `id` | UUID | PK |
 | `associate_id` | UUID | FK unico a `associates` |
+| `contribution_balance` | numeric(14,2) | saldo de aportes ordinarios |
 | `permanent_savings_balance` | numeric(14,2) | mayor o igual a cero |
 | `voluntary_savings_balance` | numeric(14,2) | mayor o igual a cero |
 | `total_balance` | numeric(14,2) | mayor o igual a cero |
@@ -192,7 +196,7 @@ Registra la trazabilidad de cargas masivas. El archivo se almacena de forma priv
 |---|---|---|
 | `id` | UUID | PK |
 | `imported_by_user_id` | UUID | FK al usuario administrador |
-| `import_type` | varchar(40) | `credits`, `contributions` |
+| `import_type` | varchar(40) | `credits`, `contributions`, `voluntary_savings`, `permanent_savings` |
 | `original_filename` | varchar(255) | referencia visual, no ruta |
 | `storage_key` | varchar(500) | ruta privada generada por servidor |
 | `file_hash` | char(64) | hash del contenido del archivo |
@@ -244,7 +248,7 @@ El caso de uso inicial de envio exige las secciones de formulario completas, los
 5. Retencion aprobada para solicitudes, documentos y eventos de auditoria.
 6. Catalogos definitivos y si su integridad se aplica solo en dominio o tambien mediante restricciones de base de datos.
 7. Moneda, fechas, limites de tasa y demas invariantes financieras de `credit_accounts`.
-8. Plantilla oficial XLSX para creditos y aportes, incluyendo columnas, formatos, duplicados permitidos y regla de actualizacion.
+8. Aprobacion institucional final de las cuatro plantillas XLSX y de sus reglas de operacion.
 9. Regla final para calcular y reconciliar saldos de aportes cuando una carga corrige periodos anteriores.
 
 ## Contenido y FPQRS

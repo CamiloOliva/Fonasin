@@ -196,6 +196,7 @@ describe('AppRoutes', () => {
       data: [{
         id: 'account-1',
         associate_id: 'associate-1',
+        contribution_balance: '100000.00',
         permanent_savings_balance: '150000.00',
         voluntary_savings_balance: '50000.00',
         total_balance: '200000.00',
@@ -225,6 +226,7 @@ describe('AppRoutes', () => {
       account: {
         id: 'account-1',
         associate_id: 'associate-1',
+        contribution_balance: '100000.00',
         permanent_savings_balance: '150000.00',
         voluntary_savings_balance: '50000.00',
         total_balance: '200000.00',

@@ -269,7 +269,7 @@ error
 
 El reporte usa los errores ya registrados en `import_batches.errors`. No incluye `storage_key`, `file_hash`, documentos, correos ni valores sensibles en claro.
 
-## Importacion XLSX de creditos
+## Importacion XLSX de cartera
 
 Plantilla:
 
@@ -298,24 +298,25 @@ Columnas obligatorias:
 
 ```text
 documento
+nombre_completo
 linea_credito
+numero_pagare
 valor_inicial
-saldo_actual
-plazo_meses
-tasa_interes
 valor_cuota
-estado
+saldo_actual
+fecha_ultimo_pago
 ```
 
 Reglas:
 
 - `documento` se usa solo para busqueda HMAC de asociado activo.
+- `nombre_completo` debe coincidir con el asociado del documento, ignorando mayusculas, espacios repetidos y tildes.
 - `linea_credito` debe ser una linea aprobada.
+- `numero_pagare` es obligatorio, se almacena cifrado y su HMAC unico identifica la obligacion que se debe actualizar.
 - valores numericos no negativos.
 - se aceptan formatos `1250.00`, `1250,00` y `1.250,00`.
-- `plazo_meses` entero mayor a cero.
-- `estado`: `active`, `settled` o `archived`.
-- documento + linea duplicado dentro del archivo se rechaza por fila.
+- `fecha_ultimo_pago` usa formato `YYYY-MM-DD`.
+- numero de pagare duplicado dentro del archivo se rechaza por fila.
 - un archivo ya importado para creditos se rechaza por hash.
 - cada credito creado o modificado registra auditoria correlacionada con el lote; se guardan nombres de campos cambiados, no valores financieros.
 
@@ -326,7 +327,7 @@ Respuesta:
   "data": {
     "id": "uuid",
     "import_type": "credits",
-    "original_filename": "creditos.xlsx",
+    "original_filename": "cartera.xlsx",
     "mime_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "byte_size": 4096,
     "status": "completed_with_errors",
@@ -351,12 +352,14 @@ Respuesta:
 }
 ```
 
-## Importacion XLSX de aportes
+## Importacion XLSX de aportes y ahorros
 
 Plantilla:
 
 ```text
 GET /admin/import-batches/templates/contributions
+GET /admin/import-batches/templates/voluntary-savings
+GET /admin/import-batches/templates/permanent-savings
 Autenticacion: sesion Laravel
 Middleware: auth, password.changed
 Autorizacion: admin
@@ -365,6 +368,8 @@ Respuesta: attachment XLSX, no-store
 
 ```text
 POST /admin/import-batches/contributions
+POST /admin/import-batches/voluntary-savings
+POST /admin/import-batches/permanent-savings
 Autenticacion: sesion Laravel
 Middleware: auth, password.changed
 Autorizacion: admin
@@ -380,25 +385,22 @@ Columnas obligatorias:
 
 ```text
 documento
-periodo
-fecha_corte
-tipo_aporte
-valor
-saldo_despues
-estado
-referencia
+nombre_completo
+valor_mensual
+saldo
+fecha_ultimo_pago
 ```
 
 Reglas:
 
 - `documento` se usa solo para busqueda HMAC de asociado activo.
-- `periodo` y `fecha_corte` usan formato `YYYY-MM-DD`.
-- `tipo_aporte`: `permanent_savings` o `voluntary_savings`.
-- `estado`: `registered`.
+- `nombre_completo` debe coincidir con el asociado del documento, ignorando mayusculas, espacios repetidos y tildes.
+- el endpoint determina el tipo: aporte ordinario, ahorro voluntario o ahorro permanente; el navegador no lo envia dentro de cada fila.
+- `fecha_ultimo_pago` usa formato `YYYY-MM-DD` y determina el periodo y la fecha de corte internos.
 - valores numericos no negativos.
-- `referencia` es obligatoria y no puede estar vacia.
 - se aceptan formatos `1250.00`, `1250,00` y `1.250,00`.
+- el sistema genera una referencia tecnica estable a partir del tipo y la fecha de ultimo pago.
 - documento + tipo + periodo + referencia duplicado dentro del archivo se rechaza por fila.
-- un archivo ya importado para aportes se rechaza por hash.
-- una correccion con la misma referencia revierte el movimiento anterior y registra el nuevo movimiento para no perder historial.
+- un archivo ya importado para el mismo tipo de carga se rechaza por hash.
+- una correccion del mismo asociado, tipo y fecha revierte el movimiento anterior y registra el nuevo para no perder historial.
 - los saldos de las cuentas afectadas se reconstruyen al terminar la carga usando el movimiento registrado cronologicamente mas reciente de cada tipo, sin depender del orden de filas.

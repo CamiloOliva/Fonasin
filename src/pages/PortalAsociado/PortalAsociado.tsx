@@ -631,8 +631,8 @@ export default function PortalAsociado() {
                           <td className="py-4 pr-4 text-slate-700">{formatMoney(credit.initial_balance)}</td>
                           <td className="py-4 pr-4 font-bold text-slate-950">{formatMoney(credit.current_balance)}</td>
                           <td className="py-4 pr-4 text-slate-700">{formatMoney(credit.installment_amount)}</td>
-                          <td className="py-4 pr-4 text-slate-700">{credit.term_months} meses</td>
-                          <td className="py-4 pr-4 text-slate-700">{credit.interest_rate}%</td>
+                          <td className="py-4 pr-4 text-slate-700">{credit.term_months ? `${credit.term_months} meses` : 'No informado'}</td>
+                          <td className="py-4 pr-4 text-slate-700">{credit.interest_rate ? `${credit.interest_rate}%` : 'No informada'}</td>
                           <td className="py-4">
                             <span className="rounded-full bg-fonasin-surface px-3 py-1 text-xs font-bold text-fonasin-green">
                               {statusLabel(credit.status)}
@@ -695,7 +695,11 @@ export default function PortalAsociado() {
 
               {contributionsState === 'ready' && contributions?.state === 'available' && contributions.account ? (
                 <div className="mt-6 space-y-5">
-                  <div className="grid gap-4 md:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
+                      <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Aportes</p>
+                      <p className="mt-3 text-2xl font-black text-fonasin-deep">{formatMoney(contributions.account.contribution_balance)}</p>
+                    </div>
                     <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
                       <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Ahorro permanente</p>
                       <p className="mt-3 text-2xl font-black text-fonasin-deep">{formatMoney(contributions.account.permanent_savings_balance)}</p>

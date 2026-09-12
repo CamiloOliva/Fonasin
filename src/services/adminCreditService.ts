@@ -4,9 +4,10 @@ export type AdminCredit = {
   credit_line: string;
   initial_balance: string;
   current_balance: string;
-  term_months: number;
-  interest_rate: string;
+  term_months: number | null;
+  interest_rate: string | null;
   installment_amount: string;
+  last_payment_date?: string | null;
   status: string;
   registered_by_user_id: string;
   associate: {
@@ -17,9 +18,11 @@ export type AdminCredit = {
   } | null;
 };
 
+export type AdminImportType = 'credits' | 'contributions' | 'voluntary_savings' | 'permanent_savings';
+
 export type AdminImportBatch = {
   id: string;
-  import_type: 'credits' | 'contributions' | string;
+  import_type: AdminImportType | string;
   original_filename: string;
   mime_type: string;
   byte_size: number;
@@ -189,10 +192,16 @@ export async function importAdminCredits(file: File): Promise<AdminImportBatch> 
 }
 
 export async function importAdminContributions(file: File): Promise<AdminImportBatch> {
+  return importAdminSpreadsheet('contributions', file);
+}
+
+export async function importAdminSpreadsheet(type: AdminImportType, file: File): Promise<AdminImportBatch> {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await requestJson<{ data: AdminImportBatch }>('/admin/import-batches/contributions', {
+  const routeType = type.replaceAll('_', '-');
+
+  const response = await requestJson<{ data: AdminImportBatch }>(`/admin/import-batches/${routeType}`, {
     method: 'POST',
     body: formData,
   });
@@ -200,8 +209,9 @@ export async function importAdminContributions(file: File): Promise<AdminImportB
   return response.data;
 }
 
-export async function downloadAdminImportTemplate(type: 'credits' | 'contributions'): Promise<void> {
-  const response = await fetch(buildUrl(`/admin/import-batches/templates/${type}`), {
+export async function downloadAdminImportTemplate(type: AdminImportType): Promise<void> {
+  const routeType = type.replaceAll('_', '-');
+  const response = await fetch(buildUrl(`/admin/import-batches/templates/${routeType}`), {
     credentials: 'include',
     headers: { Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
   });
@@ -216,7 +226,13 @@ export async function downloadAdminImportTemplate(type: 'credits' | 'contributio
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = type === 'credits' ? 'plantilla-creditos.xlsx' : 'plantilla-aportes.xlsx';
+  const filenames: Record<AdminImportType, string> = {
+    credits: 'plantilla-cartera.xlsx',
+    contributions: 'plantilla-aportes.xlsx',
+    voluntary_savings: 'plantilla-ahorro-voluntario.xlsx',
+    permanent_savings: 'plantilla-ahorro-permanente.xlsx',
+  };
+  link.download = filenames[type];
   document.body.appendChild(link);
   link.click();
   link.remove();

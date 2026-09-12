@@ -22,14 +22,16 @@ export type PortalCredit = {
   credit_line: string;
   initial_balance: string;
   current_balance: string;
-  term_months: number;
-  interest_rate: string;
+  term_months: number | null;
+  interest_rate: string | null;
   installment_amount: string;
+  last_payment_date: string | null;
   status: string;
 };
 
 export type PortalContributionAccount = {
   id: string;
+  contribution_balance: string;
   permanent_savings_balance: string;
   voluntary_savings_balance: string;
   total_balance: string;
