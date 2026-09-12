@@ -84,6 +84,15 @@ class AppServiceProvider extends ServiceProvider
 
             return Limit::perMinute(3)->by('fpqrs-public|'.$hasher->ip((string) $request->ip()).'|'.$hasher->email($email));
         });
+
+        RateLimiter::for('associate-activation', function (Request $request): Limit {
+            $associate = $request->route('associate');
+            $associateId = is_object($associate) && method_exists($associate, 'getKey')
+                ? (string) $associate->getKey()
+                : (string) $associate;
+
+            return Limit::perMinute(3)->by('associate-activation|'.$request->user()?->id.'|'.$associateId);
+        });
     }
 
     private function applicationThrottleKey(Request $request): string

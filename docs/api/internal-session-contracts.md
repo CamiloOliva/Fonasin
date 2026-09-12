@@ -448,3 +448,24 @@ La respuesta JSON diferencia los estados `available` y `empty` para formulario, 
 - hasta los 100 movimientos mas recientes y el total existente.
 
 La exportacion genera un XLSX privado con la misma ficha consolidada, usa `Cache-Control: no-store`, no incluye hashes internos y neutraliza valores que podrian interpretarse como formulas. Consultar o exportar registra auditoria sin guardar cedula, contenido del formulario ni referencias financieras en el evento.
+
+## Preparacion XLSX de asociados
+
+```text
+GET /admin/import-batches/templates/associates
+POST /admin/import-batches/associates
+Autenticacion: sesion Laravel
+Middleware: auth, password.changed
+Autorizacion: exclusivamente admin
+```
+
+Columnas obligatorias: `documento`, `nombre_completo`, `correo`. El documento se interpreta como cedula `CC` y debe tener entre 5 y 16 digitos. El nombre se conserva completo, normalizando solo espacios; no se divide automaticamente. La carga valida correos, duplicados dentro del archivo y conflictos de identidad existentes, guarda el XLSX en storage privado y registra el lote. No envia correos.
+
+```text
+POST /admin/associates/{associate}/activation
+Autenticacion: sesion Laravel
+Autorizacion: exclusivamente admin
+Limite: 3 envios por minuto para el administrador y asociado
+```
+
+Genera un token temporal hasheado y envia un unico correo al asociado seleccionado. El enlace permite definir la contrasena y luego el portal inicia `profile_completion` cuando no existe formulario habilitado. Este borrador precarga tipo y numero de documento y correo, exige completar las secciones, bloquea documentos/libranza y genera solamente el formulario para revision interna.

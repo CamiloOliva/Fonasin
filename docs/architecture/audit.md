@@ -70,6 +70,8 @@ La primera implementacion reutilizable es `App\Application\Audit\UseCases\Record
 
 Las importaciones XLSX registran el resultado del lote y eventos `credit.registered` o `credit.updated` por credito afectado con el mismo `correlation_id`. Los eventos de actualizacion incluyen solo nombres de campos cambiados y, cuando aplica, la transicion de estado; nunca incluyen saldos, tasas, cuotas ni documentos.
 
+La importacion de asociados usa el tipo `associates`, registra conteos del lote y reutiliza `associate.created` por cada alta aceptada. El envio individual del acceso registra `associate.activation_sent` en Identity con canal y vigencia; no incluye correo, cedula ni token.
+
 Las consultas administrativas de aportes registran `contribution.account_collection.viewed` y `contribution.movement_collection.viewed`. Los metadatos se limitan al alcance administrativo, filtros operativos no sensibles y conteos paginados; no copian nombres, documentos, referencias ni valores financieros.
 
 La ficha consolidada del asociado registra `admin.associate_profile.viewed` y `admin.associate_profile.exported`. Sus metadatos solo indican alcance, disponibilidad y conteos; nunca incluyen cedula, correo, datos del formulario, numero de pagare, referencias ni valores financieros.

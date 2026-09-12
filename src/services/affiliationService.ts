@@ -25,7 +25,7 @@ export type GeneratedAffiliationDocument = {
 
 export type AffiliationDraft = {
   id: string;
-  purpose: 'initial_affiliation' | 'data_update';
+  purpose: 'initial_affiliation' | 'data_update' | 'profile_completion';
   source_application_id: string | null;
   status: string;
   current_step: string;

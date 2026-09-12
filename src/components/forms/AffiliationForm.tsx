@@ -1318,7 +1318,7 @@ export default function AffiliationForm() {
   const [uploadedDocumentTypes, setUploadedDocumentTypes] = useState<Set<RequiredDocumentType>>(new Set());
   const [selectedLegalDocument, setSelectedLegalDocument] = useState<(typeof legalDocuments)[number]>(legalDocuments[0]);
   const [state, setState] = useState<SectionState>(createInitialState);
-  const isDataUpdate = draft?.purpose === 'data_update';
+  const isDataUpdate = draft?.purpose === 'data_update' || draft?.purpose === 'profile_completion';
 
   function handleDocumentSelection(key: 'identityDocumentFile' | 'employmentCertificateFile', file: File | null): void {
     setError(null);

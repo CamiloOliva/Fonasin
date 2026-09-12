@@ -186,7 +186,7 @@ class AffiliationApplicationController extends Controller
     ): JsonResponse {
         $this->ensureDraftAccess($request, $application);
 
-        if ($application->isDataUpdate()) {
+        if ($application->isFormOnly()) {
             return response()->json([
                 'message' => 'Los documentos existentes no se pueden reemplazar durante una actualizacion de datos.',
             ], 403);
@@ -218,7 +218,7 @@ class AffiliationApplicationController extends Controller
         AffiliationApplication $application,
         RegisterApplicationDocument $registerDocument,
     ): JsonResponse {
-        if ($application->isDataUpdate()) {
+        if ($application->isFormOnly()) {
             return response()->json([
                 'message' => 'Una actualizacion de datos no admite una nueva libranza.',
             ], 403);

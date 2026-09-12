@@ -188,11 +188,22 @@ class AuthenticatedSessionController extends Controller
      */
     private function userPayload(User $user): array
     {
+        $associate = $user->associate()->first();
+        $hasEnabledForm = $associate?->affiliationApplications()
+            ->where('status', 'enabled')
+            ->exists() ?? false;
+        $profileCompletionStatus = $associate?->affiliationApplications()
+            ->where('purpose', 'profile_completion')
+            ->latest('updated_at')
+            ->value('status');
+
         return [
             'id' => $user->id,
             'email' => $user->email,
             'roles' => $user->roles()->pluck('name')->values(),
             'must_change_password' => $user->must_change_password,
+            'requires_profile_completion' => (bool) $associate && ! $hasEnabledForm,
+            'profile_completion_status' => $profileCompletionStatus,
         ];
     }
 }
