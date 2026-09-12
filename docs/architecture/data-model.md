@@ -65,6 +65,8 @@ Representa la solicitud y sus metadatos operativos, no todos los datos sensibles
 |---|---|---|
 | `id` | UUID | PK |
 | `associate_id` | UUID | FK nullable mientras no exista asociado |
+| `purpose` | varchar(40) | `initial_affiliation` o `data_update`; las actualizaciones no reemplazan soportes ni generan libranza |
+| `source_application_id` | UUID | FK nullable a la version habilitada desde la cual parte una actualizacion |
 | `status` | varchar(30) | `draft`, `submitted`, `under_review`, `pending_correction`, `approved`, `enabled`, `disabled`, `withdrawn`, `rejected`, `cancelled` |
 | `current_step` | varchar(30) | etapa visible al solicitante: `personal`, `employment`, `financial`, `beneficiaries`, `sarlaft`, `documents`, `consents`, `summary` |
 | `access_token_hash` | char(64) | hash del token tecnico del borrador; nullable y se limpia al cerrar la solicitud |
@@ -74,6 +76,8 @@ Representa la solicitud y sus metadatos operativos, no todos los datos sensibles
 | `rejection_reason` | text | nullable |
 
 Solo puede existir un borrador activo (`status = draft`) por asociado. Antes de crear el indice parcial, la migracion cancela borradores duplicados antiguos y conserva el mas reciente. En produccion esta migracion requiere respaldo, reporte de borradores afectados y aprobacion funcional antes de ejecutarse.
+
+Una solicitud con `purpose = data_update` conserva la identidad documental del asociado, genera solo una nueva version del formulario de afiliacion y mantiene inmutables los archivos y la libranza de la afiliacion original.
 
 ### `application_sections`
 

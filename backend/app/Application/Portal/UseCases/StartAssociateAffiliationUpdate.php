@@ -4,6 +4,7 @@ namespace App\Application\Portal\UseCases;
 
 use App\Application\Audit\UseCases\RecordAuditEvent;
 use App\Application\Portal\Exceptions\CannotViewPortalAffiliation;
+use App\Domain\Affiliation\Enums\AffiliationApplicationPurpose;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
@@ -49,12 +50,15 @@ class StartAssociateAffiliationUpdate
 
             $draft = $associate->affiliationApplications()
                 ->where('status', AffiliationApplicationStatus::Draft->value)
+                ->where('purpose', AffiliationApplicationPurpose::DataUpdate->value)
                 ->latest('updated_at')
                 ->first();
 
             if (! $draft) {
                 $draft = AffiliationApplication::query()->create([
                     'associate_id' => $associate->id,
+                    'purpose' => AffiliationApplicationPurpose::DataUpdate->value,
+                    'source_application_id' => $sourceApplication->id,
                     'status' => AffiliationApplicationStatus::Draft->value,
                     'current_step' => AffiliationApplicationStep::Personal->value,
                 ]);
@@ -74,6 +78,7 @@ class StartAssociateAffiliationUpdate
             }
 
             $draft->forceFill([
+                'source_application_id' => $sourceApplication->id,
                 'current_step' => AffiliationApplicationStep::Personal->value,
             ])->save();
 

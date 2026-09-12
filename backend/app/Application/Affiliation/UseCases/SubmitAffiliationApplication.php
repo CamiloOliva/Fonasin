@@ -52,7 +52,9 @@ class SubmitAffiliationApplication
                 throw CannotSubmitAffiliationApplication::missingSections($missingSections);
             }
 
-            $missingDocuments = $this->verifyRequiredDocuments->missingDocumentTypes($application);
+            $missingDocuments = $application->isDataUpdate()
+                ? []
+                : $this->verifyRequiredDocuments->missingDocumentTypes($application);
 
             if ($missingDocuments !== []) {
                 throw CannotSubmitAffiliationApplication::missingDocuments($missingDocuments);
@@ -94,6 +96,8 @@ class SubmitAffiliationApplication
                 correlationId: $correlationId,
                 ipHash: $ipHash,
                 metadata: [
+                    'purpose' => $application->purpose,
+                    'source_application_id' => $application->source_application_id,
                     'status' => [
                         'from' => $fromStatus->value,
                         'to' => $toStatus->value,

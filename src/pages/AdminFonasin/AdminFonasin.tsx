@@ -941,6 +941,9 @@ export default function AdminFonasin() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-black text-slate-950">Solicitud {application.id.slice(0, 8)}</p>
+                      <p className="mt-1 text-[11px] font-black uppercase tracking-[0.12em] text-emerald-700">
+                        {application.purpose === 'data_update' ? 'Actualizacion de datos' : 'Afiliacion inicial'}
+                      </p>
                       <p className="mt-1 text-xs font-semibold text-slate-500">{formatDate(application.submitted_at)}</p>
                     </div>
                     <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-700">
@@ -2120,6 +2123,7 @@ function ApplicationDetail({
   onEnable,
 }: ApplicationDetailProps) {
   const [previewDocument, setPreviewDocument] = useState<AdminAffiliationDocument | null>(null);
+  const isDataUpdate = application.purpose === 'data_update';
   const generatedDocuments = application.documents.filter((document) =>
     ['affiliation_summary', 'payroll_authorization'].includes(document.document_type),
   );
@@ -2127,8 +2131,8 @@ function ApplicationDetail({
     ['identity', 'employment_certificate'].includes(document.document_type),
   );
   const signedPayrollDocuments = application.documents.filter((document) => document.document_type === 'signed_payroll_authorization');
-  const canUploadSignedPayroll = application.status === 'approved';
-  const canEnable = application.status === 'approved' && signedPayrollDocuments.length > 0;
+  const canUploadSignedPayroll = !isDataUpdate && application.status === 'approved';
+  const canEnable = application.status === 'approved' && (isDataUpdate || signedPayrollDocuments.length > 0);
 
   return (
     <div className="space-y-5">
@@ -2137,6 +2141,9 @@ function ApplicationDetail({
           <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Detalle</p>
           <h2 className="mt-1 break-all text-2xl font-black text-slate-950">{application.id}</h2>
           <p className="mt-2 text-sm font-semibold text-slate-600">Estado: {statusLabel(application.status)}</p>
+          <p className="mt-1 text-sm font-semibold text-emerald-700">
+            Tipo: {isDataUpdate ? 'Actualizacion de datos' : 'Afiliacion inicial'}
+          </p>
           <p className="mt-1 text-sm text-slate-500">Enviada: {formatDate(application.submitted_at)}</p>
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -2163,15 +2170,44 @@ function ApplicationDetail({
 
       <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
         <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Primera confirmacion</p>
-        <h3 className="mt-1 text-lg font-black text-slate-950">Formulario de afiliacion y archivos</h3>
+        <h3 className="mt-1 text-lg font-black text-slate-950">
+          {isDataUpdate ? 'Formulario actualizado' : 'Formulario de afiliacion y archivos'}
+        </h3>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          Revisa los datos guardados, el documento de identidad y los PDF generados antes de aprobar esta etapa.
+          {isDataUpdate
+            ? 'Revisa los datos y el formulario generado. Los documentos de la afiliacion original permanecen sin cambios.'
+            : 'Revisa los datos guardados, el documento de identidad y los PDF generados antes de aprobar esta etapa.'}
         </p>
-        <DocumentList title="Archivos cargados" documents={uploadedDocuments} onPreview={setPreviewDocument} />
+        {!isDataUpdate ? (
+          <DocumentList title="Archivos cargados" documents={uploadedDocuments} onPreview={setPreviewDocument} />
+        ) : null}
         <DocumentList title="Documentos generados" documents={generatedDocuments} onPreview={setPreviewDocument} />
         <DocumentPreview document={previewDocument} onClose={() => setPreviewDocument(null)} />
       </section>
 
+      {isDataUpdate ? (
+        <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Aplicar cambios</p>
+          <h3 className="mt-1 text-lg font-black text-slate-950">Actualizar formulario del asociado</h3>
+          <p className="mt-2 text-sm leading-6 text-emerald-950">
+            Despues de aprobar, aplica la actualizacion. No requiere cargar otra libranza ni reemplaza archivos existentes.
+          </p>
+          <button
+            type="button"
+            onClick={onEnable}
+            disabled={!canEnable}
+            className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            <CheckCircle2 size={16} />
+            Aplicar actualizacion
+          </button>
+          {enableResult ? (
+            <p className="mt-4 rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm font-bold text-emerald-800">
+              Formulario actualizado para {enableResult.associate.full_name}.
+            </p>
+          ) : null}
+        </section>
+      ) : (
       <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
         <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-700">Segunda confirmacion</p>
         <h3 className="mt-1 text-lg font-black text-slate-950">Libranza firmada por entidad externa</h3>
@@ -2228,6 +2264,7 @@ function ApplicationDetail({
           </div>
         ) : null}
       </section>
+      )}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
         <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Decision</p>

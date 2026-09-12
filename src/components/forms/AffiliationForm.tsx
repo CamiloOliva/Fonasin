@@ -695,7 +695,12 @@ function createInitialState(): SectionState {
   };
 }
 
-function validateCurrentStep(step: number, state: SectionState, uploadedDocumentTypes = new Set<RequiredDocumentType>()): string | null {
+function validateCurrentStep(
+  step: number,
+  state: SectionState,
+  uploadedDocumentTypes = new Set<RequiredDocumentType>(),
+  isDataUpdate = false,
+): string | null {
   if (step === 0) {
     const missing = missingFields(state.personal as unknown as Record<string, unknown>, requiredBySection.personal);
     if (missing.length > 0) {
@@ -825,10 +830,10 @@ function validateCurrentStep(step: number, state: SectionState, uploadedDocument
     const hasIdentityDocument = Boolean(state.finalStep.identityDocumentFile) || uploadedDocumentTypes.has('identity');
     const hasEmploymentCertificate = Boolean(state.finalStep.employmentCertificateFile) || uploadedDocumentTypes.has('employment_certificate');
 
-    if (!hasIdentityDocument) {
+    if (!isDataUpdate && !hasIdentityDocument) {
       return 'Debes adjuntar el documento de identidad por ambos lados en PDF.';
     }
-    if (!hasEmploymentCertificate) {
+    if (!isDataUpdate && !hasEmploymentCertificate) {
       return 'Debes adjuntar el certificado laboral en PDF.';
     }
     if (state.finalStep.identityDocumentFile && state.finalStep.identityDocumentFile.type !== 'application/pdf') {
@@ -1313,6 +1318,7 @@ export default function AffiliationForm() {
   const [uploadedDocumentTypes, setUploadedDocumentTypes] = useState<Set<RequiredDocumentType>>(new Set());
   const [selectedLegalDocument, setSelectedLegalDocument] = useState<(typeof legalDocuments)[number]>(legalDocuments[0]);
   const [state, setState] = useState<SectionState>(createInitialState);
+  const isDataUpdate = draft?.purpose === 'data_update';
 
   function handleDocumentSelection(key: 'identityDocumentFile' | 'employmentCertificateFile', file: File | null): void {
     setError(null);
@@ -1403,7 +1409,7 @@ export default function AffiliationForm() {
     setMessage(null);
     setSaving(true);
 
-    const validationMessage = validateCurrentStep(step, state, uploadedDocumentTypes);
+    const validationMessage = validateCurrentStep(step, state, uploadedDocumentTypes, isDataUpdate);
     if (validationMessage) {
       setError(validationMessage);
       setSaving(false);
@@ -1433,19 +1439,21 @@ export default function AffiliationForm() {
         });
         setMessage('Seccion SARLAFT guardada.');
       } else if (step === 5) {
-        if (
+        if (!isDataUpdate && (
           (!state.finalStep.identityDocumentFile && !uploadedDocumentTypes.has('identity'))
           || (!state.finalStep.employmentCertificateFile && !uploadedDocumentTypes.has('employment_certificate'))
-        ) {
+        )) {
           throw new Error('Debes adjuntar documento de identidad y certificado laboral en PDF.');
         }
 
-        setMessage('Documentos, declaraciones y autorizaciones listos para revision.');
+        setMessage(isDataUpdate
+          ? 'Declaraciones y autorizaciones listas para revision.'
+          : 'Documentos, declaraciones y autorizaciones listos para revision.');
       } else {
-        if (
+        if (!isDataUpdate && (
           (!state.finalStep.identityDocumentFile && !uploadedDocumentTypes.has('identity'))
           || (!state.finalStep.employmentCertificateFile && !uploadedDocumentTypes.has('employment_certificate'))
-        ) {
+        )) {
           throw new Error('Debes adjuntar documento de identidad y certificado laboral en PDF.');
         }
 
@@ -1454,13 +1462,13 @@ export default function AffiliationForm() {
         }
 
         if (draft && backendMode === 'ready') {
-          if (state.finalStep.identityDocumentFile) {
+          if (!isDataUpdate && state.finalStep.identityDocumentFile) {
             await uploadAffiliationDocument(draft.links.documents, {
               documentType: 'identity',
               file: state.finalStep.identityDocumentFile,
             });
           }
-          if (state.finalStep.employmentCertificateFile) {
+          if (!isDataUpdate && state.finalStep.employmentCertificateFile) {
             await uploadAffiliationDocument(draft.links.documents, {
               documentType: 'employment_certificate',
               file: state.finalStep.employmentCertificateFile,
@@ -1514,6 +1522,11 @@ export default function AffiliationForm() {
       disabledKeys.add('city');
     }
 
+    if (isDataUpdate) {
+      disabledKeys.add('documentType');
+      disabledKeys.add('documentNumber');
+    }
+
     return (
       <div className="space-y-6">
         <SectionHeader
@@ -1522,6 +1535,11 @@ export default function AffiliationForm() {
           title="Datos personales y de contacto"
           description="Identificacion, ubicacion, contacto y datos basicos de vinculacion."
         />
+        {isDataUpdate ? (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-950">
+            El tipo y numero de documento identifican tu cuenta y no pueden modificarse desde esta actualizacion.
+          </div>
+        ) : null}
         {renderFields(personalFields, state.personal, (next) =>
           setState((current) => ({
             ...current,
@@ -2474,9 +2492,11 @@ export default function AffiliationForm() {
           ['Operaciones esperadas', state.sarlaft.expectedOperations.includes('Otros servicios') ? `${state.sarlaft.expectedOperations.join(', ')}: ${state.sarlaft.expectedOperationsOther}` : state.sarlaft.expectedOperations.join(', ')],
         ])}
 
-        {reviewCard('Documentos y autorizaciones', [
-          ['Documento de identidad', state.finalStep.identityDocumentFile?.name ?? 'No registra'],
-          ['Certificado laboral', state.finalStep.employmentCertificateFile?.name ?? 'No registra'],
+        {reviewCard(isDataUpdate ? 'Firma y autorizaciones' : 'Documentos y autorizaciones', [
+          ...(!isDataUpdate ? [
+            ['Documento de identidad', state.finalStep.identityDocumentFile?.name ?? 'No registra'],
+            ['Certificado laboral', state.finalStep.employmentCertificateFile?.name ?? 'No registra'],
+          ] as Array<[string, ReactNode]> : []),
           ['Firma', `${state.finalStep.signatureCity} - ${state.finalStep.signatureDate}`],
           ['Mecanismo', state.finalStep.signatureMechanism],
           ['Declaraciones', 'Aceptadas'],
@@ -2486,7 +2506,10 @@ export default function AffiliationForm() {
         <div className="rounded-[1.5rem] border border-slate-950 bg-slate-950 p-4 text-white">
           <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-200">Formatos internos</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            {['Formulario de afiliacion completo', 'Autorizacion de descuento por nomina'].map((document) => (
+            {(isDataUpdate
+              ? ['Formulario de afiliacion actualizado']
+              : ['Formulario de afiliacion completo', 'Autorizacion de descuento por nomina']
+            ).map((document) => (
               <div key={document} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-100">
                 {document}
                 <p className="mt-1 text-xs font-normal leading-5 text-slate-300">Se genera para revision interna. No se descarga desde este formulario.</p>
@@ -2517,13 +2540,15 @@ export default function AffiliationForm() {
         <SectionHeader
           icon={<FileText size={22} />}
           eyebrow="Bloque 6"
-          title="Documentos, declaraciones y autorizaciones"
-          description="El documento separa esta parte del formulario principal. Aqui quedan el cierre y la firma."
+          title={isDataUpdate ? 'Declaraciones, autorizaciones y firma' : 'Documentos, declaraciones y autorizaciones'}
+          description={isDataUpdate
+            ? 'Esta actualizacion conserva los documentos existentes y registra unicamente el nuevo formulario.'
+            : 'El documento separa esta parte del formulario principal. Aqui quedan el cierre y la firma.'}
         />
 
         <div className="grid gap-5">
           <div className="space-y-4">
-            {[
+            {!isDataUpdate ? [
               {
                 key: 'identityDocumentFile' as const,
                 eyebrow: 'Documento obligatorio 1',
@@ -2576,7 +2601,14 @@ export default function AffiliationForm() {
                   </div>
                 </label>
               </div>
-            ))}
+            )) : (
+              <div className="rounded-[1.6rem] border border-emerald-200 bg-emerald-50 p-5 text-sm leading-6 text-emerald-950">
+                <p className="font-black">Tus documentos de afiliacion permanecen protegidos</p>
+                <p className="mt-1">
+                  No se cargara ni reemplazara el documento de identidad, el certificado laboral o la libranza.
+                </p>
+              </div>
+            )}
 
             <div className="rounded-[1.6rem] border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -2725,7 +2757,8 @@ export default function AffiliationForm() {
             <div className="rounded-[1.6rem] border border-slate-950 bg-slate-950 p-4 text-white">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-200">Resumen final</p>
               <div className="mt-3 space-y-2 text-sm text-slate-200">
-                <p>Se enviara un documento de identidad.</p>
+                <p>{isDataUpdate ? 'Se generara solamente el formulario actualizado.' : 'Se enviara un documento de identidad.'}</p>
+                {isDataUpdate ? <p>Los documentos y la libranza existentes no seran modificados.</p> : null}
                 <p>Se guardaran las declaraciones y autorizaciones requeridas.</p>
                 <p>Los endpoints de Laravel ya quedaron referenciados desde la vista.</p>
               </div>
@@ -2744,10 +2777,13 @@ export default function AffiliationForm() {
         <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-emerald-100 text-emerald-700">
           <CheckCircle2 size={34} />
         </div>
-        <h2 className="mt-5 text-3xl font-black text-slate-950">Solicitud preparada</h2>
+        <h2 className="mt-5 text-3xl font-black text-slate-950">
+          {isDataUpdate ? 'Actualizacion enviada' : 'Solicitud preparada'}
+        </h2>
         <p className="mt-3 text-sm leading-6 text-slate-600">
-          La solicitud fue enviada para revision interna. Los documentos generados quedan protegidos en el backend y
-          se muestran aqui solo como vista previa.
+          {isDataUpdate
+            ? 'El formulario actualizado fue enviado para revision interna. Tus documentos anteriores permanecen sin cambios.'
+            : 'La solicitud fue enviada para revision interna. Los documentos generados quedan protegidos en el backend y se muestran aqui solo como vista previa.'}
         </p>
         {generatedDocuments.length > 0 ? (
           <div className="mt-6 space-y-5 text-left">
@@ -2806,13 +2842,15 @@ export default function AffiliationForm() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-700">
-                Solicitud de afiliación
+                {isDataUpdate ? 'Actualizacion de datos' : 'Solicitud de afiliación'}
               </p>
               <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-                Complete cada paso para registrar la solicitud
+                {isDataUpdate ? 'Revise y actualice la informacion del formulario' : 'Complete cada paso para registrar la solicitud'}
               </h2>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-                Los campos están organizados por secciones para facilitar el diligenciamiento y la revisión.
+                {isDataUpdate
+                  ? 'La identidad y los documentos existentes se conservan; solo se genera una nueva version del formulario.'
+                  : 'Los campos están organizados por secciones para facilitar el diligenciamiento y la revisión.'}
               </p>
             </div>
 
@@ -2851,6 +2889,10 @@ export default function AffiliationForm() {
               {stepLabels.map((item, index) => {
                 const active = index === step;
                 const done = index < step;
+                const title = isDataUpdate && item.key === 'final' ? 'Autorizaciones y cierre' : item.title;
+                const description = isDataUpdate && item.key === 'final'
+                  ? 'Declaraciones, autorizaciones y firma.'
+                  : item.description;
 
                 return (
                   <li
@@ -2876,8 +2918,8 @@ export default function AffiliationForm() {
                         {item.label}
                       </div>
                       <div>
-                        <p className="text-sm font-black text-slate-950">{item.title}</p>
-                        <p className="mt-0.5 text-xs leading-5 text-slate-500">{item.description}</p>
+                        <p className="text-sm font-black text-slate-950">{title}</p>
+                        <p className="mt-0.5 text-xs leading-5 text-slate-500">{description}</p>
                       </div>
                     </div>
                   </li>
@@ -2885,7 +2927,9 @@ export default function AffiliationForm() {
               })}
             </ol>
             <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-600">
-              Guarde cada bloque antes de continuar. El cierre incluye documentos, declaraciones y autorizaciones.
+              {isDataUpdate
+                ? 'Guarde cada bloque antes de continuar. El cierre conserva sus documentos y registra las nuevas autorizaciones.'
+                : 'Guarde cada bloque antes de continuar. El cierre incluye documentos, declaraciones y autorizaciones.'}
             </div>
           </aside>
 

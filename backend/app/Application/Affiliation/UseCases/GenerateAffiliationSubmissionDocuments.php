@@ -21,7 +21,7 @@ class GenerateAffiliationSubmissionDocuments
     ) {}
 
     /**
-     * @return array{summary: ApplicationDocument, payroll_authorization: ApplicationDocument}
+     * @return array{summary: ApplicationDocument, payroll_authorization?: ApplicationDocument}
      */
     public function __invoke(
         AffiliationApplication $application,
@@ -35,15 +35,8 @@ class GenerateAffiliationSubmissionDocuments
         $sections = $this->decryptedSections($application);
         $generatedAt ??= now();
         $signature = $this->signatureContext($application, $sections, $generatedAt, $ipHash, $signatureCity, $signatureDate);
-        $payroll = [
-            ...$this->payrollContext($sections, $generatedAt, $signatureCity, $signatureDate),
-            'signature' => $signature,
-        ];
-
         $summaryPdf = $this->renderer->affiliationSummary($application, $sections, $signature);
-        $payrollPdf = $this->renderer->payrollAuthorization($application, $sections, $payroll);
-
-        return [
+        $documents = [
             'summary' => ($this->registerDocument)(
                 application: $application,
                 documentType: ApplicationDocumentType::AffiliationSummary,
@@ -57,20 +50,32 @@ class GenerateAffiliationSubmissionDocuments
                 fileContents: $summaryPdf,
                 auditAction: AffiliationAuditAction::DocumentGenerated->value,
             ),
-            'payroll_authorization' => ($this->registerDocument)(
-                application: $application,
-                documentType: ApplicationDocumentType::PayrollAuthorization,
-                originalFilename: 'autorizacion-descuento-nomina.pdf',
-                mimeType: 'application/pdf',
-                byteSize: strlen($payrollPdf),
-                actor: $actor,
-                correlationId: $correlationId,
-                ipHash: $ipHash,
-                uploadedAt: $generatedAt,
-                fileContents: $payrollPdf,
-                auditAction: AffiliationAuditAction::DocumentGenerated->value,
-            ),
         ];
+
+        if ($application->isDataUpdate()) {
+            return $documents;
+        }
+
+        $payroll = [
+            ...$this->payrollContext($sections, $generatedAt, $signatureCity, $signatureDate),
+            'signature' => $signature,
+        ];
+        $payrollPdf = $this->renderer->payrollAuthorization($application, $sections, $payroll);
+        $documents['payroll_authorization'] = ($this->registerDocument)(
+            application: $application,
+            documentType: ApplicationDocumentType::PayrollAuthorization,
+            originalFilename: 'autorizacion-descuento-nomina.pdf',
+            mimeType: 'application/pdf',
+            byteSize: strlen($payrollPdf),
+            actor: $actor,
+            correlationId: $correlationId,
+            ipHash: $ipHash,
+            uploadedAt: $generatedAt,
+            fileContents: $payrollPdf,
+            auditAction: AffiliationAuditAction::DocumentGenerated->value,
+        );
+
+        return $documents;
     }
 
     /**

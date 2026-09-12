@@ -57,6 +57,19 @@ class PostgresSchemaConstraintTest extends TestCase
         $this->assertSame('jsonb', Schema::getColumnType('import_batches', 'errors', true));
     }
 
+    public function test_affiliation_application_purpose_is_restricted(): void
+    {
+        $this->expectException(QueryException::class);
+
+        DB::table('affiliation_applications')->insert([
+            'id' => (string) Str::uuid(),
+            'purpose' => 'unsupported-purpose',
+            'status' => 'draft',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
     #[DataProvider('invalidDocumentSizes')]
     public function test_document_size_must_be_positive(int $byteSize): void
     {
