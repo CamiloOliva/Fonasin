@@ -9,6 +9,7 @@ use App\Application\Imports\UseCases\ImportCreditAccounts;
 use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Domain\Audit\Enums\AuditActorType;
 use App\Domain\Audit\Enums\AuditModule;
+use App\Domain\Contributions\Enums\ContributionMovementType;
 use App\Domain\Imports\Enums\ImportAuditAction;
 use App\Http\Requests\Imports\ImportSpreadsheetRequest;
 use App\Models\ImportBatch;
@@ -87,6 +88,8 @@ class ImportBatchController extends Controller
             $batch = $importContributionMovements(
                 file: $request->spreadsheet(),
                 actor: $request->user(),
+                movementType: ContributionMovementType::Contribution,
+                importType: 'contributions',
                 ipHash: $this->ipHash($request),
             );
         } catch (CannotImportSpreadsheet $exception) {
@@ -96,20 +99,59 @@ class ImportBatchController extends Controller
         return response()->json(['data' => $this->batchPayload($batch)], 201);
     }
 
+    public function importVoluntarySavings(
+        ImportSpreadsheetRequest $request,
+        ImportContributionMovements $importContributionMovements,
+    ): JsonResponse {
+        return $this->importContributionType(
+            request: $request,
+            importer: $importContributionMovements,
+            movementType: ContributionMovementType::VoluntarySavings,
+            importType: 'voluntary_savings',
+        );
+    }
+
+    public function importPermanentSavings(
+        ImportSpreadsheetRequest $request,
+        ImportContributionMovements $importContributionMovements,
+    ): JsonResponse {
+        return $this->importContributionType(
+            request: $request,
+            importer: $importContributionMovements,
+            movementType: ContributionMovementType::PermanentSavings,
+            importType: 'permanent_savings',
+        );
+    }
+
     public function creditTemplate(): Response
     {
-        return $this->templateResponse('plantilla-creditos.xlsx', [
-            ['documento', 'linea_credito', 'valor_inicial', 'saldo_actual', 'plazo_meses', 'tasa_interes', 'valor_cuota', 'estado'],
-            ['123456789', 'FONALIBRE', '1000000.00', '800000.00', '24', '1.2500', '50000.00', 'active'],
+        return $this->templateResponse('plantilla-cartera.xlsx', [
+            ['documento', 'nombre_completo', 'linea_credito', 'numero_pagare', 'valor_inicial', 'valor_cuota', 'saldo_actual', 'fecha_ultimo_pago'],
+            ['123456789', 'Asociado de ejemplo', 'FONALIBRE', 'PAG-001', '1000000.00', '50000.00', '800000.00', '2026-09-30'],
         ]);
     }
 
     public function contributionTemplate(): Response
     {
         return $this->templateResponse('plantilla-aportes.xlsx', [
-            ['documento', 'periodo', 'fecha_corte', 'tipo_aporte', 'valor', 'saldo_despues', 'estado', 'referencia'],
-            ['123456789', '2026-09-01', '2026-09-30', 'permanent_savings', '100000.00', '400000.00', 'registered', 'AP-001'],
-            ['123456789', '2026-09-01', '2026-09-30', 'voluntary_savings', '50000.00', '150000.00', 'registered', 'AV-001'],
+            ['documento', 'nombre_completo', 'valor_mensual', 'saldo', 'fecha_ultimo_pago'],
+            ['123456789', 'Asociado de ejemplo', '100000.00', '400000.00', '2026-09-30'],
+        ]);
+    }
+
+    public function voluntarySavingsTemplate(): Response
+    {
+        return $this->templateResponse('plantilla-ahorro-voluntario.xlsx', [
+            ['documento', 'nombre_completo', 'valor_mensual', 'saldo', 'fecha_ultimo_pago'],
+            ['123456789', 'Asociado de ejemplo', '50000.00', '150000.00', '2026-09-30'],
+        ]);
+    }
+
+    public function permanentSavingsTemplate(): Response
+    {
+        return $this->templateResponse('plantilla-ahorro-permanente.xlsx', [
+            ['documento', 'nombre_completo', 'valor_mensual', 'saldo', 'fecha_ultimo_pago'],
+            ['123456789', 'Asociado de ejemplo', '100000.00', '400000.00', '2026-09-30'],
         ]);
     }
 
@@ -179,6 +221,27 @@ class ImportBatchController extends Controller
         return response()->json([
             'message' => $exception->getMessage(),
         ], 422);
+    }
+
+    private function importContributionType(
+        ImportSpreadsheetRequest $request,
+        ImportContributionMovements $importer,
+        ContributionMovementType $movementType,
+        string $importType,
+    ): JsonResponse {
+        try {
+            $batch = $importer(
+                file: $request->spreadsheet(),
+                actor: $request->user(),
+                movementType: $movementType,
+                importType: $importType,
+                ipHash: $this->ipHash($request),
+            );
+        } catch (CannotImportSpreadsheet $exception) {
+            return $this->importError($exception);
+        }
+
+        return response()->json(['data' => $this->batchPayload($batch)], 201);
     }
 
     /**

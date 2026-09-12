@@ -27,22 +27,12 @@ use Illuminate\Support\Str;
 
 class ImportContributionMovements
 {
-    private const IMPORT_TYPE = 'contributions';
-
     private const REQUIRED_COLUMNS = [
         'documento',
-        'periodo',
-        'fecha_corte',
-        'tipo_aporte',
-        'valor',
-        'saldo_despues',
-        'estado',
-        'referencia',
-    ];
-
-    private const IMPORTABLE_TYPES = [
-        ContributionMovementType::PermanentSavings->value,
-        ContributionMovementType::VoluntarySavings->value,
+        'nombre_completo',
+        'valor_mensual',
+        'saldo',
+        'fecha_ultimo_pago',
     ];
 
     public function __construct(
@@ -54,24 +44,29 @@ class ImportContributionMovements
         private readonly RebuildContributionAccountBalances $rebuildAccountBalances,
     ) {}
 
-    public function __invoke(UploadedSpreadsheet $file, User $actor, ?string $ipHash = null): ImportBatch
-    {
+    public function __invoke(
+        UploadedSpreadsheet $file,
+        User $actor,
+        ContributionMovementType $movementType,
+        string $importType,
+        ?string $ipHash = null,
+    ): ImportBatch {
         $startedAt = hrtime(true);
         $fileHash = hash('sha256', $file->contents);
 
-        if (ImportBatch::query()->where('import_type', self::IMPORT_TYPE)->where('file_hash', $fileHash)->exists()) {
-            $this->auditRejected($actor, $ipHash, 'duplicate_file');
+        if (ImportBatch::query()->where('import_type', $importType)->where('file_hash', $fileHash)->exists()) {
+            $this->auditRejected($actor, $ipHash, $importType, 'duplicate_file');
 
             throw CannotImportSpreadsheet::duplicateFile();
         }
 
-        $batch = $this->createBatch($file, $actor, $fileHash);
+        $batch = $this->createBatch($file, $actor, $fileHash, $importType);
 
         try {
             $rows = $this->reader->read($file->path);
             $this->ensureColumns($rows);
 
-            return DB::transaction(function () use ($rows, $batch, $actor, $ipHash, $startedAt): ImportBatch {
+            return DB::transaction(function () use ($rows, $batch, $actor, $movementType, $importType, $ipHash, $startedAt): ImportBatch {
                 $created = 0;
                 $updated = 0;
                 $errors = [];
@@ -81,7 +76,7 @@ class ImportContributionMovements
                 foreach ($rows as $row) {
                     $this->ensureProcessingTime($startedAt);
                     $rowNumber = (int) $row['__row'];
-                    $validated = $this->validateRow($row, $rowNumber);
+                    $validated = $this->validateRow($row, $rowNumber, $movementType);
 
                     if (isset($validated['error'])) {
                         $errors[] = $validated['error'];
@@ -114,9 +109,16 @@ class ImportContributionMovements
                         continue;
                     }
 
+                    if ($this->normalizedName($associate->full_name) !== $this->normalizedName($validated['full_name'])) {
+                        $errors[] = $this->rowError($rowNumber, 'El nombre completo no coincide con el asociado del documento informado.');
+
+                        continue;
+                    }
+
                     $account = ContributionAccount::query()->firstOrCreate(
                         ['associate_id' => $associate->id],
                         [
+                            'contribution_balance' => 0,
                             'permanent_savings_balance' => 0,
                             'voluntary_savings_balance' => 0,
                             'total_balance' => 0,
@@ -179,28 +181,28 @@ class ImportContributionMovements
                 }
 
                 $this->completeBatch($batch, count($rows), $created, $updated, $errors);
-                $this->auditCompleted($batch, $actor, $ipHash);
+                $this->auditCompleted($batch, $actor, $ipHash, $importType);
 
                 return $batch->refresh();
             });
         } catch (CannotImportSpreadsheet $exception) {
-            return DB::transaction(function () use ($batch, $exception, $actor, $ipHash): ImportBatch {
+            return DB::transaction(function () use ($batch, $exception, $actor, $importType, $ipHash): ImportBatch {
                 $this->failBatch($batch, $exception->getMessage());
-                $this->auditCompleted($batch->refresh(), $actor, $ipHash);
+                $this->auditCompleted($batch->refresh(), $actor, $ipHash, $importType);
 
                 return $batch->refresh();
             });
         }
     }
 
-    private function createBatch(UploadedSpreadsheet $file, User $actor, string $fileHash): ImportBatch
+    private function createBatch(UploadedSpreadsheet $file, User $actor, string $fileHash, string $importType): ImportBatch
     {
-        $storageKey = 'private/imports/'.self::IMPORT_TYPE.'/'.Str::uuid().'.xlsx';
+        $storageKey = 'private/imports/'.$importType.'/'.Str::uuid().'.xlsx';
         $this->storage->put($storageKey, $file->contents);
 
         return ImportBatch::query()->create([
             'imported_by_user_id' => $actor->id,
-            'import_type' => self::IMPORT_TYPE,
+            'import_type' => $importType,
             'original_filename' => basename($file->originalName),
             'storage_key' => $storageKey,
             'file_hash' => $fileHash,
@@ -228,54 +230,48 @@ class ImportContributionMovements
      * @param  array<string, string>  $row
      * @return array<string, mixed>
      */
-    private function validateRow(array $row, int $rowNumber): array
+    private function validateRow(array $row, int $rowNumber, ContributionMovementType $movementType): array
     {
-        $type = strtolower($row['tipo_aporte'] ?? '');
-        $status = strtolower($row['estado'] ?? ContributionMovementStatus::Registered->value);
-        $amount = $this->numberParser->parse($row['valor'] ?? '', 2);
-        $balanceAfter = $this->numberParser->parse($row['saldo_despues'] ?? '', 2);
-        $period = $this->parseDate($row['periodo'] ?? '');
-        $cutOffDate = $this->parseDate($row['fecha_corte'] ?? '');
-        $reference = trim($row['referencia'] ?? '');
+        $fullName = trim($row['nombre_completo'] ?? '');
+        $amount = $this->numberParser->parse($row['valor_mensual'] ?? '', 2);
+        $balanceAfter = $this->numberParser->parse($row['saldo'] ?? '', 2);
+        $lastPaymentDate = $this->parseDate($row['fecha_ultimo_pago'] ?? '');
 
         if (($row['documento'] ?? '') === '') {
             return ['error' => $this->rowError($rowNumber, 'El documento es obligatorio.')];
         }
 
-        if (! in_array($type, self::IMPORTABLE_TYPES, true)) {
-            return ['error' => $this->rowError($rowNumber, 'El tipo de aporte no es valido para importacion.')];
-        }
-
-        if ($status !== ContributionMovementStatus::Registered->value) {
-            return ['error' => $this->rowError($rowNumber, 'El estado permitido para importacion es registered.')];
+        if ($fullName === '' || mb_strlen($fullName) > 255) {
+            return ['error' => $this->rowError($rowNumber, 'El nombre completo es obligatorio y no puede superar 255 caracteres.')];
         }
 
         if ($amount === null || $balanceAfter === null || (float) $amount < 0 || (float) $balanceAfter < 0) {
             return ['error' => $this->rowError($rowNumber, 'Los valores numericos deben ser validos y no negativos.')];
         }
 
-        if ($reference === '') {
-            return ['error' => $this->rowError($rowNumber, 'La referencia es obligatoria.')];
+        if (! $lastPaymentDate) {
+            return ['error' => $this->rowError($rowNumber, 'La fecha del ultimo pago debe tener formato YYYY-MM-DD.')];
         }
 
-        if (mb_strlen($reference) > 120) {
-            return ['error' => $this->rowError($rowNumber, 'La referencia no puede superar 120 caracteres.')];
-        }
-
-        if (! $period || ! $cutOffDate) {
-            return ['error' => $this->rowError($rowNumber, 'Periodo y fecha de corte deben tener formato YYYY-MM-DD.')];
-        }
+        $period = $lastPaymentDate->copy()->startOfMonth()->toDateString();
+        $reference = strtoupper($movementType->value).'-'.$lastPaymentDate->toDateString();
 
         return [
             'document_hash' => $this->hasher->documentNumber($row['documento']),
-            'movement_type' => $type,
-            'period' => $period->toDateString(),
-            'cut_off_date' => $cutOffDate->toDateString(),
+            'full_name' => $fullName,
+            'movement_type' => $movementType->value,
+            'period' => $period,
+            'cut_off_date' => $lastPaymentDate->toDateString(),
             'amount' => $amount,
             'balance_after' => $balanceAfter,
-            'status' => $status,
+            'status' => ContributionMovementStatus::Registered->value,
             'reference' => $reference,
         ];
+    }
+
+    private function normalizedName(string $name): string
+    {
+        return Str::of($name)->ascii()->upper()->squish()->toString();
     }
 
     private function parseDate(string $value): ?Carbon
@@ -332,7 +328,7 @@ class ImportContributionMovements
         return ['row' => $row, 'message' => $message];
     }
 
-    private function auditCompleted(ImportBatch $batch, User $actor, ?string $ipHash): void
+    private function auditCompleted(ImportBatch $batch, User $actor, ?string $ipHash, string $importType): void
     {
         ($this->recordAuditEvent)(
             module: AuditModule::Imports,
@@ -343,7 +339,7 @@ class ImportContributionMovements
             actorType: AuditActorType::User,
             ipHash: $ipHash,
             metadata: [
-                'type' => self::IMPORT_TYPE,
+                'type' => $importType,
                 'status' => $batch->status,
                 'rows_total' => $batch->rows_total,
                 'rows_created' => $batch->rows_created,
@@ -363,7 +359,7 @@ class ImportContributionMovements
         }
     }
 
-    private function auditRejected(User $actor, ?string $ipHash, string $reason): void
+    private function auditRejected(User $actor, ?string $ipHash, string $importType, string $reason): void
     {
         ($this->recordAuditEvent)(
             module: AuditModule::Imports,
@@ -373,7 +369,7 @@ class ImportContributionMovements
             actor: $actor,
             actorType: AuditActorType::User,
             ipHash: $ipHash,
-            metadata: ['type' => self::IMPORT_TYPE, 'reason' => $reason],
+            metadata: ['type' => $importType, 'reason' => $reason],
         );
     }
 }

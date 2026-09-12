@@ -158,6 +158,12 @@ Route::middleware(['auth', 'password.changed'])
         Route::get('/templates/contributions', [ImportBatchController::class, 'contributionTemplate'])
             ->middleware('can:import,App\Models\ImportBatch')
             ->name('templates.contributions');
+        Route::get('/templates/voluntary-savings', [ImportBatchController::class, 'voluntarySavingsTemplate'])
+            ->middleware('can:import,App\Models\ImportBatch')
+            ->name('templates.voluntary-savings');
+        Route::get('/templates/permanent-savings', [ImportBatchController::class, 'permanentSavingsTemplate'])
+            ->middleware('can:import,App\Models\ImportBatch')
+            ->name('templates.permanent-savings');
         Route::get('/{batch}/errors', [ImportBatchController::class, 'errorReport'])
             ->middleware('can:viewAny,App\Models\ImportBatch')
             ->name('errors');
@@ -167,6 +173,12 @@ Route::middleware(['auth', 'password.changed'])
         Route::post('/contributions', [ImportBatchController::class, 'importContributions'])
             ->middleware('can:import,App\Models\ImportBatch')
             ->name('contributions.store');
+        Route::post('/voluntary-savings', [ImportBatchController::class, 'importVoluntarySavings'])
+            ->middleware('can:import,App\Models\ImportBatch')
+            ->name('voluntary-savings.store');
+        Route::post('/permanent-savings', [ImportBatchController::class, 'importPermanentSavings'])
+            ->middleware('can:import,App\Models\ImportBatch')
+            ->name('permanent-savings.store');
     });
 
 Route::middleware(['auth', 'password.changed'])
