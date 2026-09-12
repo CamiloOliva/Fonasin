@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom';
 import {
   CheckCircle2,
   ClipboardCheck,
+  Download,
   FileText,
   Loader2,
   LogOut,
   PiggyBank,
   RefreshCw,
+  Search,
   ShieldCheck,
   UploadCloud,
   UserPlus,
@@ -38,8 +40,12 @@ import {
   activateAdminAssociate,
   createAdminAssociate,
   deactivateAdminAssociate,
+  downloadAdminAssociateProfile,
+  fetchAdminAssociateProfile,
   fetchAdminAssociates,
+  searchAdminAssociateProfile,
   type AdminAssociate,
+  type AdminAssociateProfile,
 } from '../../services/adminAssociateService';
 import {
   archiveAdminCredit,
@@ -159,6 +165,9 @@ export default function AdminFonasin() {
   const [user, setUser] = useState<PortalUser | null>(null);
   const [applications, setApplications] = useState<AdminAffiliationApplication[]>([]);
   const [associates, setAssociates] = useState<AdminAssociate[]>([]);
+  const [associateProfile, setAssociateProfile] = useState<AdminAssociateProfile | null>(null);
+  const [associateProfileState, setAssociateProfileState] = useState<DataState>('idle');
+  const [associateSearch, setAssociateSearch] = useState('');
   const [credits, setCredits] = useState<AdminCredit[]>([]);
   const [contributionAccounts, setContributionAccounts] = useState<AdminContributionAccount[]>([]);
   const [contributionMovements, setContributionMovements] = useState<AdminContributionMovement[]>([]);
@@ -557,6 +566,47 @@ export default function AdminFonasin() {
       setMessage(status === 'active' ? 'Asociado activado correctamente.' : 'Asociado desactivado correctamente.');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible cambiar el estado del asociado.');
+    }
+  }
+
+  async function loadAssociateProfile(id: string) {
+    setAssociateProfileState('loading');
+    setError(null);
+
+    try {
+      setAssociateProfile(await fetchAdminAssociateProfile(id));
+      setAssociateProfileState('ready');
+    } catch (caught) {
+      setAssociateProfile(null);
+      setAssociateProfileState('error');
+      setError(caught instanceof Error ? caught.message : 'No fue posible consultar la ficha del asociado.');
+    }
+  }
+
+  async function handleAssociateSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAssociateProfileState('loading');
+    setError(null);
+
+    try {
+      setAssociateProfile(await searchAdminAssociateProfile(associateSearch));
+      setAssociateProfileState('ready');
+    } catch (caught) {
+      setAssociateProfile(null);
+      setAssociateProfileState('error');
+      setError(caught instanceof Error ? caught.message : 'No fue posible buscar el asociado.');
+    }
+  }
+
+  async function handleAssociateProfileDownload() {
+    if (!associateProfile) return;
+    setError(null);
+
+    try {
+      await downloadAdminAssociateProfile(associateProfile.associate.id);
+      setMessage('Ficha del asociado exportada correctamente.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible exportar la ficha del asociado.');
     }
   }
 
@@ -993,8 +1043,15 @@ export default function AdminFonasin() {
           <AssociatesPanel
             associates={associates}
             dataState={associateDataState}
+            profile={associateProfile}
+            profileState={associateProfileState}
+            search={associateSearch}
             form={associateForm}
             createdAccess={createdAssociateAccess}
+            onSearchChange={setAssociateSearch}
+            onSearch={handleAssociateSearch}
+            onSelectProfile={loadAssociateProfile}
+            onDownloadProfile={handleAssociateProfileDownload}
             onFormChange={setAssociateForm}
             onCreate={handleCreateAssociate}
             onStatusChange={handleAssociateStatus}
@@ -1072,16 +1129,30 @@ type AssociateFormState = {
 function AssociatesPanel({
   associates,
   dataState,
+  profile,
+  profileState,
+  search,
   form,
   createdAccess,
+  onSearchChange,
+  onSearch,
+  onSelectProfile,
+  onDownloadProfile,
   onFormChange,
   onCreate,
   onStatusChange,
 }: {
   associates: AdminAssociate[];
   dataState: DataState;
+  profile: AdminAssociateProfile | null;
+  profileState: DataState;
+  search: string;
   form: AssociateFormState;
   createdAccess: { email: string; activationRequired: boolean } | null;
+  onSearchChange: (value: string) => void;
+  onSearch: (event: FormEvent<HTMLFormElement>) => void;
+  onSelectProfile: (id: string) => void;
+  onDownloadProfile: () => void;
   onFormChange: (form: AssociateFormState) => void;
   onCreate: (event: FormEvent<HTMLFormElement>) => void;
   onStatusChange: (id: string, status: 'active' | 'inactive') => void;
@@ -1177,6 +1248,29 @@ function AssociatesPanel({
           <Users className="text-emerald-700" size={28} />
         </div>
 
+        <form onSubmit={onSearch} className="mt-5 flex flex-col gap-2 sm:flex-row">
+          <label className="min-w-0 flex-1">
+            <span className="sr-only">Buscar asociado por cedula</span>
+            <input
+              value={search}
+              onChange={(event) => onSearchChange(event.target.value)}
+              minLength={3}
+              maxLength={16}
+              required
+              placeholder="Buscar por cedula"
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={profileState === 'loading'}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 text-sm font-black text-white transition hover:bg-emerald-800 disabled:cursor-wait disabled:opacity-60"
+          >
+            {profileState === 'loading' ? <Loader2 className="animate-spin" size={18} /> : <Search size={18} />}
+            Consultar ficha
+          </button>
+        </form>
+
         {dataState === 'loading' ? (
           <div className="mt-5 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600">
             <Loader2 className="animate-spin" size={18} />
@@ -1212,13 +1306,23 @@ function AssociatesPanel({
                     </span>
                   </td>
                   <td className="py-4 text-right">
-                    <button
-                      type="button"
-                      onClick={() => onStatusChange(associate.id, associate.status === 'active' ? 'inactive' : 'active')}
-                      className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50"
-                    >
-                      {associate.status === 'active' ? 'Desactivar' : 'Activar'}
-                    </button>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onSelectProfile(associate.id)}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 px-3 py-2 text-xs font-black text-emerald-800 transition hover:bg-emerald-50"
+                      >
+                        <FileText size={15} />
+                        Ver ficha
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onStatusChange(associate.id, associate.status === 'active' ? 'inactive' : 'active')}
+                        className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50"
+                      >
+                        {associate.status === 'active' ? 'Desactivar' : 'Activar'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -1230,9 +1334,196 @@ function AssociatesPanel({
             </p>
           ) : null}
         </div>
+
+        {profile ? (
+          <AssociateProfilePanel profile={profile} onDownload={onDownloadProfile} />
+        ) : null}
       </section>
     </div>
   );
+}
+
+type AssociateProfileView = 'summary' | 'form' | 'credits' | 'contributions';
+
+function AssociateProfilePanel({
+  profile,
+  onDownload,
+}: {
+  profile: AdminAssociateProfile;
+  onDownload: () => void;
+}) {
+  const [view, setView] = useState<AssociateProfileView>('summary');
+  const views: Array<{ id: AssociateProfileView; label: string }> = [
+    { id: 'summary', label: 'Resumen' },
+    { id: 'form', label: 'Formulario' },
+    { id: 'credits', label: 'Cartera' },
+    { id: 'contributions', label: 'Aportes y ahorros' },
+  ];
+
+  return (
+    <section className="mt-7 border-t border-slate-200 pt-6">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Ficha consolidada</p>
+          <h3 className="mt-1 text-xl font-black text-slate-950">{profile.associate.full_name}</h3>
+          <p className="mt-1 text-sm font-semibold text-slate-600">
+            {profile.associate.document_type} {profile.associate.document_number ?? 'No disponible'} · {profile.associate.email ?? 'Sin correo vinculado'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onDownload}
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 px-4 py-2.5 text-sm font-black text-emerald-800 transition hover:bg-emerald-50"
+        >
+          <Download size={18} />
+          Exportar XLSX
+        </button>
+      </div>
+
+      <div className="mt-5 grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1 md:grid-cols-4">
+        {views.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => setView(item.id)}
+            className={`min-h-10 rounded-lg px-3 py-2 text-sm font-black transition ${view === item.id ? 'bg-emerald-700 text-white shadow-sm' : 'text-slate-600 hover:bg-white'}`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-5">
+        {view === 'summary' ? <AssociateProfileSummary profile={profile} /> : null}
+        {view === 'form' ? <AssociateProfileForm profile={profile} /> : null}
+        {view === 'credits' ? <AssociateProfileCredits profile={profile} /> : null}
+        {view === 'contributions' ? <AssociateProfileContributions profile={profile} /> : null}
+      </div>
+    </section>
+  );
+}
+
+function AssociateProfileSummary({ profile }: { profile: AdminAssociateProfile }) {
+  const values = [
+    ['Estado asociado', statusLabel(profile.associate.status)],
+    ['Estado usuario', profile.associate.user_status ? statusLabel(profile.associate.user_status) : 'Sin usuario'],
+    ['Formulario', profile.form.state === 'available' ? 'Disponible' : 'Sin formulario habilitado'],
+    ['Creditos', String(profile.credits.items.length)],
+    ['Aportes', profile.contributions.state === 'available' ? 'Con datos' : 'Sin datos'],
+    ['Movimientos', String(profile.contributions.movement_count)],
+  ];
+
+  return (
+    <dl className="grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 sm:grid-cols-2 lg:grid-cols-3">
+      {values.map(([label, value]) => (
+        <div key={label} className="min-w-0 bg-white px-4 py-4">
+          <dt className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">{label}</dt>
+          <dd className="mt-1 break-words font-black text-slate-950">{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function AssociateProfileForm({ profile }: { profile: AdminAssociateProfile }) {
+  if (!profile.form.application) {
+    return <EmptyProfileState text="Este asociado no tiene un formulario habilitado." />;
+  }
+
+  return (
+    <div className="space-y-6">
+      {profile.form.application.sections.map((section) => (
+        <section key={section.section}>
+          <h4 className="border-b border-emerald-200 pb-2 text-sm font-black uppercase text-emerald-800">
+            {profileSectionLabel(section.section)}
+          </h4>
+          <dl className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+            {flattenProfileValues(section.data).map(([key, value]) => (
+              <div key={key} className="min-w-0 border-b border-slate-100 pb-2">
+                <dt className="text-xs font-bold text-slate-500">{humanizeProfileKey(key)}</dt>
+                <dd className="mt-1 break-words text-sm font-semibold text-slate-900">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function AssociateProfileCredits({ profile }: { profile: AdminAssociateProfile }) {
+  if (profile.credits.items.length === 0) return <EmptyProfileState text="No hay creditos registrados para este asociado." />;
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[760px] text-left text-sm">
+        <thead><tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
+          <th className="py-3 pr-4">Linea</th><th className="py-3 pr-4">Pagare</th><th className="py-3 pr-4">Saldo inicial</th>
+          <th className="py-3 pr-4">Cuota</th><th className="py-3 pr-4">Saldo actual</th><th className="py-3">Ultimo pago</th>
+        </tr></thead>
+        <tbody>{profile.credits.items.map((credit) => <tr key={credit.id} className="border-b border-slate-100">
+          <td className="py-3 pr-4 font-bold">{credit.credit_line}</td><td className="py-3 pr-4">{credit.promissory_note_number ?? 'No disponible'}</td>
+          <td className="py-3 pr-4">{formatCurrency(credit.initial_balance)}</td><td className="py-3 pr-4">{formatCurrency(credit.installment_amount)}</td>
+          <td className="py-3 pr-4">{formatCurrency(credit.current_balance)}</td><td className="py-3">{credit.last_payment_date ?? 'Sin registro'}</td>
+        </tr>)}</tbody>
+      </table>
+    </div>
+  );
+}
+
+function AssociateProfileContributions({ profile }: { profile: AdminAssociateProfile }) {
+  const account = profile.contributions.account;
+  if (!account) return <EmptyProfileState text="No hay aportes ni ahorros registrados para este asociado." />;
+
+  return (
+    <div className="space-y-5">
+      <dl className="grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          ['Saldo aportes', account.contribution_balance],
+          ['Ahorro permanente', account.permanent_savings_balance],
+          ['Ahorro voluntario', account.voluntary_savings_balance],
+          ['Saldo total', account.total_balance],
+        ].map(([label, value]) => <div key={label} className="bg-white px-4 py-4"><dt className="text-xs font-bold text-slate-500">{label}</dt><dd className="mt-1 font-black text-slate-950">{formatCurrency(value)}</dd></div>)}
+      </dl>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[680px] text-left text-sm">
+          <thead><tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
+            <th className="py-3 pr-4">Tipo</th><th className="py-3 pr-4">Periodo</th><th className="py-3 pr-4">Valor</th><th className="py-3 pr-4">Saldo</th><th className="py-3">Referencia</th>
+          </tr></thead>
+          <tbody>{profile.contributions.movements.map((movement) => <tr key={movement.id} className="border-b border-slate-100">
+            <td className="py-3 pr-4 font-bold">{humanizeProfileKey(movement.movement_type)}</td><td className="py-3 pr-4">{movement.period}</td>
+            <td className="py-3 pr-4">{formatCurrency(movement.amount)}</td><td className="py-3 pr-4">{formatCurrency(movement.balance_after)}</td><td className="py-3">{movement.reference}</td>
+          </tr>)}</tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function EmptyProfileState({ text }: { text: string }) {
+  return <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">{text}</p>;
+}
+
+function flattenProfileValues(value: unknown, prefix = ''): Array<[string, string]> {
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) => flattenProfileValues(item, `${prefix}${prefix ? '.' : ''}${index + 1}`));
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.entries(value).flatMap(([key, item]) => flattenProfileValues(item, `${prefix}${prefix ? '.' : ''}${key}`));
+  }
+
+  const formatted = typeof value === 'boolean' ? (value ? 'Si' : 'No') : value == null || value === '' ? 'No informado' : String(value);
+  return [[prefix || 'valor', formatted]];
+}
+
+function humanizeProfileKey(value: string): string {
+  return value.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[._-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function profileSectionLabel(section: string): string {
+  const labels: Record<string, string> = { personal: 'Datos personales', employment: 'Informacion laboral', financial: 'Informacion financiera', beneficiaries: 'Beneficiarios', sarlaft: 'SARLAFT' };
+  return labels[section] ?? humanizeProfileKey(section);
 }
 
 type CreditFormState = {

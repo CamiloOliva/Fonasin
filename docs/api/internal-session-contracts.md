@@ -425,3 +425,26 @@ Reglas:
 - el backoffice revisa y aplica la nueva version sin crear ni reasignar usuario o asociado;
 - un correo nuevo solo se acepta si no pertenece a otro usuario;
 - los soportes y la libranza de la afiliacion original permanecen inmutables.
+
+## Ficha administrativa consolidada del asociado
+
+```text
+POST /admin/associates/profile/search
+GET /admin/associates/{associate}/profile
+GET /admin/associates/{associate}/profile/export
+Autenticacion: sesion Laravel
+Middleware: auth, password.changed
+Autorizacion: exclusivamente admin
+```
+
+La busqueda recibe `document_number` en el cuerpo JSON. La cedula nunca se envia como parametro de URL y se resuelve mediante su hash HMAC. La consulta por identificador usa exclusivamente el UUID interno del asociado.
+
+La respuesta JSON diferencia los estados `available` y `empty` para formulario, cartera y aportes. Incluye:
+
+- identidad y estado de acceso;
+- secciones descifradas del formulario habilitado mas reciente;
+- creditos no archivados, incluido el numero de pagare descifrado;
+- saldos de aportes, ahorro permanente y ahorro voluntario;
+- hasta los 100 movimientos mas recientes y el total existente.
+
+La exportacion genera un XLSX privado con la misma ficha consolidada, usa `Cache-Control: no-store`, no incluye hashes internos y neutraliza valores que podrian interpretarse como formulas. Consultar o exportar registra auditoria sin guardar cedula, contenido del formulario ni referencias financieras en el evento.
