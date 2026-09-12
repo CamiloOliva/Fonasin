@@ -404,3 +404,24 @@ Reglas:
 - un archivo ya importado para el mismo tipo de carga se rechaza por hash.
 - una correccion del mismo asociado, tipo y fecha revierte el movimiento anterior y registra el nuevo para no perder historial.
 - los saldos de las cuentas afectadas se reconstruyen al terminar la carga usando el movimiento registrado cronologicamente mas reciente de cada tipo, sin depender del orden de filas.
+
+## Actualizacion de datos del asociado
+
+```text
+POST /portal/affiliation/update-draft
+Autenticacion: sesion Laravel de asociado activo
+Middleware: auth, password.changed
+```
+
+El asociado se resuelve exclusivamente desde la sesion. La respuesta identifica el borrador con `purpose = data_update` y `source_application_id`; nunca recibe un `associate_id` del navegador.
+
+Reglas:
+
+- reutiliza el unico borrador activo del asociado;
+- copia las secciones del formulario habilitado mas reciente;
+- el tipo y numero de documento no pueden cambiar;
+- los endpoints de carga rechazan documentos y libranzas para este proposito;
+- el envio no exige soportes y genera unicamente `affiliation_summary`;
+- el backoffice revisa y aplica la nueva version sin crear ni reasignar usuario o asociado;
+- un correo nuevo solo se acepta si no pertenece a otro usuario;
+- los soportes y la libranza de la afiliacion original permanecen inmutables.

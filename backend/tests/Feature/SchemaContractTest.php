@@ -76,10 +76,13 @@ class SchemaContractTest extends TestCase
         $this->assertTrue(Schema::hasColumns('affiliation_applications', [
             'id',
             'associate_id',
+            'purpose',
+            'source_application_id',
             'status',
             'current_step',
             'reviewed_by_user_id',
         ]));
+        $this->assertForeignKey('affiliation_applications', ['source_application_id'], 'affiliation_applications');
         $this->assertTrue(Schema::hasTable('application_sections'));
         $this->assertTrue(Schema::hasColumns('application_sections', [
             'application_id',

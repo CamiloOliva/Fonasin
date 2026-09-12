@@ -2,6 +2,8 @@ import { currentPortalUser, loginPortal, logoutPortal, type LoginPayload, type P
 
 export type AdminAffiliationApplication = {
   id: string;
+  purpose: 'initial_affiliation' | 'data_update';
+  source_application_id: string | null;
   status: string;
   current_step: string;
   submitted_at: string | null;

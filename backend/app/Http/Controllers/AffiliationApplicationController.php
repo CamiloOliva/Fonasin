@@ -15,8 +15,8 @@ use App\Application\Affiliation\UseCases\SubmitAffiliationApplication;
 use App\Application\Audit\UseCases\RecordAuditEvent;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Application\Security\Contracts\HashesSensitiveData;
-use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
+use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
 use App\Domain\Affiliation\Enums\ApplicationDocumentStatus;
 use App\Domain\Affiliation\Enums\ApplicationDocumentType;
@@ -45,9 +45,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class AffiliationApplicationController extends Controller
 {
     private const DRAFT_LINK_TTL_HOURS = 24;
+
     private const DOCUMENT_LINK_TTL_MINUTES = 10;
+
     private const DOCUMENT_CONTEXT_ADMIN = 'admin';
+
     private const DOCUMENT_CONTEXT_PORTAL = 'portal';
+
     private const DOCUMENT_CONTEXT_PUBLIC = 'public';
 
     public function index(Request $request): JsonResponse
@@ -182,6 +186,12 @@ class AffiliationApplicationController extends Controller
     ): JsonResponse {
         $this->ensureDraftAccess($request, $application);
 
+        if ($application->isDataUpdate()) {
+            return response()->json([
+                'message' => 'Los documentos existentes no se pueden reemplazar durante una actualizacion de datos.',
+            ], 403);
+        }
+
         $file = $request->file('file');
 
         try {
@@ -208,6 +218,12 @@ class AffiliationApplicationController extends Controller
         AffiliationApplication $application,
         RegisterApplicationDocument $registerDocument,
     ): JsonResponse {
+        if ($application->isDataUpdate()) {
+            return response()->json([
+                'message' => 'Una actualizacion de datos no admite una nueva libranza.',
+            ], 403);
+        }
+
         $file = $request->file('file');
 
         try {
@@ -470,10 +486,11 @@ class AffiliationApplicationController extends Controller
         AffiliationApplication $application,
         ?string $plainAccessToken = null,
         string $documentContext = self::DOCUMENT_CONTEXT_PUBLIC,
-    ): array
-    {
+    ): array {
         $payload = [
             'id' => $application->id,
+            'purpose' => $application->purpose,
+            'source_application_id' => $application->source_application_id,
             'status' => $application->status,
             'current_step' => $application->current_step,
             'submitted_at' => $application->submitted_at?->toJSON(),
@@ -506,6 +523,8 @@ class AffiliationApplicationController extends Controller
     {
         return [
             'id' => $application->id,
+            'purpose' => $application->purpose,
+            'source_application_id' => $application->source_application_id,
             'status' => $application->status,
             'current_step' => $application->current_step,
             'submitted_at' => $application->submitted_at?->toJSON(),
@@ -630,8 +649,7 @@ class AffiliationApplicationController extends Controller
     private function documentPayload(
         ApplicationDocument $document,
         string $accessContext = self::DOCUMENT_CONTEXT_PUBLIC,
-    ): array
-    {
+    ): array {
         return [
             'id' => $document->id,
             'application_id' => $document->application_id,

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Application\Portal\UseCases\ViewAssociateAffiliation;
 use App\Application\Portal\UseCases\StartAssociateAffiliationUpdate;
+use App\Application\Portal\UseCases\ViewAssociateAffiliation;
 use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Models\AffiliationApplication;
 use App\Models\ApplicationDocument;
@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\URL;
 class PortalAffiliationController extends Controller
 {
     private const DRAFT_LINK_TTL_HOURS = 24;
+
     private const DOCUMENT_LINK_TTL_MINUTES = 10;
 
     public function show(Request $request, ViewAssociateAffiliation $viewAssociateAffiliation): JsonResponse
@@ -50,6 +51,8 @@ class PortalAffiliationController extends Controller
             'data' => [
                 'id' => $draft->id,
                 'status' => $draft->status,
+                'purpose' => $draft->purpose,
+                'source_application_id' => $draft->source_application_id,
                 'draft_access_token' => $accessToken,
                 'links' => [
                     'read' => URL::temporarySignedRoute(

@@ -38,4 +38,9 @@ class CannotReviewAffiliationApplication extends DomainException
     {
         return new self('No se puede habilitar la afiliacion porque el correo o documento ya pertenece a otra identidad.');
     }
+
+    public static function updateIdentityCannotChange(): self
+    {
+        return new self('La actualizacion de datos no puede cambiar la identidad ni el asociado vinculado.');
+    }
 }

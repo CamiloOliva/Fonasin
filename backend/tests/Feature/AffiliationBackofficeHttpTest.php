@@ -2,13 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Application\Security\Contracts\EncryptsSensitiveData;
+use App\Application\Security\Contracts\HashesSensitiveData;
+use App\Domain\Affiliation\Enums\AffiliationApplicationPurpose;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
 use App\Domain\Affiliation\Enums\ApplicationDocumentStatus;
 use App\Domain\Affiliation\Enums\ApplicationDocumentType;
-use App\Application\Security\Contracts\EncryptsSensitiveData;
-use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Models\AffiliationApplication;
 use App\Models\ApplicationDocument;
 use App\Models\ApplicationSection;
@@ -18,6 +19,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class AffiliationBackofficeHttpTest extends TestCase
@@ -126,7 +128,7 @@ class AffiliationBackofficeHttpTest extends TestCase
             'status' => ApplicationDocumentStatus::Uploaded->value,
             'uploaded_at' => now(),
         ]);
-        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+        $url = URL::temporarySignedRoute(
             'affiliation-applications.documents.preview',
             now()->addMinutes(10),
             [
@@ -254,6 +256,89 @@ class AffiliationBackofficeHttpTest extends TestCase
             'action' => AffiliationAuditAction::ApplicationEnabled->value,
             'subject_id' => $application->id,
         ]);
+    }
+
+    public function test_reviewer_can_apply_data_update_without_new_payroll_or_identity(): void
+    {
+        $documentHash = $this->documentHash('123456789');
+        $user = User::factory()->create([
+            'email' => 'correo.anterior@example.test',
+            'document_type' => 'CC',
+            'document_number_hash' => $documentHash,
+            'document_number_encrypted' => 'test-ciphertext',
+        ]);
+        $associate = Associate::query()->create([
+            'user_id' => $user->id,
+            'document_type' => 'CC',
+            'document_number_hash' => $documentHash,
+            'document_number_encrypted' => 'test-ciphertext',
+            'full_name' => 'Nombre Anterior',
+            'status' => 'active',
+        ]);
+        $application = $this->dataUpdateReadyForEnable($associate);
+        $reviewer = $this->userWithRole('reviewer');
+
+        $this->actingAs($reviewer)
+            ->postJson("/admin/affiliation-applications/{$application->id}/enable")
+            ->assertOk()
+            ->assertJsonPath('data.application.status', AffiliationApplicationStatus::Enabled->value)
+            ->assertJsonPath('data.associate.id', $associate->id)
+            ->assertJsonPath('data.associate.full_name', 'Ana Maria Prueba Perez')
+            ->assertJsonPath('data.user.id', $user->id)
+            ->assertJsonPath('data.user.email', 'ana.prueba@example.test')
+            ->assertJsonPath('data.activation_required', false);
+
+        $this->assertSame(2, User::query()->count());
+        $this->assertNull($user->refresh()->email_verified_at);
+        $this->assertDatabaseMissing('application_documents', [
+            'application_id' => $application->id,
+            'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
+        ]);
+    }
+
+    public function test_data_update_cannot_change_document_identity(): void
+    {
+        $user = User::factory()->create([
+            'document_type' => 'CC',
+            'document_number_hash' => $this->documentHash('123456789'),
+            'document_number_encrypted' => 'test-ciphertext',
+        ]);
+        $associate = Associate::query()->create([
+            'user_id' => $user->id,
+            'document_type' => 'CC',
+            'document_number_hash' => $this->documentHash('123456789'),
+            'document_number_encrypted' => 'test-ciphertext',
+            'full_name' => 'Nombre Anterior',
+            'status' => 'active',
+        ]);
+        $application = $this->dataUpdateReadyForEnable($associate, ['documentNumber' => '987654321']);
+        $reviewer = $this->userWithRole('reviewer');
+
+        $this->actingAs($reviewer)
+            ->postJson("/admin/affiliation-applications/{$application->id}/enable")
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'La actualizacion de datos no puede cambiar la identidad ni el asociado vinculado.');
+
+        $this->assertSame('Nombre Anterior', $associate->refresh()->full_name);
+    }
+
+    public function test_data_update_rejects_signed_payroll_upload(): void
+    {
+        Storage::fake('local');
+        $application = AffiliationApplication::query()->forceCreate([
+            'purpose' => AffiliationApplicationPurpose::DataUpdate->value,
+            'status' => AffiliationApplicationStatus::Approved->value,
+            'current_step' => AffiliationApplicationStep::Summary->value,
+        ]);
+        $reviewer = $this->userWithRole('reviewer');
+
+        $this->actingAs($reviewer)
+            ->postJson("/admin/affiliation-applications/{$application->id}/signed-payroll-authorization", [
+                'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
+                'file' => UploadedFile::fake()->create('libranza-firmada.pdf', 128, 'application/pdf'),
+            ])
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Una actualizacion de datos no admite una nueva libranza.');
     }
 
     public function test_enable_rejects_existing_email_with_different_document(): void
@@ -413,6 +498,36 @@ class AffiliationBackofficeHttpTest extends TestCase
             'byte_size' => 128,
             'status' => ApplicationDocumentStatus::Uploaded->value,
             'uploaded_at' => now(),
+        ]);
+
+        return $application;
+    }
+
+    private function dataUpdateReadyForEnable(Associate $associate, array $personalOverrides = []): AffiliationApplication
+    {
+        $application = AffiliationApplication::query()->forceCreate([
+            'associate_id' => $associate->id,
+            'purpose' => AffiliationApplicationPurpose::DataUpdate->value,
+            'status' => AffiliationApplicationStatus::Approved->value,
+            'current_step' => AffiliationApplicationStep::Summary->value,
+        ]);
+        $cipher = app(EncryptsSensitiveData::class);
+
+        ApplicationSection::query()->forceCreate([
+            'application_id' => $application->id,
+            'section' => AffiliationApplicationStep::Personal->value,
+            'schema_version' => 1,
+            'data_encrypted' => $cipher->encryptArray([
+                'documentType' => 'CC',
+                'documentNumber' => '123456789',
+                'firstName' => 'Ana',
+                'middleName' => 'Maria',
+                'lastName' => 'Prueba',
+                'secondLastName' => 'Perez',
+                'email' => 'ana.prueba@example.test',
+                ...$personalOverrides,
+            ]),
+            'completed_at' => now(),
         ]);
 
         return $application;

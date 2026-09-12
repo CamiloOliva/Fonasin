@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Application\Affiliation\UseCases\AcceptApplicationConsent;
 use App\Application\Affiliation\UseCases\RegisterApplicationDocument;
 use App\Application\Affiliation\UseCases\SaveApplicationSection;
+use App\Domain\Affiliation\Enums\AffiliationApplicationPurpose;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\ApplicationDocumentType;
@@ -20,8 +21,8 @@ use Tests\TestCase;
 
 class AffiliationApplicationHttpTest extends TestCase
 {
-    use RefreshDatabase;
     use AffiliationSectionPayloads;
+    use RefreshDatabase;
 
     public function test_it_creates_affiliation_draft_over_http(): void
     {
@@ -199,6 +200,52 @@ class AffiliationApplicationHttpTest extends TestCase
             'application_id' => $application->id,
             'document_type' => ApplicationDocumentType::PayrollAuthorization->value,
         ]);
+    }
+
+    public function test_data_update_submits_without_uploads_and_generates_only_updated_form(): void
+    {
+        Storage::fake('local');
+        $application = AffiliationApplication::query()->forceCreate([
+            'purpose' => AffiliationApplicationPurpose::DataUpdate->value,
+            'status' => AffiliationApplicationStatus::Draft->value,
+            'current_step' => AffiliationApplicationStep::Personal->value,
+        ]);
+        $headers = $this->protectDraft($application);
+        $this->completeSections($application);
+        $this->acceptRequiredConsents($application, '2026-01');
+
+        $this->postJson($this->signedSubmitUrl($application), [
+            'policy_version' => '2026-01',
+        ], $headers)
+            ->assertOk()
+            ->assertJsonPath('data.purpose', AffiliationApplicationPurpose::DataUpdate->value)
+            ->assertJsonCount(1, 'data.generated_documents')
+            ->assertJsonPath('data.generated_documents.0.document_type', ApplicationDocumentType::AffiliationSummary->value);
+
+        $this->assertDatabaseMissing('application_documents', [
+            'application_id' => $application->id,
+            'document_type' => ApplicationDocumentType::PayrollAuthorization->value,
+        ]);
+    }
+
+    public function test_data_update_rejects_document_replacement(): void
+    {
+        Storage::fake('local');
+        $application = AffiliationApplication::query()->forceCreate([
+            'purpose' => AffiliationApplicationPurpose::DataUpdate->value,
+            'status' => AffiliationApplicationStatus::Draft->value,
+            'current_step' => AffiliationApplicationStep::Documents->value,
+        ]);
+        $headers = $this->protectDraft($application);
+
+        $this->post($this->signedDocumentUrl($application), [
+            'document_type' => ApplicationDocumentType::Identity->value,
+            'file' => UploadedFile::fake()->create('identity.pdf', 64, 'application/pdf'),
+        ], ['Accept' => 'application/json', ...$headers])
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Los documentos existentes no se pueden reemplazar durante una actualizacion de datos.');
+
+        $this->assertDatabaseCount('application_documents', 0);
     }
 
     public function test_it_does_not_read_a_submitted_application_as_a_recoverable_draft(): void
@@ -592,7 +639,7 @@ class AffiliationApplicationHttpTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $draft
+     * @param  array<string, mixed>  $draft
      * @return array<string, string>
      */
     private function draftHeaders(array $draft): array

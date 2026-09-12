@@ -3,12 +3,13 @@
 namespace Tests\Feature;
 
 use App\Application\Affiliation\UseCases\SaveApplicationSection;
-use App\Domain\Audit\Enums\AuditModule;
+use App\Domain\Affiliation\Enums\AffiliationApplicationPurpose;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
 use App\Domain\Affiliation\Enums\ApplicationDocumentStatus;
 use App\Domain\Affiliation\Enums\ApplicationDocumentType;
+use App\Domain\Audit\Enums\AuditModule;
 use App\Domain\Portal\Enums\PortalAuditAction;
 use App\Models\AffiliationApplication;
 use App\Models\ApplicationDocument;
@@ -23,14 +24,15 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Tests\Support\AffiliationSectionPayloads;
 use Tests\TestCase;
 
 class PortalAffiliationHttpTest extends TestCase
 {
-    use RefreshDatabase;
     use AffiliationSectionPayloads;
+    use RefreshDatabase;
 
     public function test_guest_cannot_view_portal_affiliation(): void
     {
@@ -112,7 +114,7 @@ class PortalAffiliationHttpTest extends TestCase
         $associate = $this->createAssociate();
         $application = $this->createAffiliationApplication($associate, AffiliationApplicationStatus::Enabled);
         $document = $this->createDocument($application, ApplicationDocumentType::AffiliationSummary);
-        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+        $url = URL::temporarySignedRoute(
             'affiliation-applications.documents.preview',
             now()->addMinutes(10),
             [
@@ -138,6 +140,8 @@ class PortalAffiliationHttpTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('data.status', AffiliationApplicationStatus::Draft->value)
+            ->assertJsonPath('data.purpose', AffiliationApplicationPurpose::DataUpdate->value)
+            ->assertJsonPath('data.source_application_id', $application->id)
             ->assertJsonPath('data.draft_access_token', fn (string $token): bool => strlen($token) === 64)
             ->assertJsonPath('data.links.read', fn (string $url): bool => str_starts_with($url, '/affiliation-applications/'));
 
@@ -147,6 +151,8 @@ class PortalAffiliationHttpTest extends TestCase
             'id' => $draftId,
             'associate_id' => $associate->id,
             'status' => AffiliationApplicationStatus::Draft->value,
+            'purpose' => AffiliationApplicationPurpose::DataUpdate->value,
+            'source_application_id' => $application->id,
             'current_step' => AffiliationApplicationStep::Personal->value,
         ]);
         $this->assertSame(2, ApplicationSection::query()->where('application_id', $draftId)->count());
@@ -164,7 +170,9 @@ class PortalAffiliationHttpTest extends TestCase
         $user = $this->userWithRole('associate');
         $associate = $this->createAssociate(['user_id' => $user->id]);
         $enabledApplication = $this->createAffiliationApplication($associate, AffiliationApplicationStatus::Enabled);
-        $existingDraft = $this->createAffiliationApplication($associate, AffiliationApplicationStatus::Draft);
+        $existingDraft = $this->createAffiliationApplication($associate, AffiliationApplicationStatus::Draft, [
+            'purpose' => AffiliationApplicationPurpose::DataUpdate->value,
+        ]);
         $this->createSection($enabledApplication, AffiliationApplicationStep::Personal);
 
         $response = $this->actingAs($user)->postJson('/portal/affiliation/update-draft');
@@ -341,12 +349,14 @@ class PortalAffiliationHttpTest extends TestCase
     private function createAffiliationApplication(
         Associate $associate,
         AffiliationApplicationStatus $status,
+        array $overrides = [],
     ): AffiliationApplication {
         return AffiliationApplication::query()->create([
             'associate_id' => $associate->id,
             'status' => $status->value,
             'current_step' => AffiliationApplicationStep::Summary->value,
             'submitted_at' => now()->subDay(),
+            ...$overrides,
         ]);
     }
 
