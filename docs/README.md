@@ -6,7 +6,7 @@ La guia obligatoria para agentes y desarrolladores esta en [`AGENTS.md`](../AGEN
 
 ## Estado actual
 
-El frontend publico activo usa React, TypeScript, Vite y Tailwind desde la raiz. Laravel 12 vive en `backend/`, se conecta a PostgreSQL y ya contiene las migraciones base junto con los modelos iniciales de Identity. El portal privado, la autenticacion y los casos de uso siguen pendientes.
+El frontend publico activo usa React, TypeScript, Vite y Tailwind desde la raiz. Laravel 12 vive en `backend/`, se conecta a MariaDB y contiene las migraciones y modulos operativos de la plataforma.
 
 ## Lectura por rol
 
@@ -21,7 +21,7 @@ El frontend publico activo usa React, TypeScript, Vite y Tailwind desde la raiz.
 
 - [Arquitectura](architecture/overview.md): componentes, capas, dependencias y transicion tecnica.
 - [Limites de modulos](architecture/module-boundaries.md): responsabilidades, propietarios y comunicacion permitida.
-- [Modelo de datos](architecture/data-model.md): tablas base, relaciones, estados, indices y reglas PostgreSQL.
+- [Modelo de datos](architecture/data-model.md): tablas base, relaciones, estados, indices y reglas MariaDB.
 - [Auditoria](architecture/audit.md): bitacora operativa, eventos de seguridad y reglas de inmutabilidad.
 - [Seguridad y privacidad](security.md): autorizacion, documentos, secretos y datos sensibles.
 - [API futura](api/README.md): reglas de versionado e integracion externa.

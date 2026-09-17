@@ -94,7 +94,7 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 - Importacion de Excel/XLSX: implementada para cartera, aportes y ambos ahorros con plantillas separadas, validaciones, auditoria, storage privado y reporte por fila; falta aprobacion institucional final.
 - Retencion automatica de FPQRS, documentos, solicitudes y auditoria: bloqueada hasta aprobacion juridica y operativa.
 - Rotacion operativa de `DATA_HASH_PEPPER`: pendiente de procedimiento formal. Los hashes sensibles de documento, correo, IP y agente de usuario ya usan HMAC-SHA256 y requieren pepper estable por entorno.
-- Auditoria append-only reforzada por PostgreSQL: pendiente de definicion de permisos/triggers en el entorno productivo.
+- Auditoria append-only reforzada por MariaDB: pendiente de definicion de permisos/triggers en el entorno productivo.
 
 La pagina publica `/creditos` solo cubre informacion general de `FE-WEB-004`; no cuenta como consulta privada `FE-OBQ-003`.
 

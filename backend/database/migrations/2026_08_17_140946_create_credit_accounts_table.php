@@ -29,7 +29,7 @@ return new class extends Migration
             $table->index(['associate_id', 'status']);
         });
 
-        if (DB::getDriverName() === 'pgsql') {
+        if (in_array(DB::getDriverName(), ['pgsql', 'mariadb'], true)) {
             DB::statement(<<<'SQL'
                 ALTER TABLE credit_accounts
                 ADD CONSTRAINT credit_accounts_initial_balance_nonnegative_check

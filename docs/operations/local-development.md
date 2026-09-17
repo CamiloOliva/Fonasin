@@ -42,7 +42,7 @@ La guia completa sobre rutas React Router, variables, archivos estaticos y Apach
 
 ## Backend Laravel actual
 
-Laravel vive en `backend/`. La base local debe ser PostgreSQL; no usar credenciales reales ni ejecutar estos comandos contra produccion.
+Laravel vive en `backend/`. La base local debe ser MariaDB 10.11 o superior; no usar credenciales reales ni ejecutar estos comandos contra produccion.
 
 ```bash
 cd backend
@@ -53,7 +53,7 @@ php artisan migrate
 php artisan test
 ```
 
-El `.env.example` contiene solo valores de desarrollo. Las migraciones se ejecutan despues de confirmar la conexion local a PostgreSQL. No usar `migrate --force` en desarrollo ni produccion sin una ventana y respaldo aprobados.
+El `.env.example` contiene solo valores de desarrollo. Las migraciones se ejecutan despues de confirmar la conexion local a MariaDB. No usar `migrate --force` en desarrollo ni produccion sin una ventana y respaldo aprobados.
 
 El workflow de GitHub ejecuta `php artisan test` y `npm run build` en cada `push` a cualquier rama, y también en los Pull Requests dirigidos a `develop` o `main`. Además verifica los artefactos que Apache necesita: `dist/.htaccess` para React Router y `backend/public/.htaccess` para Laravel. Así, una rama `feature/*` se valida antes de integrarse al entorno Apache final.
 

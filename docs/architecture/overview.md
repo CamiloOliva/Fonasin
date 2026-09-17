@@ -2,7 +2,7 @@
 
 ## Decision
 
-FONASIN se construira como un monolito modular con Laravel, React/Inertia, Filament y PostgreSQL. Es un unico despliegue, pero cada area del negocio conserva limites claros. La primera fase conserva el React/Vite actual operativo; no se interrumpe el sitio para iniciar el backend.
+FONASIN se construira como un monolito modular con Laravel, React/Inertia, Filament y MariaDB. Es un unico despliegue, pero cada area del negocio conserva limites claros. La primera fase conserva el React/Vite actual operativo; no se interrumpe el sitio para iniciar el backend.
 
 ## Objetivos de calidad
 
@@ -18,7 +18,7 @@ FONASIN se construira como un monolito modular con Laravel, React/Inertia, Filam
 2. **HTTP**: rutas, controladores, middleware y Form Requests. Reciben solicitudes, autentican y validan entrada.
 3. **Aplicacion**: casos de uso que coordinan una accion completa, por ejemplo `SubmitApplication` o `RegisterCredit`.
 4. **Dominio**: reglas de negocio y transiciones de estado. No depende de React, Filament, correo ni cPanel.
-5. **Infraestructura**: PostgreSQL, almacenamiento privado, correo, auditoria y servicios externos.
+5. **Infraestructura**: MariaDB, almacenamiento privado, correo, auditoria y servicios externos.
 
 Las dependencias siempre avanzan hacia adentro: Presentacion -> HTTP -> Aplicacion -> Dominio. Solo Infraestructura conoce detalles de persistencia o proveedores.
 
@@ -31,7 +31,7 @@ Asociado autenticado
   -> Form Request valida entrada
   -> policy autoriza el recurso
   -> caso de uso aplica regla del dominio
-  -> transaccion PostgreSQL + auditoria
+  -> transaccion MariaDB + auditoria
   -> respuesta segura para la interfaz
 ```
 
@@ -52,7 +52,7 @@ Mientras se completa la migracion a presentacion Laravel/Inertia, el backend exp
 
 ## Reglas de integracion
 
-- Ningun componente React consulta PostgreSQL ni almacenamiento privado.
+- Ningun componente React consulta MariaDB ni almacenamiento privado.
 - Ningun modulo actualiza directamente tablas de otro modulo; usa un caso de uso o un evento de dominio.
 - `web.php` sirve el sitio y el portal. `api.php` se reserva para una futura app movil o integraciones.
 - Los documentos se entregan mediante una ruta autorizada de Laravel, no como URL publica.

@@ -5,7 +5,7 @@
 | Entorno | Rama | Destino | Base de datos |
 |---|---|---|---|
 | Desarrollo | `develop` | equipo local | datos locales o sinteticos |
-| Produccion | `main` | `tudominio.com` | PostgreSQL produccion |
+| Produccion | `main` | `tudominio.com` | MariaDB produccion |
 
 `develop` no se despliega en cPanel. La validacion ocurre localmente y Diego realiza el merge aprobado de `develop` a `main`. Solo `main` llega al dominio principal.
 
@@ -21,7 +21,7 @@ La validacion automatizada comprueba que `public/.htaccess` se copie a `dist/.ht
 
 ## Backend Laravel en Apache/cPanel
 
-Cuando el Backend entre en produccion, Apache debe apuntar exclusivamente a `backend/public/`. El codigo de `backend/` debe permanecer fuera del document root. El servidor debe tener PHP compatible, extensiones requeridas, Composer, PostgreSQL y permisos controlados para `backend/storage/` y `backend/bootstrap/cache/`.
+Cuando el Backend entre en produccion, Apache debe apuntar exclusivamente a `backend/public/`. El codigo de `backend/` debe permanecer fuera del document root. El servidor debe tener PHP compatible, extensiones requeridas, Composer, MariaDB 10.11 o superior y permisos controlados para `backend/storage/` y `backend/bootstrap/cache/`.
 
 XAMPP, PHP local, `vendor/` local y los archivos `.env` de desarrollo nunca se suben a `main` ni al servidor. En produccion se instala Composer en el servidor o mediante un artefacto de despliegue aprobado y se configura un `.env` propio.
 
@@ -65,7 +65,7 @@ React Router requiere el fallback de Apache incluido en `public/.htaccess`; este
 
 1. Probar `develop` localmente y ejecutar las pruebas automatizadas.
 2. Diego revisa y hace el merge de la pull request a `main`.
-3. Realizar respaldo verificable de PostgreSQL antes de cualquier migracion.
+3. Realizar respaldo verificable de MariaDB antes de cualquier migracion.
 4. Revisar migraciones: deben ser compatibles hacia atras.
 5. Desplegar `main` y ejecutar migraciones de forma controlada.
 6. Verificar autenticacion, cargas documentales y funciones publicas.
@@ -116,11 +116,11 @@ Si existen duplicados, detener el despliegue y resolver cada identidad con el re
 
 Antes de ejecutar `2026_09_06_000002_rehash_sensitive_lookup_values_with_hmac.php`, confirmar:
 
-- respaldo restaurable de PostgreSQL;
+- respaldo restaurable de MariaDB;
 - `DATA_HASH_PEPPER` definido en el `.env` productivo;
 - ausencia de duplicados de documento en `users` y `associates`;
 - validacion funcional posterior de login, recuperacion de contrasena, alta manual de asociados, habilitacion de afiliacion y FPQRS.
 
 La migracion recalcula hashes de busqueda desde valores cifrados o campos operativos ya existentes. No exponer ni copiar el pepper a GitHub, Markdown, capturas o tickets.
 
-No se configura despliegue automatico ni `.cpanel.yml` hasta confirmar usuario de cPanel, rutas reales, version de PHP, Composer, Node y disponibilidad de PostgreSQL.
+No se configura despliegue automatico ni `.cpanel.yml` hasta confirmar usuario de cPanel, rutas reales, version de PHP, Composer, Node y version exacta de MariaDB.

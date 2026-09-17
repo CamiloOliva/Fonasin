@@ -1,6 +1,6 @@
 # ADR-002: PostgreSQL y auditoria por aplicacion
 
-**Estado:** aceptada
+**Estado:** reemplazada por ADR-003
 
 ## Contexto
 

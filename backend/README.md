@@ -1,14 +1,14 @@
 # Backend Laravel de FONASIN
 
-Aplicacion Laravel 12 que concentra persistencia PostgreSQL, autenticacion futura, autorizacion, casos de uso, documentos privados y auditoria de FONASIN.
+Aplicacion Laravel 12 que concentra persistencia MariaDB, autenticacion, autorizacion, casos de uso, documentos privados y auditoria de FONASIN.
 
 El backend esta en construccion. Actualmente contiene las migraciones base, modelos Eloquent y relaciones para Identity, Affiliation, Credits y persistencia de eventos, reglas de dominio para afiliacion, casos de uso para crear borradores, cifrar y guardar secciones, registrar consentimientos, registrar documentos privados, generar PDFs de envio, enviar solicitudes completas con auditoria tras validar secciones, documentos y consentimientos, y rutas web JSON iniciales para el flujo de afiliacion; todavia quedan pendientes ajustes de produccion como descarga autorizada de documentos generados y decisiones finales de negocio.
 
 ## Requisitos
 
-- PHP 8.2 o superior con extensiones de PostgreSQL.
+- PHP 8.2 o superior con `pdo_mysql`.
 - Composer.
-- PostgreSQL local con datos sinteticos o vacios.
+- MariaDB 10.11 o superior con datos sinteticos o vacios.
 
 ## Configuracion inicial
 
@@ -21,7 +21,7 @@ php artisan key:generate
 php artisan migrate
 ```
 
-En Linux o macOS usar `cp .env.example .env`. Antes de migrar, revisar que `.env` use una base PostgreSQL exclusivamente local.
+En Linux o macOS usar `cp .env.example .env`. Antes de migrar, revisar que `.env` use una base MariaDB exclusivamente local.
 
 ## Desarrollo y verificacion
 
@@ -50,7 +50,7 @@ No agregar codigo Laravel en `app/`, `database/`, `resources/` o `tests/` de la 
 
 ## Reglas esenciales
 
-- Usar UUID y fechas con zona horaria para datos operativos.
+- Usar UUID y persistir fechas en UTC para datos operativos.
 - No eliminar fisicamente solicitudes, usuarios, creditos o documentos.
 - Cifrar datos sensibles antes de persistirlos y no incluirlos en logs o auditoria.
 - Guardar documentos fuera de `public/` y entregarlos solo mediante rutas autorizadas.

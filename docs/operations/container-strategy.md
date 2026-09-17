@@ -2,7 +2,7 @@
 
 ## Decision actual
 
-Laravel y PostgreSQL ya funcionan localmente sin contenedores. Docker Compose se evaluara **solo para desarrollo local y pruebas automatizadas** si aporta reproducibilidad; no se usara en produccion mientras FONASIN permanezca en el hosting cPanel compartido actual.
+Laravel y MariaDB pueden funcionar localmente sin contenedores. Docker Compose se evaluara **solo para desarrollo local y pruebas automatizadas** si aporta reproducibilidad; no se usara en produccion mientras FONASIN permanezca en el hosting cPanel compartido actual.
 
 ## Evidencia del hosting actual
 
@@ -33,7 +33,7 @@ Si se adopta Docker Compose, el entorno local tendra servicios separados:
 
 ```text
 app        Laravel + PHP
-postgres   PostgreSQL de desarrollo
+mariadb    MariaDB de desarrollo
 mailpit    correo de prueba (opcional)
 ```
 
@@ -44,7 +44,7 @@ El frontend puede seguir usando Vite local o integrarse posteriormente con Larav
 ```text
 compose.yaml
   app: Laravel/PHP para desarrollo
-  postgres: PostgreSQL local con volumen no versionado
+  mariadb: MariaDB local con volumen no versionado
   mailpit: servidor de correo de pruebas opcional
 ```
 
@@ -52,7 +52,7 @@ No agregar Redis, colas separadas, MinIO o servicios adicionales hasta que un ca
 
 ### Ventajas
 
-- versiones reproducibles de PHP y PostgreSQL;
+- versiones reproducibles de PHP y MariaDB;
 - misma configuracion para todos los desarrolladores;
 - pruebas sin tocar produccion;
 - facilita inicializar colaboradores y CI;
@@ -82,7 +82,7 @@ Laravel puede ejecutarse con Apache/PHP si el proveedor confirma PHP compatible,
 Antes de activar Laravel en produccion se debe confirmar:
 
 - version de PHP y disponibilidad de Composer;
-- PostgreSQL habilitado y accesible;
+- MariaDB 10.11 o superior habilitado y accesible;
 - cron para `schedule:run` y colas si se requieren;
 - ruta document root del dominio principal;
 - almacenamiento privado fuera de la carpeta publica.

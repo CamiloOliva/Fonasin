@@ -59,28 +59,29 @@ jobs:
       - name: Run PHPUnit and Laravel feature tests
         run: php artisan test --compact
 
-  backend-postgres:
-    name: Backend tests (PostgreSQL, PHP 8.3)
+  backend-mariadb:
+    name: Backend tests (MariaDB 10.11, PHP 8.3)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
-      postgres:
-        image: postgres:17
+      mariadb:
+        image: mariadb:10.11
         env:
-          POSTGRES_DB: fonasin_test
-          POSTGRES_USER: fonasin
-          POSTGRES_PASSWORD: fonasin_test
+          MARIADB_DATABASE: fonasin_test
+          MARIADB_USER: fonasin
+          MARIADB_PASSWORD: fonasin_test
+          MARIADB_ROOT_PASSWORD: fonasin_root_test
         ports:
-          - 5432:5432
+          - 3306:3306
         options: >-
-          --health-cmd "pg_isready -U fonasin -d fonasin_test"
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
     env:
-      DB_CONNECTION: pgsql
+      DB_CONNECTION: mariadb
       DB_HOST: 127.0.0.1
-      DB_PORT: 5432
+      DB_PORT: 3306
       DB_DATABASE: fonasin_test
       DB_USERNAME: fonasin
       DB_PASSWORD: fonasin_test
@@ -95,7 +96,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, pdo_pgsql
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, pdo_mysql
           tools: composer:v2
           cache: composer
           cache-dependency-path: backend/composer.lock
@@ -109,7 +110,7 @@ jobs:
           cp .env.example .env
           php artisan key:generate --force
 
-      - name: Run migrations and PostgreSQL tests
+      - name: Run migrations and MariaDB tests
         run: php artisan test --compact
 
   frontend:
@@ -161,7 +162,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CPANEL_DEPLOY_ENABLED == 'true'
     needs:
       - backend
-      - backend-postgres
+      - backend-mariadb
       - frontend
     runs-on: ubuntu-latest
     timeout-minutes: 10

@@ -52,7 +52,7 @@ Application: casos de uso, DTOs, transacciones
         ↓
 Domain: entidades, reglas, estados, eventos
         ↓
-Infrastructure: PostgreSQL, storage, correo, auditoria
+Infrastructure: MariaDB, storage, correo, auditoria
 ```
 
 La flecha no se invierte. Dominio no conoce React, Filament, Request, Eloquent, cPanel ni proveedores de almacenamiento.
