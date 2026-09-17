@@ -26,7 +26,7 @@ return new class extends Migration
 
         $this->rebuildActiveDraftIndex();
 
-        if (DB::getDriverName() === 'pgsql') {
+        if (in_array(DB::getDriverName(), ['pgsql', 'mariadb'], true)) {
             DB::statement(<<<'SQL'
                 ALTER TABLE affiliation_applications
                 ADD CONSTRAINT affiliation_applications_purpose_check
@@ -39,6 +39,8 @@ return new class extends Migration
     {
         if (DB::getDriverName() === 'pgsql') {
             DB::statement('ALTER TABLE affiliation_applications DROP CONSTRAINT IF EXISTS affiliation_applications_purpose_check');
+        } elseif (DB::getDriverName() === 'mariadb') {
+            DB::statement('ALTER TABLE affiliation_applications DROP CONSTRAINT affiliation_applications_purpose_check');
         }
 
         Schema::table('affiliation_applications', function (Blueprint $table): void {
@@ -52,6 +54,10 @@ return new class extends Migration
 
     private function rebuildActiveDraftIndex(): void
     {
+        if (DB::getDriverName() === 'mariadb') {
+            return;
+        }
+
         DB::statement('DROP INDEX IF EXISTS '.self::ACTIVE_DRAFT_INDEX);
         DB::statement(sprintf(
             "CREATE UNIQUE INDEX %s ON affiliation_applications (associate_id) WHERE associate_id IS NOT NULL AND status = 'draft'",

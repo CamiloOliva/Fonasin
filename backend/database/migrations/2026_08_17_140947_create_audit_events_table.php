@@ -22,7 +22,7 @@ return new class extends Migration
             $table->uuid('subject_id');
             $table->uuid('correlation_id')->nullable();
             $table->char('ip_hash', 64)->nullable();
-            $table->jsonb('metadata')->default('{}');
+            $table->json('metadata')->default('{}');
 
             $table->index(['subject_type', 'subject_id', 'occurred_at']);
             $table->index(['actor_user_id', 'occurred_at']);

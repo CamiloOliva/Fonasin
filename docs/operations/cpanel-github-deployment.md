@@ -1,6 +1,6 @@
 # Despliegue automático de `main` a cPanel
 
-El workflow `.github/workflows/quality-gates.yml` construye el frontend React/Vite en GitHub Actions. Cuando el commit llega a `main`, primero ejecuta las pruebas de backend SQLite y PostgreSQL, las pruebas de frontend, el build y las comprobaciones de Apache. Solo si todo termina correctamente puede publicar `dist/` en el document root de cPanel.
+El workflow `.github/workflows/quality-gates.yml` construye el frontend React/Vite en GitHub Actions. Cuando el commit llega a `main`, primero ejecuta las pruebas de backend SQLite y MariaDB 10.11, las pruebas de frontend, el build y las comprobaciones de Apache. Solo si todo termina correctamente puede publicar `dist/` en el document root de cPanel.
 
 ## Configuración requerida en GitHub
 
@@ -32,14 +32,14 @@ Nunca guardar contraseñas, claves privadas ni `.env` en el repositorio. La clav
 
 ```text
 push main
-  -> quality gates SQLite + PostgreSQL + frontend
+  -> quality gates SQLite + MariaDB + frontend
   -> artifact dist.tar.gz
   -> conexión SSH
   -> publicación en CPANEL_DEPLOY_PATH
   -> Apache sirve el nuevo build
 ```
 
-El backend Laravel no se publica con este job. Su document root debe apuntar a `backend/public/` y requiere una estrategia separada para PHP, Composer, `.env`, migraciones y PostgreSQL.
+El backend Laravel no se publica con este job. Su document root debe apuntar a `backend/public/` y requiere una estrategia separada para PHP, Composer, `.env`, migraciones y MariaDB.
 
 ## Primera activación
 

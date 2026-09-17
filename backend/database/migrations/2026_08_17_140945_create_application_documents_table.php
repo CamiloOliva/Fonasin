@@ -26,7 +26,7 @@ return new class extends Migration
             $table->index(['application_id', 'status']);
         });
 
-        if (DB::getDriverName() === 'pgsql') {
+        if (in_array(DB::getDriverName(), ['pgsql', 'mariadb'], true)) {
             DB::statement(<<<'SQL'
                 ALTER TABLE application_documents
                 ADD CONSTRAINT application_documents_byte_size_positive_check

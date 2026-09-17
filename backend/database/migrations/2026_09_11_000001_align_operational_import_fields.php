@@ -21,7 +21,7 @@ return new class extends Migration
             $table->decimal('contribution_balance', 14, 2)->default(0);
         });
 
-        if (DB::getDriverName() === 'pgsql') {
+        if (in_array(DB::getDriverName(), ['pgsql', 'mariadb'], true)) {
             DB::statement(<<<'SQL'
                 ALTER TABLE contribution_accounts
                 ADD CONSTRAINT contribution_accounts_contribution_balance_nonnegative_check
@@ -34,6 +34,8 @@ return new class extends Migration
     {
         if (DB::getDriverName() === 'pgsql') {
             DB::statement('ALTER TABLE contribution_accounts DROP CONSTRAINT IF EXISTS contribution_accounts_contribution_balance_nonnegative_check');
+        } elseif (DB::getDriverName() === 'mariadb') {
+            DB::statement('ALTER TABLE contribution_accounts DROP CONSTRAINT contribution_accounts_contribution_balance_nonnegative_check');
         }
 
         Schema::table('contribution_accounts', function (Blueprint $table): void {

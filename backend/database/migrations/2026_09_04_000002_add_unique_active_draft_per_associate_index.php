@@ -6,12 +6,28 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     private const INDEX_NAME = 'affiliation_applications_one_active_draft_per_associate';
+
     private const DRAFT_STATUS = 'draft';
+
     private const CANCELLED_STATUS = 'cancelled';
 
     public function up(): void
     {
         $this->cancelDuplicateDrafts();
+
+        if (DB::getDriverName() === 'mariadb') {
+            DB::statement(<<<'SQL'
+                ALTER TABLE affiliation_applications
+                ADD COLUMN active_draft_associate_id CHAR(36)
+                AS (CASE WHEN status = 'draft' THEN associate_id ELSE NULL END) STORED
+            SQL);
+            DB::statement(sprintf(
+                'CREATE UNIQUE INDEX %s ON affiliation_applications (active_draft_associate_id)',
+                self::INDEX_NAME,
+            ));
+
+            return;
+        }
 
         DB::statement(sprintf(
             "CREATE UNIQUE INDEX %s ON affiliation_applications (associate_id) WHERE associate_id IS NOT NULL AND status = '%s'",
@@ -22,6 +38,16 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() === 'mariadb') {
+            DB::statement(sprintf(
+                'DROP INDEX %s ON affiliation_applications',
+                self::INDEX_NAME,
+            ));
+            DB::statement('ALTER TABLE affiliation_applications DROP COLUMN active_draft_associate_id');
+
+            return;
+        }
+
         DB::statement('DROP INDEX IF EXISTS '.self::INDEX_NAME);
     }
 

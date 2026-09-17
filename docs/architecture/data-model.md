@@ -1,4 +1,4 @@
-# Modelo de datos PostgreSQL - version inicial
+# Modelo de datos MariaDB - version inicial
 
 ## Principios
 
@@ -6,7 +6,7 @@
 - Las tablas operativas incluyen `created_at` y `updated_at` en UTC.
 - Los datos de negocio se archivan mediante estado; no se eliminan de forma fisica desde la aplicacion.
 - Los datos sensibles se cifran en la capa de aplicacion antes de persistirse.
-- Los archivos se guardan en storage privado; PostgreSQL conserva sus metadatos y relaciones.
+- Los archivos se guardan en storage privado; MariaDB conserva sus metadatos y relaciones.
 - Las restricciones, indices y relaciones se declaran en migraciones, no solo en validacion de interfaz.
 - Los catalogos de estados se validan en dominio y se documentan antes de agregarse.
 
@@ -33,8 +33,8 @@ users -> audit_events           un actor realiza una accion auditable
 | `email` | varchar(255) | unico, normalizado |
 | `password` | varchar(255) | hash de Laravel; nunca texto plano |
 | `status` | varchar(30) | `pending`, `active`, `blocked` |
-| `email_verified_at` | timestamptz | nullable |
-| `last_login_at` | timestamptz | nullable |
+| `email_verified_at` | timestamp UTC | nullable |
+| `last_login_at` | timestamp UTC | nullable |
 | `document_type` | varchar(20) | nullable; requerido para recuperacion de usuarios internos |
 | `document_number_hash` | char(64) | HMAC-SHA256 con `DATA_HASH_PEPPER`; nullable y unico cuando existe |
 | `document_number_encrypted` | text | nullable; numero cifrado |
@@ -70,9 +70,9 @@ Representa la solicitud y sus metadatos operativos, no todos los datos sensibles
 | `status` | varchar(30) | `draft`, `submitted`, `under_review`, `pending_correction`, `approved`, `enabled`, `disabled`, `withdrawn`, `rejected`, `cancelled` |
 | `current_step` | varchar(30) | etapa visible al solicitante: `personal`, `employment`, `financial`, `beneficiaries`, `sarlaft`, `documents`, `consents`, `summary` |
 | `access_token_hash` | char(64) | hash del token tecnico del borrador; nullable y se limpia al cerrar la solicitud |
-| `submitted_at` | timestamptz | nullable |
+| `submitted_at` | timestamp UTC | nullable |
 | `reviewed_by_user_id` | UUID | FK nullable |
-| `reviewed_at` | timestamptz | nullable |
+| `reviewed_at` | timestamp UTC | nullable |
 | `rejection_reason` | text | nullable |
 
 Solo puede existir un borrador activo (`status = draft`) por asociado. Antes de crear el indice parcial, la migracion cancela borradores duplicados antiguos y conserva el mas reciente. En produccion esta migracion requiere respaldo, reporte de borradores afectados y aprobacion funcional antes de ejecutarse.
@@ -90,7 +90,7 @@ Una fila por etapa de formulario: `personal`, `employment`, `financial`, `benefi
 | `section` | varchar(40) | unico por solicitud |
 | `schema_version` | integer | version de campos aprobados |
 | `data_encrypted` | text | datos cifrados de la etapa |
-| `completed_at` | timestamptz | nullable |
+| `completed_at` | timestamp UTC | nullable |
 
 Esta tabla permite ajustar campos pendientes sin romper solicitudes creadas con una version anterior. Los campos finales que necesiten reportes se normalizaran despues de su aprobacion funcional.
 
@@ -108,7 +108,7 @@ El caso de uso de guardado recibe datos estructurados y delega el cifrado a `App
 | `mime_type` | varchar(100) | validado en servidor |
 | `byte_size` | bigint | limite por tipo documental |
 | `status` | varchar(30) | `uploaded`, `accepted`, `rejected`, `archived` |
-| `uploaded_at` | timestamptz | fecha de carga |
+| `uploaded_at` | timestamp UTC | fecha de carga |
 
 La carga de documentos registra metadatos, genera una `storage_key` privada desde `App\Infrastructure\Storage` y persiste el archivo en el disco privado `local`. La aplicacion no acepta rutas publicas ni claves de almacenamiento enviadas por el navegador. Al reemplazar un documento del mismo tipo, el anterior se archiva y se conserva como historial. Para envio inicial se exigen los documentos `identity` (documento de identidad por ambos lados en un solo PDF) y `employment_certificate` (certificado laboral en PDF), ambos en estado `uploaded`.
 
@@ -124,7 +124,7 @@ Registra evidencia de aceptacion sin depender de que una politica cambie despues
 | `application_id` | UUID | FK |
 | `consent_type` | varchar(50) | catalogo de dominio inicial: `data_processing`, `bylaws` |
 | `policy_version` | varchar(50) | version exacta aceptada |
-| `accepted_at` | timestamptz | obligatorio |
+| `accepted_at` | timestamp UTC | obligatorio |
 | `ip_hash` | char(64) | HMAC-SHA256 nullable; no se conserva la IP sin necesidad |
 
 Una solicitud solo puede registrar una aceptacion por tipo y version de politica. Una nueva version permite una nueva aceptacion sin perder el historial anterior. Para envio se requieren `data_processing` y `bylaws` aceptados en la version de politica vigente.
@@ -168,7 +168,7 @@ Representa el saldo operativo de aportes por asociado. Es una cuenta por asociad
 | `status` | varchar(30) | `active`, `inactive` |
 | `last_period` | date nullable | periodo operativo mas reciente |
 | `last_cut_off_date` | date nullable | fecha de corte mas reciente |
-| `last_movement_at` | timestamptz nullable | ultimo movimiento registrado |
+| `last_movement_at` | timestamp UTC nullable | ultimo movimiento registrado |
 
 ### `contribution_movements`
 
@@ -190,7 +190,7 @@ Cada fila representa un movimiento historico de aportes. Las importaciones XLSX 
 | `source` | varchar(30) | `manual`, `xlsx` |
 | `reference` | varchar(120) | referencia operativa obligatoria sin datos sensibles |
 | `source_row_hash` | char(64) | llave tecnica obligatoria de idempotencia por fila |
-| `recorded_at` | timestamptz | momento de registro operativo |
+| `recorded_at` | timestamp UTC | momento de registro operativo |
 
 ### `import_batches`
 
@@ -211,9 +211,9 @@ Registra la trazabilidad de cargas masivas. El archivo se almacena de forma priv
 | `rows_created` | integer | registros creados |
 | `rows_updated` | integer | registros actualizados |
 | `rows_rejected` | integer | filas rechazadas |
-| `errors` | jsonb nullable | errores por fila sin datos sensibles |
-| `started_at` | timestamptz nullable | inicio de procesamiento |
-| `completed_at` | timestamptz nullable | fin de procesamiento |
+| `errors` | JSON nullable | errores por fila sin datos sensibles |
+| `started_at` | timestamp UTC nullable | inicio de procesamiento |
+| `completed_at` | timestamp UTC nullable | fin de procesamiento |
 
 Las cargas aceptan solo `.xlsx` con limites configurables de tamano, contenido descomprimido, filas, tiempo de procesamiento y memoria incremental; los valores iniciales son 5 MB, 64 MB descomprimidos, 5000 filas, 30 segundos y 64 MB de memoria incremental. `storage_key` y `file_hash` son internos y no se exponen por JSON. Los errores por fila no deben incluir documentos, correos ni valores sensibles en claro.
 

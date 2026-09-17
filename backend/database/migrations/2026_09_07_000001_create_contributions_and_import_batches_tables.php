@@ -25,7 +25,7 @@ return new class extends Migration
             $table->unsignedInteger('rows_created')->default(0);
             $table->unsignedInteger('rows_updated')->default(0);
             $table->unsignedInteger('rows_rejected')->default(0);
-            $table->jsonb('errors')->nullable();
+            $table->json('errors')->nullable();
             $table->timestampTz('started_at')->nullable();
             $table->timestampTz('completed_at')->nullable();
             $table->timestampsTz();
@@ -82,10 +82,13 @@ return new class extends Migration
 
             $table->index(['associate_id', 'period']);
             $table->index(['contribution_account_id', 'recorded_at']);
-            $table->unique(['associate_id', 'movement_type', 'period', 'source_row_hash']);
+            $table->unique(
+                ['associate_id', 'movement_type', 'period', 'source_row_hash'],
+                'cm_assoc_type_period_hash_uq',
+            );
         });
 
-        if (DB::getDriverName() === 'pgsql') {
+        if (in_array(DB::getDriverName(), ['pgsql', 'mariadb'], true)) {
             DB::statement(<<<'SQL'
                 ALTER TABLE contribution_accounts
                 ADD CONSTRAINT contribution_accounts_balances_nonnegative_check
