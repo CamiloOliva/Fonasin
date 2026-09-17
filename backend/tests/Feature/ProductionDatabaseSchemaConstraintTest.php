@@ -246,6 +246,68 @@ class ProductionDatabaseSchemaConstraintTest extends TestCase
         ];
     }
 
+    public function test_only_one_active_draft_is_allowed_per_associate(): void
+    {
+        $userId = $this->createUser();
+        $associateId = $this->createAssociate($userId);
+
+        $this->insertAffiliationApplication($associateId, 'draft');
+
+        $this->expectException(QueryException::class);
+
+        $this->insertAffiliationApplication($associateId, 'draft');
+    }
+
+    public function test_non_draft_applications_and_another_associates_draft_can_coexist(): void
+    {
+        $firstAssociateId = $this->createAssociate($this->createUser());
+        $secondAssociateId = $this->createAssociate($this->createUser());
+
+        $this->insertAffiliationApplication($firstAssociateId, 'draft');
+        $this->insertAffiliationApplication($firstAssociateId, 'submitted');
+        $this->insertAffiliationApplication($firstAssociateId, 'approved');
+        $this->insertAffiliationApplication($secondAssociateId, 'draft');
+
+        $this->assertSame(
+            3,
+            DB::table('affiliation_applications')->where('associate_id', $firstAssociateId)->count(),
+        );
+        $this->assertSame(
+            1,
+            DB::table('affiliation_applications')->where('associate_id', $secondAssociateId)->count(),
+        );
+    }
+
+    public function test_mariadb_active_draft_constraint_uses_a_generated_unique_column(): void
+    {
+        if (DB::getDriverName() !== 'mariadb') {
+            $this->markTestSkipped('MariaDB-specific generated column contract.');
+        }
+
+        $column = DB::table('information_schema.columns')
+            ->where('table_schema', DB::connection()->getDatabaseName())
+            ->where('table_name', 'affiliation_applications')
+            ->where('column_name', 'active_draft_associate_id')
+            ->first(['extra', 'generation_expression']);
+
+        $this->assertNotNull($column, 'Missing MariaDB generated column for active drafts.');
+        $this->assertStringContainsString('STORED GENERATED', strtoupper((string) $column->extra));
+        $this->assertMatchesRegularExpression(
+            '/status.*draft.*associate_id/i',
+            (string) $column->generation_expression,
+        );
+
+        $indexedColumns = DB::table('information_schema.statistics')
+            ->where('table_schema', DB::connection()->getDatabaseName())
+            ->where('table_name', 'affiliation_applications')
+            ->where('index_name', 'affiliation_applications_one_active_draft_per_associate')
+            ->orderBy('seq_in_index')
+            ->pluck('column_name')
+            ->all();
+
+        $this->assertSame(['active_draft_associate_id'], $indexedColumns);
+    }
+
     public function test_duplicate_consent_for_the_same_policy_version_is_rejected(): void
     {
         $applicationId = $this->createAffiliationApplication();
@@ -302,6 +364,17 @@ class ProductionDatabaseSchemaConstraintTest extends TestCase
         ]);
 
         return $applicationId;
+    }
+
+    private function insertAffiliationApplication(string $associateId, string $status): void
+    {
+        DB::table('affiliation_applications')->insert([
+            'id' => (string) Str::uuid(),
+            'associate_id' => $associateId,
+            'status' => $status,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     private function constraintDefinition(string $constraint): ?string
