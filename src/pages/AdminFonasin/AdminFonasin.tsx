@@ -379,13 +379,11 @@ export default function AdminFonasin() {
   }
 
   async function openAssociates() {
-    if (!isAdmin) return;
     setActiveView('associates');
     await loadAssociates();
   }
 
   async function openCredits() {
-    if (!isAdmin) return;
     setActiveView('credits');
     await loadCredits();
   }
@@ -396,7 +394,6 @@ export default function AdminFonasin() {
   }
 
   async function openImports() {
-    if (!isAdmin) return;
     setActiveView('imports');
     await loadImportBatches();
   }
@@ -928,7 +925,6 @@ export default function AdminFonasin() {
           <button
             type="button"
             onClick={openAssociates}
-            disabled={!isAdmin}
             className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black transition ${
               activeView === 'associates'
                 ? 'bg-emerald-600 text-white'
@@ -941,7 +937,6 @@ export default function AdminFonasin() {
           <button
             type="button"
             onClick={openCredits}
-            disabled={!isAdmin}
             className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black transition ${
               activeView === 'credits'
                 ? 'bg-emerald-600 text-white'
@@ -954,7 +949,6 @@ export default function AdminFonasin() {
           <button
             type="button"
             onClick={openImports}
-            disabled={!isAdmin}
             className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black transition ${
               activeView === 'imports'
                 ? 'bg-emerald-600 text-white'
@@ -1038,6 +1032,7 @@ export default function AdminFonasin() {
             {detail ? (
               <ApplicationDetail
                 application={detail}
+                canManage={isAdmin}
                 reason={reason}
                 signedPayrollFile={signedPayrollFile}
                 enableResult={enableResult}
@@ -1078,6 +1073,7 @@ export default function AdminFonasin() {
             onFormChange={setAssociateForm}
             onCreate={handleCreateAssociate}
             onStatusChange={handleAssociateStatus}
+            canManage={isAdmin}
           />
         ) : activeView === 'credits' ? (
           <CreditsPanel
@@ -1149,7 +1145,7 @@ type AssociateFormState = {
   status: string;
 };
 
-function AssociatesPanel({
+export function AssociatesPanel({
   associates,
   dataState,
   profile,
@@ -1168,6 +1164,7 @@ function AssociatesPanel({
   onFormChange,
   onCreate,
   onStatusChange,
+  canManage,
 }: {
   associates: AdminAssociate[];
   dataState: DataState;
@@ -1187,10 +1184,12 @@ function AssociatesPanel({
   onFormChange: (form: AssociateFormState) => void;
   onCreate: (event: FormEvent<HTMLFormElement>) => void;
   onStatusChange: (id: string, status: 'active' | 'inactive') => void;
+  canManage: boolean;
 }) {
   return (
-    <div className="grid gap-5 xl:grid-cols-[380px_1fr]">
-      <div className="space-y-5">
+    <div className={`grid gap-5 ${canManage ? 'xl:grid-cols-[380px_1fr]' : ''}`}>
+      {canManage ? (
+        <div className="space-y-5">
       <form onSubmit={onCreate} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-100 text-emerald-700">
@@ -1279,6 +1278,7 @@ function AssociatesPanel({
         onDownloadTemplate={() => onDownloadTemplate('associates')}
       />
       </div>
+      ) : null}
 
       <section className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between gap-3">
@@ -1289,7 +1289,8 @@ function AssociatesPanel({
           <Users className="text-emerald-700" size={28} />
         </div>
 
-        <form onSubmit={onSearch} className="mt-5 flex flex-col gap-2 sm:flex-row">
+        {canManage ? (
+          <form onSubmit={onSearch} className="mt-5 flex flex-col gap-2 sm:flex-row">
           <label className="min-w-0 flex-1">
             <span className="sr-only">Buscar asociado por cedula</span>
             <input
@@ -1310,7 +1311,8 @@ function AssociatesPanel({
             {profileState === 'loading' ? <Loader2 className="animate-spin" size={18} /> : <Search size={18} />}
             Consultar ficha
           </button>
-        </form>
+          </form>
+        ) : null}
 
         {dataState === 'loading' ? (
           <div className="mt-5 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600">
@@ -1328,7 +1330,7 @@ function AssociatesPanel({
                 <th className="py-3 pr-4">Usuario</th>
                 <th className="py-3 pr-4">Creditos</th>
                 <th className="py-3 pr-4">Estado</th>
-                <th className="py-3 text-right">Accion</th>
+                {canManage ? <th className="py-3 text-right">Accion</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -1346,7 +1348,8 @@ function AssociatesPanel({
                       {statusLabel(associate.status)}
                     </span>
                   </td>
-                  <td className="py-4 text-right">
+                  {canManage ? (
+                    <td className="py-4 text-right">
                     <div className="flex justify-end gap-2">
                       <button
                         type="button"
@@ -1375,7 +1378,8 @@ function AssociatesPanel({
                         {associate.status === 'active' ? 'Desactivar' : 'Activar'}
                       </button>
                     </div>
-                  </td>
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>
@@ -1387,7 +1391,7 @@ function AssociatesPanel({
           ) : null}
         </div>
 
-        {profile ? (
+        {canManage && profile ? (
           <AssociateProfilePanel profile={profile} onDownload={onDownloadProfile} />
         ) : null}
       </section>
@@ -1601,7 +1605,7 @@ function formatCurrency(value: string): string {
   }).format(amount);
 }
 
-function CreditsPanel({
+export function CreditsPanel({
   credits,
   associates,
   dataState,
@@ -1631,8 +1635,9 @@ function CreditsPanel({
   const activeAssociates = associates.filter((associate) => associate.status === 'active');
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[380px_1fr]">
-      <div className="space-y-5">
+    <div className={`grid gap-5 ${canManage ? 'xl:grid-cols-[380px_1fr]' : ''}`}>
+      {canManage ? (
+        <div className="space-y-5">
         <form onSubmit={onCreate} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-100 text-emerald-700">
@@ -1814,7 +1819,8 @@ function CreditsPanel({
             </div>
           ) : null}
         </section>
-      </div>
+        </div>
+      ) : null}
 
       <section className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between gap-3">
@@ -1843,7 +1849,7 @@ function CreditsPanel({
                 <th className="py-3 pr-4">Cuota</th>
                 <th className="py-3 pr-4">Plazo</th>
                 <th className="py-3 pr-4">Estado</th>
-                <th className="py-3 text-right">Acciones</th>
+                {canManage ? <th className="py-3 text-right">Acciones</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -1860,7 +1866,8 @@ function CreditsPanel({
                       {statusLabel(credit.status)}
                     </span>
                   </td>
-                  <td className="py-4 text-right">
+                  {canManage ? (
+                    <td className="py-4 text-right">
                     <div className="flex justify-end gap-2">
                       <button
                         type="button"
@@ -1879,7 +1886,8 @@ function CreditsPanel({
                         Archivar
                       </button>
                     </div>
-                  </td>
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>
@@ -2440,6 +2448,7 @@ function formatBytes(value: number): string {
 
 type ApplicationDetailProps = {
   application: AdminAffiliationDetail;
+  canManage: boolean;
   reason: string;
   signedPayrollFile: File | null;
   enableResult: EnableAffiliationResult | null;
@@ -2453,8 +2462,9 @@ type ApplicationDetailProps = {
   onEnable: () => void;
 };
 
-function ApplicationDetail({
+export function ApplicationDetail({
   application,
+  canManage,
   reason,
   signedPayrollFile,
   enableResult,
@@ -2501,15 +2511,17 @@ function ApplicationDetail({
             <ClipboardCheck size={16} />
             Tomar revision
           </button>
-          <button
-            type="button"
-            onClick={onApprove}
-            disabled={application.status !== 'under_review'}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            <CheckCircle2 size={16} />
-            Aprobar formulario
-          </button>
+          {canManage ? (
+            <button
+              type="button"
+              onClick={onApprove}
+              disabled={application.status !== 'under_review'}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+            >
+              <CheckCircle2 size={16} />
+              Aprobar formulario
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -2521,7 +2533,9 @@ function ApplicationDetail({
         <p className="mt-2 text-sm leading-6 text-slate-600">
           {isDataUpdate
             ? 'Revisa los datos y el formulario generado. Los documentos de la afiliacion original permanecen sin cambios.'
-            : 'Revisa los datos guardados, el documento de identidad y los PDF generados antes de aprobar esta etapa.'}
+            : canManage
+              ? 'Revisa los datos guardados, el documento de identidad y los PDF generados antes de aprobar esta etapa.'
+              : 'Revisa los datos guardados, el documento de identidad y los PDF generados.'}
         </p>
         {!isDataUpdate ? (
           <DocumentList title="Archivos cargados" documents={uploadedDocuments} onPreview={setPreviewDocument} />
@@ -2530,7 +2544,7 @@ function ApplicationDetail({
         <DocumentPreview document={previewDocument} onClose={() => setPreviewDocument(null)} />
       </section>
 
-      {isDataUpdate ? (
+      {isDataUpdate && canManage ? (
         <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Aplicar cambios</p>
           <h3 className="mt-1 text-lg font-black text-slate-950">Actualizar formulario del asociado</h3>
@@ -2552,14 +2566,19 @@ function ApplicationDetail({
             </p>
           ) : null}
         </section>
-      ) : (
+      ) : null}
+
+      {!isDataUpdate ? (
       <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
         <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-700">Segunda confirmacion</p>
         <h3 className="mt-1 text-lg font-black text-slate-950">Libranza firmada por entidad externa</h3>
         <p className="mt-2 text-sm leading-6 text-amber-900">
-          Carga la libranza firmada por la entidad externa. Al habilitar, el sistema crea o vincula el asociado y su usuario de portal.
+          {canManage
+            ? 'Carga la libranza firmada por la entidad externa. Al habilitar, el sistema crea o vincula el asociado y su usuario de portal.'
+            : 'Consulta la libranza firmada registrada por la entidad externa.'}
         </p>
-        <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
+        {canManage ? (
+          <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
           <label className="block rounded-2xl border border-dashed border-amber-300 bg-white px-4 py-4">
             <span className="text-sm font-black text-slate-950">Archivo firmado</span>
             <span className="mt-1 block text-xs font-semibold text-slate-500">PDF, JPG o PNG hasta 5MB.</span>
@@ -2583,18 +2602,21 @@ function ApplicationDetail({
             <UploadCloud size={18} />
             Cargar libranza
           </button>
-        </div>
+          </div>
+        ) : null}
         <DocumentList title="Libranza externa registrada" documents={signedPayrollDocuments} onPreview={setPreviewDocument} />
-        <button
-          type="button"
-          onClick={onEnable}
-          disabled={!canEnable}
-          className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-        >
-          <CheckCircle2 size={16} />
-          Habilitar asociado
-        </button>
-        {enableResult ? (
+        {canManage ? (
+          <button
+            type="button"
+            onClick={onEnable}
+            disabled={!canEnable}
+            className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            <CheckCircle2 size={16} />
+            Habilitar asociado
+          </button>
+        ) : null}
+        {canManage && enableResult ? (
           <div className="mt-4 rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-700">
             <p className="font-black text-emerald-800">Asociado creado o vinculado</p>
             <p className="mt-1">Nombre: {enableResult.associate.full_name}</p>
@@ -2609,12 +2631,14 @@ function ApplicationDetail({
           </div>
         ) : null}
       </section>
-      )}
+      ) : null}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
         <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Decision</p>
         <label className="mt-3 block">
-          <span className="text-sm font-bold text-slate-800">Motivo para correccion o rechazo</span>
+          <span className="text-sm font-bold text-slate-800">
+            {canManage ? 'Motivo para correccion o rechazo' : 'Motivo para correccion'}
+          </span>
           <textarea
             value={reason}
             onChange={(event) => onReasonChange(event.target.value)}
@@ -2631,15 +2655,17 @@ function ApplicationDetail({
           >
             Solicitar correccion
           </button>
-          <button
-            type="button"
-            onClick={onReject}
-            disabled={application.status !== 'under_review'}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
-          >
-            <XCircle size={16} />
-            Rechazar
-          </button>
+          {canManage ? (
+            <button
+              type="button"
+              onClick={onReject}
+              disabled={application.status !== 'under_review'}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+            >
+              <XCircle size={16} />
+              Rechazar
+            </button>
+          ) : null}
         </div>
       </section>
     </div>
