@@ -96,7 +96,7 @@ GROUP BY associate_id
 HAVING COUNT(*) > 1;
 ```
 
-La migracion cancela borradores duplicados antiguos y conserva el mas reciente para permitir el indice unico parcial. Si la consulta devuelve filas en produccion, se debe guardar el reporte, confirmar respaldo restaurable y obtener aprobacion funcional antes de ejecutar la migracion.
+La migracion cancela borradores duplicados antiguos y conserva el mas reciente para permitir la columna generada y el indice unico de MariaDB. Si la consulta devuelve filas en produccion, se debe guardar el reporte, confirmar respaldo restaurable y obtener aprobacion funcional antes de ejecutar la migracion.
 
 ### Diagnostico previo de documentos de usuario
 

@@ -75,7 +75,7 @@ Representa la solicitud y sus metadatos operativos, no todos los datos sensibles
 | `reviewed_at` | timestamp UTC | nullable |
 | `rejection_reason` | text | nullable |
 
-Solo puede existir un borrador activo (`status = draft`) por asociado. Antes de crear el indice parcial, la migracion cancela borradores duplicados antiguos y conserva el mas reciente. En produccion esta migracion requiere respaldo, reporte de borradores afectados y aprobacion funcional antes de ejecutarse.
+Solo puede existir un borrador activo (`status = draft`) por asociado. MariaDB materializa el asociado del borrador mediante una columna generada nullable y aplica un indice unico sobre ella, sin bloquear solicitudes en otros estados. Antes de crear la restriccion, la migracion cancela borradores duplicados antiguos y conserva el mas reciente. En produccion esta migracion requiere respaldo, reporte de borradores afectados y aprobacion funcional antes de ejecutarse.
 
 Una solicitud con `purpose = data_update` conserva la identidad documental del asociado, genera solo una nueva version del formulario de afiliacion y mantiene inmutables los archivos y la libranza de la afiliacion original.
 
@@ -161,7 +161,7 @@ Representa el saldo operativo de aportes por asociado. Es una cuenta por asociad
 |---|---|---|
 | `id` | UUID | PK |
 | `associate_id` | UUID | FK unico a `associates` |
-| `contribution_balance` | numeric(14,2) | saldo de aportes ordinarios |
+| `contribution_balance` | numeric(14,2) | saldo de aportes ordinarios, mayor o igual a cero |
 | `permanent_savings_balance` | numeric(14,2) | mayor o igual a cero |
 | `voluntary_savings_balance` | numeric(14,2) | mayor o igual a cero |
 | `total_balance` | numeric(14,2) | mayor o igual a cero |
@@ -267,7 +267,7 @@ El caso de uso inicial de envio exige las secciones de formulario completas, los
 - `users(document_number_hash)` unico parcial cuando el hash no es nulo.
 - `associates(document_number_hash)` unico.
 - `affiliation_applications(status, created_at)`.
-- `affiliation_applications(associate_id)` unico parcial cuando `status = draft` y `associate_id` no es nulo.
+- `affiliation_applications(active_draft_associate_id)` unico sobre columna generada en MariaDB cuando `status = draft`; otros estados producen `NULL` y pueden coexistir.
 - `application_documents(application_id, status)`.
 - `credit_accounts(associate_id, status)`.
 - `contribution_accounts(associate_id)` unico.
