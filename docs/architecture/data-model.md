@@ -161,7 +161,7 @@ Representa el saldo operativo de aportes por asociado. Es una cuenta por asociad
 |---|---|---|
 | `id` | UUID | PK |
 | `associate_id` | UUID | FK unico a `associates` |
-| `contribution_balance` | numeric(14,2) | saldo de aportes ordinarios |
+| `contribution_balance` | numeric(14,2) | saldo de aportes ordinarios, mayor o igual a cero |
 | `permanent_savings_balance` | numeric(14,2) | mayor o igual a cero |
 | `voluntary_savings_balance` | numeric(14,2) | mayor o igual a cero |
 | `total_balance` | numeric(14,2) | mayor o igual a cero |

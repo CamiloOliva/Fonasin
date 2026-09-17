@@ -49,6 +49,7 @@ class ProductionDatabaseSchemaConstraintTest extends TestCase
             'credit_accounts_interest_rate_nonnegative_check' => ['interest_rate', '>='],
             'credit_accounts_installment_amount_nonnegative_check' => ['installment_amount', '>='],
             'contribution_accounts_balances_nonnegative_check' => ['total_balance', '>='],
+            'contribution_accounts_contribution_balance_nonnegative_check' => ['contribution_balance', '>='],
             'contribution_movements_amount_nonnegative_check' => ['amount', '>='],
         ];
 
@@ -156,6 +157,92 @@ class ProductionDatabaseSchemaConstraintTest extends TestCase
             'negative term' => ['term_months', -1],
             'negative interest rate' => ['interest_rate', -0.0001],
             'negative installment' => ['installment_amount', -0.01],
+        ];
+    }
+
+    #[DataProvider('invalidContributionAccountValues')]
+    public function test_contribution_account_balances_cannot_be_negative(string $column): void
+    {
+        $userId = $this->createUser();
+        $associateId = $this->createAssociate($userId);
+        $account = [
+            'id' => (string) Str::uuid(),
+            'associate_id' => $associateId,
+            'contribution_balance' => 0,
+            'permanent_savings_balance' => 0,
+            'voluntary_savings_balance' => 0,
+            'total_balance' => 0,
+            'status' => 'active',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+        $account[$column] = -0.01;
+
+        $this->expectException(QueryException::class);
+
+        DB::table('contribution_accounts')->insert($account);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function invalidContributionAccountValues(): array
+    {
+        return [
+            'negative contribution balance' => ['contribution_balance'],
+            'negative permanent savings balance' => ['permanent_savings_balance'],
+            'negative voluntary savings balance' => ['voluntary_savings_balance'],
+            'negative total balance' => ['total_balance'],
+        ];
+    }
+
+    #[DataProvider('invalidContributionMovementValues')]
+    public function test_contribution_movement_values_cannot_be_negative(string $column): void
+    {
+        $userId = $this->createUser();
+        $associateId = $this->createAssociate($userId);
+        $accountId = (string) Str::uuid();
+
+        DB::table('contribution_accounts')->insert([
+            'id' => $accountId,
+            'associate_id' => $associateId,
+            'status' => 'active',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $movement = [
+            'id' => (string) Str::uuid(),
+            'contribution_account_id' => $accountId,
+            'associate_id' => $associateId,
+            'movement_type' => 'contribution',
+            'period' => '2026-09-01',
+            'cut_off_date' => '2026-09-30',
+            'amount' => 100,
+            'balance_after' => 100,
+            'status' => 'registered',
+            'source' => 'manual',
+            'reference' => 'TEST-REF-'.Str::uuid(),
+            'source_row_hash' => hash('sha256', (string) Str::uuid()),
+            'recorded_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+        $movement[$column] = -0.01;
+
+        $this->expectException(QueryException::class);
+
+        DB::table('contribution_movements')->insert($movement);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function invalidContributionMovementValues(): array
+    {
+        return [
+            'negative movement amount' => ['amount'],
+            'negative movement resulting balance' => ['balance_after'],
         ];
     }
 
