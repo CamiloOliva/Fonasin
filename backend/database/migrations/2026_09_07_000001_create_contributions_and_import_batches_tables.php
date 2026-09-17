@@ -82,7 +82,10 @@ return new class extends Migration
 
             $table->index(['associate_id', 'period']);
             $table->index(['contribution_account_id', 'recorded_at']);
-            $table->unique(['associate_id', 'movement_type', 'period', 'source_row_hash']);
+            $table->unique(
+                ['associate_id', 'movement_type', 'period', 'source_row_hash'],
+                'cm_assoc_type_period_hash_uq',
+            );
         });
 
         if (in_array(DB::getDriverName(), ['pgsql', 'mariadb'], true)) {
