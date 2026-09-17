@@ -162,54 +162,92 @@ class AffiliationBackofficeHttpTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_request_correction_over_http(): void
+    public function test_reviewer_can_request_correction_over_http(): void
     {
         $application = $this->applicationWithStatus(AffiliationApplicationStatus::UnderReview);
-        $admin = $this->userWithRole('admin');
+        $reviewer = $this->userWithRole('reviewer');
 
-        $response = $this->actingAs($admin)
+        $response = $this->actingAs($reviewer)
             ->postJson("/admin/affiliation-applications/{$application->id}/correction", [
                 'reason' => 'Missing document.',
             ]);
 
         $response->assertOk()
             ->assertJsonPath('data.status', AffiliationApplicationStatus::PendingCorrection->value)
-            ->assertJsonPath('data.reviewed_by_user_id', $admin->id);
+            ->assertJsonPath('data.reviewed_by_user_id', $reviewer->id);
 
         $this->assertDatabaseHas('audit_events', [
-            'actor_user_id' => $admin->id,
+            'actor_user_id' => $reviewer->id,
             'action' => AffiliationAuditAction::ApplicationCorrectionRequested->value,
             'subject_id' => $application->id,
         ]);
     }
 
-    public function test_reviewer_can_approve_application_over_http(): void
+    public function test_reviewer_cannot_make_final_affiliation_decisions(): void
+    {
+        Storage::fake('local');
+
+        $reviewer = $this->userWithRole('reviewer');
+        $underReview = $this->applicationWithStatus(AffiliationApplicationStatus::UnderReview);
+        $approved = $this->applicationWithStatus(AffiliationApplicationStatus::Approved);
+        $readyForEnable = $this->applicationReadyForEnable();
+
+        $this->actingAs($reviewer)
+            ->postJson("/admin/affiliation-applications/{$underReview->id}/approve")
+            ->assertForbidden();
+
+        $this->actingAs($reviewer)
+            ->postJson("/admin/affiliation-applications/{$approved->id}/signed-payroll-authorization", [
+                'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
+                'file' => UploadedFile::fake()->create('libranza-firmada.pdf', 128, 'application/pdf'),
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($reviewer)
+            ->postJson("/admin/affiliation-applications/{$readyForEnable->id}/enable")
+            ->assertForbidden();
+
+        $this->actingAs($reviewer)
+            ->postJson("/admin/affiliation-applications/{$underReview->id}/reject", [
+                'reason' => 'No cumple condiciones.',
+            ])
+            ->assertForbidden();
+
+        $this->assertSame(AffiliationApplicationStatus::UnderReview->value, $underReview->refresh()->status);
+        $this->assertSame(AffiliationApplicationStatus::Approved->value, $readyForEnable->refresh()->status);
+        $this->assertDatabaseMissing('application_documents', [
+            'application_id' => $approved->id,
+            'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
+        ]);
+    }
+
+    public function test_admin_can_approve_application_over_http(): void
     {
         $application = $this->applicationWithStatus(AffiliationApplicationStatus::UnderReview);
-        $reviewer = $this->userWithRole('reviewer');
+        $admin = $this->userWithRole('admin');
 
-        $response = $this->actingAs($reviewer)
+        $response = $this->actingAs($admin)
             ->postJson("/admin/affiliation-applications/{$application->id}/approve");
 
         $response->assertOk()
             ->assertJsonPath('data.status', AffiliationApplicationStatus::Approved->value)
-            ->assertJsonPath('data.reviewed_by_user_id', $reviewer->id);
+            ->assertJsonPath('data.reviewed_by_user_id', $admin->id);
 
         $this->assertDatabaseHas('audit_events', [
-            'actor_user_id' => $reviewer->id,
+            'actor_user_id' => $admin->id,
             'action' => AffiliationAuditAction::ApplicationApproved->value,
             'subject_id' => $application->id,
         ]);
     }
 
-    public function test_reviewer_can_upload_signed_payroll_authorization_over_http(): void
+    public function test_admin_can_upload_signed_payroll_authorization_over_http(): void
     {
         Storage::fake('local');
 
         $application = $this->applicationWithStatus(AffiliationApplicationStatus::Approved);
-        $reviewer = $this->userWithRole('reviewer');
+        $admin = $this->userWithRole('admin');
 
-        $response = $this->actingAs($reviewer)
+        $response = $this->actingAs($admin)
             ->postJson("/admin/affiliation-applications/{$application->id}/signed-payroll-authorization", [
                 'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
                 'file' => UploadedFile::fake()->create('libranza-firmada.pdf', 128, 'application/pdf'),
@@ -226,12 +264,12 @@ class AffiliationBackofficeHttpTest extends TestCase
         ]);
     }
 
-    public function test_reviewer_can_enable_application_after_signed_payroll_authorization(): void
+    public function test_admin_can_enable_application_after_signed_payroll_authorization(): void
     {
         $application = $this->applicationReadyForEnable();
-        $reviewer = $this->userWithRole('reviewer');
+        $admin = $this->userWithRole('admin');
 
-        $response = $this->actingAs($reviewer)
+        $response = $this->actingAs($admin)
             ->postJson("/admin/affiliation-applications/{$application->id}/enable");
 
         $response->assertOk()
@@ -252,13 +290,13 @@ class AffiliationBackofficeHttpTest extends TestCase
             'status' => AffiliationApplicationStatus::Enabled->value,
         ]);
         $this->assertDatabaseHas('audit_events', [
-            'actor_user_id' => $reviewer->id,
+            'actor_user_id' => $admin->id,
             'action' => AffiliationAuditAction::ApplicationEnabled->value,
             'subject_id' => $application->id,
         ]);
     }
 
-    public function test_reviewer_can_apply_data_update_without_new_payroll_or_identity(): void
+    public function test_admin_can_apply_data_update_without_new_payroll_or_identity(): void
     {
         $documentHash = $this->documentHash('123456789');
         $user = User::factory()->create([
@@ -276,9 +314,9 @@ class AffiliationBackofficeHttpTest extends TestCase
             'status' => 'active',
         ]);
         $application = $this->dataUpdateReadyForEnable($associate);
-        $reviewer = $this->userWithRole('reviewer');
+        $admin = $this->userWithRole('admin');
 
-        $this->actingAs($reviewer)
+        $this->actingAs($admin)
             ->postJson("/admin/affiliation-applications/{$application->id}/enable")
             ->assertOk()
             ->assertJsonPath('data.application.status', AffiliationApplicationStatus::Enabled->value)
@@ -312,9 +350,9 @@ class AffiliationBackofficeHttpTest extends TestCase
             'status' => 'active',
         ]);
         $application = $this->dataUpdateReadyForEnable($associate, ['documentNumber' => '987654321']);
-        $reviewer = $this->userWithRole('reviewer');
+        $admin = $this->userWithRole('admin');
 
-        $this->actingAs($reviewer)
+        $this->actingAs($admin)
             ->postJson("/admin/affiliation-applications/{$application->id}/enable")
             ->assertUnprocessable()
             ->assertJsonPath('message', 'La actualizacion de datos no puede cambiar la identidad ni el asociado vinculado.');
@@ -330,9 +368,9 @@ class AffiliationBackofficeHttpTest extends TestCase
             'status' => AffiliationApplicationStatus::Approved->value,
             'current_step' => AffiliationApplicationStep::Summary->value,
         ]);
-        $reviewer = $this->userWithRole('reviewer');
+        $admin = $this->userWithRole('admin');
 
-        $this->actingAs($reviewer)
+        $this->actingAs($admin)
             ->postJson("/admin/affiliation-applications/{$application->id}/signed-payroll-authorization", [
                 'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
                 'file' => UploadedFile::fake()->create('libranza-firmada.pdf', 128, 'application/pdf'),
@@ -350,9 +388,9 @@ class AffiliationBackofficeHttpTest extends TestCase
             'document_number_encrypted' => 'test-ciphertext',
         ]);
         $application = $this->applicationReadyForEnable();
-        $reviewer = $this->userWithRole('reviewer');
+        $admin = $this->userWithRole('admin');
 
-        $this->actingAs($reviewer)
+        $this->actingAs($admin)
             ->postJson("/admin/affiliation-applications/{$application->id}/enable")
             ->assertUnprocessable()
             ->assertJsonPath('message', 'No se puede habilitar la afiliacion porque el correo o documento ya pertenece a otra identidad.');
@@ -372,9 +410,9 @@ class AffiliationBackofficeHttpTest extends TestCase
             'document_number_encrypted' => 'test-ciphertext',
         ]);
         $application = $this->applicationReadyForEnable();
-        $reviewer = $this->userWithRole('reviewer');
+        $admin = $this->userWithRole('admin');
 
-        $this->actingAs($reviewer)
+        $this->actingAs($admin)
             ->postJson("/admin/affiliation-applications/{$application->id}/enable")
             ->assertUnprocessable()
             ->assertJsonPath('message', 'No se puede habilitar la afiliacion porque el correo o documento ya pertenece a otra identidad.');
@@ -397,9 +435,9 @@ class AffiliationBackofficeHttpTest extends TestCase
             'status' => 'active',
         ]);
         $application = $this->applicationReadyForEnable();
-        $reviewer = $this->userWithRole('reviewer');
+        $admin = $this->userWithRole('admin');
 
-        $this->actingAs($reviewer)
+        $this->actingAs($admin)
             ->postJson("/admin/affiliation-applications/{$application->id}/enable")
             ->assertUnprocessable()
             ->assertJsonPath('message', 'No se puede habilitar la afiliacion porque el correo o documento ya pertenece a otra identidad.');
@@ -413,34 +451,34 @@ class AffiliationBackofficeHttpTest extends TestCase
     public function test_application_cannot_be_enabled_without_signed_payroll_authorization(): void
     {
         $application = $this->applicationWithStatus(AffiliationApplicationStatus::Approved);
-        $reviewer = $this->userWithRole('reviewer');
+        $admin = $this->userWithRole('admin');
 
-        $this->actingAs($reviewer)
+        $this->actingAs($admin)
             ->postJson("/admin/affiliation-applications/{$application->id}/enable")
             ->assertUnprocessable()
             ->assertJsonPath('message', 'Application cannot be enabled without signed payroll authorization.');
     }
 
-    public function test_reviewer_can_reject_application_over_http(): void
+    public function test_admin_can_reject_application_over_http(): void
     {
         $application = $this->applicationWithStatus(AffiliationApplicationStatus::UnderReview);
-        $reviewer = $this->userWithRole('reviewer');
+        $admin = $this->userWithRole('admin');
 
-        $response = $this->actingAs($reviewer)
+        $response = $this->actingAs($admin)
             ->postJson("/admin/affiliation-applications/{$application->id}/reject", [
                 'reason' => 'No cumple condiciones.',
             ]);
 
         $response->assertOk()
             ->assertJsonPath('data.status', AffiliationApplicationStatus::Rejected->value)
-            ->assertJsonPath('data.reviewed_by_user_id', $reviewer->id);
+            ->assertJsonPath('data.reviewed_by_user_id', $admin->id);
 
         $this->assertDatabaseHas('affiliation_applications', [
             'id' => $application->id,
             'rejection_reason' => 'No cumple condiciones.',
         ]);
         $this->assertDatabaseHas('audit_events', [
-            'actor_user_id' => $reviewer->id,
+            'actor_user_id' => $admin->id,
             'action' => AffiliationAuditAction::ApplicationRejected->value,
             'subject_id' => $application->id,
         ]);
@@ -449,9 +487,9 @@ class AffiliationBackofficeHttpTest extends TestCase
     public function test_reject_requires_reason(): void
     {
         $application = $this->applicationWithStatus(AffiliationApplicationStatus::UnderReview);
-        $reviewer = $this->userWithRole('reviewer');
+        $admin = $this->userWithRole('admin');
 
-        $this->actingAs($reviewer)
+        $this->actingAs($admin)
             ->postJson("/admin/affiliation-applications/{$application->id}/reject")
             ->assertUnprocessable();
     }

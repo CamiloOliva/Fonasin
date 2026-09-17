@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Affiliation\Enums\AffiliationAuditAction;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Application\Security\Contracts\HashesSensitiveData;
+use App\Domain\Affiliation\Enums\AffiliationAuditAction;
 use App\Models\Associate;
 use App\Models\Role;
 use App\Models\User;
@@ -50,6 +50,40 @@ class AssociateAdminHttpTest extends TestCase
             ->assertJsonPath('meta.total', 1)
             ->assertJsonMissingPath('data.0.document_number_hash')
             ->assertJsonMissingPath('data.0.document_number_encrypted');
+    }
+
+    public function test_reviewer_cannot_create_or_change_associate_access(): void
+    {
+        $reviewer = $this->userWithRole('reviewer');
+        $associate = $this->createAssociate();
+
+        $this->actingAs($reviewer)
+            ->postJson('/admin/associates', [
+                'document_type' => 'CC',
+                'document_number' => '1234567890',
+                'full_name' => 'Persona Sintetica',
+                'email' => 'persona.sintetica@fonasin.test',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($reviewer)
+            ->postJson("/admin/associates/{$associate->id}/deactivate")
+            ->assertForbidden();
+
+        $associate->forceFill(['status' => 'inactive'])->save();
+
+        $this->actingAs($reviewer)
+            ->postJson("/admin/associates/{$associate->id}/activate")
+            ->assertForbidden();
+
+        $this->actingAs($reviewer)
+            ->postJson("/admin/associates/{$associate->id}/activation")
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('associates', [
+            'full_name' => 'Persona Sintetica',
+        ]);
+        $this->assertSame('inactive', $associate->refresh()->status);
     }
 
     public function test_admin_can_create_associate_manually(): void

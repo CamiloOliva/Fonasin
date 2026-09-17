@@ -24,26 +24,21 @@ class AssociatePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->canManageAssociates($user);
+        return $user->hasAnyRole(['admin', 'reviewer']);
     }
 
     public function create(User $user): bool
     {
-        return $this->canManageAssociates($user);
+        return $user->hasRole('admin');
     }
 
     public function updateStatus(User $user, Associate $associate): bool
     {
-        return $this->canManageAssociates($user);
+        return $user->hasRole('admin');
     }
 
     public function sendActivation(User $user, Associate $associate): bool
     {
         return $user->hasRole('admin');
-    }
-
-    private function canManageAssociates(User $user): bool
-    {
-        return $user->hasAnyRole(['admin', 'reviewer']);
     }
 }
