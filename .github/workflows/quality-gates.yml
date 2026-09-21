@@ -134,6 +134,10 @@ jobs:
         run: npm run test -- --reporter=dot
 
       - name: Build production bundle
+        env:
+          # Public value embedded in the release artifact. The browser calls
+          # Laravel through the dedicated HTTPS API subdomain in production.
+          VITE_BACKEND_BASE_URL: https://api.fonasin.com
         run: npm run build
 
       - name: Verify Apache publication artifacts
