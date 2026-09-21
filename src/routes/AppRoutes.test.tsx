@@ -28,6 +28,7 @@ vi.mock('../services/portalService', () => ({
 }));
 
 vi.mock('../services/adminAffiliationService', () => ({
+  adminAffiliationDocumentUrl: vi.fn((path: string) => path),
   currentAdminUser: vi.fn().mockRejectedValue(new Error('guest')),
   fetchAdminAffiliationApplications: vi.fn().mockResolvedValue([]),
   fetchAdminAffiliationApplication: vi.fn(),
@@ -146,6 +147,61 @@ describe('AppRoutes', () => {
       expect(screen.getByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument();
     });
     expect(screen.getByRole('heading', { name: /consulta tus creditos/i })).toBeInTheDocument();
+  });
+
+  it('renders profile completion as a private flow instead of public affiliation', async () => {
+    vi.mocked(portalService.startPortalAffiliationUpdate).mockRejectedValueOnce(new Error('session required'));
+
+    renderRoute('/portal-asociado/completar-perfil');
+
+    expect(screen.getByRole('heading', { level: 1, name: /completar perfil/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 1, name: /^formulario de afiliacion$/i })).not.toBeInTheDocument();
+  });
+
+  it('opens profile completion after the mandatory first password change', async () => {
+    const user = userEvent.setup();
+    vi.mocked(portalService.currentPortalUser).mockResolvedValueOnce({
+      id: 'new-associate-user',
+      email: 'new.associate@fonasin.test',
+      roles: ['associate'],
+      must_change_password: true,
+      requires_profile_completion: true,
+      profile_completion_status: null,
+    });
+    vi.mocked(portalService.changeOwnPassword).mockResolvedValueOnce({
+      id: 'new-associate-user',
+      email: 'new.associate@fonasin.test',
+      roles: ['associate'],
+      must_change_password: false,
+      requires_profile_completion: true,
+      profile_completion_status: null,
+    });
+    vi.mocked(portalService.startPortalAffiliationUpdate).mockResolvedValue({
+      id: 'profile-draft-id',
+      status: 'draft',
+      purpose: 'profile_completion',
+      source_application_id: null,
+      draft_access_token: 'draft-token',
+      links: { read: '/affiliation-applications/profile-draft-id?signature=test' },
+    });
+
+    renderRoute('/portal-asociado');
+
+    await user.type(await screen.findByLabelText(/contrasena temporal/i), 'Temporal123');
+    await user.type(screen.getByLabelText(/^nueva contrasena$/i), 'NuevaClave123');
+    await user.type(screen.getByLabelText(/confirmar nueva contrasena/i), 'NuevaClave123');
+    await user.click(screen.getByRole('button', { name: /guardar contrasena/i }));
+
+    expect(await screen.findByRole('heading', { level: 1, name: /completar perfil/i })).toBeInTheDocument();
+    expect(portalService.startPortalAffiliationUpdate).toHaveBeenCalled();
+  });
+
+  it('renders data updates as a private flow', async () => {
+    vi.mocked(portalService.startPortalAffiliationUpdate).mockRejectedValueOnce(new Error('session required'));
+
+    renderRoute('/portal-asociado/actualizar-datos');
+
+    expect(screen.getByRole('heading', { level: 1, name: /actualizar datos/i })).toBeInTheDocument();
   });
 
   it('rejects admin users from the associate portal', async () => {
@@ -280,11 +336,12 @@ describe('AppRoutes', () => {
 
   it('limpia el borrador temporal al cerrar sesion', async () => {
     const user = userEvent.setup();
-    window.sessionStorage.setItem('fonasin.affiliation.draft.v1', JSON.stringify({
+    window.sessionStorage.setItem('fonasin.portal.affiliation.draft.v1', JSON.stringify({
       savedAt: Date.now(),
       id: 'draft-1',
       readUrl: '/signed-read-url',
       status: 'draft',
+      purpose: 'data_update',
     }));
     vi.mocked(portalService.currentPortalUser).mockResolvedValueOnce({
       id: 'associate-user',
@@ -302,5 +359,5 @@ describe('AppRoutes', () => {
     });
     await user.click(screen.getByRole('button', { name: /cerrar sesion/i }));
 
-    expect(window.sessionStorage.getItem('fonasin.affiliation.draft.v1')).toBeNull();
+    expect(window.sessionStorage.getItem('fonasin.portal.affiliation.draft.v1')).toBeNull();
   });});

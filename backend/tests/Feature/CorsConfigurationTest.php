@@ -12,5 +12,8 @@ class CorsConfigurationTest extends TestCase
         $this->assertContains('http://localhost:5173', config('cors.allowed_origins'));
         $this->assertContains('csrf-token', config('cors.paths'));
         $this->assertNotContains('*', config('cors.allowed_origins'));
+        $this->assertContains('X-Affiliation-Draft-Token', config('cors.allowed_headers'));
+        $this->assertContains('Range', config('cors.allowed_headers'));
+        $this->assertContains('Content-Range', config('cors.exposed_headers'));
     }
 }

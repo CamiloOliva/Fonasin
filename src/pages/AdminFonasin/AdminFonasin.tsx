@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import ForcedPasswordChange from '../../components/auth/ForcedPasswordChange';
 import {
+  adminAffiliationDocumentUrl,
   approveAdminAffiliationApplication,
   currentAdminUser,
   enableAdminAffiliationApplication,
@@ -1005,7 +1006,11 @@ export default function AdminFonasin() {
                     <div>
                       <p className="text-sm font-black text-slate-950">Solicitud {application.id.slice(0, 8)}</p>
                       <p className="mt-1 text-[11px] font-black uppercase tracking-[0.12em] text-emerald-700">
-                        {application.purpose === 'data_update' ? 'Actualizacion de datos' : 'Afiliacion inicial'}
+                        {application.purpose === 'profile_completion'
+                          ? 'Completar perfil'
+                          : application.purpose === 'data_update'
+                            ? 'Actualizacion de datos'
+                            : 'Afiliacion inicial'}
                       </p>
                       <p className="mt-1 text-xs font-semibold text-slate-500">{formatDate(application.submitted_at)}</p>
                     </div>
@@ -2478,7 +2483,8 @@ export function ApplicationDetail({
   onEnable,
 }: ApplicationDetailProps) {
   const [previewDocument, setPreviewDocument] = useState<AdminAffiliationDocument | null>(null);
-  const isDataUpdate = application.purpose === 'data_update';
+  const isProfileCompletion = application.purpose === 'profile_completion';
+  const isFormOnly = application.purpose === 'data_update' || isProfileCompletion;
   const generatedDocuments = application.documents.filter((document) =>
     ['affiliation_summary', 'payroll_authorization'].includes(document.document_type),
   );
@@ -2486,8 +2492,8 @@ export function ApplicationDetail({
     ['identity', 'employment_certificate'].includes(document.document_type),
   );
   const signedPayrollDocuments = application.documents.filter((document) => document.document_type === 'signed_payroll_authorization');
-  const canUploadSignedPayroll = !isDataUpdate && application.status === 'approved';
-  const canEnable = application.status === 'approved' && (isDataUpdate || signedPayrollDocuments.length > 0);
+  const canUploadSignedPayroll = !isFormOnly && application.status === 'approved';
+  const canEnable = application.status === 'approved' && (isFormOnly || signedPayrollDocuments.length > 0);
 
   return (
     <div className="space-y-5">
@@ -2497,7 +2503,7 @@ export function ApplicationDetail({
           <h2 className="mt-1 break-all text-2xl font-black text-slate-950">{application.id}</h2>
           <p className="mt-2 text-sm font-semibold text-slate-600">Estado: {statusLabel(application.status)}</p>
           <p className="mt-1 text-sm font-semibold text-emerald-700">
-            Tipo: {isDataUpdate ? 'Actualizacion de datos' : 'Afiliacion inicial'}
+            Tipo: {isProfileCompletion ? 'Completar perfil' : isFormOnly ? 'Actualizacion de datos' : 'Afiliacion inicial'}
           </p>
           <p className="mt-1 text-sm text-slate-500">Enviada: {formatDate(application.submitted_at)}</p>
         </div>
@@ -2528,28 +2534,34 @@ export function ApplicationDetail({
       <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
         <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Primera confirmacion</p>
         <h3 className="mt-1 text-lg font-black text-slate-950">
-          {isDataUpdate ? 'Formulario actualizado' : 'Formulario de afiliacion y archivos'}
+          {isProfileCompletion ? 'Formulario de perfil' : isFormOnly ? 'Formulario actualizado' : 'Formulario de afiliacion y archivos'}
         </h3>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          {isDataUpdate
-            ? 'Revisa los datos y el formulario generado. Los documentos de la afiliacion original permanecen sin cambios.'
+          {isFormOnly
+            ? isProfileCompletion
+              ? 'Revisa los datos y el formulario generado. Este proceso no requiere soportes ni libranza.'
+              : 'Revisa los datos y el formulario generado. Los documentos de la afiliacion original permanecen sin cambios.'
             : canManage
               ? 'Revisa los datos guardados, el documento de identidad y los PDF generados antes de aprobar esta etapa.'
               : 'Revisa los datos guardados, el documento de identidad y los PDF generados.'}
         </p>
-        {!isDataUpdate ? (
+        {!isFormOnly ? (
           <DocumentList title="Archivos cargados" documents={uploadedDocuments} onPreview={setPreviewDocument} />
         ) : null}
         <DocumentList title="Documentos generados" documents={generatedDocuments} onPreview={setPreviewDocument} />
         <DocumentPreview document={previewDocument} onClose={() => setPreviewDocument(null)} />
       </section>
 
-      {isDataUpdate && canManage ? (
+      {isFormOnly && canManage ? (
         <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Aplicar cambios</p>
-          <h3 className="mt-1 text-lg font-black text-slate-950">Actualizar formulario del asociado</h3>
+          <h3 className="mt-1 text-lg font-black text-slate-950">
+            {isProfileCompletion ? 'Habilitar formulario del asociado' : 'Actualizar formulario del asociado'}
+          </h3>
           <p className="mt-2 text-sm leading-6 text-emerald-950">
-            Despues de aprobar, aplica la actualizacion. No requiere cargar otra libranza ni reemplaza archivos existentes.
+            {isProfileCompletion
+              ? 'Despues de aprobar, habilita el formulario del perfil. No requiere soportes ni libranza.'
+              : 'Despues de aprobar, aplica la actualizacion. No requiere cargar otra libranza ni reemplaza archivos existentes.'}
           </p>
           <button
             type="button"
@@ -2562,13 +2574,13 @@ export function ApplicationDetail({
           </button>
           {enableResult ? (
             <p className="mt-4 rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm font-bold text-emerald-800">
-              Formulario actualizado para {enableResult.associate.full_name}.
+              {isProfileCompletion ? 'Perfil habilitado' : 'Formulario actualizado'} para {enableResult.associate.full_name}.
             </p>
           ) : null}
         </section>
       ) : null}
 
-      {!isDataUpdate ? (
+      {!isFormOnly ? (
       <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
         <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-700">Segunda confirmacion</p>
         <h3 className="mt-1 text-lg font-black text-slate-950">Libranza firmada por entidad externa</h3>
@@ -2692,7 +2704,7 @@ function DocumentPreview({ document, onClose }: { document: AdminAffiliationDocu
       </div>
       <iframe
         title={documentLabel(document.document_type)}
-        src={document.links.preview}
+        src={adminAffiliationDocumentUrl(document.links.preview)}
         className="mt-3 h-[520px] w-full rounded-xl border border-slate-200 bg-slate-100"
       />
     </div>

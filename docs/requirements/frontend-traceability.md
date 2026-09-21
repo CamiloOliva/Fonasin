@@ -83,7 +83,7 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 | FE-OBQ-003 | Creditos actuales | OBQ | En curso | Consulta creditos del asociado autenticado desde Backend y contrato consolidado `GET /portal/account-statement`; importacion XLSX inicial disponible. Falta validacion visual final con datos reales. |
 | FE-OBQ-003A | Aportes actuales | OBQ | En curso | Frontend representa `module_disabled`, `empty` y `available` sin mezclar aportes con creditos; los textos finales requieren aprobacion institucional y validacion con datos representativos. Backend expone `GET /portal/contributions` y `GET /portal/account-statement`. |
 | FE-OBQ-004 | Aislamiento por sesion | OBQ | Implementado | Las consultas privadas resuelven el asociado desde la sesion y bloquean asociado inactivo; no se acepta `associate_id` del navegador. |
-| FE-EXT-004 | Actualizacion de datos | EXT | En curso | El asociado crea o reutiliza un borrador temporal por 24 horas identificado como `data_update`; las altas operativas sin formulario usan `profile_completion`. Ambos flujos bloquean cambios de identidad y cargas documentales, generan solo el formulario y permiten al backoffice aplicarlo sin nueva libranza. Falta aprobacion visual final y definir retencion historica. |
+| FE-EXT-004 | Actualizacion de datos | EXT | En curso | El asociado crea o reutiliza un borrador temporal por 24 horas identificado como `data_update`; las altas operativas sin formulario usan `profile_completion`. Los flujos privados usan rutas y almacenamiento de sesion separados de `/afiliacion`, bloquean cambios de identidad y cargas documentales, generan solo el formulario y permiten al backoffice aplicarlo sin nueva libranza. Falta aprobacion visual final y definir retencion historica. |
 | FE-EXT-005 | Simulador | EXT | Pendiente | No iniciar sin formulas y advertencias aprobadas. |
 | FE-EXT-006 | Documentos privados | EXT | En curso | Storage privado y vista temporal autorizada para documentos visibles al asociado; la libranza no se muestra en el portal asociado. |
 
@@ -105,7 +105,7 @@ La pagina publica `/creditos` solo cubre informacion general de `FE-WEB-004`; no
 | Compilacion TypeScript/Vite | Implementado | `npm run build` local y workflow `.github/workflows/frontend-ci.yml` en cada push y pull request. |
 | Rutas SPA en Apache | Implementado | `public/.htaccess` incluido en `dist` y recarga directa verificada. |
 | Pruebas unitarias | En curso | Vitest y Testing Library cubren rutas, roles admin/reviewer, validacion XLSX, navegacion y estados del portal; falta complementar con Browser/E2E contra contratos reales. |
-| Pruebas de integracion | En curso | Pruebas Feature cubren afiliacion publica, links vencidos, documentos protegidos, portal asociado, estado de cuenta, documentos, actualizacion de datos y cierre de sesion; falta prueba Browser visual end to end. |
+| Pruebas de integracion | En curso | Pruebas Feature cubren afiliacion publica, links vencidos, documentos protegidos, portal asociado, estado de cuenta, documentos, actualizacion de datos y cierre de sesion. Frontend cubre cambio obligatorio de contrasena hacia `profile_completion` y resolucion de URLs de documentos contra el backend configurado; falta prueba Browser visual end to end. |
 | Responsive | Pendiente | Matriz movil, tableta y escritorio. |
 | Accesibilidad | Pendiente | Teclado, foco, labels, contraste, semantica y auditoria. |
 | Permisos | Pendiente | Casos positivos y negativos por rol. |

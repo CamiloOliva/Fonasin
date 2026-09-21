@@ -1,4 +1,5 @@
 export type AffiliationSectionKey = 'personal' | 'employment' | 'financial' | 'beneficiaries' | 'sarlaft';
+export type AffiliationPurpose = 'initial_affiliation' | 'data_update' | 'profile_completion';
 
 export type AffiliationDraftLinks = {
   read: string;
@@ -25,7 +26,7 @@ export type GeneratedAffiliationDocument = {
 
 export type AffiliationDraft = {
   id: string;
-  purpose: 'initial_affiliation' | 'data_update' | 'profile_completion';
+  purpose: AffiliationPurpose;
   source_application_id: string | null;
   status: string;
   current_step: string;
@@ -89,7 +90,10 @@ type AffiliationRequestOptions = {
 };
 
 const backendBaseUrl = import.meta.env.VITE_BACKEND_BASE_URL?.trim().replace(/\/$/, '') ?? '';
-const DRAFT_STORAGE_KEY = 'fonasin.affiliation.draft.v1';
+const DRAFT_STORAGE_KEYS = [
+  'fonasin.portal.affiliation.draft.v1',
+  'fonasin.affiliation.draft.v1',
+] as const;
 
 function buildUrl(path: string): string {
   if (path.startsWith('http://') || path.startsWith('https://')) {
@@ -109,22 +113,26 @@ function csrfToken(): string {
   return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 }
 
-function draftAccessToken(): string {
-  try {
-    const raw = window.sessionStorage.getItem(DRAFT_STORAGE_KEY);
-    if (!raw) return '';
+function draftAccessToken(path: string): string {
+  for (const storageKey of DRAFT_STORAGE_KEYS) {
+    try {
+      const raw = window.sessionStorage.getItem(storageKey);
+      if (!raw) continue;
 
-    const stored = JSON.parse(raw) as { draftAccessToken?: unknown };
-
-    return typeof stored.draftAccessToken === 'string' ? stored.draftAccessToken : '';
-  } catch {
-    return '';
+      const stored = JSON.parse(raw) as { id?: unknown; draftAccessToken?: unknown };
+      if (typeof stored.id !== 'string' || !path.includes(stored.id)) continue;
+      if (typeof stored.draftAccessToken === 'string') return stored.draftAccessToken;
+    } catch {
+      // Ignore invalid browser state and continue checking the remaining key.
+    }
   }
+
+  return '';
 }
 
 async function requestJson<T>(path: string, options: AffiliationRequestOptions = {}): Promise<T> {
   const token = csrfToken();
-  const storedDraftAccessToken = draftAccessToken();
+  const storedDraftAccessToken = draftAccessToken(path);
 
   const response = await fetch(buildUrl(path), {
     method: options.method ?? 'POST',
