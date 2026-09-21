@@ -3,11 +3,25 @@ name: Quality gates
 on:
   push:
     branches:
-      - '**'
+      - develop
+      - main
+      - 'feature/**'
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.editorconfig'
   pull_request:
     branches:
       - develop
       - main
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.editorconfig'
+
+concurrency:
+  group: quality-gates-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -16,6 +30,7 @@ jobs:
   backend:
     name: Backend tests (SQLite, PHP 8.3)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: backend
@@ -28,6 +43,9 @@ jobs:
         with:
           php-version: '8.3'
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, pdo_sqlite
+          tools: composer:v2
+          cache: composer
+          cache-dependency-path: backend/composer.lock
           coverage: none
 
       - name: Install Composer dependencies
@@ -41,27 +59,29 @@ jobs:
       - name: Run PHPUnit and Laravel feature tests
         run: php artisan test --compact
 
-  backend-postgres:
-    name: Backend tests (PostgreSQL, PHP 8.3)
+  backend-mariadb:
+    name: Backend tests (MariaDB 10.11, PHP 8.3)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     services:
-      postgres:
-        image: postgres:17
+      mariadb:
+        image: mariadb:10.11
         env:
-          POSTGRES_DB: fonasin_test
-          POSTGRES_USER: fonasin
-          POSTGRES_PASSWORD: fonasin_test
+          MARIADB_DATABASE: fonasin_test
+          MARIADB_USER: fonasin
+          MARIADB_PASSWORD: fonasin_test
+          MARIADB_ROOT_PASSWORD: fonasin_root_test
         ports:
-          - 5432:5432
+          - 3306:3306
         options: >-
-          --health-cmd "pg_isready -U fonasin -d fonasin_test"
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
     env:
-      DB_CONNECTION: pgsql
+      DB_CONNECTION: mariadb
       DB_HOST: 127.0.0.1
-      DB_PORT: 5432
+      DB_PORT: 3306
       DB_DATABASE: fonasin_test
       DB_USERNAME: fonasin
       DB_PASSWORD: fonasin_test
@@ -76,7 +96,10 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, pdo_pgsql
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, pdo_mysql
+          tools: composer:v2
+          cache: composer
+          cache-dependency-path: backend/composer.lock
           coverage: none
 
       - name: Install Composer dependencies
@@ -87,12 +110,13 @@ jobs:
           cp .env.example .env
           php artisan key:generate --force
 
-      - name: Run migrations and PostgreSQL tests
+      - name: Run migrations and MariaDB tests
         run: php artisan test --compact
 
   frontend:
     name: Frontend tests, build and Apache checks
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -110,6 +134,10 @@ jobs:
         run: npm run test -- --reporter=dot
 
       - name: Build production bundle
+        env:
+          # Public value embedded in the release artifact. The browser calls
+          # Laravel through the dedicated HTTPS API subdomain in production.
+          VITE_BACKEND_BASE_URL: https://api.fonasin.com
         run: npm run build
 
       - name: Verify Apache publication artifacts
@@ -119,3 +147,79 @@ jobs:
           test -f dist/.htaccess
           test -f backend/public/.htaccess
           grep -q "RewriteRule" dist/.htaccess
+
+      - name: Package Apache frontend artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: tar -czf dist.tar.gz -C dist .
+
+      - name: Upload Apache frontend artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: fonasin-dist-${{ github.sha }}
+          path: dist.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy-cpanel:
+    name: Deploy frontend to cPanel Apache
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CPANEL_DEPLOY_ENABLED == 'true'
+    needs:
+      - backend
+      - backend-mariadb
+      - frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    steps:
+      - name: Download approved frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: fonasin-dist-${{ github.sha }}
+
+      - name: Prepare remote release directory
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DEPLOY_PATH: ${{ secrets.CPANEL_DEPLOY_PATH }}
+          RELEASE_ID: ${{ github.sha }}
+        with:
+          host: ${{ secrets.CPANEL_SSH_HOST }}
+          port: ${{ secrets.CPANEL_SSH_PORT }}
+          username: ${{ secrets.CPANEL_SSH_USER }}
+          key: ${{ secrets.CPANEL_SSH_KEY }}
+          envs: DEPLOY_PATH,RELEASE_ID
+          script: |
+            set -eu
+            test -n "$DEPLOY_PATH"
+            release="$DEPLOY_PATH/.deploy/$RELEASE_ID"
+            mkdir -p "$release"
+
+      - name: Upload frontend artifact to cPanel
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.CPANEL_SSH_HOST }}
+          port: ${{ secrets.CPANEL_SSH_PORT }}
+          username: ${{ secrets.CPANEL_SSH_USER }}
+          key: ${{ secrets.CPANEL_SSH_KEY }}
+          source: dist.tar.gz
+          target: ${{ secrets.CPANEL_DEPLOY_PATH }}/.deploy/${{ github.sha }}
+
+      - name: Publish frontend on Apache document root
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DEPLOY_PATH: ${{ secrets.CPANEL_DEPLOY_PATH }}
+          RELEASE_ID: ${{ github.sha }}
+        with:
+          host: ${{ secrets.CPANEL_SSH_HOST }}
+          port: ${{ secrets.CPANEL_SSH_PORT }}
+          username: ${{ secrets.CPANEL_SSH_USER }}
+          key: ${{ secrets.CPANEL_SSH_KEY }}
+          envs: DEPLOY_PATH,RELEASE_ID
+          script: |
+            set -eu
+            release="$DEPLOY_PATH/.deploy/$RELEASE_ID"
+            test -f "$release/dist.tar.gz"
+            tar -xzf "$release/dist.tar.gz" -C "$release"
+            rm -f "$release/dist.tar.gz"
+            cp -a "$release/." "$DEPLOY_PATH/"
+            rm -rf "$release"

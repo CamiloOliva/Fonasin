@@ -2,6 +2,7 @@
 
 namespace App\Application\Affiliation\UseCases;
 
+use App\Domain\Affiliation\Enums\AffiliationApplicationPurpose;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Models\AffiliationApplication;
@@ -14,6 +15,7 @@ class CreateAffiliationDraft
     {
         return DB::transaction(fn () => AffiliationApplication::query()->create([
             'associate_id' => $associate?->id,
+            'purpose' => AffiliationApplicationPurpose::InitialAffiliation->value,
             'status' => AffiliationApplicationStatus::Draft->value,
             'current_step' => AffiliationApplicationStep::Personal->value,
         ]));

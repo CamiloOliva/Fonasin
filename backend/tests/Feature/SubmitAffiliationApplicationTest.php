@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Application\Affiliation\Exceptions\CannotSubmitAffiliationApplication;
+use App\Application\Affiliation\Contracts\RendersAffiliationSubmissionDocuments;
 use App\Application\Affiliation\UseCases\AcceptApplicationConsent;
 use App\Application\Affiliation\UseCases\CreateAffiliationDraft;
 use App\Application\Affiliation\UseCases\RegisterApplicationDocument;
@@ -17,15 +18,20 @@ use App\Domain\Audit\Enums\AuditModule;
 use App\Models\AffiliationApplication;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Mockery;
+use Tests\Support\AffiliationSectionPayloads;
 use Tests\TestCase;
 
 class SubmitAffiliationApplicationTest extends TestCase
 {
     use RefreshDatabase;
+    use AffiliationSectionPayloads;
 
     public function test_it_submits_a_complete_application_and_records_audit_event(): void
     {
+        Storage::fake('local');
         $application = app(CreateAffiliationDraft::class)();
         $actor = User::factory()->create();
         $submittedAt = now('UTC')->startOfSecond();
@@ -49,12 +55,34 @@ class SubmitAffiliationApplicationTest extends TestCase
         $this->assertSame(AffiliationApplicationStep::Summary->value, $submitted->current_step);
         $this->assertSame($submittedAt->format('Y-m-d H:i:s'), $submitted->submitted_at->format('Y-m-d H:i:s'));
 
+        $generatedDocuments = $application->documents()
+            ->whereIn('document_type', [
+                ApplicationDocumentType::AffiliationSummary->value,
+                ApplicationDocumentType::PayrollAuthorization->value,
+            ])
+            ->get();
+
+        $this->assertCount(2, $generatedDocuments);
+
+        foreach ($generatedDocuments as $document) {
+            Storage::disk('local')->assertExists($document->storage_key);
+            $this->assertStringStartsWith('%PDF', Storage::disk('local')->get($document->storage_key));
+        }
+
         $this->assertDatabaseHas('audit_events', [
             'actor_user_id' => $actor->id,
             'module' => AuditModule::Affiliation->value,
             'action' => AffiliationAuditAction::ApplicationSubmitted->value,
             'subject_type' => 'affiliation_application',
             'subject_id' => $application->id,
+            'correlation_id' => $correlationId,
+            'ip_hash' => $ipHash,
+        ]);
+
+        $this->assertDatabaseHas('audit_events', [
+            'module' => AuditModule::Affiliation->value,
+            'action' => AffiliationAuditAction::DocumentGenerated->value,
+            'subject_type' => 'application_document',
             'correlation_id' => $correlationId,
             'ip_hash' => $ipHash,
         ]);
@@ -69,6 +97,52 @@ class SubmitAffiliationApplicationTest extends TestCase
         $this->expectException(CannotSubmitAffiliationApplication::class);
 
         app(SubmitAffiliationApplication::class)($application, '2026-01');
+    }
+
+    public function test_it_uses_signature_date_for_payroll_authorization_header(): void
+    {
+        Storage::fake('local');
+        $application = app(CreateAffiliationDraft::class)();
+        $capturedPayroll = [];
+        $capturedSignature = [];
+        $renderer = Mockery::mock(RendersAffiliationSubmissionDocuments::class);
+
+        $renderer->shouldReceive('affiliationSummary')
+            ->once()
+            ->withArgs(function (AffiliationApplication $receivedApplication, array $sections, array $signature) use ($application, &$capturedSignature): bool {
+                $capturedSignature = $signature;
+
+                return $receivedApplication->is($application);
+            })
+            ->andReturn('%PDF summary');
+        $renderer->shouldReceive('payrollAuthorization')
+            ->once()
+            ->withArgs(function (AffiliationApplication $receivedApplication, array $sections, array $payroll) use ($application, &$capturedPayroll): bool {
+                $capturedPayroll = $payroll;
+
+                return $receivedApplication->is($application);
+            })
+            ->andReturn('%PDF payroll');
+
+        $this->app->instance(RendersAffiliationSubmissionDocuments::class, $renderer);
+
+        $this->completeSections($application);
+        $this->uploadRequiredDocuments($application);
+        $this->acceptRequiredConsents($application, '2026-01');
+
+        app(SubmitAffiliationApplication::class)(
+            application: $application,
+            policyVersion: '2026-01',
+            signatureCity: 'Bucaramanga',
+            signatureDate: '2026-08-24',
+        );
+
+        $this->assertSame('Bucaramanga', $capturedPayroll['city']);
+        $this->assertSame('24 de agosto de 2026', $capturedPayroll['signature_date_label']);
+        $this->assertSame('Bucaramanga', $capturedPayroll['signature']['city']);
+        $this->assertSame('24 de agosto de 2026', $capturedPayroll['signature']['signature_date_label']);
+        $this->assertSame('24 de agosto de 2026', $capturedSignature['signature_date_label']);
+        $this->assertSame('Aceptacion electronica del formulario', $capturedSignature['mechanism']);
     }
 
     public function test_it_rejects_submission_when_required_consents_are_missing(): void
@@ -117,7 +191,7 @@ class SubmitAffiliationApplicationTest extends TestCase
                 application: $application,
                 section: $section,
                 schemaVersion: 1,
-                data: ['section' => $section->value],
+                data: $this->validSectionPayload($section),
                 completedAt: now()->startOfSecond(),
             );
         }

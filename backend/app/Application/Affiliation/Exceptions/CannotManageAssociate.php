@@ -1,0 +1,28 @@
+<?php
+
+namespace App\Application\Affiliation\Exceptions;
+
+use DomainException;
+
+class CannotManageAssociate extends DomainException
+{
+    public static function duplicateDocument(): self
+    {
+        return new self('Ya existe un asociado con ese numero de documento.');
+    }
+
+    public static function invalidStatus(string $status): self
+    {
+        return new self("El estado de asociado [{$status}] no es valido.");
+    }
+
+    public static function userAlreadyLinked(): self
+    {
+        return new self('El correo indicado ya esta vinculado a otro asociado.');
+    }
+
+    public static function identityConflict(): self
+    {
+        return new self('El correo indicado ya existe con un documento diferente.');
+    }
+}

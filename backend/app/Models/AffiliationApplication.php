@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Affiliation\Enums\AffiliationApplicationPurpose;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,12 +14,19 @@ class AffiliationApplication extends Model
 
     protected $fillable = [
         'associate_id',
+        'purpose',
+        'source_application_id',
         'status',
         'current_step',
+        'access_token_hash',
         'submitted_at',
         'reviewed_by_user_id',
         'reviewed_at',
         'rejection_reason',
+    ];
+
+    protected $hidden = [
+        'access_token_hash',
     ];
 
     protected function casts(): array
@@ -32,6 +40,26 @@ class AffiliationApplication extends Model
     public function associate(): BelongsTo
     {
         return $this->belongsTo(Associate::class);
+    }
+
+    public function sourceApplication(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'source_application_id');
+    }
+
+    public function isDataUpdate(): bool
+    {
+        return $this->purpose === AffiliationApplicationPurpose::DataUpdate->value;
+    }
+
+    public function isProfileCompletion(): bool
+    {
+        return $this->purpose === AffiliationApplicationPurpose::ProfileCompletion->value;
+    }
+
+    public function isFormOnly(): bool
+    {
+        return $this->isDataUpdate() || $this->isProfileCompletion();
     }
 
     public function reviewer(): BelongsTo

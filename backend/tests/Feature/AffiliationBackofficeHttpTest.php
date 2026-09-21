@@ -2,13 +2,24 @@
 
 namespace Tests\Feature;
 
+use App\Application\Security\Contracts\EncryptsSensitiveData;
+use App\Application\Security\Contracts\HashesSensitiveData;
+use App\Domain\Affiliation\Enums\AffiliationApplicationPurpose;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
+use App\Domain\Affiliation\Enums\ApplicationDocumentStatus;
+use App\Domain\Affiliation\Enums\ApplicationDocumentType;
 use App\Models\AffiliationApplication;
+use App\Models\ApplicationDocument;
+use App\Models\ApplicationSection;
+use App\Models\Associate;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class AffiliationBackofficeHttpTest extends TestCase
@@ -18,6 +29,12 @@ class AffiliationBackofficeHttpTest extends TestCase
     public function test_guest_cannot_access_backoffice_affiliation_actions(): void
     {
         $application = $this->applicationWithStatus(AffiliationApplicationStatus::Submitted);
+
+        $this->getJson('/admin/affiliation-applications')
+            ->assertUnauthorized();
+
+        $this->getJson("/admin/affiliation-applications/{$application->id}")
+            ->assertUnauthorized();
 
         $this->postJson("/admin/affiliation-applications/{$application->id}/review")
             ->assertUnauthorized();
@@ -29,8 +46,100 @@ class AffiliationBackofficeHttpTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
+            ->getJson('/admin/affiliation-applications')
+            ->assertForbidden();
+
+        $this->actingAs($user)
+            ->getJson("/admin/affiliation-applications/{$application->id}")
+            ->assertForbidden();
+
+        $this->actingAs($user)
             ->postJson("/admin/affiliation-applications/{$application->id}/review")
             ->assertForbidden();
+    }
+
+    public function test_reviewer_can_list_affiliation_applications_over_http(): void
+    {
+        $application = $this->applicationWithStatus(AffiliationApplicationStatus::Submitted);
+        $draft = $this->applicationWithStatus(AffiliationApplicationStatus::Draft);
+        $reviewer = $this->userWithRole('reviewer');
+
+        $this->actingAs($reviewer)
+            ->getJson('/admin/affiliation-applications')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $application->id)
+            ->assertJsonPath('data.0.status', AffiliationApplicationStatus::Submitted->value)
+            ->assertJsonPath('meta.per_page', 50)
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonMissing(['id' => $draft->id]);
+    }
+
+    public function test_reviewer_can_read_affiliation_application_detail_over_http(): void
+    {
+        $application = $this->applicationWithStatus(AffiliationApplicationStatus::Submitted);
+        $reviewer = $this->userWithRole('reviewer');
+        $cipher = app(EncryptsSensitiveData::class);
+
+        ApplicationSection::query()->forceCreate([
+            'application_id' => $application->id,
+            'section' => AffiliationApplicationStep::Personal->value,
+            'schema_version' => 1,
+            'data_encrypted' => $cipher->encryptArray([
+                'firstName' => 'Ana',
+                'lastName' => 'Prueba',
+                'documentNumber' => '123456789',
+            ]),
+            'completed_at' => now(),
+        ]);
+
+        ApplicationDocument::query()->forceCreate([
+            'application_id' => $application->id,
+            'document_type' => ApplicationDocumentType::Identity->value,
+            'original_filename' => 'cedula.pdf',
+            'storage_key' => 'private/affiliations/demo/cedula.pdf',
+            'mime_type' => 'application/pdf',
+            'byte_size' => 128,
+            'status' => ApplicationDocumentStatus::Uploaded->value,
+            'uploaded_at' => now(),
+        ]);
+
+        $response = $this->actingAs($reviewer)
+            ->getJson("/admin/affiliation-applications/{$application->id}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $application->id)
+            ->assertJsonPath('data.sections.0.section', AffiliationApplicationStep::Personal->value)
+            ->assertJsonPath('data.sections.0.data.firstName', 'Ana')
+            ->assertJsonPath('data.sections.0.data.documentNumber', '123456789')
+            ->assertJsonPath('data.documents.0.document_type', ApplicationDocumentType::Identity->value);
+
+        $this->assertStringContainsString('context=admin', $response->json('data.documents.0.links.preview'));
+    }
+
+    public function test_admin_document_links_require_authenticated_backoffice_session(): void
+    {
+        $application = $this->applicationWithStatus(AffiliationApplicationStatus::Submitted);
+        $document = ApplicationDocument::query()->forceCreate([
+            'application_id' => $application->id,
+            'document_type' => ApplicationDocumentType::Identity->value,
+            'original_filename' => 'cedula.pdf',
+            'storage_key' => 'private/affiliations/demo/cedula.pdf',
+            'mime_type' => 'application/pdf',
+            'byte_size' => 128,
+            'status' => ApplicationDocumentStatus::Uploaded->value,
+            'uploaded_at' => now(),
+        ]);
+        $url = URL::temporarySignedRoute(
+            'affiliation-applications.documents.preview',
+            now()->addMinutes(10),
+            [
+                'application' => $application,
+                'document' => $document,
+                'context' => 'admin',
+            ],
+            false,
+        );
+
+        $this->get($url)->assertForbidden();
     }
 
     public function test_reviewer_can_start_review_over_http(): void
@@ -53,66 +162,323 @@ class AffiliationBackofficeHttpTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_request_correction_over_http(): void
+    public function test_reviewer_can_request_correction_over_http(): void
     {
         $application = $this->applicationWithStatus(AffiliationApplicationStatus::UnderReview);
-        $admin = $this->userWithRole('admin');
+        $reviewer = $this->userWithRole('reviewer');
 
-        $response = $this->actingAs($admin)
+        $response = $this->actingAs($reviewer)
             ->postJson("/admin/affiliation-applications/{$application->id}/correction", [
                 'reason' => 'Missing document.',
             ]);
 
         $response->assertOk()
             ->assertJsonPath('data.status', AffiliationApplicationStatus::PendingCorrection->value)
-            ->assertJsonPath('data.reviewed_by_user_id', $admin->id);
+            ->assertJsonPath('data.reviewed_by_user_id', $reviewer->id);
 
         $this->assertDatabaseHas('audit_events', [
-            'actor_user_id' => $admin->id,
+            'actor_user_id' => $reviewer->id,
             'action' => AffiliationAuditAction::ApplicationCorrectionRequested->value,
             'subject_id' => $application->id,
         ]);
     }
 
-    public function test_reviewer_can_approve_application_over_http(): void
+    public function test_reviewer_cannot_make_final_affiliation_decisions(): void
+    {
+        Storage::fake('local');
+
+        $reviewer = $this->userWithRole('reviewer');
+        $underReview = $this->applicationWithStatus(AffiliationApplicationStatus::UnderReview);
+        $approved = $this->applicationWithStatus(AffiliationApplicationStatus::Approved);
+        $readyForEnable = $this->applicationReadyForEnable();
+
+        $this->actingAs($reviewer)
+            ->postJson("/admin/affiliation-applications/{$underReview->id}/approve")
+            ->assertForbidden();
+
+        $this->actingAs($reviewer)
+            ->postJson("/admin/affiliation-applications/{$approved->id}/signed-payroll-authorization", [
+                'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
+                'file' => UploadedFile::fake()->create('libranza-firmada.pdf', 128, 'application/pdf'),
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($reviewer)
+            ->postJson("/admin/affiliation-applications/{$readyForEnable->id}/enable")
+            ->assertForbidden();
+
+        $this->actingAs($reviewer)
+            ->postJson("/admin/affiliation-applications/{$underReview->id}/reject", [
+                'reason' => 'No cumple condiciones.',
+            ])
+            ->assertForbidden();
+
+        $this->assertSame(AffiliationApplicationStatus::UnderReview->value, $underReview->refresh()->status);
+        $this->assertSame(AffiliationApplicationStatus::Approved->value, $readyForEnable->refresh()->status);
+        $this->assertDatabaseMissing('application_documents', [
+            'application_id' => $approved->id,
+            'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
+        ]);
+    }
+
+    public function test_admin_can_approve_application_over_http(): void
     {
         $application = $this->applicationWithStatus(AffiliationApplicationStatus::UnderReview);
-        $reviewer = $this->userWithRole('reviewer');
+        $admin = $this->userWithRole('admin');
 
-        $response = $this->actingAs($reviewer)
+        $response = $this->actingAs($admin)
             ->postJson("/admin/affiliation-applications/{$application->id}/approve");
 
         $response->assertOk()
             ->assertJsonPath('data.status', AffiliationApplicationStatus::Approved->value)
-            ->assertJsonPath('data.reviewed_by_user_id', $reviewer->id);
+            ->assertJsonPath('data.reviewed_by_user_id', $admin->id);
 
         $this->assertDatabaseHas('audit_events', [
-            'actor_user_id' => $reviewer->id,
+            'actor_user_id' => $admin->id,
             'action' => AffiliationAuditAction::ApplicationApproved->value,
             'subject_id' => $application->id,
         ]);
     }
 
-    public function test_reviewer_can_reject_application_over_http(): void
+    public function test_admin_can_upload_signed_payroll_authorization_over_http(): void
+    {
+        Storage::fake('local');
+
+        $application = $this->applicationWithStatus(AffiliationApplicationStatus::Approved);
+        $admin = $this->userWithRole('admin');
+
+        $response = $this->actingAs($admin)
+            ->postJson("/admin/affiliation-applications/{$application->id}/signed-payroll-authorization", [
+                'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
+                'file' => UploadedFile::fake()->create('libranza-firmada.pdf', 128, 'application/pdf'),
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.document_type', ApplicationDocumentType::SignedPayrollAuthorization->value)
+            ->assertJsonPath('data.original_filename', 'libranza-firmada.pdf');
+
+        $this->assertDatabaseHas('application_documents', [
+            'application_id' => $application->id,
+            'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
+            'status' => ApplicationDocumentStatus::Uploaded->value,
+        ]);
+    }
+
+    public function test_admin_can_enable_application_after_signed_payroll_authorization(): void
+    {
+        $application = $this->applicationReadyForEnable();
+        $admin = $this->userWithRole('admin');
+
+        $response = $this->actingAs($admin)
+            ->postJson("/admin/affiliation-applications/{$application->id}/enable");
+
+        $response->assertOk()
+            ->assertJsonPath('data.application.status', AffiliationApplicationStatus::Enabled->value)
+            ->assertJsonPath('data.associate.full_name', 'Ana Maria Prueba Perez')
+            ->assertJsonPath('data.user.email', 'ana.prueba@example.test')
+            ->assertJsonPath('data.activation_required', true)
+            ->assertJsonMissingPath('data.temporary_password');
+
+        $this->assertDatabaseHas('associates', [
+            'document_type' => 'CC',
+            'document_number_hash' => $this->documentHash('123456789'),
+            'full_name' => 'Ana Maria Prueba Perez',
+            'status' => 'active',
+        ]);
+        $this->assertDatabaseHas('affiliation_applications', [
+            'id' => $application->id,
+            'status' => AffiliationApplicationStatus::Enabled->value,
+        ]);
+        $this->assertDatabaseHas('audit_events', [
+            'actor_user_id' => $admin->id,
+            'action' => AffiliationAuditAction::ApplicationEnabled->value,
+            'subject_id' => $application->id,
+        ]);
+    }
+
+    public function test_admin_can_apply_data_update_without_new_payroll_or_identity(): void
+    {
+        $documentHash = $this->documentHash('123456789');
+        $user = User::factory()->create([
+            'email' => 'correo.anterior@example.test',
+            'document_type' => 'CC',
+            'document_number_hash' => $documentHash,
+            'document_number_encrypted' => 'test-ciphertext',
+        ]);
+        $associate = Associate::query()->create([
+            'user_id' => $user->id,
+            'document_type' => 'CC',
+            'document_number_hash' => $documentHash,
+            'document_number_encrypted' => 'test-ciphertext',
+            'full_name' => 'Nombre Anterior',
+            'status' => 'active',
+        ]);
+        $application = $this->dataUpdateReadyForEnable($associate);
+        $admin = $this->userWithRole('admin');
+
+        $this->actingAs($admin)
+            ->postJson("/admin/affiliation-applications/{$application->id}/enable")
+            ->assertOk()
+            ->assertJsonPath('data.application.status', AffiliationApplicationStatus::Enabled->value)
+            ->assertJsonPath('data.associate.id', $associate->id)
+            ->assertJsonPath('data.associate.full_name', 'Ana Maria Prueba Perez')
+            ->assertJsonPath('data.user.id', $user->id)
+            ->assertJsonPath('data.user.email', 'ana.prueba@example.test')
+            ->assertJsonPath('data.activation_required', false);
+
+        $this->assertSame(2, User::query()->count());
+        $this->assertNull($user->refresh()->email_verified_at);
+        $this->assertDatabaseMissing('application_documents', [
+            'application_id' => $application->id,
+            'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
+        ]);
+    }
+
+    public function test_data_update_cannot_change_document_identity(): void
+    {
+        $user = User::factory()->create([
+            'document_type' => 'CC',
+            'document_number_hash' => $this->documentHash('123456789'),
+            'document_number_encrypted' => 'test-ciphertext',
+        ]);
+        $associate = Associate::query()->create([
+            'user_id' => $user->id,
+            'document_type' => 'CC',
+            'document_number_hash' => $this->documentHash('123456789'),
+            'document_number_encrypted' => 'test-ciphertext',
+            'full_name' => 'Nombre Anterior',
+            'status' => 'active',
+        ]);
+        $application = $this->dataUpdateReadyForEnable($associate, ['documentNumber' => '987654321']);
+        $admin = $this->userWithRole('admin');
+
+        $this->actingAs($admin)
+            ->postJson("/admin/affiliation-applications/{$application->id}/enable")
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'La actualizacion de datos no puede cambiar la identidad ni el asociado vinculado.');
+
+        $this->assertSame('Nombre Anterior', $associate->refresh()->full_name);
+    }
+
+    public function test_data_update_rejects_signed_payroll_upload(): void
+    {
+        Storage::fake('local');
+        $application = AffiliationApplication::query()->forceCreate([
+            'purpose' => AffiliationApplicationPurpose::DataUpdate->value,
+            'status' => AffiliationApplicationStatus::Approved->value,
+            'current_step' => AffiliationApplicationStep::Summary->value,
+        ]);
+        $admin = $this->userWithRole('admin');
+
+        $this->actingAs($admin)
+            ->postJson("/admin/affiliation-applications/{$application->id}/signed-payroll-authorization", [
+                'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
+                'file' => UploadedFile::fake()->create('libranza-firmada.pdf', 128, 'application/pdf'),
+            ])
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Una actualizacion de datos no admite una nueva libranza.');
+    }
+
+    public function test_enable_rejects_existing_email_with_different_document(): void
+    {
+        User::factory()->create([
+            'email' => 'ana.prueba@example.test',
+            'document_type' => 'CC',
+            'document_number_hash' => $this->documentHash('999999999'),
+            'document_number_encrypted' => 'test-ciphertext',
+        ]);
+        $application = $this->applicationReadyForEnable();
+        $admin = $this->userWithRole('admin');
+
+        $this->actingAs($admin)
+            ->postJson("/admin/affiliation-applications/{$application->id}/enable")
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'No se puede habilitar la afiliacion porque el correo o documento ya pertenece a otra identidad.');
+
+        $this->assertDatabaseMissing('affiliation_applications', [
+            'id' => $application->id,
+            'status' => AffiliationApplicationStatus::Enabled->value,
+        ]);
+    }
+
+    public function test_enable_rejects_existing_document_on_another_user(): void
+    {
+        User::factory()->create([
+            'email' => 'otra.persona@example.test',
+            'document_type' => 'CC',
+            'document_number_hash' => $this->documentHash('123456789'),
+            'document_number_encrypted' => 'test-ciphertext',
+        ]);
+        $application = $this->applicationReadyForEnable();
+        $admin = $this->userWithRole('admin');
+
+        $this->actingAs($admin)
+            ->postJson("/admin/affiliation-applications/{$application->id}/enable")
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'No se puede habilitar la afiliacion porque el correo o documento ya pertenece a otra identidad.');
+
+        $this->assertDatabaseMissing('affiliation_applications', [
+            'id' => $application->id,
+            'status' => AffiliationApplicationStatus::Enabled->value,
+        ]);
+    }
+
+    public function test_enable_rejects_existing_document_linked_to_another_user(): void
+    {
+        $existingUser = User::factory()->create(['email' => 'otra.persona@example.test']);
+        Associate::query()->create([
+            'user_id' => $existingUser->id,
+            'document_type' => 'CC',
+            'document_number_hash' => $this->documentHash('123456789'),
+            'document_number_encrypted' => 'test-ciphertext',
+            'full_name' => 'Otra Persona',
+            'status' => 'active',
+        ]);
+        $application = $this->applicationReadyForEnable();
+        $admin = $this->userWithRole('admin');
+
+        $this->actingAs($admin)
+            ->postJson("/admin/affiliation-applications/{$application->id}/enable")
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'No se puede habilitar la afiliacion porque el correo o documento ya pertenece a otra identidad.');
+
+        $this->assertDatabaseMissing('affiliation_applications', [
+            'id' => $application->id,
+            'status' => AffiliationApplicationStatus::Enabled->value,
+        ]);
+    }
+
+    public function test_application_cannot_be_enabled_without_signed_payroll_authorization(): void
+    {
+        $application = $this->applicationWithStatus(AffiliationApplicationStatus::Approved);
+        $admin = $this->userWithRole('admin');
+
+        $this->actingAs($admin)
+            ->postJson("/admin/affiliation-applications/{$application->id}/enable")
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Application cannot be enabled without signed payroll authorization.');
+    }
+
+    public function test_admin_can_reject_application_over_http(): void
     {
         $application = $this->applicationWithStatus(AffiliationApplicationStatus::UnderReview);
-        $reviewer = $this->userWithRole('reviewer');
+        $admin = $this->userWithRole('admin');
 
-        $response = $this->actingAs($reviewer)
+        $response = $this->actingAs($admin)
             ->postJson("/admin/affiliation-applications/{$application->id}/reject", [
                 'reason' => 'No cumple condiciones.',
             ]);
 
         $response->assertOk()
             ->assertJsonPath('data.status', AffiliationApplicationStatus::Rejected->value)
-            ->assertJsonPath('data.reviewed_by_user_id', $reviewer->id);
+            ->assertJsonPath('data.reviewed_by_user_id', $admin->id);
 
         $this->assertDatabaseHas('affiliation_applications', [
             'id' => $application->id,
             'rejection_reason' => 'No cumple condiciones.',
         ]);
         $this->assertDatabaseHas('audit_events', [
-            'actor_user_id' => $reviewer->id,
+            'actor_user_id' => $admin->id,
             'action' => AffiliationAuditAction::ApplicationRejected->value,
             'subject_id' => $application->id,
         ]);
@@ -121,9 +487,9 @@ class AffiliationBackofficeHttpTest extends TestCase
     public function test_reject_requires_reason(): void
     {
         $application = $this->applicationWithStatus(AffiliationApplicationStatus::UnderReview);
-        $reviewer = $this->userWithRole('reviewer');
+        $admin = $this->userWithRole('admin');
 
-        $this->actingAs($reviewer)
+        $this->actingAs($admin)
             ->postJson("/admin/affiliation-applications/{$application->id}/reject")
             ->assertUnprocessable();
     }
@@ -136,6 +502,75 @@ class AffiliationBackofficeHttpTest extends TestCase
         ]);
     }
 
+    /**
+     * @param  array<string, mixed>  $personalOverrides
+     */
+    private function applicationReadyForEnable(array $personalOverrides = []): AffiliationApplication
+    {
+        $application = $this->applicationWithStatus(AffiliationApplicationStatus::Approved);
+        $cipher = app(EncryptsSensitiveData::class);
+
+        ApplicationSection::query()->forceCreate([
+            'application_id' => $application->id,
+            'section' => AffiliationApplicationStep::Personal->value,
+            'schema_version' => 1,
+            'data_encrypted' => $cipher->encryptArray([
+                'documentType' => 'CC',
+                'documentNumber' => '123456789',
+                'firstName' => 'Ana',
+                'middleName' => 'Maria',
+                'lastName' => 'Prueba',
+                'secondLastName' => 'Perez',
+                'email' => 'ana.prueba@example.test',
+                ...$personalOverrides,
+            ]),
+            'completed_at' => now(),
+        ]);
+
+        ApplicationDocument::query()->forceCreate([
+            'application_id' => $application->id,
+            'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
+            'original_filename' => 'libranza-firmada.pdf',
+            'storage_key' => 'private/affiliations/demo/libranza-firmada.pdf',
+            'mime_type' => 'application/pdf',
+            'byte_size' => 128,
+            'status' => ApplicationDocumentStatus::Uploaded->value,
+            'uploaded_at' => now(),
+        ]);
+
+        return $application;
+    }
+
+    private function dataUpdateReadyForEnable(Associate $associate, array $personalOverrides = []): AffiliationApplication
+    {
+        $application = AffiliationApplication::query()->forceCreate([
+            'associate_id' => $associate->id,
+            'purpose' => AffiliationApplicationPurpose::DataUpdate->value,
+            'status' => AffiliationApplicationStatus::Approved->value,
+            'current_step' => AffiliationApplicationStep::Summary->value,
+        ]);
+        $cipher = app(EncryptsSensitiveData::class);
+
+        ApplicationSection::query()->forceCreate([
+            'application_id' => $application->id,
+            'section' => AffiliationApplicationStep::Personal->value,
+            'schema_version' => 1,
+            'data_encrypted' => $cipher->encryptArray([
+                'documentType' => 'CC',
+                'documentNumber' => '123456789',
+                'firstName' => 'Ana',
+                'middleName' => 'Maria',
+                'lastName' => 'Prueba',
+                'secondLastName' => 'Perez',
+                'email' => 'ana.prueba@example.test',
+                ...$personalOverrides,
+            ]),
+            'completed_at' => now(),
+        ]);
+
+        return $application;
+    }
+
     private function userWithRole(string $roleName): User
     {
         $user = User::factory()->create();
@@ -143,5 +578,10 @@ class AffiliationBackofficeHttpTest extends TestCase
         $user->roles()->attach($role);
 
         return $user;
+    }
+
+    private function documentHash(string $documentNumber): string
+    {
+        return app(HashesSensitiveData::class)->documentNumber($documentNumber);
     }
 }

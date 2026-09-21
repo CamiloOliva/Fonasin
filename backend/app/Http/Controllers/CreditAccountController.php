@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Application\Audit\UseCases\RecordAuditEvent;
 use App\Application\Credits\UseCases\ArchiveCreditAccount;
 use App\Application\Credits\UseCases\RegisterCreditAccount;
 use App\Application\Credits\UseCases\UpdateCreditAccount;
 use App\Application\Credits\UseCases\ViewAssociateCredits;
+use App\Application\Security\Contracts\HashesSensitiveData;
+use App\Domain\Audit\Enums\AuditActorType;
+use App\Domain\Audit\Enums\AuditModule;
+use App\Domain\Credits\Enums\CreditAuditAction;
 use App\Http\Requests\Credits\StoreCreditAccountRequest;
 use App\Http\Requests\Credits\UpdateCreditAccountRequest;
 use App\Models\Associate;
@@ -16,18 +21,59 @@ use Illuminate\Http\Request;
 
 class CreditAccountController extends Controller
 {
+    public function index(Request $request, RecordAuditEvent $recordAuditEvent): JsonResponse
+    {
+        $perPage = max(1, min(100, (int) $request->integer('per_page', 50)));
+        $credits = CreditAccount::query()
+            ->with('associate:id,full_name,document_type,status')
+            ->latest()
+            ->paginate($perPage);
+
+        ($recordAuditEvent)(
+            module: AuditModule::Credits,
+            action: CreditAuditAction::CreditViewed->value,
+            subjectType: 'credit_account_collection',
+            subjectId: $request->user()->id,
+            actor: $request->user(),
+            actorType: AuditActorType::User,
+            ipHash: $this->ipHash($request),
+            metadata: [
+                'scope' => 'admin',
+                'count' => $credits->count(),
+                'total' => $credits->total(),
+                'per_page' => $credits->perPage(),
+            ],
+        );
+
+        return response()->json([
+            'data' => $credits->getCollection()
+                ->map(fn (CreditAccount $credit): array => $this->creditPayload($credit))
+                ->values(),
+            'meta' => [
+                'current_page' => $credits->currentPage(),
+                'last_page' => $credits->lastPage(),
+                'per_page' => $credits->perPage(),
+                'total' => $credits->total(),
+            ],
+        ]);
+    }
+
     public function store(
         StoreCreditAccountRequest $request,
         RegisterCreditAccount $registerCreditAccount,
     ): JsonResponse {
         $associate = Associate::query()->findOrFail($request->string('associate_id')->toString());
 
-        $credit = $registerCreditAccount(
-            associate: $associate,
-            actor: $request->user(),
-            data: $request->validated(),
-            ipHash: $this->ipHash($request),
-        );
+        try {
+            $credit = $registerCreditAccount(
+                associate: $associate,
+                actor: $request->user(),
+                data: $request->validated(),
+                ipHash: $this->ipHash($request),
+            );
+        } catch (DomainException $exception) {
+            return $this->domainError($exception);
+        }
 
         return response()->json([
             'data' => $this->creditPayload($credit),
@@ -101,8 +147,15 @@ class CreditAccountController extends Controller
             'term_months' => $credit->term_months,
             'interest_rate' => $credit->interest_rate,
             'installment_amount' => $credit->installment_amount,
+            'last_payment_date' => $credit->last_payment_date?->toDateString(),
             'status' => $credit->status,
             'registered_by_user_id' => $credit->registered_by_user_id,
+            'associate' => $credit->associate ? [
+                'id' => $credit->associate->id,
+                'full_name' => $credit->associate->full_name,
+                'document_type' => $credit->associate->document_type,
+                'status' => $credit->associate->status,
+            ] : null,
         ];
     }
 
@@ -117,6 +170,6 @@ class CreditAccountController extends Controller
     {
         $ip = $request->ip();
 
-        return $ip ? hash('sha256', $ip) : null;
+        return $ip ? app(HashesSensitiveData::class)->ip($ip) : null;
     }
 }

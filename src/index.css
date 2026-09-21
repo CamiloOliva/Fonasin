@@ -151,7 +151,52 @@ summary {
   animation: credit-loader-coin-drop 2.1s ease-in-out infinite;
 }
 
+.portal-login-light {
+  background: linear-gradient(112deg, rgba(255, 247, 215, 0.72) 0%, rgba(255, 250, 228, 0.28) 38%, transparent 72%);
+  filter: blur(18px);
+  opacity: 0.72;
+  transform: rotate(8deg) translateX(-8%);
+  transform-origin: top left;
+  animation: portal-window-light 11s ease-in-out infinite;
+}
+
+.portal-login-content,
+.portal-login-card {
+  animation: portal-login-rise 0.8s ease-out both;
+}
+
+.portal-login-card {
+  animation-delay: 120ms;
+}
+
+@keyframes portal-window-light {
+  0%,
+  100% {
+    opacity: 0.58;
+    transform: rotate(8deg) translateX(-8%);
+  }
+
+  50% {
+    opacity: 0.82;
+    transform: rotate(8deg) translateX(7%);
+  }
+}
+
+@keyframes portal-login-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
+  .portal-login-light,
+  .portal-login-content,
+  .portal-login-card,
   .credit-loader-bar,
   .credit-loader-dot,
   .credit-loader-coin {

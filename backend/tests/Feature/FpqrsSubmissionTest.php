@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Application\Fpqrs\Contracts\DeliversFpqrsSubmissions;
 use App\Application\Fpqrs\UseCases\SubmitFpqrsSubmission;
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Domain\Audit\Enums\AuditModule;
 use App\Domain\Fpqrs\Enums\FpqrsAuditAction;
 use App\Domain\Fpqrs\Enums\FpqrsDeliveryStatus;
@@ -13,6 +14,7 @@ use App\Models\FpqrsSubmission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Tests\TestCase;
@@ -33,11 +35,11 @@ class FpqrsSubmissionTest extends TestCase
                 'submission_type' => FpqrsSubmissionType::Petition,
                 'message' => 'Synthetic message body.',
             ],
-            ipHash: hash('sha256', '192.0.2.70'),
+            ipHash: $this->ipHash('192.0.2.70'),
         );
 
         $this->assertSame('citizen@example.test', $submission->email);
-        $this->assertSame(hash('sha256', 'citizen@example.test'), $submission->getAttribute('email_hash'));
+        $this->assertSame($this->emailHash('citizen@example.test'), $submission->getAttribute('email_hash'));
         $this->assertSame(FpqrsSubmissionType::Petition->value, $submission->submission_type);
         $this->assertSame(FpqrsDeliveryStatus::Sent->value, $submission->delivery_status);
         $this->assertArrayNotHasKey('email', $submission->toArray());
@@ -108,6 +110,33 @@ class FpqrsSubmissionTest extends TestCase
         ], ['Accept' => 'application/json'])->assertUnprocessable();
     }
 
+    public function test_fpqrs_submission_is_rate_limited(): void
+    {
+        Mail::fake();
+        config(['services.fpqrs.recipient_email' => 'attention@example.test']);
+
+        $throttleKey = 'fpqrs-public|'.$this->ipHash('127.0.0.1').'|'.$this->emailHash('citizen@example.test');
+        RateLimiter::clear($throttleKey);
+
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            $this->post('/fpqrs-submissions', [
+                'full_name' => 'Synthetic Citizen',
+                'email' => 'citizen@example.test',
+                'submission_type' => FpqrsSubmissionType::Petition->value,
+                'message' => 'Synthetic message body.',
+            ], ['Accept' => 'application/json'])->assertCreated();
+        }
+
+        $this->post('/fpqrs-submissions', [
+            'full_name' => 'Synthetic Citizen',
+            'email' => 'citizen@example.test',
+            'submission_type' => FpqrsSubmissionType::Petition->value,
+            'message' => 'Synthetic message body.',
+        ], ['Accept' => 'application/json'])->assertStatus(429);
+
+        RateLimiter::clear($throttleKey);
+    }
+
     public function test_it_marks_submission_as_failed_when_delivery_fails(): void
     {
         $this->app->bind(DeliversFpqrsSubmissions::class, fn () => new class implements DeliversFpqrsSubmissions
@@ -133,5 +162,15 @@ class FpqrsSubmissionTest extends TestCase
             'action' => FpqrsAuditAction::DeliveryFailed->value,
             'subject_id' => $submission->id,
         ]);
+    }
+
+    private function emailHash(string $email): string
+    {
+        return app(HashesSensitiveData::class)->email($email);
+    }
+
+    private function ipHash(string $ip): string
+    {
+        return app(HashesSensitiveData::class)->ip($ip);
     }
 }

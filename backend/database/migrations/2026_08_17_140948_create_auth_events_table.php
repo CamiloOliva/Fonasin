@@ -20,7 +20,7 @@ return new class extends Migration
             $table->char('ip_hash', 64)->nullable();
             $table->char('user_agent_hash', 64)->nullable();
             $table->uuid('correlation_id')->nullable();
-            $table->jsonb('metadata')->default('{}');
+            $table->json('metadata')->default('{}');
 
             $table->index(['user_id', 'occurred_at']);
             $table->index(['event_type', 'occurred_at']);

@@ -23,6 +23,7 @@ class SubmitAffiliationApplication
         private readonly VerifyRequiredSections $verifyRequiredSections,
         private readonly VerifyRequiredDocuments $verifyRequiredDocuments,
         private readonly VerifyRequiredConsents $verifyRequiredConsents,
+        private readonly GenerateAffiliationSubmissionDocuments $generateDocuments,
         private readonly RecordAuditEvent $recordAuditEvent,
     ) {}
 
@@ -33,8 +34,10 @@ class SubmitAffiliationApplication
         ?string $correlationId = null,
         ?string $ipHash = null,
         ?Carbon $submittedAt = null,
+        ?string $signatureCity = null,
+        ?string $signatureDate = null,
     ): AffiliationApplication {
-        return DB::transaction(function () use ($application, $policyVersion, $actor, $correlationId, $ipHash, $submittedAt) {
+        return DB::transaction(function () use ($application, $policyVersion, $actor, $correlationId, $ipHash, $submittedAt, $signatureCity, $signatureDate) {
             $application->refresh();
             $fromStatus = AffiliationApplicationStatus::from($application->status);
             $toStatus = AffiliationApplicationStatus::Submitted;
@@ -49,7 +52,9 @@ class SubmitAffiliationApplication
                 throw CannotSubmitAffiliationApplication::missingSections($missingSections);
             }
 
-            $missingDocuments = $this->verifyRequiredDocuments->missingDocumentTypes($application);
+            $missingDocuments = $application->isFormOnly()
+                ? []
+                : $this->verifyRequiredDocuments->missingDocumentTypes($application);
 
             if ($missingDocuments !== []) {
                 throw CannotSubmitAffiliationApplication::missingDocuments($missingDocuments);
@@ -64,10 +69,21 @@ class SubmitAffiliationApplication
             $submittedAt ??= now();
             $correlationId ??= (string) Str::uuid();
 
+            ($this->generateDocuments)(
+                application: $application,
+                actor: $actor,
+                correlationId: $correlationId,
+                ipHash: $ipHash,
+                generatedAt: $submittedAt,
+                signatureCity: $signatureCity,
+                signatureDate: $signatureDate,
+            );
+
             $application->forceFill([
                 'status' => $toStatus->value,
                 'current_step' => AffiliationApplicationStep::Summary->value,
                 'submitted_at' => $submittedAt,
+                'access_token_hash' => null,
             ])->save();
 
             ($this->recordAuditEvent)(
@@ -80,6 +96,8 @@ class SubmitAffiliationApplication
                 correlationId: $correlationId,
                 ipHash: $ipHash,
                 metadata: [
+                    'purpose' => $application->purpose,
+                    'source_application_id' => $application->source_application_id,
                     'status' => [
                         'from' => $fromStatus->value,
                         'to' => $toStatus->value,

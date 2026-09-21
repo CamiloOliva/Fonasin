@@ -11,30 +11,30 @@ Registrar quien hizo una accion, sobre que registro, cuando ocurrio y cual fue e
 | Campo | Tipo | Descripcion |
 |---|---|---|
 | `id` | UUID | identificador del evento |
-| `occurred_at` | timestamptz | fecha y hora UTC |
+| `occurred_at` | timestamp UTC | fecha y hora UTC |
 | `actor_user_id` | UUID nullable | usuario que realizo la accion; null si fue sistema |
 | `actor_type` | varchar(20) | `user` o `system` |
-| `module` | varchar(40) | `identity`, `affiliation`, `credits`, `portal`, `content`, `fpqrs` |
+| `module` | varchar(40) | `identity`, `affiliation`, `credits`, `contributions`, `imports`, `portal`, `content`, `fpqrs` |
 | `action` | varchar(80) | accion semantica registrada |
 | `subject_type` | varchar(80) | tipo del recurso afectado |
 | `subject_id` | UUID | recurso afectado |
 | `correlation_id` | UUID nullable | agrupa eventos de una misma operacion |
 | `ip_hash` | char(64) nullable | referencia tecnica minimizada |
-| `metadata` | jsonb | solo metadatos permitidos y valores redactados |
+| `metadata` | JSON | solo metadatos permitidos y valores redactados |
 
 ### `auth_events`
 
 | Campo | Tipo | Descripcion |
 |---|---|---|
 | `id` | UUID | identificador del evento |
-| `occurred_at` | timestamptz | fecha y hora UTC |
+| `occurred_at` | timestamp UTC | fecha y hora UTC |
 | `user_id` | UUID nullable | usuario relacionado; null cuando no se identifica una cuenta |
 | `event_type` | varchar(80) | tipo semantico del evento de autenticacion |
 | `email_hash` | char(64) nullable | referencia minimizada para correlacionar intentos sin guardar el correo |
 | `ip_hash` | char(64) nullable | referencia tecnica minimizada |
 | `user_agent_hash` | char(64) nullable | huella minimizada del cliente |
 | `correlation_id` | UUID nullable | agrupa eventos de una misma operacion |
-| `metadata` | jsonb | solo contexto tecnico permitido y valores redactados |
+| `metadata` | JSON | solo contexto tecnico permitido y valores redactados |
 
 `event_type` registra `login_succeeded`, `login_failed`, `logout`, `password_reset_requested`, `password_reset_completed`, `account_blocked` y cambios de segundo factor. La primera implementacion reusable para autenticacion es `App\Application\Identity\UseCases\RecordAuthEvent`.
 
@@ -66,7 +66,15 @@ Registrar quien hizo una accion, sobre que registro, cuando ocurrio y cual fue e
 
 Si el cambio o la auditoria fallan, se revierte todo. No registrar diffs completos de registros sensibles: usar campos permitidos y valores redactados.
 
-La primera implementacion reutilizable es `App\Application\Audit\UseCases\RecordAuditEvent`. Los casos de uso sensibles deben invocarla dentro de su propia transaccion de negocio. El envio de afiliacion registra `application.submitted` con metadatos redactados de cambio de estado y version de politica. Las acciones de backoffice de afiliacion registran `application.review_started`, `application.correction_requested`, `application.approved` y `application.rejected` sin guardar razones completas en `metadata`. FPQRS registra `submission.received`, `delivery.sent` o `delivery.failed` sin guardar correo, mensaje completo ni contenido del adjunto en auditoria.
+La primera implementacion reutilizable es `App\Application\Audit\UseCases\RecordAuditEvent`. Los casos de uso sensibles deben invocarla dentro de su propia transaccion de negocio. El envio de afiliacion registra `application.submitted` con metadatos redactados de cambio de estado, proposito, solicitud de origen y version de politica. La generacion automatica del resumen de afiliacion y la autorizacion de descuento por nomina registra `document.generated` sin incluir datos personales o financieros en `metadata`; una actualizacion de datos genera solo el resumen. Las acciones de backoffice de afiliacion registran `application.review_started`, `application.correction_requested`, `application.approved`, `application.enabled` y `application.rejected` sin guardar razones completas ni documentos en `metadata`. La carga de libranza externa firmada registra `document.uploaded` con metadatos tecnicos del archivo y archivado logico de versiones previas. FPQRS registra `submission.received`, `delivery.sent` o `delivery.failed` sin guardar correo, mensaje completo ni contenido del adjunto en auditoria.
+
+Las importaciones XLSX registran el resultado del lote y eventos `credit.registered` o `credit.updated` por credito afectado con el mismo `correlation_id`. Los eventos de actualizacion incluyen solo nombres de campos cambiados y, cuando aplica, la transicion de estado; nunca incluyen saldos, tasas, cuotas ni documentos.
+
+La importacion de asociados usa el tipo `associates`, registra conteos del lote y reutiliza `associate.created` por cada alta aceptada. El envio individual del acceso registra `associate.activation_sent` en Identity con canal y vigencia; no incluye correo, cedula ni token.
+
+Las consultas administrativas de aportes registran `contribution.account_collection.viewed` y `contribution.movement_collection.viewed`. Los metadatos se limitan al alcance administrativo, filtros operativos no sensibles y conteos paginados; no copian nombres, documentos, referencias ni valores financieros.
+
+La ficha consolidada del asociado registra `admin.associate_profile.viewed` y `admin.associate_profile.exported`. Sus metadatos solo indican alcance, disponibilidad y conteos; nunca incluyen cedula, correo, datos del formulario, numero de pagare, referencias ni valores financieros.
 
 ## Consulta operativa
 
@@ -78,4 +86,4 @@ El periodo de retencion se definira con FONASIN y su asesoria juridica. Hasta co
 
 ## Evolucion
 
-La primera version usa auditoria desde la aplicacion. Si se habilitan integraciones, acceso SQL de terceros o requerimientos de inmutabilidad reforzada, se evaluan triggers PostgreSQL, exportacion a almacenamiento inmutable y alertas.
+La primera version usa auditoria desde la aplicacion. Si se habilitan integraciones, acceso SQL de terceros o requerimientos de inmutabilidad reforzada, se evaluan triggers MariaDB, privilegios de solo insercion, exportacion a almacenamiento inmutable y alertas.

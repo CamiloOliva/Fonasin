@@ -1,0 +1,287 @@
+<?php
+
+namespace App\Application\Affiliation\UseCases;
+
+use App\Application\Affiliation\Exceptions\CannotReviewAffiliationApplication;
+use App\Application\Audit\UseCases\RecordAuditEvent;
+use App\Application\Security\Contracts\EncryptsSensitiveData;
+use App\Application\Security\Contracts\HashesSensitiveData;
+use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
+use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
+use App\Domain\Affiliation\Enums\AffiliationAuditAction;
+use App\Domain\Affiliation\Enums\ApplicationDocumentStatus;
+use App\Domain\Affiliation\Enums\ApplicationDocumentType;
+use App\Domain\Affiliation\Support\AffiliationApplicationStateMachine;
+use App\Domain\Audit\Enums\AuditActorType;
+use App\Domain\Audit\Enums\AuditModule;
+use App\Models\AffiliationApplication;
+use App\Models\Associate;
+use App\Models\Role;
+use App\Models\User;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+class EnableAffiliationApplication
+{
+    public function __construct(
+        private readonly AffiliationApplicationStateMachine $stateMachine,
+        private readonly EncryptsSensitiveData $cipher,
+        private readonly HashesSensitiveData $hasher,
+        private readonly RecordAuditEvent $recordAuditEvent,
+    ) {}
+
+    /**
+     * @return array{application: AffiliationApplication, associate: Associate, user: User, activation_required: bool}
+     */
+    public function __invoke(
+        AffiliationApplication $application,
+        User $actor,
+        ?string $correlationId = null,
+        ?string $ipHash = null,
+        ?Carbon $enabledAt = null,
+    ): array {
+        return DB::transaction(function () use ($application, $actor, $correlationId, $ipHash, $enabledAt): array {
+            $application->refresh();
+            $fromStatus = AffiliationApplicationStatus::from($application->status);
+            $toStatus = AffiliationApplicationStatus::Enabled;
+
+            if (! $this->stateMachine->canTransition($fromStatus, $toStatus)) {
+                throw CannotReviewAffiliationApplication::invalidStatus($fromStatus, $toStatus);
+            }
+
+            $hasSignedPayrollAuthorization = $application->documents()
+                ->where('document_type', ApplicationDocumentType::SignedPayrollAuthorization->value)
+                ->where('status', ApplicationDocumentStatus::Uploaded->value)
+                ->exists();
+
+            if (! $application->isFormOnly() && ! $hasSignedPayrollAuthorization) {
+                throw CannotReviewAffiliationApplication::missingSignedPayrollAuthorization();
+            }
+
+            $personalData = $this->personalData($application);
+            $documentType = $this->requiredString($personalData, 'documentType');
+            $documentNumber = $this->requiredString($personalData, 'documentNumber');
+            $email = $this->requiredString($personalData, 'email');
+            $fullName = $this->fullName($personalData);
+            $normalizedEmail = strtolower(trim($email));
+            $documentNumberHash = $this->hasher->documentNumber($documentNumber);
+
+            if ($application->isFormOnly()) {
+                [$associate, $user] = $this->updateExistingIdentity(
+                    $application,
+                    $documentType,
+                    $documentNumberHash,
+                    $normalizedEmail,
+                    $fullName,
+                );
+                $createdUser = false;
+            } else {
+                [$associate, $user, $createdUser] = $this->enableInitialAffiliation(
+                    $documentType,
+                    $documentNumber,
+                    $documentNumberHash,
+                    $normalizedEmail,
+                    $fullName,
+                );
+            }
+
+            $enabledAt ??= now();
+            $correlationId ??= (string) Str::uuid();
+
+            $application->forceFill([
+                'associate_id' => $associate->id,
+                'status' => $toStatus->value,
+                'reviewed_by_user_id' => $actor->id,
+                'reviewed_at' => $enabledAt,
+                'rejection_reason' => null,
+            ])->save();
+
+            ($this->recordAuditEvent)(
+                module: AuditModule::Affiliation,
+                action: AffiliationAuditAction::ApplicationEnabled->value,
+                subjectType: 'affiliation_application',
+                subjectId: $application->id,
+                actor: $actor,
+                actorType: AuditActorType::User,
+                correlationId: $correlationId,
+                ipHash: $ipHash,
+                metadata: [
+                    'associate_id' => $associate->id,
+                    'user_id' => $user->id,
+                    'created_user' => $createdUser,
+                    'purpose' => $application->purpose,
+                    'source_application_id' => $application->source_application_id,
+                    'status' => [
+                        'from' => $fromStatus->value,
+                        'to' => $toStatus->value,
+                    ],
+                ],
+                occurredAt: $enabledAt,
+            );
+
+            return [
+                'application' => $application->refresh(),
+                'associate' => $associate->refresh(),
+                'user' => $user->refresh(),
+                'activation_required' => $createdUser || $user->must_change_password,
+            ];
+        });
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function personalData(AffiliationApplication $application): array
+    {
+        $section = $application->sections()
+            ->where('section', AffiliationApplicationStep::Personal->value)
+            ->first();
+
+        $encryptedPayload = $section?->getAttribute('data_encrypted');
+
+        if (! is_string($encryptedPayload)) {
+            throw CannotReviewAffiliationApplication::missingPersonalSection();
+        }
+
+        return $this->cipher->decryptArray($encryptedPayload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function requiredString(array $data, string $field): string
+    {
+        $value = $data[$field] ?? null;
+
+        if (! is_string($value) || trim($value) === '') {
+            throw CannotReviewAffiliationApplication::missingPersonalField($field);
+        }
+
+        return trim($value);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function fullName(array $data): string
+    {
+        $names = [
+            $this->requiredString($data, 'firstName'),
+            is_string($data['middleName'] ?? null) ? trim($data['middleName']) : '',
+            $this->requiredString($data, 'lastName'),
+            is_string($data['secondLastName'] ?? null) ? trim($data['secondLastName']) : '',
+        ];
+
+        return trim(implode(' ', array_filter($names)));
+    }
+
+    /**
+     * @return array{Associate, User}
+     */
+    private function updateExistingIdentity(
+        AffiliationApplication $application,
+        string $documentType,
+        string $documentNumberHash,
+        string $normalizedEmail,
+        string $fullName,
+    ): array {
+        $associate = $application->associate()->lockForUpdate()->first();
+
+        if (! $associate || ! $associate->user_id || $associate->status !== 'active') {
+            throw CannotReviewAffiliationApplication::updateIdentityCannotChange();
+        }
+
+        $user = User::query()->lockForUpdate()->find($associate->user_id);
+
+        if (
+            ! $user
+            || $associate->document_type !== $documentType
+            || $associate->document_number_hash !== $documentNumberHash
+            || (is_string($user->document_number_hash) && $user->document_number_hash !== $documentNumberHash)
+        ) {
+            throw CannotReviewAffiliationApplication::updateIdentityCannotChange();
+        }
+
+        $emailBelongsToAnotherUser = User::query()
+            ->where('email', $normalizedEmail)
+            ->whereKeyNot($user->id)
+            ->exists();
+
+        if ($emailBelongsToAnotherUser) {
+            throw CannotReviewAffiliationApplication::identityConflict();
+        }
+
+        $userChanges = ['email' => $normalizedEmail];
+
+        if (strtolower($user->email) !== $normalizedEmail) {
+            $userChanges['email_verified_at'] = null;
+        }
+
+        $user->forceFill($userChanges)->save();
+        $associate->forceFill(['full_name' => $fullName])->save();
+
+        return [$associate, $user];
+    }
+
+    /**
+     * @return array{Associate, User, bool}
+     */
+    private function enableInitialAffiliation(
+        string $documentType,
+        string $documentNumber,
+        string $documentNumberHash,
+        string $normalizedEmail,
+        string $fullName,
+    ): array {
+        $createdUser = false;
+        $user = User::query()->with('associate')->where('email', $normalizedEmail)->first();
+        $userWithSameDocument = User::query()
+            ->where('document_number_hash', $documentNumberHash)
+            ->where('email', '!=', $normalizedEmail)
+            ->first();
+        $associate = Associate::query()->where('document_number_hash', $documentNumberHash)->first();
+
+        if (
+            $userWithSameDocument
+            || ($user && is_string($user->document_number_hash) && $user->document_number_hash !== $documentNumberHash)
+            || ($user?->associate && $user->associate->document_number_hash !== $documentNumberHash)
+            || ($associate && $associate->user_id && (! $user || $associate->user_id !== $user->id))
+        ) {
+            throw CannotReviewAffiliationApplication::identityConflict();
+        }
+
+        $user ??= new User(['email' => $normalizedEmail]);
+
+        if (! $user->exists) {
+            $createdUser = true;
+            $user->forceFill([
+                'password' => Str::password(40),
+                'must_change_password' => true,
+                'status' => 'active',
+            ])->save();
+        }
+
+        if (! is_string($user->document_number_hash) || $user->document_number_hash === '') {
+            $user->forceFill([
+                'document_type' => $documentType,
+                'document_number_hash' => $documentNumberHash,
+                'document_number_encrypted' => $this->cipher->encryptArray(['document_number' => $documentNumber]),
+            ])->save();
+        }
+
+        $associateRole = Role::query()->firstOrCreate(['name' => 'associate']);
+        $user->roles()->syncWithoutDetaching([$associateRole->id]);
+
+        $associate ??= new Associate(['document_number_hash' => $documentNumberHash]);
+        $associate->forceFill([
+            'user_id' => $user->id,
+            'document_type' => $documentType,
+            'document_number_encrypted' => $this->cipher->encryptArray(['document_number' => $documentNumber]),
+            'full_name' => $fullName,
+            'status' => 'active',
+        ])->save();
+
+        return [$associate, $user, $createdUser];
+    }
+}

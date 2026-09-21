@@ -7,11 +7,13 @@ use App\Application\Affiliation\UseCases\SaveApplicationSection;
 use App\Application\Affiliation\UseCases\VerifyRequiredSections;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\AffiliationSectionPayloads;
 use Tests\TestCase;
 
 class VerifyRequiredSectionsTest extends TestCase
 {
     use RefreshDatabase;
+    use AffiliationSectionPayloads;
 
     public function test_it_reports_all_required_sections_as_missing_when_none_are_completed(): void
     {
@@ -33,7 +35,7 @@ class VerifyRequiredSectionsTest extends TestCase
             application: $application,
             section: AffiliationApplicationStep::Personal,
             schemaVersion: 1,
-            data: ['section' => 'personal'],
+            data: $this->validSectionPayload(AffiliationApplicationStep::Personal),
             completedAt: now(),
         );
 
@@ -58,7 +60,7 @@ class VerifyRequiredSectionsTest extends TestCase
                 application: $application,
                 section: $section,
                 schemaVersion: 1,
-                data: ['section' => $section->value],
+                data: $this->validSectionPayload($section),
                 completedAt: now(),
             );
         }

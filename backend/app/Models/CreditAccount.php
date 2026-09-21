@@ -13,13 +13,21 @@ class CreditAccount extends Model
     protected $fillable = [
         'associate_id',
         'credit_line',
+        'promissory_note_number_hash',
+        'promissory_note_number_encrypted',
         'initial_balance',
         'current_balance',
         'term_months',
         'interest_rate',
         'installment_amount',
+        'last_payment_date',
         'status',
         'registered_by_user_id',
+    ];
+
+    protected $hidden = [
+        'promissory_note_number_hash',
+        'promissory_note_number_encrypted',
     ];
 
     protected function casts(): array
@@ -30,6 +38,7 @@ class CreditAccount extends Model
             'term_months' => 'integer',
             'interest_rate' => 'decimal:4',
             'installment_amount' => 'decimal:2',
+            'last_payment_date' => 'date',
         ];
     }
 

@@ -31,6 +31,10 @@ class ViewAssociateCredits
             throw CannotManageCreditAccount::associateAccountIsMissing();
         }
 
+        if ($associate->status !== 'active') {
+            throw CannotManageCreditAccount::associateAccountIsInactive();
+        }
+
         $credits = $associate->creditAccounts()
             ->where('status', '!=', 'archived')
             ->orderBy('created_at')

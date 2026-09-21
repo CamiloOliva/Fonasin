@@ -44,7 +44,17 @@ class SchemaContractTest extends TestCase
     public function test_identity_schema_has_uuid_users_and_roles(): void
     {
         $this->assertTrue(Schema::hasTable('users'));
-        $this->assertTrue(Schema::hasColumns('users', ['id', 'email', 'password', 'status']));
+        $this->assertTrue(Schema::hasColumns('users', [
+            'id',
+            'email',
+            'document_type',
+            'document_number_hash',
+            'document_number_encrypted',
+            'password',
+            'must_change_password',
+            'status',
+        ]));
+        $this->assertIndex('users', ['document_number_hash'], true);
         $this->assertTrue(Schema::hasTable('roles'));
         $this->assertTrue(Schema::hasColumns('roles', ['id', 'name']));
         $this->assertTrue(Schema::hasTable('role_user'));
@@ -66,10 +76,13 @@ class SchemaContractTest extends TestCase
         $this->assertTrue(Schema::hasColumns('affiliation_applications', [
             'id',
             'associate_id',
+            'purpose',
+            'source_application_id',
             'status',
             'current_step',
             'reviewed_by_user_id',
         ]));
+        $this->assertForeignKey('affiliation_applications', ['source_application_id'], 'affiliation_applications');
         $this->assertTrue(Schema::hasTable('application_sections'));
         $this->assertTrue(Schema::hasColumns('application_sections', [
             'application_id',
@@ -125,17 +138,96 @@ class SchemaContractTest extends TestCase
             'id',
             'associate_id',
             'credit_line',
+            'promissory_note_number_hash',
+            'promissory_note_number_encrypted',
             'initial_balance',
             'current_balance',
             'term_months',
             'interest_rate',
             'installment_amount',
+            'last_payment_date',
             'status',
             'registered_by_user_id',
         ]));
         $this->assertForeignKey('credit_accounts', ['associate_id'], 'associates');
         $this->assertForeignKey('credit_accounts', ['registered_by_user_id'], 'users');
         $this->assertIndex('credit_accounts', ['associate_id', 'status']);
+    }
+
+    public function test_contribution_accounts_and_movements_have_the_expected_contract(): void
+    {
+        $this->assertTrue(Schema::hasTable('contribution_accounts'));
+        $this->assertTrue(Schema::hasColumns('contribution_accounts', [
+            'id',
+            'associate_id',
+            'contribution_balance',
+            'permanent_savings_balance',
+            'voluntary_savings_balance',
+            'total_balance',
+            'status',
+            'last_period',
+            'last_cut_off_date',
+            'last_movement_at',
+        ]));
+        $this->assertForeignKey('contribution_accounts', ['associate_id'], 'associates');
+        $this->assertIndex('contribution_accounts', ['associate_id'], true);
+        $this->assertIndex('contribution_accounts', ['associate_id', 'status']);
+
+        $this->assertTrue(Schema::hasTable('contribution_movements'));
+        $this->assertTrue(Schema::hasColumns('contribution_movements', [
+            'id',
+            'contribution_account_id',
+            'associate_id',
+            'import_batch_id',
+            'recorded_by_user_id',
+            'movement_type',
+            'period',
+            'cut_off_date',
+            'amount',
+            'balance_after',
+            'status',
+            'source',
+            'reference',
+            'source_row_hash',
+            'recorded_at',
+        ]));
+        $this->assertForeignKey('contribution_movements', ['contribution_account_id'], 'contribution_accounts');
+        $this->assertForeignKey('contribution_movements', ['associate_id'], 'associates');
+        $this->assertForeignKey('contribution_movements', ['import_batch_id'], 'import_batches', 'set null');
+        $this->assertForeignKey('contribution_movements', ['recorded_by_user_id'], 'users');
+        $this->assertIndex('contribution_movements', ['associate_id', 'period']);
+        $this->assertIndex('contribution_movements', ['contribution_account_id', 'recorded_at']);
+        $this->assertIndex('contribution_movements', ['associate_id', 'movement_type', 'period', 'source_row_hash'], true);
+
+        $columns = collect(Schema::getColumns('contribution_movements'))->keyBy('name');
+        $this->assertFalse($columns->get('reference')['nullable']);
+        $this->assertFalse($columns->get('source_row_hash')['nullable']);
+    }
+
+    public function test_import_batches_have_the_expected_contract(): void
+    {
+        $this->assertTrue(Schema::hasTable('import_batches'));
+        $this->assertTrue(Schema::hasColumns('import_batches', [
+            'id',
+            'imported_by_user_id',
+            'import_type',
+            'original_filename',
+            'storage_key',
+            'file_hash',
+            'mime_type',
+            'byte_size',
+            'status',
+            'rows_total',
+            'rows_created',
+            'rows_updated',
+            'rows_rejected',
+            'errors',
+            'started_at',
+            'completed_at',
+        ]));
+        $this->assertForeignKey('import_batches', ['imported_by_user_id'], 'users');
+        $this->assertIndex('import_batches', ['import_type', 'status', 'created_at']);
+        $this->assertIndex('import_batches', ['import_type', 'file_hash'], true);
     }
 
     public function test_fpqrs_submissions_have_the_expected_contract(): void

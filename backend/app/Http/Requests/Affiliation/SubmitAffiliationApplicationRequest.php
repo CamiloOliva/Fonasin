@@ -18,6 +18,8 @@ class SubmitAffiliationApplicationRequest extends FormRequest
     {
         return [
             'policy_version' => ['required', 'string', 'max:50'],
+            'signature_city' => ['nullable', 'string', 'max:120'],
+            'signature_date' => ['nullable', 'date_format:Y-m-d'],
         ];
     }
 }

@@ -34,6 +34,13 @@ class VerifyRequiredDocumentsTest extends TestCase
             mimeType: 'application/pdf',
             byteSize: 2048,
         );
+        app(RegisterApplicationDocument::class)(
+            application: $application,
+            documentType: ApplicationDocumentType::EmploymentCertificate,
+            originalFilename: 'employment-certificate.pdf',
+            mimeType: 'application/pdf',
+            byteSize: 2048,
+        );
 
         $this->assertTrue(app(VerifyRequiredDocuments::class)($application));
     }
@@ -52,6 +59,6 @@ class VerifyRequiredDocumentsTest extends TestCase
 
         $missing = app(VerifyRequiredDocuments::class)->missingDocumentTypes($application);
 
-        $this->assertSame([ApplicationDocumentType::Identity], $missing);
+        $this->assertSame(ApplicationDocumentType::requiredForSubmission(), $missing);
     }
 }

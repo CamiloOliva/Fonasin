@@ -3,11 +3,16 @@
 namespace Tests\Feature;
 
 use App\Domain\Identity\Enums\AuthEventType;
+use App\Application\Security\Contracts\HashesSensitiveData;
+use App\Mail\PasswordResetLinkMail;
+use App\Models\Associate;
 use App\Models\AuthEvent;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class AuthenticationHttpTest extends TestCase
@@ -34,6 +39,7 @@ class AuthenticationHttpTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.id', $user->id)
             ->assertJsonPath('data.roles.0', 'reviewer')
+            ->assertJsonPath('data.must_change_password', false)
             ->assertJsonMissingPath('data.password');
 
         $this->assertAuthenticatedAs($user);
@@ -42,6 +48,30 @@ class AuthenticationHttpTest extends TestCase
             'user_id' => $user->id,
             'event_type' => AuthEventType::LoginSucceeded->value,
         ]);
+    }
+
+    public function test_authenticated_user_can_read_current_session_payload(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'associate@example.test',
+            'status' => 'active',
+        ]);
+        $role = Role::query()->create(['name' => 'associate']);
+        $user->roles()->attach($role);
+
+        $this->actingAs($user)
+            ->getJson('/auth/user')
+            ->assertOk()
+            ->assertJsonPath('data.id', $user->id)
+            ->assertJsonPath('data.email', 'associate@example.test')
+            ->assertJsonPath('data.roles.0', 'associate')
+            ->assertJsonPath('data.must_change_password', false)
+            ->assertJsonMissingPath('data.password');
+    }
+
+    public function test_guest_cannot_read_current_session_payload(): void
+    {
+        $this->getJson('/auth/user')->assertUnauthorized();
     }
 
     public function test_failed_login_records_redacted_auth_event(): void
@@ -130,5 +160,269 @@ class AuthenticationHttpTest extends TestCase
             'user_id' => $user->id,
             'event_type' => AuthEventType::Logout->value,
         ]);
+    }
+
+    public function test_user_with_temporary_password_must_change_it_before_accessing_private_routes(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'temporary@example.test',
+            'password' => Hash::make('temporary-123'),
+            'status' => 'active',
+            'must_change_password' => true,
+        ]);
+        $role = Role::query()->create(['name' => 'associate']);
+        $user->roles()->attach($role);
+
+        $this->actingAs($user)
+            ->getJson('/portal/credits')
+            ->assertStatus(423)
+            ->assertJsonPath('message', 'Password change is required before continuing.');
+    }
+
+    public function test_user_can_change_required_temporary_password(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'temporary@example.test',
+            'password' => Hash::make('temporary-123'),
+            'status' => 'active',
+            'must_change_password' => true,
+        ]);
+        $role = Role::query()->create(['name' => 'associate']);
+        $user->roles()->attach($role);
+
+        $response = $this->actingAs($user)
+            ->postJson('/auth/password', [
+                'current_password' => 'temporary-123',
+                'password' => 'NuevaClave123',
+                'password_confirmation' => 'NuevaClave123',
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.id', $user->id)
+            ->assertJsonPath('data.must_change_password', false)
+            ->assertJsonMissingPath('data.password');
+
+        $this->assertFalse($user->refresh()->must_change_password);
+        $this->assertTrue(Hash::check('NuevaClave123', $user->password));
+        $this->assertDatabaseHas('auth_events', [
+            'user_id' => $user->id,
+            'event_type' => AuthEventType::PasswordChanged->value,
+        ]);
+    }
+
+    public function test_current_password_is_required_to_change_password(): void
+    {
+        $user = User::factory()->create([
+            'password' => Hash::make('temporary-123'),
+            'status' => 'active',
+            'must_change_password' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->postJson('/auth/password', [
+                'current_password' => 'wrong-password',
+                'password' => 'NuevaClave123',
+                'password_confirmation' => 'NuevaClave123',
+            ])
+            ->assertUnprocessable();
+
+        $this->assertTrue($user->refresh()->must_change_password);
+    }
+
+    public function test_associate_can_request_password_reset_with_email_and_document_number(): void
+    {
+        Mail::fake();
+
+        $user = User::factory()->create([
+            'email' => 'asociado@example.test',
+            'status' => 'active',
+        ]);
+        Associate::query()->create([
+            'user_id' => $user->id,
+            'document_type' => 'CC',
+            'document_number_hash' => $this->documentHash('1234567890'),
+            'document_number_encrypted' => 'encrypted',
+            'full_name' => 'Persona Asociada',
+            'status' => 'active',
+        ]);
+
+        $this->postJson('/password/forgot', [
+            'email' => 'asociado@example.test',
+            'document_number' => '1234567890',
+        ])->assertOk()
+            ->assertJsonPath('message', 'Si los datos coinciden, enviaremos un enlace temporal al correo registrado.');
+
+        Mail::assertSent(PasswordResetLinkMail::class);
+        $this->assertDatabaseHas('password_reset_tokens', ['email' => 'asociado@example.test']);
+        $this->assertDatabaseHas('auth_events', [
+            'user_id' => $user->id,
+            'event_type' => AuthEventType::PasswordResetRequested->value,
+            'metadata->matched_account' => true,
+        ]);
+    }
+
+    public function test_internal_user_can_request_password_reset_with_own_document_number(): void
+    {
+        Mail::fake();
+
+        $user = User::factory()->create([
+            'email' => 'admin@example.test',
+            'status' => 'active',
+            'document_type' => 'CC',
+            'document_number_hash' => $this->documentHash('987654321'),
+            'document_number_encrypted' => 'encrypted',
+        ]);
+
+        $this->postJson('/password/forgot', [
+            'email' => 'admin@example.test',
+            'document_number' => '987654321',
+        ])->assertOk();
+
+        Mail::assertSent(PasswordResetLinkMail::class);
+        $this->assertDatabaseHas('auth_events', [
+            'user_id' => $user->id,
+            'event_type' => AuthEventType::PasswordResetRequested->value,
+            'metadata->matched_account' => true,
+        ]);
+    }
+
+    public function test_inactive_associate_cannot_request_password_reset(): void
+    {
+        Mail::fake();
+
+        $user = User::factory()->create([
+            'email' => 'asociado.inactivo@example.test',
+            'status' => 'active',
+        ]);
+        Associate::query()->create([
+            'user_id' => $user->id,
+            'document_type' => 'CC',
+            'document_number_hash' => $this->documentHash('1234567890'),
+            'document_number_encrypted' => 'encrypted',
+            'full_name' => 'Persona Inactiva',
+            'status' => 'inactive',
+        ]);
+
+        $this->postJson('/password/forgot', [
+            'email' => 'asociado.inactivo@example.test',
+            'document_number' => '1234567890',
+        ])->assertOk();
+
+        Mail::assertNothingSent();
+        $this->assertDatabaseMissing('password_reset_tokens', ['email' => 'asociado.inactivo@example.test']);
+        $this->assertDatabaseHas('auth_events', [
+            'event_type' => AuthEventType::PasswordResetRequested->value,
+            'metadata->matched_account' => true,
+            'metadata->eligible_account' => false,
+        ]);
+    }
+
+    public function test_password_reset_request_does_not_reveal_mismatched_identity(): void
+    {
+        Mail::fake();
+
+        User::factory()->create([
+            'email' => 'asociado@example.test',
+            'status' => 'active',
+        ]);
+
+        $this->postJson('/password/forgot', [
+            'email' => 'asociado@example.test',
+            'document_number' => '111',
+        ])->assertOk()
+            ->assertJsonPath('message', 'Si los datos coinciden, enviaremos un enlace temporal al correo registrado.');
+
+        Mail::assertNothingSent();
+        $this->assertDatabaseMissing('password_reset_tokens', ['email' => 'asociado@example.test']);
+        $this->assertDatabaseHas('auth_events', [
+            'event_type' => AuthEventType::PasswordResetRequested->value,
+            'metadata->matched_account' => false,
+        ]);
+    }
+
+    public function test_password_reset_request_is_rate_limited(): void
+    {
+        Mail::fake();
+
+        $user = User::factory()->create([
+            'email' => 'asociado@example.test',
+            'status' => 'active',
+        ]);
+        Associate::query()->create([
+            'user_id' => $user->id,
+            'document_type' => 'CC',
+            'document_number_hash' => $this->documentHash('1234567890'),
+            'document_number_encrypted' => 'encrypted',
+            'full_name' => 'Persona Asociada',
+            'status' => 'active',
+        ]);
+
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            $this->postJson('/password/forgot', [
+                'email' => 'asociado@example.test',
+                'document_number' => '1234567890',
+            ])->assertOk();
+        }
+
+        $this->postJson('/password/forgot', [
+            'email' => 'asociado@example.test',
+            'document_number' => '1234567890',
+        ])->assertTooManyRequests()
+            ->assertJsonPath('message', 'Demasiados intentos. Espera unos minutos y vuelve a intentar.');
+    }
+
+    public function test_user_can_reset_password_with_email_token(): void
+    {
+        Mail::fake();
+
+        $user = User::factory()->create([
+            'email' => 'asociado@example.test',
+            'password' => Hash::make('clave-anterior-123'),
+            'status' => 'active',
+            'must_change_password' => true,
+        ]);
+        Associate::query()->create([
+            'user_id' => $user->id,
+            'document_type' => 'CC',
+            'document_number_hash' => $this->documentHash('1234567890'),
+            'document_number_encrypted' => 'encrypted',
+            'full_name' => 'Persona Asociada',
+            'status' => 'active',
+        ]);
+
+        $resetUrl = null;
+        $this->postJson('/password/forgot', [
+            'email' => 'asociado@example.test',
+            'document_number' => '1234567890',
+        ])->assertOk();
+
+        Mail::assertSent(PasswordResetLinkMail::class, function (PasswordResetLinkMail $mail) use (&$resetUrl): bool {
+            $resetUrl = $mail->resetUrl;
+
+            return true;
+        });
+
+        parse_str(parse_url((string) $resetUrl, PHP_URL_QUERY) ?: '', $query);
+
+        $this->postJson('/password/reset', [
+            'email' => $query['email'],
+            'token' => $query['token'],
+            'password' => 'NuevaClave123',
+            'password_confirmation' => 'NuevaClave123',
+        ])->assertOk()
+            ->assertJsonPath('message', 'Contrasena actualizada correctamente.');
+
+        $this->assertTrue(Hash::check('NuevaClave123', $user->refresh()->password));
+        $this->assertFalse($user->must_change_password);
+        $this->assertSame(0, DB::table('password_reset_tokens')->where('email', 'asociado@example.test')->count());
+        $this->assertDatabaseHas('auth_events', [
+            'user_id' => $user->id,
+            'event_type' => AuthEventType::PasswordResetCompleted->value,
+        ]);
+    }
+
+    private function documentHash(string $documentNumber): string
+    {
+        return app(HashesSensitiveData::class)->documentNumber($documentNumber);
     }
 }

@@ -47,6 +47,14 @@ class UpdateCreditAccount
                 'status',
             ];
             $updates = array_intersect_key($data, array_flip($allowed));
+
+            if (isset($updates['status'])) {
+                $this->ensureStatusTransitionIsAllowed(
+                    from: (string) $credit->getAttribute('status'),
+                    to: (string) $updates['status'],
+                );
+            }
+
             $changes = [];
 
             foreach ($updates as $field => $value) {
@@ -77,5 +85,26 @@ class UpdateCreditAccount
 
             return $credit->refresh();
         });
+    }
+
+    private function ensureStatusTransitionIsAllowed(string $from, string $to): void
+    {
+        if ($from === $to) {
+            return;
+        }
+
+        $allowedTransitions = [
+            CreditAccountStatus::Active->value => [
+                CreditAccountStatus::Settled->value,
+                CreditAccountStatus::Archived->value,
+            ],
+            CreditAccountStatus::Settled->value => [
+                CreditAccountStatus::Archived->value,
+            ],
+        ];
+
+        if (! in_array($to, $allowedTransitions[$from] ?? [], true)) {
+            throw CannotManageCreditAccount::invalidStatusTransition($from, $to);
+        }
     }
 }

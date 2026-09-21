@@ -10,14 +10,14 @@ FONASIN evoluciona desde un sitio React/Vite hacia una plataforma institucional 
 - afiliacion digital;
 - portal privado del asociado;
 - administracion interna limitada;
-- PostgreSQL, documentos privados y trazabilidad.
+- MariaDB, documentos privados y trazabilidad.
 
 El alcance vigente no incluye un CMS general, pasarela de pagos, integraciones con nomina/ERP, firma digital certificada, aplicacion movil nativa ni un sistema FPQRS con radicado y seguimiento. No agregar ninguno de estos elementos sin aprobacion escrita y, si aplica, ajuste formal de alcance.
 
 ## 2. Estado actual y transicion
 
 - El sitio actual funciona con React, TypeScript, Vite y Tailwind en `src/`.
-- Laravel 12 vive en `backend/` y usa PostgreSQL para los datos operativos locales.
+- Laravel 12 vive en `backend/` y usa MariaDB para los datos operativos locales y productivos.
 - Las rutas oficiales del backend son `backend/app/`, `backend/database/`, `backend/resources/`, `backend/storage/` y `backend/tests/`. Los esqueletos homonimos de la raiz no reciben codigo nuevo.
 - Las migraciones base de Identity, Affiliation, Credits y Audit ya existen en `backend/database/migrations/`.
 - Los modelos iniciales `User`, `Role` y `Associate`, sus relaciones y el seeder de roles existen en `backend/`.
@@ -37,8 +37,8 @@ Presentacion -> HTTP -> Aplicacion -> Dominio -> Infraestructura
 2. Controladores, rutas y Form Requests autentican, autorizan y validan; no implementan flujos complejos ni persisten reglas de negocio directamente.
 3. Los casos de uso de `backend/app/Application/` coordinan operaciones completas y transacciones.
 4. `backend/app/Domain/` contiene estados, reglas y eventos del negocio; no debe depender de HTTP, React, Filament, cPanel, SQL concreto ni proveedores externos.
-5. `backend/app/Infrastructure/` implementa PostgreSQL, almacenamiento, correo, auditoria y adaptadores externos.
-6. Nunca saltar una capa por rapidez. Un componente React no consulta PostgreSQL; un controlador no accede directamente a storage; un modulo no modifica tablas de otro modulo sin pasar por un caso de uso definido.
+5. `backend/app/Infrastructure/` implementa MariaDB, almacenamiento, correo, auditoria y adaptadores externos.
+6. Nunca saltar una capa por rapidez. Un componente React no consulta MariaDB; un controlador no accede directamente a storage; un modulo no modifica tablas de otro modulo sin pasar por un caso de uso definido.
 
 ## 4. Limites de modulos
 
@@ -55,14 +55,14 @@ Si un modulo necesita una accion de otro, crear o reutilizar un caso de uso o ev
 
 ## 5. Reglas no negociables de datos
 
-1. PostgreSQL es la unica fuente de verdad para datos operativos. No persistir informacion de negocio en `localStorage`, archivos JSON del frontend ni variables de entorno.
-2. Usar UUID como clave primaria y `timestamptz` en UTC para fechas persistidas.
+1. MariaDB es la unica fuente de verdad para datos operativos. No persistir informacion de negocio en `localStorage`, archivos JSON del frontend ni variables de entorno.
+2. Usar UUID como clave primaria y `timestamp` en UTC para fechas persistidas; la conexion MariaDB debe fijar `DB_TIMEZONE=+00:00`.
 3. Toda modificacion de esquema se realiza con una migracion versionada. Nunca editar manualmente produccion con phpPgAdmin o SQL ad-hoc.
 4. Las migraciones de produccion deben ser compatibles hacia atras: no borrar, renombrar o cambiar datos criticos en el mismo despliegue que introduce el reemplazo.
 5. No eliminar fisicamente solicitudes, creditos, usuarios o documentos desde la aplicacion. Usar estados (`archived`, `inactive`, `cancelled`, etc.) y auditar la accion.
 6. Los datos sensibles de afiliacion y SARLAFT se cifran antes de persistirse. No se imprimen en logs, errores, pruebas, auditoria ni datos de ejemplo.
 7. Los numeros de documento requieren un valor cifrado y un hash de busqueda unico; no exponerlos en URLs, mensajes o trazas.
-8. Los archivos no se guardan dentro de PostgreSQL ni en `public/`. PostgreSQL guarda metadatos y una clave privada de storage.
+8. Los archivos no se guardan dentro de MariaDB ni en `public/`. MariaDB guarda metadatos y una clave privada de storage.
 
 El modelo de referencia esta en `docs/architecture/data-model.md`.
 

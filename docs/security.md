@@ -11,12 +11,30 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 - Cada accion privada debe pasar por una policy de Laravel; ocultar un boton no es autorizacion.
 - Un asociado solo puede leer recursos relacionados con su propio `associate_id` resuelto en el servidor.
 - Acciones administrativas sensibles requieren usuario identificado y registro de auditoria.
-- El flujo publico de afiliacion protege las mutaciones de una solicitud mediante URLs temporales firmadas por Laravel. El UUID de la solicitud por si solo no autoriza guardar secciones, documentos, consentimientos ni enviar.
+- El flujo publico de afiliacion protege las mutaciones de una solicitud mediante URLs temporales firmadas por Laravel y un token de borrador guardado de forma local solo durante la vigencia del borrador. El UUID de la solicitud por si solo no autoriza guardar secciones, documentos, consentimientos ni enviar. Al enviar la solicitud, el token tecnico se invalida y las rutas de borrador rechazan nuevas mutaciones porque el estado deja de ser `draft`.
+- Las rutas publicas iniciales de afiliacion y FPQRS no usan sesion de usuario; por eso se excluyen de CSRF y deben mantener validacion estricta, rate limiting por IP/contexto, URLs firmadas cuando corresponde, storage privado y auditoria. Las rutas autenticadas usadas por el portal y el panel administrativo obtienen un token desde `/csrf-token` y lo envian en `X-CSRF-TOKEN`.
+- La recuperacion local de borrador de afiliacion guarda solo el identificador, enlaces firmados temporales y el token tecnico del borrador por 24 horas. No se guardan datos personales, SARLAFT, documentos ni valores economicos en almacenamiento del frontend.
+- El panel administrativo de afiliaciones requiere sesion y rol `admin` o `reviewer`. `reviewer` puede consultar, iniciar la revision y solicitar correcciones; solo `admin` puede aprobar, rechazar, cargar la libranza firmada externa y habilitar finalmente al asociado. Todas las acciones pasan por policies y los cambios se auditan.
+- Los enlaces temporales de documentos generados desde portal o administracion incluyen contexto firmado y vuelven a validar sesion, contrasena actualizada, rol o propietario antes de entregar el archivo. Los enlaces publicos solo pueden servir documentos generados permitidos; los soportes cargados por el solicitante quedan restringidos al contexto administrativo.
+- El modulo administrativo de asociados no elimina registros fisicamente. La accion de retiro cambia el estado a `inactive`, mantiene la trazabilidad, registra auditoria, desactiva el usuario vinculado e invalida sesiones y tokens de recuperacion vigentes. El alta manual crea o vincula un usuario con rol `associate` sin devolver contrasenas por API; el primer acceso debe resolverse mediante recuperacion/activacion por correo y documento.
+- Un asociado `inactive` no puede iniciar sesion operativa, consultar creditos, documentos de afiliacion, crear borradores de actualizacion ni solicitar recuperacion de contrasena aunque haya tenido credenciales previas.
+- La habilitacion desde una solicitud de afiliacion rechaza conflictos entre correo, documento, usuario y asociado. No se reasignan relaciones existentes de forma silenciosa.
+- La creacion del borrador de actualizacion del asociado se ejecuta en transaccion, bloquea la fila del asociado mientras busca o crea el borrador activo y se respalda en MariaDB con una columna generada e indice unico para impedir mas de un borrador `draft` por asociado.
+- La administracion manual de creditos requiere sesion, policy, auditoria y paginacion en listados administrativos. `reviewer` tiene acceso de consulta y solo `admin` puede crear, editar o archivar creditos. Solo permite asociados activos y lineas de credito aprobadas. El retiro operativo se maneja como estado `archived`, no como borrado fisico; los cambios de estado usan transiciones permitidas.
+- La consulta de aportes del portal resuelve siempre el asociado desde la sesion. No acepta `associate_id` del navegador y diferencia modulo deshabilitado, asociado sin datos y datos disponibles.
+- El historial de importaciones no expone `storage_key` ni `file_hash`. La carga masiva queda reservada a `admin`; `reviewer` puede consultar historial, pero no importar salvo aprobacion expresa.
+- La importacion XLSX de asociados solo prepara cuentas con nombre completo, cedula y correo; no intenta dividir nombres ni envia mensajes masivos. Cada correo de activacion requiere una accion individual del administrador, tiene limite de frecuencia, token temporal hasheado y auditoria sin correo o documento en claro.
+- Las cargas XLSX de cartera, aportes y ahorros validan extension, MIME, tamano, columnas obligatorias, tipos, valores, coincidencia de documento y nombre, duplicados dentro del archivo y repeticion por hash de archivo. El numero de pagare se cifra y se identifica mediante HMAC. El archivo queda en storage privado bajo una clave generada por servidor, no en `public/`.
+- Las cuentas creadas con clave inicial interna quedan marcadas con `must_change_password` y no pueden usar rutas privadas de portal o administracion hasta cambiarla. El cambio exige la contrasena actual, guarda solo hash y registra evento de autenticacion.
+- La recuperacion de contrasena usa correo y numero de documento. Para asociados se valida contra `associates`; para usuarios internos se valida contra el documento cifrado/hasheado en `users`. Los tokens se guardan hasheados, expiran y los eventos se registran sin exponer correo ni documento en claro.
+- Un asociado cargado desde XLSX que todavia no tiene formulario habilitado recibe `requires_profile_completion`. Despues de definir su contrasena, el portal crea o reutiliza un borrador `profile_completion`, precarga la identidad cifrada y bloquea cargas documentales y libranzas.
 
 ## Datos sensibles
 
 - Contraseñas: exclusivamente hashes administrados por Laravel.
-- Numeros de documento: version cifrada para consulta controlada y hash unico para busqueda.
+- Numeros de documento: version cifrada para consulta controlada y hash unico HMAC-SHA256 para busqueda. El HMAC usa `DATA_HASH_PEPPER`, secreto por entorno que no se versiona.
+- Correos, IP y agentes de usuario usados para correlacion tecnica se guardan como HMAC-SHA256 cuando se persisten en auditoria o tablas operativas.
+- Los usuarios internos pueden tener documento cifrado y hash de busqueda para soportar recuperacion de acceso sin depender de un perfil de asociado.
 - Datos de afiliacion, financieros y SARLAFT: cifrados antes de persistirse y nunca enviados a logs.
 - Los seeds, pruebas, capturas y entornos locales usan datos ficticios.
 - Los mensajes de error no revelan detalles de autorizacion, estructura de base de datos ni secretos.
@@ -26,23 +44,29 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 1. Permitir solo tipos, firma real y tamano previamente aprobados.
 2. Generar el nombre y `storage_key` en servidor.
 3. Guardar archivos fuera del document root y fuera de Git.
-4. Descargar o visualizar solo mediante una ruta autorizada y temporal.
+4. Descargar o visualizar solo mediante una ruta autorizada y temporal; los enlaces de documentos se emiten con vigencia corta.
 5. Auditar carga, cambio de estado y descarga.
 6. No incluir archivos ni su contenido en backups de desarrollo, pruebas o ejemplos sin autorizacion.
+7. La libranza firmada por entidad externa se registra como documento privado de afiliacion y reemplaza versiones previas del mismo tipo mediante archivado logico.
 
 ## FPQRS
 
 - El modulo FPQRS registra la recepcion inicial, adjunto opcional privado y estado interno de entrega por correo institucional.
 - El correo institucional contiene el mensaje recibido y metadatos minimos; los adjuntos quedan en storage privado y no se adjuntan al correo.
+- El frontend envia FPQRS al endpoint Laravel `POST /fpqrs-submissions` y conserva la validacion de archivo permitida por servidor.
 - No genera radicado ni seguimiento publico.
 - La auditoria no almacena correo, mensaje completo ni contenido del adjunto.
+- El endpoint publico aplica rate limiting por IP y correo. La politica formal de retencion de nombre, correo, mensaje y adjuntos queda pendiente de aprobacion juridica.
 
 ## Secretos y configuracion
 
 - `.env` no se versiona.
 - No colocar claves, contrasenas, tokens, rutas privadas ni correos de produccion en Markdown, codigo o issues.
-- Cada entorno usa una clave de aplicacion, credenciales PostgreSQL y storage propios.
+- Cada entorno usa una clave de aplicacion, credenciales MariaDB y storage propios.
 - Cambiar un secreto requiere invalidar el anterior y actualizar el entorno correspondiente, nunca editarlo en Git.
+- Laravel agrega cabeceras defensivas `X-Content-Type-Options`, `Referrer-Policy` y `X-Frame-Options` en respuestas web. La politica CSP se activa por entorno con `SECURITY_CSP_ENABLED=true` y `SECURITY_CSP_POLICY`.
+- El frontend estatico servido por Apache/cPanel requiere una CSP equivalente configurada en el virtual host, `.htaccess` aprobado o panel del proveedor, porque esos archivos no pasan por el middleware de Laravel.
+- Produccion debe configurar `DATA_HASH_PEPPER` antes de ejecutar migraciones. Cambiarlo despues requiere un plan de remigracion de hashes; no debe rotarse como una contrasena normal sin coordinar el recalculo de datos existentes.
 
 ## Lista de revision de seguridad
 

@@ -20,6 +20,8 @@ class CreditAccountHttpTest extends TestCase
     {
         $associate = $this->createAssociate();
 
+        $this->getJson('/admin/credits')->assertUnauthorized();
+
         $this->postJson('/admin/credits', [
             'associate_id' => $associate->id,
             ...$this->creditData(),
@@ -39,12 +41,34 @@ class CreditAccountHttpTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_reviewer_can_register_credit_over_http(): void
+    public function test_reviewer_can_list_credits_over_http(): void
+    {
+        $reviewer = $this->userWithRole('reviewer');
+        $associate = $this->createAssociate();
+        $credit = $this->createCredit($reviewer, $associate);
+
+        $response = $this->actingAs($reviewer)->getJson('/admin/credits');
+
+        $response->assertOk()
+            ->assertJsonPath('data.0.id', $credit->id)
+            ->assertJsonPath('data.0.associate.id', $associate->id)
+            ->assertJsonPath('data.0.associate.full_name', $associate->full_name)
+            ->assertJsonPath('meta.per_page', 50)
+            ->assertJsonPath('meta.total', 1);
+
+        $this->assertDatabaseHas('audit_events', [
+            'actor_user_id' => $reviewer->id,
+            'action' => CreditAuditAction::CreditViewed->value,
+            'subject_type' => 'credit_account_collection',
+        ]);
+    }
+
+    public function test_admin_can_register_credit_over_http(): void
     {
         $associate = $this->createAssociate();
-        $reviewer = $this->userWithRole('reviewer');
+        $admin = $this->userWithRole('admin');
 
-        $response = $this->actingAs($reviewer)
+        $response = $this->actingAs($admin)
             ->postJson('/admin/credits', [
                 'associate_id' => $associate->id,
                 ...$this->creditData(),
@@ -57,10 +81,24 @@ class CreditAccountHttpTest extends TestCase
 
         $creditId = $response->json('data.id');
         $this->assertDatabaseHas('audit_events', [
-            'actor_user_id' => $reviewer->id,
+            'actor_user_id' => $admin->id,
             'action' => CreditAuditAction::CreditRegistered->value,
             'subject_id' => $creditId,
         ]);
+    }
+
+    public function test_it_rejects_credit_registration_for_inactive_associate(): void
+    {
+        $associate = $this->createAssociate(['status' => 'inactive']);
+        $admin = $this->userWithRole('admin');
+
+        $this->actingAs($admin)
+            ->postJson('/admin/credits', [
+                'associate_id' => $associate->id,
+                ...$this->creditData(),
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Solo se pueden registrar creditos para asociados activos.');
     }
 
     public function test_admin_can_update_credit_over_http(): void
@@ -85,12 +123,28 @@ class CreditAccountHttpTest extends TestCase
         ]);
     }
 
-    public function test_reviewer_can_archive_credit_over_http(): void
+    public function test_credit_status_cannot_return_from_settled_to_active(): void
     {
-        $reviewer = $this->userWithRole('reviewer');
-        $credit = $this->createCredit($reviewer);
+        $admin = $this->userWithRole('admin');
+        $credit = $this->createCredit($admin);
+        $credit->forceFill(['status' => CreditAccountStatus::Settled->value])->save();
 
-        $response = $this->actingAs($reviewer)
+        $this->actingAs($admin)
+            ->patchJson("/admin/credits/{$credit->id}", [
+                'status' => CreditAccountStatus::Active->value,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Credit account cannot transition from [settled] to [active].');
+
+        $this->assertSame(CreditAccountStatus::Settled->value, $credit->refresh()->status);
+    }
+
+    public function test_admin_can_archive_credit_over_http(): void
+    {
+        $admin = $this->userWithRole('admin');
+        $credit = $this->createCredit($admin);
+
+        $response = $this->actingAs($admin)
             ->postJson("/admin/credits/{$credit->id}/archive");
 
         $response->assertOk()
@@ -100,6 +154,34 @@ class CreditAccountHttpTest extends TestCase
             'id' => $credit->id,
             'status' => CreditAccountStatus::Archived->value,
         ]);
+    }
+
+    public function test_reviewer_cannot_create_update_or_archive_credits(): void
+    {
+        $reviewer = $this->userWithRole('reviewer');
+        $associate = $this->createAssociate();
+        $credit = $this->createCredit($reviewer, $associate);
+
+        $this->actingAs($reviewer)
+            ->postJson('/admin/credits', [
+                'associate_id' => $associate->id,
+                ...$this->creditData(),
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($reviewer)
+            ->patchJson("/admin/credits/{$credit->id}", [
+                'current_balance' => '900000.00',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($reviewer)
+            ->postJson("/admin/credits/{$credit->id}/archive")
+            ->assertForbidden();
+
+        $credit->refresh();
+        $this->assertSame('1000000.25', $credit->current_balance);
+        $this->assertSame(CreditAccountStatus::Active->value, $credit->status);
     }
 
     public function test_associate_can_view_only_their_non_archived_credits(): void
@@ -132,6 +214,20 @@ class CreditAccountHttpTest extends TestCase
         $this->actingAs($user)
             ->getJson('/portal/credits')
             ->assertUnprocessable();
+    }
+
+    public function test_inactive_associate_cannot_view_portal_credits(): void
+    {
+        $user = $this->userWithRole('associate');
+        $this->createAssociate([
+            'user_id' => $user->id,
+            'status' => 'inactive',
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/portal/credits')
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'El asociado no se encuentra activo.');
     }
 
     /**

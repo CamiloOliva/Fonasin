@@ -7,23 +7,23 @@ use App\Models\User;
 
 class CreditAccountPolicy
 {
+    public function viewAny(User $user): bool
+    {
+        return $user->hasAnyRole(['admin', 'reviewer']);
+    }
+
     public function create(User $user): bool
     {
-        return $this->canManageCredits($user);
+        return $user->hasRole('admin');
     }
 
     public function update(User $user, CreditAccount $credit): bool
     {
-        return $this->canManageCredits($user);
+        return $user->hasRole('admin');
     }
 
     public function archive(User $user, CreditAccount $credit): bool
     {
-        return $this->canManageCredits($user);
-    }
-
-    private function canManageCredits(User $user): bool
-    {
-        return $user->hasAnyRole(['admin', 'reviewer']);
+        return $user->hasRole('admin');
     }
 }

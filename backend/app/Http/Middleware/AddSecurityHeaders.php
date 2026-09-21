@@ -1,0 +1,32 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class AddSecurityHeaders
+{
+    /**
+     * @param  Closure(Request): Response  $next
+     */
+    public function handle(Request $request, Closure $next): Response
+    {
+        $response = $next($request);
+
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+        $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->headers->set('X-Frame-Options', 'DENY');
+
+        if (config('security.headers.csp.enabled')) {
+            $policy = trim((string) config('security.headers.csp.policy', ''));
+
+            if ($policy !== '') {
+                $response->headers->set('Content-Security-Policy', $policy);
+            }
+        }
+
+        return $response;
+    }
+}

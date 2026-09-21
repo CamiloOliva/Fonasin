@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Application\Fpqrs\UseCases\SubmitFpqrsSubmission;
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Domain\Fpqrs\Enums\FpqrsSubmissionType;
 use App\Http\Requests\Fpqrs\StoreFpqrsSubmissionRequest;
 use App\Models\FpqrsSubmission;
@@ -14,6 +15,7 @@ class FpqrsSubmissionController extends Controller
     public function store(
         StoreFpqrsSubmissionRequest $request,
         SubmitFpqrsSubmission $submitFpqrsSubmission,
+        HashesSensitiveData $hasher,
     ): JsonResponse {
         $attachment = $request->file('attachment');
 
@@ -28,7 +30,7 @@ class FpqrsSubmissionController extends Controller
                 'attachment_byte_size' => $attachment?->getSize(),
                 'attachment_contents' => $attachment?->get(),
             ],
-            ipHash: $this->ipHash($request),
+            ipHash: $this->ipHash($request, $hasher),
         );
 
         return response()->json([
@@ -50,10 +52,10 @@ class FpqrsSubmissionController extends Controller
         ];
     }
 
-    private function ipHash(Request $request): ?string
+    private function ipHash(Request $request, HashesSensitiveData $hasher): ?string
     {
         $ip = $request->ip();
 
-        return $ip ? hash('sha256', $ip) : null;
+        return $ip ? $hasher->ip($ip) : null;
     }
 }

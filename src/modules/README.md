@@ -6,7 +6,7 @@ Los modulos objetivo son `public`, `identity`, `affiliation`, `credits`, `portal
 src/modules/<modulo>/
   pages/        # pantallas y composicion de la ruta
   components/   # componentes exclusivos del modulo
-  services/     # acceso a contratos HTTP; nunca a PostgreSQL
+  services/     # acceso a contratos HTTP; nunca a MariaDB
   types/        # DTO y tipos de presentacion del modulo
 ```
 

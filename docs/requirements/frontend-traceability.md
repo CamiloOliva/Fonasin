@@ -6,7 +6,7 @@ Esta matriz conecta la especificacion funcional con el codigo, las pruebas y la 
 
 Fuente funcional: `02_GUIA_EQUIPO_FRONTEND_WEB_AFILIACION_PORTAL_V2.docx`, version 2.0 del 15 de agosto de 2026.
 
-Ultima revision tecnica: 16 de agosto de 2026, rama `develop`, commit base `93e594a`.
+Ultima revision tecnica: 11 de septiembre de 2026, rama de trabajo frontend.
 
 ## Estados permitidos
 
@@ -33,7 +33,7 @@ Solo FONASIN puede mover contenido funcional a `Aceptado`. Una PR puede proponer
 | FE-WEB-005A | Visor PDF | Pendiente | Sin visor | Mostrar PDF embebido con descarga y fallback accesible. |
 | FE-WEB-006 | Noticias | Bloqueado | Sin ruta ni datos | Recibir publicaciones iniciales aprobadas; no crear CMS general. |
 | FE-WEB-007 | Contacto | Bloqueado | WhatsApp parcial | Recibir datos, redes, mapa y horarios oficiales. |
-| FE-WEB-008 | FPQRS | En curso | Formulario visual y servicio simulado; Backend disponible en `POST /fpqrs-submissions` con entrega a correo institucional | Conectar frontend al endpoint real y probar estados/error. |
+| FE-WEB-008 | FPQRS | Implementado | Formulario conectado a `POST /fpqrs-submissions`, adjunto opcional PDF/JPG/PNG hasta 5MB, estados de envio/error, rate limit publico y entrega a correo institucional por backend. | Validar envio real con SMTP de produccion y aprobar politica de retencion. |
 | FE-WEB-009 | WhatsApp | En curso | Enlace configurable con `VITE_WHATSAPP_URL` | Confirmar numero, mensaje y comportamiento oficial. |
 | FE-WEB-010 | SEO y accesibilidad | En curso | HTML en español, description, semantica y foco parcial | Ejecutar auditoria sin errores criticos y agregar pruebas. |
 | FE-WEB-011 | Transacciones y QR | Pendiente | Acceso marcado `Proximamente` | Publicar QR, destino, concepto, instrucciones, advertencia y descarga. |
@@ -46,41 +46,55 @@ El carrusel estatico de tres imagenes existe, pero permanece `En curso` hasta re
 | ID | Requisito | Estado | Bloqueador o siguiente paso |
 |---|---|---|---|
 | FE-AFI-001 | Pagina informativa | Bloqueado | Contenido, requisitos y soportes oficiales. |
-| FE-AFI-002 | Inicio o recuperacion de borrador | Pendiente | Contrato Backend y politica de recuperacion. |
+| FE-AFI-002 | Inicio o recuperacion de borrador | Implementado | La vista reutiliza por 24 horas el borrador de sesion del mismo navegador, consulta el borrador firmado en Backend y repuebla secciones/documentos ya guardados; no persiste datos personales en storage del frontend, requiere token tecnico de borrador y el Backend invalida el token al enviar. |
 | FE-AFI-003 | Datos personales | Bloqueado | Esquema de campos aprobado. |
 | FE-AFI-004 | Informacion laboral | Bloqueado | Campos y reglas aprobados. |
 | FE-AFI-005 | Informacion financiera | Bloqueado | Campos y reglas aprobados. |
 | FE-AFI-006 | Beneficiarios | Bloqueado | Campos condicionales aprobados. |
 | FE-AFI-006A | SARLAFT | Bloqueado | Declaraciones, campos y tratamiento aprobados. |
-| FE-AFI-007 | Documentos | Pendiente | Tipos, tamanos y rutas temporales Backend. |
-| FE-AFI-008 | Documentos generados | Pendiente | Contrato de generacion y descarga PDF. |
+| FE-AFI-007 | Documentos | Implementado | Formulario exige PDF de identidad por ambos lados y certificado laboral; Backend valida PDF privado de hasta 5MB por documento. Falta validacion visual final con FONASIN. |
+| FE-AFI-008 | Documentos generados | En curso | Backend genera formulario de afiliacion y autorizacion de descuento por nomina en PDF privado con firma electronica simple; falta aprobacion final de contenido juridico/diseno por FONASIN. |
 | FE-AFI-009 | Consentimientos | Bloqueado | Versiones oficiales de politica y estatutos. |
-| FE-AFI-010 | Resumen | Pendiente | Depende de las etapas anteriores. |
-| FE-AFI-011 | Envio | Pendiente | Endpoint, idempotencia y estados Backend. |
-| FE-AFI-012 | Confirmacion | Pendiente | Depende de envio confirmado por Backend. |
+| FE-AFI-010 | Revision antes de envio | En curso | La vista de afiliacion muestra revision previa y permite corregir antes de enviar; falta validacion final de UX y textos. |
+| FE-AFI-011 | Envio | Implementado | Endpoint de envio genera documentos, registra auditoria, cierra el borrador temporal, revoca el token tecnico y aplica rate limit para evitar nuevas mutaciones o abuso con enlaces antiguos. |
+| FE-AFI-012 | Confirmacion | Implementado | Pantalla de confirmacion posterior al envio sin descarga directa obligatoria para el solicitante. |
 
-La ruta actual `/afiliacion` es un aviso explicito y no se considera implementacion del flujo.
+La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente la aprobacion formal de todos los textos, consentimientos y criterios documentales.
 
 ## Administracion
 
 | ID | Requisito | Estado | Bloqueador o siguiente paso |
 |---|---|---|---|
-| FE-ADM-001 a FE-ADM-009 | Gestion de afiliaciones | Pendiente | Inicializar Laravel/Filament, Identity, permisos y flujo Affiliation. |
-| FE-ADM-010 | Importar creditos XLSX | Bloqueado | Plantilla, columnas, validaciones y contrato de importacion aprobados. |
-| FE-ADM-011 | Historial de importaciones | Pendiente | Depende del caso de uso de importacion y auditoria. |
+| FE-ADM-001 a FE-ADM-009 | Gestion de afiliaciones y asociados | En curso | `/admin-fonasin`, endpoints paginados `GET /admin/affiliation-applications` y `GET /admin/associates`, acciones de revision, carga de libranza externa, habilitacion de asociado, deteccion de conflictos de identidad, alta manual, desactivacion logica e invalidacion de sesiones. `reviewer` conserva consulta, inicio de revision y solicitud de correccion; frontend oculta sus decisiones finales y controles de mutacion. Estas acciones son exclusivas de `admin` y estan cubiertas por pruebas HTTP y de presentacion. Incluye ficha administrativa consolidada, busqueda HMAC por cedula en cuerpo POST, formulario vigente, cartera, aportes/ahorros y exportacion XLSX privada solo para admin. Falta validacion visual final con FONASIN. |
+| FE-ADM-009A | Gestion manual de creditos | En curso | `/admin-fonasin`, endpoints `GET/POST/PATCH /admin/credits`, listado paginado, lineas cerradas de credito, solo asociados activos, transiciones basicas de estado y archivado logico. `reviewer` accede al listado en modo consulta; frontend oculta crear, editar, archivar e importar, acciones exclusivas de `admin` cubiertas por pruebas de permisos. Falta validacion visual final con FONASIN. |
+| FE-ADM-010 | Importar cartera XLSX | En curso | Frontend y Backend usan la estructura operativa de ocho columnas: documento, nombre, linea, pagare, saldos, cuota y ultimo pago. El pagare se cifra y se identifica por HMAC; la carga valida identidad, formatos colombianos, duplicados y audita cambios. Falta aprobacion institucional final de la plantilla. |
+| FE-ADM-010A | Importar aportes y ahorros XLSX | En curso | Frontend ofrece plantillas y cargas separadas para aporte ordinario, ahorro voluntario y ahorro permanente, cada una con documento, nombre, valor mensual, saldo y ultimo pago. Backend conserva historial, revierte correcciones y reconstruye los tres saldos sin depender del orden del archivo. Falta aprobacion institucional final y regla definitiva de conciliacion. |
+| FE-ADM-010B | Consultar cuentas y movimientos de aportes | Implementado | `/admin-fonasin` incluye cuentas, saldos y libro de movimientos con filtros por asociado, estado, tipo y periodo; Backend expone consultas paginadas solo para admin/reviewer, valida filtros y audita accesos sin exponer hashes privados. |
+| FE-ADM-010C | Preparar asociados desde XLSX | En curso | Admin dispone de plantilla y carga privada con documento, nombre completo y correo, validacion por fila, duplicados, historial y reporte de errores. La carga no divide nombres ni envia correos automaticamente; la activacion es individual, auditada y conduce al formulario `profile_completion` sin soportes ni libranza. Falta aprobacion institucional de plantilla y validacion SMTP en produccion. |
+| FE-ADM-011 | Historial de importaciones | En curso | Backend expone `GET /admin/import-batches` con paginacion, permisos, auditoria y resumen de importaciones; `/admin-fonasin` incluye vista interna de historial con filtro por tipo, paginacion, errores resumidos y descarga CSV de filas rechazadas. Falta aprobacion final de operacion. |
 | FE-ADM-012 | Prohibir alta manual irregular | Pendiente | Debe imponerse con permisos y casos de uso del Backend. |
 
 ## Portal y creditos privados
 
 | ID | Requisito | Clase | Estado | Bloqueador o siguiente paso |
 |---|---|---|---|---|
-| FE-OBQ-001 | Ingreso y ciclo de contraseña | OBQ | Pendiente | Identity, correo y politicas de seguridad. |
-| FE-OBQ-002 | Inicio privado | OBQ | Pendiente | Afiliado aprobado, activo, habilitado y autenticado. |
-| FE-OBQ-003 | Creditos actuales | OBQ | Pendiente | Importacion de creditos y consulta autorizada por sesion. |
-| FE-OBQ-004 | Aislamiento por sesion | OBQ | Pendiente | Policy Backend; nunca aceptar identificador del navegador. |
-| FE-EXT-004 | Actualizacion de datos | EXT | Pendiente | No iniciar sin aprobacion de alcance y flujo. |
+| FE-OBQ-001 | Ingreso y ciclo de contraseña | OBQ | En curso | Login con sesion Laravel, cambio obligatorio de clave inicial y recuperacion con correo, cedula, link temporal y bloqueo para asociados inactivos. Las altas nuevas no devuelven contrasenas temporales por API. | Validar SMTP de produccion y flujo visual final. |
+| FE-OBQ-002 | Inicio privado | OBQ | En curso | Portal asociado existe con sesion, bloqueo por contrasena temporal y asociado activo; falta validacion visual final. |
+| FE-OBQ-003 | Creditos actuales | OBQ | En curso | Consulta creditos del asociado autenticado desde Backend y contrato consolidado `GET /portal/account-statement`; importacion XLSX inicial disponible. Falta validacion visual final con datos reales. |
+| FE-OBQ-003A | Aportes actuales | OBQ | En curso | Frontend representa `module_disabled`, `empty` y `available` sin mezclar aportes con creditos; los textos finales requieren aprobacion institucional y validacion con datos representativos. Backend expone `GET /portal/contributions` y `GET /portal/account-statement`. |
+| FE-OBQ-004 | Aislamiento por sesion | OBQ | Implementado | Las consultas privadas resuelven el asociado desde la sesion y bloquean asociado inactivo; no se acepta `associate_id` del navegador. |
+| FE-EXT-004 | Actualizacion de datos | EXT | En curso | El asociado crea o reutiliza un borrador temporal por 24 horas identificado como `data_update`; las altas operativas sin formulario usan `profile_completion`. Ambos flujos bloquean cambios de identidad y cargas documentales, generan solo el formulario y permiten al backoffice aplicarlo sin nueva libranza. Falta aprobacion visual final y definir retencion historica. |
 | FE-EXT-005 | Simulador | EXT | Pendiente | No iniciar sin formulas y advertencias aprobadas. |
-| FE-EXT-006 | Documentos privados | EXT | Pendiente | Storage privado y descarga temporal autorizada. |
+| FE-EXT-006 | Documentos privados | EXT | En curso | Storage privado y vista temporal autorizada para documentos visibles al asociado; la libranza no se muestra en el portal asociado. |
+
+## Pendientes explicitamente fuera de la entrega actual
+
+- Aportes del asociado: existe saldo separado, consulta privada y carga XLSX; faltan datos representativos y aprobacion institucional final.
+- Ahorro permanente y ahorro voluntario: existen saldos e importaciones separadas; falta regla final de conciliacion.
+- Importacion de Excel/XLSX: implementada para cartera, aportes y ambos ahorros con plantillas separadas, validaciones, auditoria, storage privado y reporte por fila; falta aprobacion institucional final.
+- Retencion automatica de FPQRS, documentos, solicitudes y auditoria: bloqueada hasta aprobacion juridica y operativa.
+- Rotacion operativa de `DATA_HASH_PEPPER`: pendiente de procedimiento formal. Los hashes sensibles de documento, correo, IP y agente de usuario ya usan HMAC-SHA256 y requieren pepper estable por entorno.
+- Auditoria append-only reforzada por MariaDB: pendiente de definicion de permisos/triggers en el entorno productivo.
 
 La pagina publica `/creditos` solo cubre informacion general de `FE-WEB-004`; no cuenta como consulta privada `FE-OBQ-003`.
 
@@ -90,8 +104,8 @@ La pagina publica `/creditos` solo cubre informacion general de `FE-WEB-004`; no
 |---|---|---|
 | Compilacion TypeScript/Vite | Implementado | `npm run build` local y workflow `.github/workflows/frontend-ci.yml` en cada push y pull request. |
 | Rutas SPA en Apache | Implementado | `public/.htaccess` incluido en `dist` y recarga directa verificada. |
-| Pruebas unitarias | En curso | Vitest y Testing Library cubren rutas y navegacion; ampliar a componentes y utilidades criticas. |
-| Pruebas de integracion | Pendiente | Formularios, archivos, errores y confirmaciones. |
+| Pruebas unitarias | En curso | Vitest y Testing Library cubren rutas, roles admin/reviewer, validacion XLSX, navegacion y estados del portal; falta complementar con Browser/E2E contra contratos reales. |
+| Pruebas de integracion | En curso | Pruebas Feature cubren afiliacion publica, links vencidos, documentos protegidos, portal asociado, estado de cuenta, documentos, actualizacion de datos y cierre de sesion; falta prueba Browser visual end to end. |
 | Responsive | Pendiente | Matriz movil, tableta y escritorio. |
 | Accesibilidad | Pendiente | Teclado, foco, labels, contraste, semantica y auditoria. |
 | Permisos | Pendiente | Casos positivos y negativos por rol. |

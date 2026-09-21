@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Credits;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreCreditAccountRequest extends FormRequest
 {
@@ -12,13 +13,13 @@ class StoreCreditAccountRequest extends FormRequest
     }
 
     /**
-     * @return array<string, list<string>>
+     * @return array<string, mixed>
      */
     public function rules(): array
     {
         return [
             'associate_id' => ['required', 'uuid', 'exists:associates,id'],
-            'credit_line' => ['required', 'string', 'max:120'],
+            'credit_line' => ['required', 'string', Rule::in(['FONALIBRE', 'FONAPEN', 'FONAPRIMA', 'FONAROTATIVO', 'FONAPORTES'])],
             'initial_balance' => ['required', 'numeric', 'min:0'],
             'current_balance' => ['required', 'numeric', 'min:0'],
             'term_months' => ['required', 'integer', 'min:1'],

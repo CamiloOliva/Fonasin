@@ -4,6 +4,7 @@ namespace App\Application\Fpqrs\UseCases;
 
 use App\Application\Audit\UseCases\RecordAuditEvent;
 use App\Application\Fpqrs\Contracts\DeliversFpqrsSubmissions;
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Application\Storage\Contracts\GeneratesPrivateStorageKeys;
 use App\Application\Storage\Contracts\StoresPrivateFiles;
 use App\Domain\Audit\Enums\AuditActorType;
@@ -23,6 +24,7 @@ class SubmitFpqrsSubmission
         private readonly StoresPrivateFiles $privateFiles,
         private readonly DeliversFpqrsSubmissions $deliverSubmissions,
         private readonly RecordAuditEvent $recordAuditEvent,
+        private readonly HashesSensitiveData $hasher,
     ) {}
 
     /**
@@ -62,7 +64,7 @@ class SubmitFpqrsSubmission
                 'id' => $submissionId,
                 'full_name' => $data['full_name'],
                 'email' => $email,
-                'email_hash' => hash('sha256', $email),
+                'email_hash' => $this->hasher->email($email),
                 'submission_type' => $data['submission_type']->value,
                 'message' => $data['message'],
                 'attachment_original_filename' => $data['attachment_original_filename'] ?? null,

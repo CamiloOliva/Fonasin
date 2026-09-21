@@ -3,6 +3,7 @@
 namespace App\Application\Credits\UseCases;
 
 use App\Application\Audit\UseCases\RecordAuditEvent;
+use App\Application\Credits\Exceptions\CannotManageCreditAccount;
 use App\Domain\Audit\Enums\AuditActorType;
 use App\Domain\Audit\Enums\AuditModule;
 use App\Domain\Credits\Enums\CreditAccountStatus;
@@ -39,6 +40,10 @@ class RegisterCreditAccount
     ): CreditAccount {
         return DB::transaction(function () use ($associate, $actor, $data, $correlationId, $ipHash) {
             $correlationId ??= (string) Str::uuid();
+
+            if ($associate->status !== 'active') {
+                throw CannotManageCreditAccount::associateMustBeActive();
+            }
 
             $credit = CreditAccount::query()->create([
                 'associate_id' => $associate->id,
