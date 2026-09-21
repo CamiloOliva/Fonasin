@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\HandleCors;
 use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\EnsurePasswordIsChanged;
 
@@ -13,6 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // The React application is served from fonasin.com while Laravel is
+        // served from api.fonasin.com. Register CORS explicitly so the
+        // credentialed browser policy in config/cors.php is never omitted.
+        $middleware->prepend(HandleCors::class);
         $middleware->append(AddSecurityHeaders::class);
 
         $middleware->alias([
