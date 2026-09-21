@@ -30,9 +30,17 @@ return [
 
     'allowed_origins_patterns' => [],
 
-    'allowed_headers' => ['Accept', 'Content-Type', 'Origin', 'X-CSRF-TOKEN', 'X-Requested-With'],
+    'allowed_headers' => [
+        'Accept',
+        'Content-Type',
+        'Origin',
+        'Range',
+        'X-Affiliation-Draft-Token',
+        'X-CSRF-TOKEN',
+        'X-Requested-With',
+    ],
 
-    'exposed_headers' => [],
+    'exposed_headers' => ['Accept-Ranges', 'Content-Length', 'Content-Range'],
 
     'max_age' => 0,
 

@@ -27,7 +27,7 @@ type CreditsState = PrivateDataState;
 type ContributionsState = PrivateDataState;
 type AffiliationState = PrivateDataState;
 type PortalTab = 'statement' | 'contributions' | 'form';
-const AFFILIATION_DRAFT_STORAGE_KEY = 'fonasin.affiliation.draft.v1';
+const AFFILIATION_DRAFT_STORAGE_KEY = 'fonasin.portal.affiliation.draft.v1';
 const AFFILIATION_DRAFT_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
 
 const currency = new Intl.NumberFormat('es-CO', {
@@ -135,7 +135,14 @@ type StoredAffiliationUpdateDraft = {
   id: string;
   readUrl: string;
   status: string;
+  purpose: PortalAffiliationUpdateDraft['purpose'];
 };
+
+function affiliationFlowPath(purpose: PortalAffiliationUpdateDraft['purpose']): string {
+  return purpose === 'profile_completion'
+    ? '/portal-asociado/completar-perfil'
+    : '/portal-asociado/actualizar-datos';
+}
 
 function readStoredAffiliationUpdateDraft(): StoredAffiliationUpdateDraft | null {
   try {
@@ -143,7 +150,13 @@ function readStoredAffiliationUpdateDraft(): StoredAffiliationUpdateDraft | null
     if (!raw) return null;
 
     const stored = JSON.parse(raw) as Partial<StoredAffiliationUpdateDraft>;
-    if (!stored.id || !stored.readUrl || !stored.savedAt || Date.now() - stored.savedAt > AFFILIATION_DRAFT_STORAGE_TTL_MS) {
+    if (
+      !stored.id
+      || !stored.readUrl
+      || !stored.savedAt
+      || !['data_update', 'profile_completion'].includes(stored.purpose ?? '')
+      || Date.now() - stored.savedAt > AFFILIATION_DRAFT_STORAGE_TTL_MS
+    ) {
       window.sessionStorage.removeItem(AFFILIATION_DRAFT_STORAGE_KEY);
       return null;
     }
@@ -162,6 +175,7 @@ function storeAffiliationUpdateDraft(draft: PortalAffiliationUpdateDraft): void 
       readUrl: draft.links.read,
       draftAccessToken: draft.draft_access_token,
       status: draft.status,
+      purpose: draft.purpose,
     }));
   } catch {
     // El asociado puede abrir el formulario aunque el navegador bloquee el almacenamiento de sesión.
@@ -171,6 +185,7 @@ function storeAffiliationUpdateDraft(draft: PortalAffiliationUpdateDraft): void 
 function clearAffiliationUpdateDraft(): void {
   try {
     window.sessionStorage.removeItem(AFFILIATION_DRAFT_STORAGE_KEY);
+    window.sessionStorage.removeItem('fonasin.affiliation.draft.v1');
   } catch {
     // No hay accion necesaria si el navegador bloquea el almacenamiento de sesión.
   }
@@ -377,7 +392,7 @@ export default function PortalAsociado() {
   async function openProfileCompletion() {
     const updateDraft = await startPortalAffiliationUpdate();
     storeAffiliationUpdateDraft(updateDraft);
-    navigate('/afiliacion');
+    navigate(affiliationFlowPath(updateDraft.purpose));
   }
 
   async function handleStartAffiliationUpdate() {
@@ -389,13 +404,13 @@ export default function PortalAsociado() {
       const storedDraft = readStoredAffiliationUpdateDraft();
       if (storedDraft) {
         setMessage('Retomando el borrador de actualizacion existente.');
-        navigate('/afiliacion');
+        navigate(affiliationFlowPath(storedDraft.purpose));
         return;
       }
 
       const updateDraft = await startPortalAffiliationUpdate();
       storeAffiliationUpdateDraft(updateDraft);
-      navigate('/afiliacion');
+      navigate(affiliationFlowPath(updateDraft.purpose));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible preparar la actualizacion de datos.');
     } finally {

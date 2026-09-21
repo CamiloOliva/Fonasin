@@ -102,6 +102,8 @@ export type PortalAffiliation = {
 export type PortalAffiliationUpdateDraft = {
   id: string;
   status: string;
+  purpose: 'data_update' | 'profile_completion';
+  source_application_id: string | null;
   draft_access_token: string;
   links: {
     read: string;

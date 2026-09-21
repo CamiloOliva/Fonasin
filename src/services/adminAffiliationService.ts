@@ -2,7 +2,7 @@ import { currentPortalUser, loginPortal, logoutPortal, type LoginPayload, type P
 
 export type AdminAffiliationApplication = {
   id: string;
-  purpose: 'initial_affiliation' | 'data_update';
+  purpose: 'initial_affiliation' | 'data_update' | 'profile_completion';
   source_application_id: string | null;
   status: string;
   current_step: string;
@@ -96,6 +96,10 @@ function buildUrl(path: string): string {
   }
 
   return `${backendBaseUrl}${path}`;
+}
+
+export function adminAffiliationDocumentUrl(path: string): string {
+  return buildUrl(path);
 }
 
 async function csrfToken(): Promise<string> {
