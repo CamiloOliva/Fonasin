@@ -80,6 +80,7 @@ function renderRoute(path: string) {
 describe('AppRoutes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(portalService.currentPortalUser).mockRejectedValue(new Error('guest'));
   });
 
   it('renders the public credits route', () => {
@@ -149,25 +150,47 @@ describe('AppRoutes', () => {
     expect(screen.getByRole('heading', { name: /consulta tus creditos/i })).toBeInTheDocument();
   });
 
-  it('renders profile completion as a private flow instead of public affiliation', async () => {
-    vi.mocked(portalService.startPortalAffiliationUpdate).mockRejectedValueOnce(new Error('session required'));
+  it('redirects anonymous visitors away from profile completion', async () => {
+    renderRoute('/portal-asociado/completar-perfil');
+
+    expect(await screen.findByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument();
+    expect(portalService.startPortalAffiliationUpdate).not.toHaveBeenCalled();
+    expect(screen.queryByRole('heading', { level: 1, name: /^formulario de afiliacion$/i })).not.toBeInTheDocument();
+  });
+
+  it('renders profile completion only for an authenticated associate', async () => {
+    vi.mocked(portalService.currentPortalUser).mockResolvedValue({
+      id: 'associate-user',
+      email: 'associate@fonasin.test',
+      roles: ['associate'],
+      must_change_password: false,
+    });
+    vi.mocked(portalService.startPortalAffiliationUpdate).mockRejectedValueOnce(new Error('draft unavailable'));
 
     renderRoute('/portal-asociado/completar-perfil');
 
-    expect(screen.getByRole('heading', { level: 1, name: /completar perfil/i })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { level: 1, name: /^formulario de afiliacion$/i })).not.toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: /completar perfil/i })).toBeInTheDocument();
   });
 
   it('opens profile completion after the mandatory first password change', async () => {
     const user = userEvent.setup();
-    vi.mocked(portalService.currentPortalUser).mockResolvedValueOnce({
+    vi.mocked(portalService.currentPortalUser)
+      .mockResolvedValueOnce({
       id: 'new-associate-user',
       email: 'new.associate@fonasin.test',
       roles: ['associate'],
       must_change_password: true,
       requires_profile_completion: true,
       profile_completion_status: null,
-    });
+      })
+      .mockResolvedValueOnce({
+        id: 'new-associate-user',
+        email: 'new.associate@fonasin.test',
+        roles: ['associate'],
+        must_change_password: false,
+        requires_profile_completion: true,
+        profile_completion_status: null,
+      });
     vi.mocked(portalService.changeOwnPassword).mockResolvedValueOnce({
       id: 'new-associate-user',
       email: 'new.associate@fonasin.test',
@@ -196,12 +219,11 @@ describe('AppRoutes', () => {
     expect(portalService.startPortalAffiliationUpdate).toHaveBeenCalled();
   });
 
-  it('renders data updates as a private flow', async () => {
-    vi.mocked(portalService.startPortalAffiliationUpdate).mockRejectedValueOnce(new Error('session required'));
-
+  it('redirects anonymous visitors away from data updates', async () => {
     renderRoute('/portal-asociado/actualizar-datos');
 
-    expect(screen.getByRole('heading', { level: 1, name: /actualizar datos/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument();
+    expect(portalService.startPortalAffiliationUpdate).not.toHaveBeenCalled();
   });
 
   it('rejects admin users from the associate portal', async () => {

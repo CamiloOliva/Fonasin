@@ -1258,7 +1258,7 @@ function renderFields(
   return (
     <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
       {fields.map((field) => {
-        const selectOptions = options.fieldOptions?.[field.key] ?? field.options ?? [];
+        const selectOptions = Array.from(new Set(options.fieldOptions?.[field.key] ?? field.options ?? []));
 
         return (
           <Field key={field.key} label={field.label} helper={field.helper} required={section ? isRequiredField(section, field.key) : false}>
