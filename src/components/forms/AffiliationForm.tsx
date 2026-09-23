@@ -16,6 +16,7 @@ import {
   Users,
 } from 'lucide-react';
 import StatutesBookViewer from '../sections/StatutesBookViewer';
+import { calculateFinancialAmounts } from './financialCalculations';
 import {
   acceptAffiliationConsent,
   affiliationDownloadUrl,
@@ -235,6 +236,7 @@ const currencyFieldKeys = new Set([
   'equityValue',
   'voluntarySavingsValue',
 ]);
+const calculatedFinancialFieldKeys = new Set(['totalIncome', 'totalExpenses', 'equityValue']);
 const stepLabels: Array<{ key: StepKey; label: string; title: string; description: string }> = [
   { key: 'personal', label: '1', title: 'Datos personales', description: 'Identificacion, contacto y base del asociado.' },
   { key: 'employment', label: '2', title: 'Informacion laboral', description: 'Empresa, cargo, contrato y ciudad de trabajo.' },
@@ -472,7 +474,7 @@ function stateFromDraft(draft: AffiliationDraft): SectionState {
     }
 
     if (section.section === 'financial') {
-      next.financial = {
+      next.financial = calculateFinancialAmounts({
         ...next.financial,
         principalIncome: stringValue(data, 'principalIncome'),
         otherIncome: stringValue(data, 'otherIncome'),
@@ -486,7 +488,7 @@ function stateFromDraft(draft: AffiliationDraft): SectionState {
         incomeBand: stringValue(data, 'incomeBand'),
         voluntarySavings: stringValue(data, 'voluntarySavings', next.financial.voluntarySavings),
         voluntarySavingsValue: stringValue(data, 'voluntarySavingsValue'),
-      };
+      });
     }
 
     if (section.section === 'beneficiaries') {
@@ -877,9 +879,10 @@ function currencyOnly(value: string): string {
 }
 
 function formatCurrency(value: string): string {
+  const sign = value.trim().startsWith('-') ? '-' : '';
   const digits = currencyOnly(value);
 
-  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${sign}${digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
 }
 
 function moneyLabel(value: number): string {
@@ -1628,7 +1631,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
         />
         {renderFields(employmentFields, state.employment, (next) =>
           setState((current) => {
-            const nextMonthlySalary = next.monthlySalary ? currencyOnly(next.monthlySalary) : current.employment.monthlySalary;
+            const nextMonthlySalary = currencyOnly(next.monthlySalary);
             const shouldMirrorSalary = !current.financial.principalIncome
               || current.financial.principalIncome === current.employment.monthlySalary;
 
@@ -1642,7 +1645,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
                 monthlySalary: nextMonthlySalary,
               },
               financial: shouldMirrorSalary
-                ? { ...current.financial, principalIncome: nextMonthlySalary }
+                ? calculateFinancialAmounts({ ...current.financial, principalIncome: nextMonthlySalary })
                 : current.financial,
             };
           }),
@@ -1679,23 +1682,26 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
           description="Ingresos, egresos, patrimonio y ahorro voluntario."
         />
         {renderFields(financialFields, state.financial, (next) =>
-          setState((current) => ({
-            ...current,
-            financial: {
+          setState((current) => {
+            const editableValues = {
               ...current.financial,
               ...next,
-              principalIncome: next.principalIncome ? currencyOnly(next.principalIncome) : current.financial.principalIncome,
-              otherIncome: next.otherIncome ? currencyOnly(next.otherIncome) : current.financial.otherIncome,
-              totalIncome: next.totalIncome ? currencyOnly(next.totalIncome) : current.financial.totalIncome,
-              monthlyExpenses: next.monthlyExpenses ? currencyOnly(next.monthlyExpenses) : current.financial.monthlyExpenses,
-              financialObligations: next.financialObligations ? currencyOnly(next.financialObligations) : current.financial.financialObligations,
-              totalExpenses: next.totalExpenses ? currencyOnly(next.totalExpenses) : current.financial.totalExpenses,
-              assetsValue: next.assetsValue ? currencyOnly(next.assetsValue) : current.financial.assetsValue,
-              liabilitiesValue: next.liabilitiesValue ? currencyOnly(next.liabilitiesValue) : current.financial.liabilitiesValue,
-              equityValue: next.equityValue ? currencyOnly(next.equityValue) : current.financial.equityValue,
-            },
-          })),
-        'financial')}
+              principalIncome: currencyOnly(next.principalIncome),
+              otherIncome: currencyOnly(next.otherIncome),
+              monthlyExpenses: currencyOnly(next.monthlyExpenses),
+              financialObligations: currencyOnly(next.financialObligations),
+              assetsValue: currencyOnly(next.assetsValue),
+              liabilitiesValue: currencyOnly(next.liabilitiesValue),
+            };
+
+            return {
+              ...current,
+              financial: calculateFinancialAmounts(editableValues),
+            };
+          }),
+        'financial', {
+          disabledKeys: calculatedFinancialFieldKeys,
+        })}
         {state.financial.voluntarySavings === 'Si' ? (
           <Field label="Valor mensual del ahorro voluntario" required>
             <TextInput

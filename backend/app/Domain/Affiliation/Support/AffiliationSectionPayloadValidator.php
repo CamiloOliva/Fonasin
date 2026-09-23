@@ -9,7 +9,9 @@ use DateTimeImmutable;
 class AffiliationSectionPayloadValidator
 {
     private const ALLOWED_DOCUMENT_TYPES = ['CC', 'CE', 'Pasaporte', 'TI'];
+
     private const MIN_MONTHLY_SALARY = 1750905;
+
     private const MAX_MONEY_VALUE = 100000000;
 
     /**
@@ -140,16 +142,26 @@ class AffiliationSectionPayloadValidator
 
         foreach ([
             'principalIncome',
+            'otherIncome',
             'totalIncome',
             'monthlyExpenses',
+            'financialObligations',
             'totalExpenses',
             'assetsValue',
             'liabilitiesValue',
-            'equityValue',
         ] as $field) {
+            if ($this->isBlank($data[$field] ?? null) && in_array($field, ['otherIncome', 'financialObligations'], true)) {
+                continue;
+            }
+
             $this->requireNonNegativeNumber($section, $data, $field);
             $this->requireMoneyLimit($section, $data, $field);
         }
+
+        $this->requireSignedMoneyLimit($section, $data, 'equityValue');
+        $this->requireCalculatedMoney($section, $data, 'totalIncome', ['principalIncome', 'otherIncome']);
+        $this->requireCalculatedMoney($section, $data, 'totalExpenses', ['monthlyExpenses', 'financialObligations']);
+        $this->requireCalculatedMoney($section, $data, 'equityValue', ['assetsValue', 'liabilitiesValue'], true);
 
         if ($this->isYes($data['voluntarySavings']) && $this->isBlank($data['voluntarySavingsValue'] ?? null)) {
             throw CannotSaveApplicationSection::missingRequiredFields($section->value, ['voluntarySavingsValue']);
@@ -386,6 +398,43 @@ class AffiliationSectionPayloadValidator
 
         if ($value === null || $value > self::MAX_MONEY_VALUE) {
             throw CannotSaveApplicationSection::invalidField($section->value, $field, 'supera el limite de monto permitido');
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function requireSignedMoneyLimit(AffiliationApplicationStep $section, array $data, string $field): void
+    {
+        $value = $this->numberValue($data[$field] ?? null);
+
+        if ($value === null || abs($value) > self::MAX_MONEY_VALUE) {
+            throw CannotSaveApplicationSection::invalidField($section->value, $field, 'supera el limite de monto permitido');
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  list<string>  $sourceFields
+     */
+    private function requireCalculatedMoney(
+        AffiliationApplicationStep $section,
+        array $data,
+        string $field,
+        array $sourceFields,
+        bool $subtract = false,
+    ): void {
+        $actual = $this->numberValue($data[$field] ?? null);
+        $first = $this->numberValue($data[$sourceFields[0]] ?? null) ?? 0;
+        $second = $this->numberValue($data[$sourceFields[1]] ?? null) ?? 0;
+        $expected = $subtract ? $first - $second : $first + $second;
+
+        if ($actual === null || abs($actual - $expected) > 0.00001) {
+            throw CannotSaveApplicationSection::invalidField(
+                $section->value,
+                $field,
+                'no coincide con los valores informados',
+            );
         }
     }
 

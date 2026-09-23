@@ -6,7 +6,7 @@ Esta matriz conecta la especificacion funcional con el codigo, las pruebas y la 
 
 Fuente funcional: `02_GUIA_EQUIPO_FRONTEND_WEB_AFILIACION_PORTAL_V2.docx`, version 2.0 del 15 de agosto de 2026.
 
-Ultima revision tecnica: 11 de septiembre de 2026, rama de trabajo frontend.
+Ultima revision tecnica: 23 de septiembre de 2026, rama de trabajo frontend.
 
 ## Estados permitidos
 
@@ -49,7 +49,7 @@ El carrusel estatico de tres imagenes existe, pero permanece `En curso` hasta re
 | FE-AFI-002 | Inicio o recuperacion de borrador | Implementado | La vista reutiliza por 24 horas el borrador de sesion del mismo navegador, consulta el borrador firmado en Backend y repuebla secciones/documentos ya guardados; no persiste datos personales en storage del frontend, requiere token tecnico de borrador y el Backend invalida el token al enviar. |
 | FE-AFI-003 | Datos personales | Bloqueado | Esquema de campos aprobado. |
 | FE-AFI-004 | Informacion laboral | Bloqueado | Campos y reglas aprobados. |
-| FE-AFI-005 | Informacion financiera | Bloqueado | Campos y reglas aprobados. |
+| FE-AFI-005 | Informacion financiera | En curso | Los montos editables admiten correccion normal; ingresos, egresos y patrimonio se calculan automaticamente y Backend rechaza totales incoherentes. Falta aprobacion institucional final de campos y reglas. |
 | FE-AFI-006 | Beneficiarios | Bloqueado | Campos condicionales aprobados. |
 | FE-AFI-006A | SARLAFT | Bloqueado | Declaraciones, campos y tratamiento aprobados. |
 | FE-AFI-007 | Documentos | Implementado | Formulario exige PDF de identidad por ambos lados y certificado laboral; Backend valida PDF privado de hasta 5MB por documento. Falta validacion visual final con FONASIN. |
