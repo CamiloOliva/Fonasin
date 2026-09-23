@@ -16,7 +16,7 @@
 users <-> roles                 mediante role_user
 users -> associates             una cuenta puede representar un asociado
 associates -> credit_accounts   un asociado puede tener varios creditos
-associates -> contribution_accounts, contribution_movements
+associates -> contribution_accounts, contribution_movements, voluntary_savings_requests
 users -> import_batches          un administrador registra una carga operativa
 associates -> affiliation_applications
 applications -> sections, documents, consent_records
@@ -279,3 +279,16 @@ El caso de uso inicial de envio exige las secciones de formulario completas, los
 - `audit_events(actor_user_id, occurred_at)`.
 - `auth_events(user_id, occurred_at)`.
 - `auth_events(event_type, occurred_at)`.
+### `voluntary_savings_requests`
+
+| Columna | Tipo | Regla |
+|---|---|---|
+| `id` | uuid | PK |
+| `associate_id` | uuid | FK a `associates`; no se acepta desde el navegador como autorizacion |
+| `monthly_amount` | decimal(15,2) | Mayor que cero y hasta $10.000.000.000 |
+| `status` | varchar(40) | `submitted`, `approved`, `rejected` |
+| `authorization_storage_key` | varchar(500) | Clave de storage privado; nunca URL publica |
+| `submitted_at` | timestamp UTC | Fecha de aceptacion y envio |
+| `reviewed_at` | timestamp UTC nullable | Fecha de revision administrativa |
+| `reviewed_by_user_id` | uuid nullable | FK a `users` |
+| `review_notes` | text nullable | Observacion operativa de revision |

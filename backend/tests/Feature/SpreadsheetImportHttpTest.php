@@ -56,6 +56,26 @@ class SpreadsheetImportHttpTest extends TestCase
         Storage::disk('local')->assertExists(ImportBatch::query()->firstOrFail()->storage_key);
     }
 
+    public function test_admin_can_import_the_new_credit_lines(): void
+    {
+        Storage::fake('local');
+        $admin = $this->userWithRole('admin');
+        $this->createAssociate('123456789');
+
+        $this->actingAs($admin)->postJson('/admin/import-batches/credits', [
+            'file' => $this->xlsx('nuevas-lineas.xlsx', [
+                $this->creditHeaders(),
+                $this->creditRow(['linea_credito' => 'CONVENIOS']),
+            ]),
+        ])->assertCreated()
+            ->assertJsonPath('data.status', 'completed')
+            ->assertJsonPath('data.rows_created', 1);
+
+        $this->assertDatabaseHas('credit_accounts', [
+            'credit_line' => 'CONVENIOS',
+        ]);
+    }
+
     public function test_credit_import_updates_by_promissory_note_and_rejects_unknown_associate(): void
     {
         Storage::fake('local');

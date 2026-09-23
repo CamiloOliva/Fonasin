@@ -469,3 +469,19 @@ Limite: 3 envios por minuto para el administrador y asociado
 ```
 
 Genera un token temporal hasheado y envia un unico correo al asociado seleccionado. El enlace permite definir la contrasena y luego el portal inicia `profile_completion` cuando no existe formulario habilitado. Este borrador precarga tipo y numero de documento y correo, exige completar las secciones, bloquea documentos/libranza y genera solamente el formulario para revision interna.
+## Solicitud de ahorro voluntario
+
+```text
+GET  /portal/voluntary-savings-requests
+POST /portal/voluntary-savings-requests
+GET  /portal/voluntary-savings-requests/{request}/authorization
+```
+
+Requiere sesion de asociado y contrasena definitiva. El `POST` recibe `monthly_amount` y `accept_terms`; el asociado se resuelve exclusivamente desde la sesion. La autorizacion se genera como PDF privado y una solicitud `submitted` impide crear otra pendiente.
+
+```text
+GET   /admin/voluntary-savings-requests
+PATCH /admin/voluntary-savings-requests/{request}
+```
+
+Administradores y revisores consultan la bandeja; solo administradores pueden cambiar el estado a `approved` o `rejected`. Todos los accesos y cambios dejan auditoria en el modulo `contributions`.

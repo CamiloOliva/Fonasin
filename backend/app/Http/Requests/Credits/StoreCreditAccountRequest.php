@@ -19,7 +19,17 @@ class StoreCreditAccountRequest extends FormRequest
     {
         return [
             'associate_id' => ['required', 'uuid', 'exists:associates,id'],
-            'credit_line' => ['required', 'string', Rule::in(['FONALIBRE', 'FONAPEN', 'FONAPRIMA', 'FONAROTATIVO', 'FONAPORTES'])],
+            'credit_line' => ['required', 'string', Rule::in([
+                'FONALIBRE',
+                'FONAPEN',
+                'FONAPRIMA',
+                'FONAROTATIVO',
+                'FONAPORTES',
+                'CONVENIOS',
+                'CREDIRAPIDO',
+                'LIBRE INVERSION',
+                'APORTES',
+            ])],
             'initial_balance' => ['required', 'numeric', 'min:0'],
             'current_balance' => ['required', 'numeric', 'min:0'],
             'term_months' => ['required', 'integer', 'min:1'],

@@ -87,6 +87,25 @@ class CreditAccountHttpTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_register_the_new_credit_lines(): void
+    {
+        $admin = $this->userWithRole('admin');
+
+        foreach (['CONVENIOS', 'CREDIRAPIDO', 'LIBRE INVERSION', 'APORTES'] as $creditLine) {
+            $associate = $this->createAssociate();
+
+            $this->actingAs($admin)
+                ->postJson('/admin/credits', [
+                    'associate_id' => $associate->id,
+                    ...array_replace($this->creditData(), [
+                        'credit_line' => $creditLine,
+                    ]),
+                ])
+                ->assertCreated()
+                ->assertJsonPath('data.credit_line', $creditLine);
+        }
+    }
+
     public function test_it_rejects_credit_registration_for_inactive_associate(): void
     {
         $associate = $this->createAssociate(['status' => 'inactive']);

@@ -21,10 +21,12 @@ vi.mock('../services/portalService', () => ({
   fetchPortalAffiliation: vi.fn().mockResolvedValue(null),
   fetchPortalContributions: vi.fn().mockResolvedValue({ state: 'module_disabled', account: null, movements: [] }),
   fetchPortalCredits: vi.fn().mockResolvedValue([]),
+  fetchPortalVoluntarySavingsRequests: vi.fn().mockResolvedValue([]),
   loginPortal: vi.fn(),
   logoutPortal: vi.fn(),
   portalDocumentPreviewUrl: vi.fn((path: string) => path),
   startPortalAffiliationUpdate: vi.fn(),
+  submitPortalVoluntarySavingsRequest: vi.fn(),
 }));
 
 vi.mock('../services/adminAffiliationService', () => ({
@@ -57,11 +59,14 @@ vi.mock('../services/adminCreditService', () => ({
 }));
 
 vi.mock('../services/adminContributionService', () => ({
+  adminContributionDocumentUrl: vi.fn((path: string) => path),
   fetchAdminContributionAccounts: vi.fn().mockResolvedValue({
     data: [],
     meta: { current_page: 1, last_page: 1, per_page: 25, total: 0 },
   }),
   fetchAdminContributionMovements: vi.fn(),
+  fetchAdminVoluntarySavingsRequests: vi.fn().mockResolvedValue([]),
+  reviewAdminVoluntarySavingsRequest: vi.fn(),
 }));
 
 vi.mock('../services/passwordRecoveryService', () => ({
@@ -223,6 +228,45 @@ describe('AppRoutes', () => {
     renderRoute('/portal-asociado/actualizar-datos');
 
     expect(await screen.findByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument();
+    expect(portalService.startPortalAffiliationUpdate).not.toHaveBeenCalled();
+  });
+
+  it('opens the data update flow after portal authentication intent', async () => {
+    vi.mocked(portalService.currentPortalUser).mockResolvedValue({
+      id: 'associate-user',
+      email: 'associate@fonasin.test',
+      roles: ['associate'],
+      must_change_password: false,
+      requires_profile_completion: false,
+      profile_completion_status: null,
+    });
+    vi.mocked(portalService.startPortalAffiliationUpdate).mockResolvedValue({
+      id: 'update-draft-id',
+      status: 'draft',
+      purpose: 'data_update',
+      source_application_id: 'enabled-application-id',
+      draft_access_token: 'draft-token',
+      links: { read: '/affiliation-applications/update-draft-id?signature=test' },
+    });
+
+    renderRoute('/portal-asociado?intent=actualizar-datos');
+
+    expect(await screen.findByRole('heading', { level: 1, name: /actualizar datos/i })).toBeInTheDocument();
+    expect(portalService.startPortalAffiliationUpdate).toHaveBeenCalled();
+  });
+
+  it('opens voluntary savings outside the affiliation flow', async () => {
+    vi.mocked(portalService.currentPortalUser).mockResolvedValue({
+      id: 'associate-user',
+      email: 'associate@fonasin.test',
+      roles: ['associate'],
+      must_change_password: false,
+    });
+
+    renderRoute('/portal-asociado?intent=ahorro-voluntario');
+
+    expect(await screen.findByRole('heading', { level: 2, name: /ahorro voluntario/i })).toBeInTheDocument();
+    expect(portalService.fetchPortalVoluntarySavingsRequests).toHaveBeenCalled();
     expect(portalService.startPortalAffiliationUpdate).not.toHaveBeenCalled();
   });
 
