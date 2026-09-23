@@ -16,6 +16,7 @@ import {
   Users,
 } from 'lucide-react';
 import StatutesBookViewer from '../sections/StatutesBookViewer';
+import { calculateFinancialAmounts, synchronizePrincipalIncome } from './financialCalculations';
 import {
   acceptAffiliationConsent,
   affiliationDownloadUrl,
@@ -218,9 +219,9 @@ const POLICY_VERSION = 'afiliacion-v1';
 const NAME_MAX_LENGTH = 35;
 const TEXT_MAX_LENGTH = 120;
 const MIN_MONTHLY_SALARY = 1750905;
-const MONEY_MAX_VALUE = 100000000;
+const MONEY_MAX_VALUE = 10000000000;
 const MONEY_MAX_DIGITS = String(MONEY_MAX_VALUE).length;
-const MONEY_MAX_DISPLAY_LENGTH = '100.000.000'.length;
+const MONEY_MAX_DISPLAY_LENGTH = '10.000.000.000'.length;
 const MAX_DOCUMENT_BYTES = 5 * 1024 * 1024;
 const currencyFieldKeys = new Set([
   'monthlySalary',
@@ -235,6 +236,7 @@ const currencyFieldKeys = new Set([
   'equityValue',
   'voluntarySavingsValue',
 ]);
+const calculatedFinancialFieldKeys = new Set(['principalIncome', 'totalIncome', 'totalExpenses', 'equityValue']);
 const stepLabels: Array<{ key: StepKey; label: string; title: string; description: string }> = [
   { key: 'personal', label: '1', title: 'Datos personales', description: 'Identificacion, contacto y base del asociado.' },
   { key: 'employment', label: '2', title: 'Informacion laboral', description: 'Empresa, cargo, contrato y ciudad de trabajo.' },
@@ -472,7 +474,7 @@ function stateFromDraft(draft: AffiliationDraft): SectionState {
     }
 
     if (section.section === 'financial') {
-      next.financial = {
+      next.financial = calculateFinancialAmounts({
         ...next.financial,
         principalIncome: stringValue(data, 'principalIncome'),
         otherIncome: stringValue(data, 'otherIncome'),
@@ -486,7 +488,7 @@ function stateFromDraft(draft: AffiliationDraft): SectionState {
         incomeBand: stringValue(data, 'incomeBand'),
         voluntarySavings: stringValue(data, 'voluntarySavings', next.financial.voluntarySavings),
         voluntarySavingsValue: stringValue(data, 'voluntarySavingsValue'),
-      };
+      });
     }
 
     if (section.section === 'beneficiaries') {
@@ -536,6 +538,8 @@ function stateFromDraft(draft: AffiliationDraft): SectionState {
       };
     }
   }
+
+  next.financial = synchronizePrincipalIncome(next.financial, next.employment.monthlySalary);
 
   return next;
 }
@@ -877,13 +881,24 @@ function currencyOnly(value: string): string {
 }
 
 function formatCurrency(value: string): string {
+  const sign = value.trim().startsWith('-') ? '-' : '';
   const digits = currencyOnly(value);
 
-  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${sign}${digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
 }
 
 function moneyLabel(value: number): string {
   return `$${formatCurrency(String(value))}`;
+}
+
+function documentUploadError(label: string, caught: unknown): Error {
+  const message = caught instanceof Error ? caught.message : '';
+
+  if (message.includes('validation.uploaded')) {
+    return new Error(`${label}: el servidor no pudo recibir el PDF. Verifica que no supere 5 MB e intenta nuevamente.`);
+  }
+
+  return new Error(`${label}: ${message || 'no fue posible cargar el PDF.'}`);
 }
 
 function limitedCurrency(value: string): string {
@@ -1493,16 +1508,34 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
 
         if (draft && backendMode === 'ready') {
           if (!isFormOnly && state.finalStep.identityDocumentFile) {
-            await uploadAffiliationDocument(draft.links.documents, {
-              documentType: 'identity',
-              file: state.finalStep.identityDocumentFile,
-            });
+            try {
+              await uploadAffiliationDocument(draft.links.documents, {
+                documentType: 'identity',
+                file: state.finalStep.identityDocumentFile,
+              });
+              setUploadedDocumentTypes((current) => new Set(current).add('identity'));
+              setState((current) => ({
+                ...current,
+                finalStep: { ...current.finalStep, identityDocumentFile: null },
+              }));
+            } catch (caught) {
+              throw documentUploadError('Documento de identidad', caught);
+            }
           }
           if (!isFormOnly && state.finalStep.employmentCertificateFile) {
-            await uploadAffiliationDocument(draft.links.documents, {
-              documentType: 'employment_certificate',
-              file: state.finalStep.employmentCertificateFile,
-            });
+            try {
+              await uploadAffiliationDocument(draft.links.documents, {
+                documentType: 'employment_certificate',
+                file: state.finalStep.employmentCertificateFile,
+              });
+              setUploadedDocumentTypes((current) => new Set(current).add('employment_certificate'));
+              setState((current) => ({
+                ...current,
+                finalStep: { ...current.finalStep, employmentCertificateFile: null },
+              }));
+            } catch (caught) {
+              throw documentUploadError('Certificado laboral', caught);
+            }
           }
 
           await acceptAffiliationConsent(draft.links.consents, {
@@ -1628,10 +1661,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
         />
         {renderFields(employmentFields, state.employment, (next) =>
           setState((current) => {
-            const nextMonthlySalary = next.monthlySalary ? currencyOnly(next.monthlySalary) : current.employment.monthlySalary;
-            const shouldMirrorSalary = !current.financial.principalIncome
-              || current.financial.principalIncome === current.employment.monthlySalary;
-
+            const nextMonthlySalary = currencyOnly(next.monthlySalary);
             return {
               ...current,
               employment: {
@@ -1641,9 +1671,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
                   next.contractType && next.contractType !== 'Otro' ? '' : next.contractTypeOther ?? current.employment.contractTypeOther,
                 monthlySalary: nextMonthlySalary,
               },
-              financial: shouldMirrorSalary
-                ? { ...current.financial, principalIncome: nextMonthlySalary }
-                : current.financial,
+              financial: synchronizePrincipalIncome(current.financial, nextMonthlySalary),
             };
           }),
         'employment', {
@@ -1679,23 +1707,25 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
           description="Ingresos, egresos, patrimonio y ahorro voluntario."
         />
         {renderFields(financialFields, state.financial, (next) =>
-          setState((current) => ({
-            ...current,
-            financial: {
+          setState((current) => {
+            const editableValues = {
               ...current.financial,
               ...next,
-              principalIncome: next.principalIncome ? currencyOnly(next.principalIncome) : current.financial.principalIncome,
-              otherIncome: next.otherIncome ? currencyOnly(next.otherIncome) : current.financial.otherIncome,
-              totalIncome: next.totalIncome ? currencyOnly(next.totalIncome) : current.financial.totalIncome,
-              monthlyExpenses: next.monthlyExpenses ? currencyOnly(next.monthlyExpenses) : current.financial.monthlyExpenses,
-              financialObligations: next.financialObligations ? currencyOnly(next.financialObligations) : current.financial.financialObligations,
-              totalExpenses: next.totalExpenses ? currencyOnly(next.totalExpenses) : current.financial.totalExpenses,
-              assetsValue: next.assetsValue ? currencyOnly(next.assetsValue) : current.financial.assetsValue,
-              liabilitiesValue: next.liabilitiesValue ? currencyOnly(next.liabilitiesValue) : current.financial.liabilitiesValue,
-              equityValue: next.equityValue ? currencyOnly(next.equityValue) : current.financial.equityValue,
-            },
-          })),
-        'financial')}
+              otherIncome: currencyOnly(next.otherIncome),
+              monthlyExpenses: currencyOnly(next.monthlyExpenses),
+              financialObligations: currencyOnly(next.financialObligations),
+              assetsValue: currencyOnly(next.assetsValue),
+              liabilitiesValue: currencyOnly(next.liabilitiesValue),
+            };
+
+            return {
+              ...current,
+              financial: synchronizePrincipalIncome(editableValues, current.employment.monthlySalary),
+            };
+          }),
+        'financial', {
+          disabledKeys: calculatedFinancialFieldKeys,
+        })}
         {state.financial.voluntarySavings === 'Si' ? (
           <Field label="Valor mensual del ahorro voluntario" required>
             <TextInput

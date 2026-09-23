@@ -26,4 +26,16 @@ class RegisterApplicationDocumentRequest extends FormRequest
             'file' => ['required', 'file', 'max:5120', 'mimetypes:application/pdf'],
         ];
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'file.uploaded' => 'El servidor no pudo recibir el PDF. Verifica que no supere 5 MB e intenta nuevamente.',
+            'file.max' => 'El PDF no debe superar 5 MB.',
+            'file.mimetypes' => 'El archivo debe ser un PDF valido.',
+        ];
+    }
 }

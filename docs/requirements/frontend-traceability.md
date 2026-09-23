@@ -6,7 +6,7 @@ Esta matriz conecta la especificacion funcional con el codigo, las pruebas y la 
 
 Fuente funcional: `02_GUIA_EQUIPO_FRONTEND_WEB_AFILIACION_PORTAL_V2.docx`, version 2.0 del 15 de agosto de 2026.
 
-Ultima revision tecnica: 11 de septiembre de 2026, rama de trabajo frontend.
+Ultima revision tecnica: 23 de septiembre de 2026, rama de trabajo frontend.
 
 ## Estados permitidos
 
@@ -49,7 +49,7 @@ El carrusel estatico de tres imagenes existe, pero permanece `En curso` hasta re
 | FE-AFI-002 | Inicio o recuperacion de borrador | Implementado | La vista reutiliza por 24 horas el borrador de sesion del mismo navegador, consulta el borrador firmado en Backend y repuebla secciones/documentos ya guardados; no persiste datos personales en storage del frontend, requiere token tecnico de borrador y el Backend invalida el token al enviar. |
 | FE-AFI-003 | Datos personales | Bloqueado | Esquema de campos aprobado. |
 | FE-AFI-004 | Informacion laboral | Bloqueado | Campos y reglas aprobados. |
-| FE-AFI-005 | Informacion financiera | Bloqueado | Campos y reglas aprobados. |
+| FE-AFI-005 | Informacion financiera | En curso | Los montos editables admiten correccion normal; ingresos, egresos y patrimonio se calculan automaticamente y Backend rechaza totales incoherentes. Falta aprobacion institucional final de campos y reglas. |
 | FE-AFI-006 | Beneficiarios | Bloqueado | Campos condicionales aprobados. |
 | FE-AFI-006A | SARLAFT | Bloqueado | Declaraciones, campos y tratamiento aprobados. |
 | FE-AFI-007 | Documentos | Implementado | Formulario exige PDF de identidad por ambos lados y certificado laboral; Backend valida PDF privado de hasta 5MB por documento. Falta validacion visual final con FONASIN. |
@@ -65,7 +65,7 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 
 | ID | Requisito | Estado | Bloqueador o siguiente paso |
 |---|---|---|---|
-| FE-ADM-001 a FE-ADM-009 | Gestion de afiliaciones y asociados | En curso | `/admin-fonasin`, endpoints paginados `GET /admin/affiliation-applications` y `GET /admin/associates`, acciones de revision, carga de libranza externa, habilitacion de asociado, deteccion de conflictos de identidad, alta manual, desactivacion logica e invalidacion de sesiones. `reviewer` conserva consulta, inicio de revision y solicitud de correccion; frontend oculta sus decisiones finales y controles de mutacion. Estas acciones son exclusivas de `admin` y estan cubiertas por pruebas HTTP y de presentacion. Incluye ficha administrativa consolidada, busqueda HMAC por cedula en cuerpo POST, formulario vigente, cartera, aportes/ahorros y exportacion XLSX privada solo para admin. Falta validacion visual final con FONASIN. |
+| FE-ADM-001 a FE-ADM-009 | Gestion de afiliaciones y asociados | En curso | `/admin-fonasin`, endpoints paginados `GET /admin/affiliation-applications` y `GET /admin/associates`, acciones de revision, carga de libranza externa, habilitacion de asociado, deteccion de conflictos de identidad, alta manual, desactivacion logica e invalidacion de sesiones. `reviewer` conserva consulta, inicio de revision y solicitud de correccion; frontend oculta sus decisiones finales y controles de mutacion. Estas acciones son exclusivas de `admin` y estan cubiertas por pruebas HTTP y de presentacion. El detalle administrativo muestra las secciones descifradas de solicitudes pendientes y carga los PDF protegidos mediante sesion sin debilitar las cabeceras anti-iframe. Incluye ficha administrativa consolidada, busqueda HMAC por cedula en cuerpo POST, formulario vigente, cartera, aportes/ahorros y exportacion XLSX privada solo para admin. Falta validacion visual final con FONASIN. |
 | FE-ADM-009A | Gestion manual de creditos | En curso | `/admin-fonasin`, endpoints `GET/POST/PATCH /admin/credits`, listado paginado, lineas cerradas de credito, solo asociados activos, transiciones basicas de estado y archivado logico. `reviewer` accede al listado en modo consulta; frontend oculta crear, editar, archivar e importar, acciones exclusivas de `admin` cubiertas por pruebas de permisos. Falta validacion visual final con FONASIN. |
 | FE-ADM-010 | Importar cartera XLSX | En curso | Frontend y Backend usan la estructura operativa de ocho columnas: documento, nombre, linea, pagare, saldos, cuota y ultimo pago. El pagare se cifra y se identifica por HMAC; la carga valida identidad, formatos colombianos, duplicados y audita cambios. Falta aprobacion institucional final de la plantilla. |
 | FE-ADM-010A | Importar aportes y ahorros XLSX | En curso | Frontend ofrece plantillas y cargas separadas para aporte ordinario, ahorro voluntario y ahorro permanente, cada una con documento, nombre, valor mensual, saldo y ultimo pago. Backend conserva historial, revierte correcciones y reconstruye los tres saldos sin depender del orden del archivo. Falta aprobacion institucional final y regla definitiva de conciliacion. |

@@ -202,6 +202,44 @@ class AffiliationApplicationHttpTest extends TestCase
         ]);
     }
 
+    public function test_it_rejects_submission_when_principal_income_differs_from_monthly_salary(): void
+    {
+        Storage::fake('local');
+        $application = AffiliationApplication::query()->forceCreate([
+            'status' => AffiliationApplicationStatus::Draft->value,
+            'current_step' => AffiliationApplicationStep::Personal->value,
+        ]);
+        $headers = $this->protectDraft($application);
+        $this->completeSections($application);
+
+        $financial = $this->validSectionPayload(AffiliationApplicationStep::Financial);
+        $financial['principalIncome'] = '2400000';
+        $financial['totalIncome'] = '2400000';
+        app(SaveApplicationSection::class)(
+            application: $application,
+            section: AffiliationApplicationStep::Financial,
+            schemaVersion: 1,
+            data: $financial,
+            completedAt: now()->startOfSecond(),
+        );
+
+        $this->uploadRequiredDocuments($application);
+        $this->acceptRequiredConsents($application, '2026-01');
+
+        $this->postJson($this->signedSubmitUrl($application), [
+            'policy_version' => '2026-01',
+        ], $headers)
+            ->assertUnprocessable()
+            ->assertJsonFragment([
+                'message' => 'La seccion [financial] tiene un campo invalido [ingreso principal]: debe coincidir con el salario mensual informado en la seccion laboral.',
+            ]);
+
+        $this->assertDatabaseHas('affiliation_applications', [
+            'id' => $application->id,
+            'status' => AffiliationApplicationStatus::Draft->value,
+        ]);
+    }
+
     public function test_data_update_submits_without_uploads_and_generates_only_updated_form(): void
     {
         Storage::fake('local');
@@ -390,7 +428,7 @@ class AffiliationApplicationHttpTest extends TestCase
             'completed' => true,
         ], $headers)
             ->assertUnprocessable()
-            ->assertJsonFragment(['message' => 'La seccion [employment] tiene un campo invalido [salario mensual]: debe estar entre $1.750.905 y $100.000.000.']);
+            ->assertJsonFragment(['message' => 'La seccion [employment] tiene un campo invalido [salario mensual]: debe estar entre $1.750.905 y $10.000.000.000.']);
     }
 
     public function test_it_completes_the_public_affiliation_flow_over_http(): void

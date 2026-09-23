@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   ClipboardCheck,
   Download,
+  ExternalLink,
   FileText,
   Loader2,
   LogOut,
@@ -2552,6 +2553,37 @@ export function ApplicationDetail({
         <DocumentPreview document={previewDocument} onClose={() => setPreviewDocument(null)} />
       </section>
 
+      <section className="rounded-2xl border border-slate-200 bg-white p-4">
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Datos guardados</p>
+        <h3 className="mt-1 text-lg font-black text-slate-950">Informacion completa del formulario</h3>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Campos descifrados para consulta administrativa de esta solicitud.
+        </p>
+        {application.sections.length === 0 ? (
+          <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm font-semibold text-slate-600">
+            Esta solicitud no tiene secciones guardadas.
+          </p>
+        ) : (
+          <div className="mt-4 space-y-6">
+            {application.sections.map((section) => (
+              <div key={section.id}>
+                <h4 className="border-b border-emerald-200 pb-2 text-sm font-black uppercase text-emerald-800">
+                  {profileSectionLabel(section.section)}
+                </h4>
+                <dl className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {flattenProfileValues(section.data).map(([key, value]) => (
+                    <div key={key} className="min-w-0 border-b border-slate-100 pb-2">
+                      <dt className="text-xs font-bold text-slate-500">{humanizeProfileKey(key)}</dt>
+                      <dd className="mt-1 break-words text-sm font-semibold text-slate-900">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       {isFormOnly && canManage ? (
         <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Aplicar cambios</p>
@@ -2685,7 +2717,54 @@ export function ApplicationDetail({
 }
 
 function DocumentPreview({ document, onClose }: { document: AdminAffiliationDocument | null; onClose: () => void }) {
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!document) {
+      setObjectUrl(null);
+      setError(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    let generatedUrl: string | null = null;
+    setLoading(true);
+    setError(null);
+    setObjectUrl(null);
+
+    void fetch(adminAffiliationDocumentUrl(document.links.preview), {
+      credentials: 'include',
+      headers: { Accept: 'application/pdf' },
+      signal: controller.signal,
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error('No fue posible cargar el documento protegido.');
+        return response.blob();
+      })
+      .then((blob) => {
+        generatedUrl = URL.createObjectURL(blob);
+        setObjectUrl(generatedUrl);
+      })
+      .catch((caught: unknown) => {
+        if (!controller.signal.aborted) {
+          setError(caught instanceof Error ? caught.message : 'No fue posible cargar el documento protegido.');
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+
+    return () => {
+      controller.abort();
+      if (generatedUrl) URL.revokeObjectURL(generatedUrl);
+    };
+  }, [document]);
+
   if (!document) return null;
+
+  const previewUrl = adminAffiliationDocumentUrl(document.links.preview);
 
   return (
     <div className="mt-4 rounded-2xl border border-emerald-200 bg-white p-3">
@@ -2694,19 +2773,37 @@ function DocumentPreview({ document, onClose }: { document: AdminAffiliationDocu
           <p className="text-sm font-black text-slate-950">{documentLabel(document.document_type)}</p>
           <p className="text-xs font-semibold text-slate-500">{document.original_filename}</p>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50"
-        >
-          Cerrar visor
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href={previewUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 px-3 py-2 text-xs font-black text-emerald-800 transition hover:bg-emerald-50"
+          >
+            <ExternalLink size={14} /> Abrir en otra pestana
+          </a>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50"
+          >
+            Cerrar visor
+          </button>
+        </div>
       </div>
-      <iframe
-        title={documentLabel(document.document_type)}
-        src={adminAffiliationDocumentUrl(document.links.preview)}
-        className="mt-3 h-[520px] w-full rounded-xl border border-slate-200 bg-slate-100"
-      />
+      {loading ? (
+        <div className="mt-3 flex h-48 items-center justify-center gap-3 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-600">
+          <Loader2 className="animate-spin" size={18} /> Cargando documento protegido
+        </div>
+      ) : error ? (
+        <p className="mt-3 rounded-xl border border-red-100 bg-red-50 px-4 py-4 text-sm font-semibold text-red-700">{error}</p>
+      ) : objectUrl ? (
+        <iframe
+          title={documentLabel(document.document_type)}
+          src={objectUrl}
+          className="mt-3 h-[520px] w-full rounded-xl border border-slate-200 bg-slate-100"
+        />
+      ) : null}
     </div>
   );
 }
