@@ -108,7 +108,17 @@ const documentLabels: Record<string, string> = {
   signed_payroll_authorization: 'Libranza firmada externa',
 };
 
-const creditLineOptions = ['FONALIBRE', 'FONAPEN', 'FONAPRIMA', 'FONAROTATIVO', 'FONAPORTES'];
+const creditLineOptions = [
+  'FONALIBRE',
+  'FONAPEN',
+  'FONAPRIMA',
+  'FONAROTATIVO',
+  'FONAPORTES',
+  'CONVENIOS',
+  'CREDIRAPIDO',
+  'LIBRE INVERSION',
+  'APORTES',
+];
 const defaultImportMeta: AdminImportBatchPage['meta'] = {
   current_page: 1,
   last_page: 1,

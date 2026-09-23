@@ -26,7 +26,7 @@ type PrivateDataState = 'idle' | 'loading' | 'ready' | 'error' | 'forbidden' | '
 type CreditsState = PrivateDataState;
 type ContributionsState = PrivateDataState;
 type AffiliationState = PrivateDataState;
-type PortalTab = 'statement' | 'contributions' | 'form';
+type PortalTab = 'statement' | 'form';
 const AFFILIATION_DRAFT_STORAGE_KEY = 'fonasin.portal.affiliation.draft.v1';
 const AFFILIATION_DRAFT_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -280,7 +280,7 @@ export default function PortalAsociado() {
           if (shouldOpenProfileCompletion(currentUser)) {
             await openProfileCompletion();
           } else {
-            await loadCredits();
+            await Promise.all([loadCredits(), loadContributions()]);
           }
         }
       } catch {
@@ -293,17 +293,6 @@ export default function PortalAsociado() {
       active = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (
-      sessionState === 'authenticated'
-      && !user?.must_change_password
-      && activeTab === 'contributions'
-      && contributionsState === 'idle'
-    ) {
-      void loadContributions();
-    }
-  }, [activeTab, contributionsState, sessionState, user?.must_change_password]);
 
   useEffect(() => {
     if (
@@ -332,7 +321,7 @@ export default function PortalAsociado() {
         if (shouldOpenProfileCompletion(loggedUser)) {
           await openProfileCompletion();
         } else {
-          await loadCredits();
+          await Promise.all([loadCredits(), loadContributions()]);
         }
       }
     } catch (caught) {
@@ -385,7 +374,7 @@ export default function PortalAsociado() {
     if (shouldOpenProfileCompletion(updatedUser)) {
       await openProfileCompletion();
     } else {
-      await loadCredits();
+      await Promise.all([loadCredits(), loadContributions()]);
     }
   }
 
@@ -584,10 +573,9 @@ export default function PortalAsociado() {
 
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 p-3">
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid gap-2 sm:grid-cols-2">
               {[
                 { id: 'statement' as const, label: 'Estado de cuenta', icon: CreditCard },
-                { id: 'contributions' as const, label: 'Aportes', icon: PiggyBank },
                 { id: 'form' as const, label: 'Formulario', icon: FileText },
               ].map((tab) => {
                 const Icon = tab.icon;
@@ -617,11 +605,11 @@ export default function PortalAsociado() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Estado de cuenta</p>
-                  <h2 className="mt-1 font-heading text-2xl font-black text-fonasin-deep sm:text-3xl">Creditos registrados</h2>
+                  <h2 className="mt-1 font-heading text-2xl font-black text-fonasin-deep sm:text-3xl">Creditos, aportes y ahorros</h2>
                 </div>
                 <button
                   type="button"
-                  onClick={loadCredits}
+                  onClick={() => void Promise.all([loadCredits(), loadContributions()])}
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-fonasin-green/20 bg-fonasin-surface px-4 py-2.5 text-sm font-bold text-fonasin-green transition hover:bg-fonasin-lime/20 focus-ring"
                 >
                   <RefreshCw size={16} />
@@ -687,7 +675,7 @@ export default function PortalAsociado() {
             </div>
           ) : null}
 
-          {activeTab === 'contributions' ? (
+          {activeTab === 'statement' ? (
             <div className="p-5 sm:p-7">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
