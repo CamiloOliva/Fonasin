@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateFinancialAmounts } from './financialCalculations';
+import { calculateFinancialAmounts, synchronizePrincipalIncome } from './financialCalculations';
 
 const baseAmounts = {
   principalIncome: '',
@@ -47,5 +47,16 @@ describe('calculateFinancialAmounts', () => {
       assetsValue: '1000',
       liabilitiesValue: '1500',
     }).equityValue).toBe('-500');
+  });
+
+  it('synchronizes principal income from monthly salary and recalculates total income', () => {
+    expect(synchronizePrincipalIncome({
+      ...baseAmounts,
+      principalIncome: '1000000',
+      otherIncome: '500000',
+    }, '2500000')).toMatchObject({
+      principalIncome: '2500000',
+      totalIncome: '3000000',
+    });
   });
 });

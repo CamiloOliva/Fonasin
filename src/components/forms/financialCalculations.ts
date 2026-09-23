@@ -24,3 +24,10 @@ export function calculateFinancialAmounts<T extends FinancialAmounts>(values: T)
     equityValue: String(amount(values.assetsValue) - amount(values.liabilitiesValue)),
   };
 }
+
+export function synchronizePrincipalIncome<T extends FinancialAmounts>(values: T, monthlySalary: string): T {
+  return calculateFinancialAmounts({
+    ...values,
+    principalIncome: monthlySalary,
+  });
+}

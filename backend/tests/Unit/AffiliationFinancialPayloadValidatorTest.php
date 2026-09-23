@@ -35,6 +35,53 @@ class AffiliationFinancialPayloadValidatorTest extends TestCase
         );
     }
 
+    public function test_it_accepts_the_ten_billion_money_limit(): void
+    {
+        $payload = $this->financialPayload([
+            'principalIncome' => '10000000000',
+            'otherIncome' => '0',
+            'totalIncome' => '10000000000',
+            'assetsValue' => '10000000000',
+            'liabilitiesValue' => '0',
+            'equityValue' => '10000000000',
+        ]);
+
+        (new AffiliationSectionPayloadValidator)->validateCompleted(
+            AffiliationApplicationStep::Financial,
+            $payload,
+        );
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function test_it_rejects_money_above_ten_billion(): void
+    {
+        $payload = $this->financialPayload([
+            'principalIncome' => '10000000001',
+            'otherIncome' => '0',
+            'totalIncome' => '10000000001',
+        ]);
+
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('supera el limite de monto permitido');
+
+        (new AffiliationSectionPayloadValidator)->validateCompleted(
+            AffiliationApplicationStep::Financial,
+            $payload,
+        );
+    }
+
+    public function test_it_requires_principal_income_to_match_monthly_salary(): void
+    {
+        $this->expectException(CannotSaveApplicationSection::class);
+        $this->expectExceptionMessage('debe coincidir con el salario mensual');
+
+        (new AffiliationSectionPayloadValidator)->validateIncomeConsistency(
+            ['monthlySalary' => '2500000'],
+            self::financialPayload(['principalIncome' => '2400000']),
+        );
+    }
+
     public static function validFinancialPayloads(): array
     {
         return [

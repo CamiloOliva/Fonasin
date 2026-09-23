@@ -12,7 +12,7 @@ class AffiliationSectionPayloadValidator
 
     private const MIN_MONTHLY_SALARY = 1750905;
 
-    private const MAX_MONEY_VALUE = 100000000;
+    private const MAX_MONEY_VALUE = 10000000000;
 
     /**
      * @param  array<string, mixed>  $data
@@ -27,6 +27,24 @@ class AffiliationSectionPayloadValidator
             AffiliationApplicationStep::Sarlaft => $this->validateSarlaft($section, $data),
             default => null,
         };
+    }
+
+    /**
+     * @param  array<string, mixed>  $employment
+     * @param  array<string, mixed>  $financial
+     */
+    public function validateIncomeConsistency(array $employment, array $financial): void
+    {
+        $monthlySalary = $this->numberValue($employment['monthlySalary'] ?? null);
+        $principalIncome = $this->numberValue($financial['principalIncome'] ?? null);
+
+        if ($monthlySalary === null || $principalIncome === null || abs($monthlySalary - $principalIncome) > 0.00001) {
+            throw CannotSaveApplicationSection::invalidField(
+                AffiliationApplicationStep::Financial->value,
+                'principalIncome',
+                'debe coincidir con el salario mensual informado en la seccion laboral',
+            );
+        }
     }
 
     /**

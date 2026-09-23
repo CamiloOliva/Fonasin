@@ -4,13 +4,16 @@ namespace App\Application\Affiliation\UseCases;
 
 use App\Application\Affiliation\Exceptions\CannotSubmitAffiliationApplication;
 use App\Application\Audit\UseCases\RecordAuditEvent;
+use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
 use App\Domain\Affiliation\Support\AffiliationApplicationStateMachine;
+use App\Domain\Affiliation\Support\AffiliationSectionPayloadValidator;
 use App\Domain\Audit\Enums\AuditActorType;
 use App\Domain\Audit\Enums\AuditModule;
 use App\Models\AffiliationApplication;
+use App\Models\ApplicationSection;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +28,8 @@ class SubmitAffiliationApplication
         private readonly VerifyRequiredConsents $verifyRequiredConsents,
         private readonly GenerateAffiliationSubmissionDocuments $generateDocuments,
         private readonly RecordAuditEvent $recordAuditEvent,
+        private readonly EncryptsSensitiveData $cipher,
+        private readonly AffiliationSectionPayloadValidator $sectionValidator,
     ) {}
 
     public function __invoke(
@@ -51,6 +56,8 @@ class SubmitAffiliationApplication
             if ($missingSections !== []) {
                 throw CannotSubmitAffiliationApplication::missingSections($missingSections);
             }
+
+            $this->validateIncomeConsistency($application);
 
             $missingDocuments = $application->isFormOnly()
                 ? []
@@ -109,5 +116,30 @@ class SubmitAffiliationApplication
 
             return $application->refresh();
         });
+    }
+
+    private function validateIncomeConsistency(AffiliationApplication $application): void
+    {
+        $sections = $application->sections()
+            ->whereIn('section', [
+                AffiliationApplicationStep::Employment->value,
+                AffiliationApplicationStep::Financial->value,
+            ])
+            ->get()
+            ->keyBy('section');
+
+        /** @var ApplicationSection|null $employment */
+        $employment = $sections->get(AffiliationApplicationStep::Employment->value);
+        /** @var ApplicationSection|null $financial */
+        $financial = $sections->get(AffiliationApplicationStep::Financial->value);
+
+        if (! $employment || ! $financial) {
+            return;
+        }
+
+        $this->sectionValidator->validateIncomeConsistency(
+            $this->cipher->decryptArray((string) $employment->getAttribute('data_encrypted')),
+            $this->cipher->decryptArray((string) $financial->getAttribute('data_encrypted')),
+        );
     }
 }
