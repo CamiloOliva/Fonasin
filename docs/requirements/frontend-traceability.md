@@ -84,13 +84,14 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 | FE-OBQ-003A | Aportes y ahorros actuales | OBQ | En curso | Frontend representa `module_disabled`, `empty` y `available` dentro del estado de cuenta unificado. Backend expone `GET /portal/contributions` y `GET /portal/account-statement`. |
 | FE-OBQ-004 | Aislamiento por sesion | OBQ | Implementado | Las consultas privadas resuelven el asociado desde la sesion y bloquean asociado inactivo; no se acepta `associate_id` del navegador. |
 | FE-EXT-004 | Actualizacion de datos | EXT | En curso | El acceso publico "Actualizar datos" envia al login del portal y conserva la intencion para abrir directamente el flujo autenticado. El asociado crea o reutiliza un borrador temporal por 24 horas identificado como `data_update`; las altas operativas sin formulario usan `profile_completion`. Los flujos privados usan rutas y almacenamiento de sesion separados de `/afiliacion`, bloquean cambios de identidad y cargas documentales, generan solo el formulario y permiten al backoffice aplicarlo sin nueva libranza. Falta aprobacion visual final y definir retencion historica. |
+| FE-EXT-004A | Solicitud de ahorro voluntario | EXT | Implementado | El acceso publico lleva al login y abre una pantalla privada independiente de afiliacion. El asociado registra el monto mensual y su aceptacion; MariaDB conserva la solicitud, storage privado conserva el PDF y administracion puede aprobar o rechazar con auditoria. |
 | FE-EXT-005 | Simulador | EXT | Pendiente | No iniciar sin formulas y advertencias aprobadas. |
 | FE-EXT-006 | Documentos privados | EXT | En curso | Storage privado y vista temporal autorizada para documentos visibles al asociado; la libranza no se muestra en el portal asociado. |
 
 ## Pendientes explicitamente fuera de la entrega actual
 
 - Aportes del asociado: existe saldo separado, consulta privada y carga XLSX; faltan datos representativos y aprobacion institucional final.
-- Ahorro permanente y ahorro voluntario: existen saldos e importaciones separadas; falta regla final de conciliacion.
+- Ahorro permanente y ahorro voluntario: existen saldos e importaciones separadas. La apertura de ahorro voluntario cuenta con solicitud y autorizacion privadas; falta la regla final de conciliacion posterior a su aprobacion.
 - Importacion de Excel/XLSX: implementada para cartera, aportes y ambos ahorros con plantillas separadas, validaciones, auditoria, storage privado y reporte por fila; falta aprobacion institucional final.
 - Retencion automatica de FPQRS, documentos, solicitudes y auditoria: bloqueada hasta aprobacion juridica y operativa.
 - Rotacion operativa de `DATA_HASH_PEPPER`: pendiente de procedimiento formal. Los hashes sensibles de documento, correo, IP y agente de usuario ya usan HMAC-SHA256 y requieren pepper estable por entorno.

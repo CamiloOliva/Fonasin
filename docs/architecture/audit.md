@@ -87,3 +87,4 @@ El periodo de retencion se definira con FONASIN y su asesoria juridica. Hasta co
 ## Evolucion
 
 La primera version usa auditoria desde la aplicacion. Si se habilitan integraciones, acceso SQL de terceros o requerimientos de inmutabilidad reforzada, se evaluan triggers MariaDB, privilegios de solo insercion, exportacion a almacenamiento inmutable y alertas.
+- Las solicitudes de ahorro voluntario registran envio, consulta, revision y visualizacion de su autorizacion privada. La auditoria no guarda el numero de documento ni el contenido del PDF.

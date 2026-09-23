@@ -8,16 +8,19 @@ import {
   fetchPortalAffiliation,
   fetchPortalContributions,
   fetchPortalCredits,
+  fetchPortalVoluntarySavingsRequests,
   loginPortal,
   logoutPortal,
   portalDocumentPreviewUrl,
   startPortalAffiliationUpdate,
+  submitPortalVoluntarySavingsRequest,
   type PortalAffiliation,
   type PortalAffiliationDocument,
   type PortalAffiliationUpdateDraft,
   type PortalContributions,
   type PortalCredit,
   type PortalUser,
+  type PortalVoluntarySavingsRequest,
   PortalServiceError,
 } from '../../services/portalService';
 
@@ -26,7 +29,7 @@ type PrivateDataState = 'idle' | 'loading' | 'ready' | 'error' | 'forbidden' | '
 type CreditsState = PrivateDataState;
 type ContributionsState = PrivateDataState;
 type AffiliationState = PrivateDataState;
-type PortalTab = 'statement' | 'form';
+type PortalTab = 'statement' | 'savings' | 'form';
 const AFFILIATION_DRAFT_STORAGE_KEY = 'fonasin.portal.affiliation.draft.v1';
 const AFFILIATION_DRAFT_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -67,6 +70,16 @@ function movementStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     registered: 'Registrado',
     reversed: 'Reversado',
+  };
+
+  return labels[status] ?? status;
+}
+
+function savingsRequestStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    submitted: 'Pendiente de revision',
+    approved: 'Aprobada',
+    rejected: 'Rechazada',
   };
 
   return labels[status] ?? status;
@@ -199,19 +212,25 @@ export default function PortalAsociado() {
   const navigate = useNavigate();
   const location = useLocation();
   const wantsDataUpdate = new URLSearchParams(location.search).get('intent') === 'actualizar-datos';
+  const wantsVoluntarySavings = new URLSearchParams(location.search).get('intent') === 'ahorro-voluntario';
   const [sessionState, setSessionState] = useState<SessionState>('checking');
   const [creditsState, setCreditsState] = useState<CreditsState>('idle');
   const [contributionsState, setContributionsState] = useState<ContributionsState>('idle');
   const [affiliationState, setAffiliationState] = useState<AffiliationState>('idle');
+  const [savingsRequestState, setSavingsRequestState] = useState<PrivateDataState>('idle');
   const [user, setUser] = useState<PortalUser | null>(null);
   const [credits, setCredits] = useState<PortalCredit[]>([]);
   const [contributions, setContributions] = useState<PortalContributions | null>(null);
   const [affiliation, setAffiliation] = useState<PortalAffiliation | null>(null);
+  const [savingsRequests, setSavingsRequests] = useState<PortalVoluntarySavingsRequest[]>([]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
-  const [activeTab, setActiveTab] = useState<PortalTab>('statement');
+  const [activeTab, setActiveTab] = useState<PortalTab>(wantsVoluntarySavings ? 'savings' : 'statement');
   const [startingUpdate, setStartingUpdate] = useState(false);
+  const [savingsAmount, setSavingsAmount] = useState('');
+  const [savingsAccepted, setSavingsAccepted] = useState(false);
+  const [submittingSavings, setSubmittingSavings] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -222,6 +241,10 @@ export default function PortalAsociado() {
   const totalInitialBalance = useMemo(
     () => credits.reduce((total, credit) => total + Number.parseFloat(credit.initial_balance || '0'), 0),
     [credits],
+  );
+  const hasPendingSavingsRequest = useMemo(
+    () => savingsRequests.some((request) => request.status === 'submitted'),
+    [savingsRequests],
   );
 
   async function loadCredits() {
@@ -269,6 +292,20 @@ export default function PortalAsociado() {
     }
   }
 
+  async function loadSavingsRequests() {
+    setSavingsRequestState('loading');
+    setError(null);
+
+    try {
+      setSavingsRequests(await fetchPortalVoluntarySavingsRequests());
+      setSavingsRequestState('ready');
+    } catch (caught) {
+      setSavingsRequests([]);
+      setSavingsRequestState(privateDataErrorState(caught));
+      setError(caught instanceof Error ? caught.message : 'No fue posible cargar tus solicitudes de ahorro voluntario.');
+    }
+  }
+
   useEffect(() => {
     let active = true;
 
@@ -309,6 +346,17 @@ export default function PortalAsociado() {
     }
   }, [activeTab, affiliationState, sessionState, user?.must_change_password]);
 
+  useEffect(() => {
+    if (
+      sessionState === 'authenticated'
+      && !user?.must_change_password
+      && activeTab === 'savings'
+      && savingsRequestState === 'idle'
+    ) {
+      void loadSavingsRequests();
+    }
+  }, [activeTab, savingsRequestState, sessionState, user?.must_change_password]);
+
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -336,10 +384,12 @@ export default function PortalAsociado() {
       setCredits([]);
       setContributions(null);
       setAffiliation(null);
+      setSavingsRequests([]);
       setSessionState('guest');
       setCreditsState('idle');
       setContributionsState('idle');
       setAffiliationState('idle');
+      setSavingsRequestState('idle');
       setError(caught instanceof Error ? caught.message : 'No fue posible iniciar sesion.');
     }
   }
@@ -359,6 +409,7 @@ export default function PortalAsociado() {
     setCredits([]);
     setContributions(null);
     setAffiliation(null);
+    setSavingsRequests([]);
     setEmail('');
     setPassword('');
     setRemember(false);
@@ -366,6 +417,7 @@ export default function PortalAsociado() {
     setCreditsState('idle');
     setContributionsState('idle');
     setAffiliationState('idle');
+    setSavingsRequestState('idle');
     setMessage('Sesion cerrada.');
   }
 
@@ -412,6 +464,26 @@ export default function PortalAsociado() {
       setError(caught instanceof Error ? caught.message : 'No fue posible preparar la actualizacion de datos.');
     } finally {
       setStartingUpdate(false);
+    }
+  }
+
+  async function handleSubmitSavingsRequest(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setMessage(null);
+    setSubmittingSavings(true);
+
+    try {
+      const created = await submitPortalVoluntarySavingsRequest(savingsAmount);
+      setSavingsRequests((current) => [created, ...current]);
+      setSavingsAmount('');
+      setSavingsAccepted(false);
+      setSavingsRequestState('ready');
+      setMessage('Solicitud de ahorro voluntario enviada correctamente.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible enviar la solicitud de ahorro voluntario.');
+    } finally {
+      setSubmittingSavings(false);
     }
   }
   if (sessionState === 'checking') {
@@ -581,9 +653,10 @@ export default function PortalAsociado() {
 
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 p-3">
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2 sm:grid-cols-3">
               {[
                 { id: 'statement' as const, label: 'Estado de cuenta', icon: CreditCard },
+                { id: 'savings' as const, label: 'Ahorro voluntario', icon: PiggyBank },
                 { id: 'form' as const, label: 'Formulario', icon: FileText },
               ].map((tab) => {
                 const Icon = tab.icon;
@@ -782,6 +855,119 @@ export default function PortalAsociado() {
                   </div>
                 </div>
               ) : null}
+            </div>
+          ) : null}
+
+          {activeTab === 'savings' ? (
+            <div className="p-5 sm:p-7">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Solicitud privada</p>
+                  <h2 className="mt-1 font-heading text-2xl font-black text-fonasin-deep sm:text-3xl">Ahorro voluntario</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={loadSavingsRequests}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-fonasin-green/20 bg-fonasin-surface px-4 py-2.5 text-sm font-bold text-fonasin-green transition hover:bg-fonasin-lime/20 focus-ring"
+                >
+                  <RefreshCw size={16} />
+                  Actualizar
+                </button>
+              </div>
+
+              {savingsRequestState === 'loading' ? (
+                <div className="mt-5 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600">
+                  <Loader2 className="animate-spin" size={18} />
+                  Cargando solicitudes
+                </div>
+              ) : null}
+
+              {savingsRequestState === 'error' || savingsRequestState === 'forbidden' || savingsRequestState === 'expired' ? (
+                <div className="mt-5 rounded-xl border border-amber-100 bg-amber-50 px-4 py-4 text-sm font-semibold text-amber-800">
+                  {error ?? 'No fue posible consultar las solicitudes de ahorro voluntario.'}
+                </div>
+              ) : null}
+
+              <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+                <form onSubmit={handleSubmitSavingsRequest} className="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
+                  <p className="font-black text-fonasin-deep">Nueva autorizacion</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Indica el valor que deseas ahorrar mensualmente. Se generara una autorizacion privada para revision de FONASIN.
+                  </p>
+                  <label className="mt-5 block">
+                    <span className="text-sm font-bold text-slate-800">Valor mensual</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="10000000000"
+                      step="1"
+                      value={savingsAmount}
+                      onChange={(event) => setSavingsAmount(event.target.value)}
+                      disabled={hasPendingSavingsRequest}
+                      required
+                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-bold text-slate-950 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 disabled:bg-slate-100"
+                    />
+                  </label>
+                  <label className="mt-4 flex items-start gap-3 text-sm font-semibold leading-6 text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={savingsAccepted}
+                      onChange={(event) => setSavingsAccepted(event.target.checked)}
+                      disabled={hasPendingSavingsRequest}
+                      required
+                      className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    Autorizo el descuento mensual por nomina y la generacion del documento para este tramite.
+                  </label>
+                  {hasPendingSavingsRequest ? (
+                    <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                      Ya tienes una solicitud pendiente de revision.
+                    </p>
+                  ) : null}
+                  <button
+                    type="submit"
+                    disabled={submittingSavings || hasPendingSavingsRequest || !savingsAccepted}
+                    className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-fonasin-green px-4 py-3 text-sm font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 focus-ring"
+                  >
+                    {submittingSavings ? <Loader2 className="animate-spin" size={17} /> : <FileText size={17} />}
+                    {submittingSavings ? 'Generando autorizacion' : 'Enviar solicitud'}
+                  </button>
+                </form>
+
+                <div>
+                  <p className="font-black text-slate-950">Solicitudes enviadas</p>
+                  {savingsRequestState === 'ready' && savingsRequests.length === 0 ? (
+                    <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-600">
+                      Aun no tienes solicitudes de ahorro voluntario.
+                    </div>
+                  ) : null}
+                  <div className="mt-3 space-y-3">
+                    {savingsRequests.map((request) => (
+                      <article key={request.id} className="rounded-xl border border-slate-200 bg-white p-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <p className="text-lg font-black text-fonasin-deep">{formatMoney(request.monthly_amount)} mensuales</p>
+                            <p className="mt-1 text-xs font-semibold text-slate-500">Enviada: {formatPortalDate(request.submitted_at)}</p>
+                          </div>
+                          <span className="w-fit rounded-full bg-fonasin-surface px-3 py-1 text-xs font-bold text-fonasin-green">
+                            {savingsRequestStatusLabel(request.status)}
+                          </span>
+                        </div>
+                        {request.review_notes ? <p className="mt-3 text-sm text-slate-600">{request.review_notes}</p> : null}
+                        <a
+                          href={portalDocumentPreviewUrl(request.links.authorization)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-black text-emerald-700 hover:bg-emerald-100 focus-ring"
+                        >
+                          <FileText size={15} />
+                          Ver autorizacion
+                        </a>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           ) : null}
 

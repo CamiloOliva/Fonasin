@@ -21,10 +21,12 @@ vi.mock('../services/portalService', () => ({
   fetchPortalAffiliation: vi.fn().mockResolvedValue(null),
   fetchPortalContributions: vi.fn().mockResolvedValue({ state: 'module_disabled', account: null, movements: [] }),
   fetchPortalCredits: vi.fn().mockResolvedValue([]),
+  fetchPortalVoluntarySavingsRequests: vi.fn().mockResolvedValue([]),
   loginPortal: vi.fn(),
   logoutPortal: vi.fn(),
   portalDocumentPreviewUrl: vi.fn((path: string) => path),
   startPortalAffiliationUpdate: vi.fn(),
+  submitPortalVoluntarySavingsRequest: vi.fn(),
 }));
 
 vi.mock('../services/adminAffiliationService', () => ({
@@ -57,11 +59,14 @@ vi.mock('../services/adminCreditService', () => ({
 }));
 
 vi.mock('../services/adminContributionService', () => ({
+  adminContributionDocumentUrl: vi.fn((path: string) => path),
   fetchAdminContributionAccounts: vi.fn().mockResolvedValue({
     data: [],
     meta: { current_page: 1, last_page: 1, per_page: 25, total: 0 },
   }),
   fetchAdminContributionMovements: vi.fn(),
+  fetchAdminVoluntarySavingsRequests: vi.fn().mockResolvedValue([]),
+  reviewAdminVoluntarySavingsRequest: vi.fn(),
 }));
 
 vi.mock('../services/passwordRecoveryService', () => ({
@@ -248,6 +253,21 @@ describe('AppRoutes', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: /actualizar datos/i })).toBeInTheDocument();
     expect(portalService.startPortalAffiliationUpdate).toHaveBeenCalled();
+  });
+
+  it('opens voluntary savings outside the affiliation flow', async () => {
+    vi.mocked(portalService.currentPortalUser).mockResolvedValue({
+      id: 'associate-user',
+      email: 'associate@fonasin.test',
+      roles: ['associate'],
+      must_change_password: false,
+    });
+
+    renderRoute('/portal-asociado?intent=ahorro-voluntario');
+
+    expect(await screen.findByRole('heading', { level: 2, name: /ahorro voluntario/i })).toBeInTheDocument();
+    expect(portalService.fetchPortalVoluntarySavingsRequests).toHaveBeenCalled();
+    expect(portalService.startPortalAffiliationUpdate).not.toHaveBeenCalled();
   });
 
   it('rejects admin users from the associate portal', async () => {

@@ -69,7 +69,47 @@ export type AdminContributionMovementPage = {
   meta: PaginationMeta;
 };
 
+export type AdminVoluntarySavingsRequest = {
+  id: string;
+  monthly_amount: string;
+  status: 'submitted' | 'approved' | 'rejected';
+  submitted_at: string;
+  reviewed_at: string | null;
+  review_notes: string | null;
+  associate: {
+    id: string;
+    full_name: string;
+    document_type: string;
+    status: string;
+  } | null;
+  reviewed_by: {
+    id: string;
+    email: string;
+  } | null;
+  links: {
+    authorization: string;
+  };
+};
+
 const backendBaseUrl = import.meta.env.VITE_BACKEND_BASE_URL?.trim().replace(/\/$/, '') ?? '';
+let cachedCsrfToken = '';
+
+export function adminContributionDocumentUrl(path: string): string {
+  return `${backendBaseUrl}${path}`;
+}
+
+async function csrfToken(): Promise<string> {
+  if (cachedCsrfToken) return cachedCsrfToken;
+
+  const response = await fetch(`${backendBaseUrl}/csrf-token`, {
+    credentials: 'include',
+    headers: { Accept: 'application/json' },
+  });
+  const payload = await response.json().catch(() => null);
+  cachedCsrfToken = typeof payload?.data?.token === 'string' ? payload.data.token : '';
+
+  return cachedCsrfToken;
+}
 
 function queryString(values: Record<string, string | number | undefined>): string {
   const params = new URLSearchParams();
@@ -126,4 +166,35 @@ export function fetchAdminContributionMovements(
   });
 
   return getJson<AdminContributionMovementPage>(`/admin/contributions/${accountId}/movements?${query}`);
+}
+
+export async function fetchAdminVoluntarySavingsRequests(): Promise<AdminVoluntarySavingsRequest[]> {
+  const response = await getJson<{ data: AdminVoluntarySavingsRequest[] }>('/admin/voluntary-savings-requests?per_page=100');
+
+  return response.data;
+}
+
+export async function reviewAdminVoluntarySavingsRequest(
+  id: string,
+  status: 'approved' | 'rejected',
+  notes = '',
+): Promise<AdminVoluntarySavingsRequest> {
+  const token = await csrfToken();
+  const response = await fetch(`${backendBaseUrl}/admin/voluntary-savings-requests/${id}`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+    },
+    body: JSON.stringify({ status, notes }),
+  });
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(typeof payload?.message === 'string' ? payload.message : 'No fue posible revisar la solicitud.');
+  }
+
+  return payload.data as AdminVoluntarySavingsRequest;
 }

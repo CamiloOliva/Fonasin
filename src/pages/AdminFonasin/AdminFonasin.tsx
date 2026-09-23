@@ -68,14 +68,18 @@ import {
   type AdminImportType,
 } from '../../services/adminCreditService';
 import {
+  adminContributionDocumentUrl,
   fetchAdminContributionAccounts,
   fetchAdminContributionMovements,
+  fetchAdminVoluntarySavingsRequests,
+  reviewAdminVoluntarySavingsRequest,
   type AdminContributionAccount,
   type AdminContributionAccountFilters,
   type AdminContributionAccountPage,
   type AdminContributionMovement,
   type AdminContributionMovementFilters,
   type AdminContributionMovementPage,
+  type AdminVoluntarySavingsRequest,
 } from '../../services/adminContributionService';
 import { changeOwnPassword, type PortalUser } from '../../services/portalService';
 
@@ -185,6 +189,8 @@ export default function AdminFonasin() {
   const [credits, setCredits] = useState<AdminCredit[]>([]);
   const [contributionAccounts, setContributionAccounts] = useState<AdminContributionAccount[]>([]);
   const [contributionMovements, setContributionMovements] = useState<AdminContributionMovement[]>([]);
+  const [voluntarySavingsRequests, setVoluntarySavingsRequests] = useState<AdminVoluntarySavingsRequest[]>([]);
+  const [voluntarySavingsRequestState, setVoluntarySavingsRequestState] = useState<DataState>('idle');
   const [contributionMeta, setContributionMeta] = useState<AdminContributionAccountPage['meta']>(defaultContributionMeta);
   const [contributionMovementMeta, setContributionMovementMeta] = useState<AdminContributionMovementPage['meta']>(defaultContributionMeta);
   const [selectedContributionAccountId, setSelectedContributionAccountId] = useState<string | null>(null);
@@ -368,6 +374,33 @@ export default function AdminFonasin() {
     }
   }
 
+  async function loadVoluntarySavingsRequests() {
+    setVoluntarySavingsRequestState('loading');
+    setError(null);
+
+    try {
+      setVoluntarySavingsRequests(await fetchAdminVoluntarySavingsRequests());
+      setVoluntarySavingsRequestState('ready');
+    } catch (caught) {
+      setVoluntarySavingsRequests([]);
+      setVoluntarySavingsRequestState('error');
+      setError(caught instanceof Error ? caught.message : 'No fue posible cargar las solicitudes de ahorro voluntario.');
+    }
+  }
+
+  async function handleReviewVoluntarySavingsRequest(id: string, status: 'approved' | 'rejected') {
+    setError(null);
+    setMessage(null);
+
+    try {
+      const updated = await reviewAdminVoluntarySavingsRequest(id, status);
+      setVoluntarySavingsRequests((current) => current.map((item) => item.id === id ? updated : item));
+      setMessage(status === 'approved' ? 'Solicitud de ahorro voluntario aprobada.' : 'Solicitud de ahorro voluntario rechazada.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible revisar la solicitud.');
+    }
+  }
+
   async function loadImportBatches(type = importTypeFilter, page = 1) {
     setImportHistoryState('loading');
     setError(null);
@@ -402,7 +435,7 @@ export default function AdminFonasin() {
 
   async function openContributions() {
     setActiveView('contributions');
-    await loadContributionAccounts();
+    await Promise.all([loadContributionAccounts(), loadVoluntarySavingsRequests()]);
   }
 
   async function openImports() {
@@ -896,7 +929,10 @@ export default function AdminFonasin() {
                 onClick={() => {
                   if (activeView === 'applications') return loadApplications(selectedId);
                   if (activeView === 'associates') return loadAssociates();
-                  if (activeView === 'contributions') return loadContributionAccounts(contributionFilters, contributionMeta.current_page);
+                  if (activeView === 'contributions') return Promise.all([
+                    loadContributionAccounts(contributionFilters, contributionMeta.current_page),
+                    loadVoluntarySavingsRequests(),
+                  ]);
                   if (activeView === 'imports') return loadImportBatches();
 
                   return loadCredits();
@@ -1108,6 +1144,8 @@ export default function AdminFonasin() {
           />
         ) : activeView === 'contributions' ? (
           <ContributionsPanel
+            voluntarySavingsRequests={voluntarySavingsRequests}
+            voluntarySavingsRequestState={voluntarySavingsRequestState}
             accounts={contributionAccounts}
             movements={contributionMovements}
             associates={associates}
@@ -1133,6 +1171,8 @@ export default function AdminFonasin() {
               ? loadContributionMovements(selectedContributionAccountId, contributionMovementFilters, page)
               : Promise.resolve()}
             onSelectAccount={(accountId) => loadContributionMovements(accountId, contributionMovementFilters, 1)}
+            onReviewVoluntarySavingsRequest={handleReviewVoluntarySavingsRequest}
+            canManage={isAdmin}
           />
         ) : (
           <ImportHistoryPanel
@@ -1920,6 +1960,8 @@ export function CreditsPanel({
 }
 
 function ContributionsPanel({
+  voluntarySavingsRequests,
+  voluntarySavingsRequestState,
   accounts,
   movements,
   associates,
@@ -1935,7 +1977,11 @@ function ContributionsPanel({
   onAccountPageChange,
   onMovementPageChange,
   onSelectAccount,
+  onReviewVoluntarySavingsRequest,
+  canManage,
 }: {
+  voluntarySavingsRequests: AdminVoluntarySavingsRequest[];
+  voluntarySavingsRequestState: DataState;
   accounts: AdminContributionAccount[];
   movements: AdminContributionMovement[];
   associates: AdminAssociate[];
@@ -1951,11 +1997,79 @@ function ContributionsPanel({
   onAccountPageChange: (page: number) => void;
   onMovementPageChange: (page: number) => void;
   onSelectAccount: (accountId: string) => void;
+  onReviewVoluntarySavingsRequest: (id: string, status: 'approved' | 'rejected') => void;
+  canManage: boolean;
 }) {
   const selectedAccount = accounts.find((account) => account.id === selectedAccountId) ?? null;
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+    <div className="space-y-5">
+      <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Bandeja</p>
+            <h2 className="mt-1 text-2xl font-black text-slate-950">Solicitudes de ahorro voluntario</h2>
+          </div>
+          <PiggyBank className="text-emerald-700" size={28} />
+        </div>
+
+        {voluntarySavingsRequestState === 'loading' ? (
+          <div className="mt-4 flex items-center gap-3 text-sm font-semibold text-slate-600">
+            <Loader2 className="animate-spin" size={18} /> Cargando solicitudes
+          </div>
+        ) : null}
+
+        <div className="mt-5 overflow-x-auto">
+          <table className="w-full min-w-[820px] text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                <th className="py-3 pr-4">Asociado</th>
+                <th className="py-3 pr-4">Valor mensual</th>
+                <th className="py-3 pr-4">Fecha</th>
+                <th className="py-3 pr-4">Estado</th>
+                <th className="py-3">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {voluntarySavingsRequests.map((request) => (
+                <tr key={request.id} className="border-b border-slate-100 last:border-b-0">
+                  <td className="py-4 pr-4 font-black text-slate-950">{request.associate?.full_name ?? 'Asociado no disponible'}</td>
+                  <td className="py-4 pr-4 font-bold text-emerald-800">{formatCurrency(request.monthly_amount)}</td>
+                  <td className="py-4 pr-4 text-slate-600">{formatDate(request.submitted_at)}</td>
+                  <td className="py-4 pr-4"><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">{statusLabel(request.status)}</span></td>
+                  <td className="py-4">
+                    <div className="flex flex-wrap gap-2">
+                      <a
+                        href={adminContributionDocumentUrl(request.links.authorization)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"
+                      >
+                        <FileText size={14} /> Ver PDF
+                      </a>
+                      {canManage && request.status === 'submitted' ? (
+                        <>
+                          <button type="button" onClick={() => onReviewVoluntarySavingsRequest(request.id, 'approved')} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700">
+                            <CheckCircle2 size={14} /> Aprobar
+                          </button>
+                          <button type="button" onClick={() => onReviewVoluntarySavingsRequest(request.id, 'rejected')} className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs font-black text-red-700 hover:bg-red-100">
+                            <XCircle size={14} /> Rechazar
+                          </button>
+                        </>
+                      ) : null}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {voluntarySavingsRequests.length === 0 && voluntarySavingsRequestState !== 'loading' ? (
+            <p className="rounded-xl bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">No hay solicitudes de ahorro voluntario.</p>
+          ) : null}
+        </div>
+      </section>
+
+      <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
       <aside className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -2169,6 +2283,7 @@ function ContributionsPanel({
           </div>
         )}
       </section>
+      </div>
     </div>
   );
 }
