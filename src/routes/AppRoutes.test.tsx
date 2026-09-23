@@ -226,6 +226,30 @@ describe('AppRoutes', () => {
     expect(portalService.startPortalAffiliationUpdate).not.toHaveBeenCalled();
   });
 
+  it('opens the data update flow after portal authentication intent', async () => {
+    vi.mocked(portalService.currentPortalUser).mockResolvedValue({
+      id: 'associate-user',
+      email: 'associate@fonasin.test',
+      roles: ['associate'],
+      must_change_password: false,
+      requires_profile_completion: false,
+      profile_completion_status: null,
+    });
+    vi.mocked(portalService.startPortalAffiliationUpdate).mockResolvedValue({
+      id: 'update-draft-id',
+      status: 'draft',
+      purpose: 'data_update',
+      source_application_id: 'enabled-application-id',
+      draft_access_token: 'draft-token',
+      links: { read: '/affiliation-applications/update-draft-id?signature=test' },
+    });
+
+    renderRoute('/portal-asociado?intent=actualizar-datos');
+
+    expect(await screen.findByRole('heading', { level: 1, name: /actualizar datos/i })).toBeInTheDocument();
+    expect(portalService.startPortalAffiliationUpdate).toHaveBeenCalled();
+  });
+
   it('rejects admin users from the associate portal', async () => {
     const user = userEvent.setup();
     vi.mocked(portalService.loginPortal).mockResolvedValueOnce({

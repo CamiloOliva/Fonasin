@@ -11,8 +11,8 @@ import {
 const transaccionesImage = '/images/breve.png';
 
 const actions = [
-  { label: 'Actualizar datos', icon: ClipboardPenLine },
-  { label: 'Simulador', icon: Calculator, to: '/creditos/simulador-fonasin' },
+  { label: 'Actualizar datos', icon: ClipboardPenLine, to: '/portal-asociado?intent=actualizar-datos', hint: 'Ingresar al portal' },
+  { label: 'Simulador', icon: Calculator, to: '/creditos/simulador-fonasin', hint: 'Abrir simulador' },
   { label: 'Transacciones', icon: QrCode },
 ];
 
@@ -27,7 +27,7 @@ function ActionList({ open, transactionsOpen, onToggleTransactions }: ActionList
 
   return (
     <div className="flex flex-col gap-2">
-      {actions.map(({ label, icon: Icon, to }, index) => {
+      {actions.map(({ label, icon: Icon, to, hint }, index) => {
         const isTransactions = label === 'Transacciones';
 
         return (
@@ -66,7 +66,7 @@ function ActionList({ open, transactionsOpen, onToggleTransactions }: ActionList
               <strong className="block text-[15px] lg:text-base">{label}</strong>
               {!isTransactions ? (
                 <span className="block text-[11px] font-semibold uppercase tracking-wide text-white/70">
-                  {to ? 'Abrir simulador' : 'Próximamente'}
+                  {hint}
                 </span>
               ) : null}
             </span>

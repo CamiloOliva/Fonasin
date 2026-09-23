@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { ArrowRight, CreditCard, FileText, Loader2, LogOut, PiggyBank, RefreshCw, ShieldCheck, UserRound } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ForcedPasswordChange from '../../components/auth/ForcedPasswordChange';
 import {
   changeOwnPassword,
@@ -197,6 +197,8 @@ function privateDataErrorState(caught: unknown): 'error' | 'forbidden' | 'expire
 }
 export default function PortalAsociado() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const wantsDataUpdate = new URLSearchParams(location.search).get('intent') === 'actualizar-datos';
   const [sessionState, setSessionState] = useState<SessionState>('checking');
   const [creditsState, setCreditsState] = useState<CreditsState>('idle');
   const [contributionsState, setContributionsState] = useState<ContributionsState>('idle');
@@ -279,6 +281,8 @@ export default function PortalAsociado() {
         if (!currentUser.must_change_password) {
           if (shouldOpenProfileCompletion(currentUser)) {
             await openProfileCompletion();
+          } else if (wantsDataUpdate) {
+            await handleStartAffiliationUpdate();
           } else {
             await Promise.all([loadCredits(), loadContributions()]);
           }
@@ -320,6 +324,8 @@ export default function PortalAsociado() {
       if (!loggedUser.must_change_password) {
         if (shouldOpenProfileCompletion(loggedUser)) {
           await openProfileCompletion();
+        } else if (wantsDataUpdate) {
+          await handleStartAffiliationUpdate();
         } else {
           await Promise.all([loadCredits(), loadContributions()]);
         }
@@ -373,6 +379,8 @@ export default function PortalAsociado() {
     setMessage('Contrasena actualizada correctamente.');
     if (shouldOpenProfileCompletion(updatedUser)) {
       await openProfileCompletion();
+    } else if (wantsDataUpdate) {
+      await handleStartAffiliationUpdate();
     } else {
       await Promise.all([loadCredits(), loadContributions()]);
     }
