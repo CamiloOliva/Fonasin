@@ -1,12 +1,17 @@
 ﻿import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
 import AffiliationForm from '../../components/forms/AffiliationForm';
+import { currentPortalUser } from '../../services/portalService';
 
 export type AffiliationFlow = 'initial_affiliation' | 'data_update' | 'profile_completion';
 
 type AfiliacionProps = {
   flow?: AffiliationFlow;
 };
+
+type PrivateFlowAccess = 'checking' | 'allowed' | 'denied';
 
 const flowContent: Record<AffiliationFlow, { eyebrow: string; title: string; description: string }> = {
   initial_affiliation: {
@@ -29,6 +34,44 @@ const flowContent: Record<AffiliationFlow, { eyebrow: string; title: string; des
 export default function Afiliacion({ flow = 'initial_affiliation' }: AfiliacionProps) {
   const content = flowContent[flow];
   const isPortalFlow = flow !== 'initial_affiliation';
+  const [privateFlowAccess, setPrivateFlowAccess] = useState<PrivateFlowAccess>(
+    isPortalFlow ? 'checking' : 'allowed',
+  );
+
+  useEffect(() => {
+    if (!isPortalFlow) {
+      setPrivateFlowAccess('allowed');
+      return;
+    }
+
+    let active = true;
+
+    void currentPortalUser()
+      .then((user) => {
+        if (!active) return;
+
+        setPrivateFlowAccess(user.roles.includes('associate') && !user.must_change_password ? 'allowed' : 'denied');
+      })
+      .catch(() => {
+        if (active) setPrivateFlowAccess('denied');
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isPortalFlow]);
+
+  if (isPortalFlow && privateFlowAccess === 'checking') {
+    return (
+      <main className="container-page py-16" aria-busy="true">
+        <p className="text-center text-sm font-semibold text-slate-600">Verificando acceso al portal...</p>
+      </main>
+    );
+  }
+
+  if (isPortalFlow && privateFlowAccess === 'denied') {
+    return <Navigate to="/portal-asociado" replace />;
+  }
 
   return (
     <div className="bg-[#f6f7f2] py-12 sm:py-16">
