@@ -18,16 +18,19 @@ import {
 import StatutesBookViewer from '../sections/StatutesBookViewer';
 import {
   acceptAffiliationConsent,
+  affiliationDownloadUrl,
   createAffiliationDraft,
   readAffiliationDraft,
   saveAffiliationSection,
   submitAffiliationApplication,
   uploadAffiliationDocument,
   type AffiliationDraft,
+  type AffiliationPurpose,
   type AffiliationDraftLinks,
   type GeneratedAffiliationDocument,
   type AffiliationSectionKey,
 } from '../../services/affiliationService';
+import { startPortalAffiliationUpdate } from '../../services/portalService';
 import colombiaDepartmentsCatalog from '../../data/catalogs/colombia_departamentos_municipios.json';
 import economicActivitiesCatalog from '../../data/catalogs/actividades_economicas_dian.json';
 import nationalitiesCatalog from '../../data/catalogs/nacionalidades.json';
@@ -263,8 +266,12 @@ function todayInputDate(): string {
   return `${year}-${month}-${day}`;
 }
 
-function generatedDocumentTitle(document: GeneratedAffiliationDocument): string {
-  if (document.document_type === 'affiliation_summary') return 'Formulario de afiliacion completo';
+function generatedDocumentTitle(document: GeneratedAffiliationDocument, purpose?: AffiliationPurpose): string {
+  if (document.document_type === 'affiliation_summary') {
+    if (purpose === 'profile_completion') return 'Formulario de perfil completo';
+    if (purpose === 'data_update') return 'Formulario de afiliacion actualizado';
+    return 'Formulario de afiliacion completo';
+  }
   if (document.document_type === 'payroll_authorization') return 'Autorizacion de descuento por nomina';
 
   return document.original_filename;
@@ -300,7 +307,8 @@ const legalDocuments = [
     url: '/ESTATUTOS%20DEFINITIVOS%202024.pdf',
   },
 ] as const;
-const DRAFT_STORAGE_KEY = 'fonasin.affiliation.draft.v1';
+const PUBLIC_DRAFT_STORAGE_KEY = 'fonasin.affiliation.draft.v1';
+const PORTAL_DRAFT_STORAGE_KEY = 'fonasin.portal.affiliation.draft.v1';
 const DRAFT_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
 
 type StoredAffiliationDraft = {
@@ -316,9 +324,13 @@ type RecoverableAffiliationDraft = Pick<AffiliationDraft, 'id'> & {
   links: Pick<AffiliationDraftLinks, 'read'>;
 };
 
-function readStoredDraft(): RecoverableAffiliationDraft | null {
+type StorableAffiliationDraft = RecoverableAffiliationDraft & Pick<AffiliationDraft, 'status'> & {
+  draft_access_token?: string;
+};
+
+function readStoredDraft(storageKey: string): RecoverableAffiliationDraft | null {
   try {
-    const raw = window.sessionStorage.getItem(DRAFT_STORAGE_KEY);
+    const raw = window.sessionStorage.getItem(storageKey);
     if (!raw) return null;
 
     const stored = JSON.parse(raw) as StoredAffiliationDraft;
@@ -326,7 +338,7 @@ function readStoredDraft(): RecoverableAffiliationDraft | null {
     const readUrl = stored.readUrl ?? stored.draft?.links?.read;
 
     if (!draftId || !readUrl || Date.now() - stored.savedAt > DRAFT_STORAGE_TTL_MS) {
-      window.sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+      window.sessionStorage.removeItem(storageKey);
       return null;
     }
 
@@ -341,9 +353,9 @@ function readStoredDraft(): RecoverableAffiliationDraft | null {
   }
 }
 
-function readStoredDraftAccessToken(): string {
+function readStoredDraftAccessToken(storageKey: string): string {
   try {
-    const raw = window.sessionStorage.getItem(DRAFT_STORAGE_KEY);
+    const raw = window.sessionStorage.getItem(storageKey);
     if (!raw) return '';
 
     const stored = JSON.parse(raw) as StoredAffiliationDraft;
@@ -354,13 +366,13 @@ function readStoredDraftAccessToken(): string {
   }
 }
 
-function storeDraft(draft: AffiliationDraft): void {
+function storeDraft(draft: StorableAffiliationDraft, storageKey: string): void {
   if (draft.status !== 'draft') return;
 
-  const draftAccessToken = draft.draft_access_token ?? readStoredDraftAccessToken();
+  const draftAccessToken = draft.draft_access_token ?? readStoredDraftAccessToken(storageKey);
 
   try {
-    window.sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
+    window.sessionStorage.setItem(storageKey, JSON.stringify({
       savedAt: Date.now(),
       id: draft.id,
       readUrl: draft.links.read,
@@ -372,9 +384,9 @@ function storeDraft(draft: AffiliationDraft): void {
   }
 }
 
-function clearStoredDraft(): void {
+function clearStoredDraft(storageKey: string): void {
   try {
-    window.sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+    window.sessionStorage.removeItem(storageKey);
   } catch {
     // No hay accion necesaria si el navegador bloquea storage local.
   }
@@ -699,7 +711,7 @@ function validateCurrentStep(
   step: number,
   state: SectionState,
   uploadedDocumentTypes = new Set<RequiredDocumentType>(),
-  isDataUpdate = false,
+  isFormOnly = false,
 ): string | null {
   if (step === 0) {
     const missing = missingFields(state.personal as unknown as Record<string, unknown>, requiredBySection.personal);
@@ -830,10 +842,10 @@ function validateCurrentStep(
     const hasIdentityDocument = Boolean(state.finalStep.identityDocumentFile) || uploadedDocumentTypes.has('identity');
     const hasEmploymentCertificate = Boolean(state.finalStep.employmentCertificateFile) || uploadedDocumentTypes.has('employment_certificate');
 
-    if (!isDataUpdate && !hasIdentityDocument) {
+    if (!isFormOnly && !hasIdentityDocument) {
       return 'Debes adjuntar el documento de identidad por ambos lados en PDF.';
     }
-    if (!isDataUpdate && !hasEmploymentCertificate) {
+    if (!isFormOnly && !hasEmploymentCertificate) {
       return 'Debes adjuntar el certificado laboral en PDF.';
     }
     if (state.finalStep.identityDocumentFile && state.finalStep.identityDocumentFile.type !== 'application/pdf') {
@@ -1246,7 +1258,7 @@ function renderFields(
   return (
     <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
       {fields.map((field) => {
-        const selectOptions = options.fieldOptions?.[field.key] ?? field.options ?? [];
+        const selectOptions = Array.from(new Set(options.fieldOptions?.[field.key] ?? field.options ?? []));
 
         return (
           <Field key={field.key} label={field.label} helper={field.helper} required={section ? isRequiredField(section, field.key) : false}>
@@ -1306,7 +1318,11 @@ function renderFields(
   );
 }
 
-export default function AffiliationForm() {
+type AffiliationFormProps = {
+  flow?: AffiliationPurpose;
+};
+
+export default function AffiliationForm({ flow = 'initial_affiliation' }: AffiliationFormProps) {
   const [step, setStep] = useState(0);
   const [backendMode, setBackendMode] = useState<BackendMode>('loading');
   const [backendMessage, setBackendMessage] = useState('Conectando con el borrador de afiliacion...');
@@ -1318,7 +1334,8 @@ export default function AffiliationForm() {
   const [uploadedDocumentTypes, setUploadedDocumentTypes] = useState<Set<RequiredDocumentType>>(new Set());
   const [selectedLegalDocument, setSelectedLegalDocument] = useState<(typeof legalDocuments)[number]>(legalDocuments[0]);
   const [state, setState] = useState<SectionState>(createInitialState);
-  const isDataUpdate = draft?.purpose === 'data_update' || draft?.purpose === 'profile_completion';
+  const isFormOnly = draft?.purpose === 'data_update' || draft?.purpose === 'profile_completion';
+  const storageKey = flow === 'initial_affiliation' ? PUBLIC_DRAFT_STORAGE_KEY : PORTAL_DRAFT_STORAGE_KEY;
 
   function handleDocumentSelection(key: 'identityDocumentFile' | 'employmentCertificateFile', file: File | null): void {
     setError(null);
@@ -1349,13 +1366,16 @@ export default function AffiliationForm() {
     let active = true;
     (async () => {
       try {
-        const storedDraft = readStoredDraft();
+        const storedDraft = readStoredDraft(storageKey);
         if (storedDraft) {
           try {
             const recoveredDraft = await readAffiliationDraft(storedDraft.links.read);
+            if (recoveredDraft.purpose !== flow) {
+              throw new Error('El borrador guardado pertenece a otro proceso.');
+            }
             if (!active) return;
             setDraft(recoveredDraft);
-            storeDraft(recoveredDraft);
+            storeDraft(recoveredDraft, storageKey);
             setState(stateFromDraft(recoveredDraft));
             setUploadedDocumentTypes(new Set(
               (recoveredDraft.documents ?? [])
@@ -1368,14 +1388,24 @@ export default function AffiliationForm() {
             setBackendMessage('Encontramos un borrador guardado en este navegador. Puedes continuar donde ibas durante las proximas 24 horas.');
             return;
           } catch {
-            clearStoredDraft();
+            clearStoredDraft(storageKey);
           }
         }
 
-        const response = await createAffiliationDraft();
+        let response: AffiliationDraft;
+        if (flow === 'initial_affiliation') {
+          response = await createAffiliationDraft();
+        } else {
+          const startedDraft = await startPortalAffiliationUpdate();
+          storeDraft(startedDraft, storageKey);
+          response = await readAffiliationDraft(startedDraft.links.read);
+        }
+        if (response.purpose !== flow) {
+          throw new Error('El proceso solicitado no coincide con el perfil del asociado.');
+        }
         if (!active) return;
         setDraft(response);
-        storeDraft(response);
+        storeDraft(response, storageKey);
         setBackendMode('ready');
         setBackendMessage(`Borrador ${response.id} listo para sincronizar secciones.`);
       } catch {
@@ -1392,7 +1422,7 @@ export default function AffiliationForm() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [flow, storageKey]);
 
   async function syncSection(section: AffiliationSectionKey, data: Record<string, unknown>) {
     if (!draft || backendMode !== 'ready') return;
@@ -1409,7 +1439,7 @@ export default function AffiliationForm() {
     setMessage(null);
     setSaving(true);
 
-    const validationMessage = validateCurrentStep(step, state, uploadedDocumentTypes, isDataUpdate);
+    const validationMessage = validateCurrentStep(step, state, uploadedDocumentTypes, isFormOnly);
     if (validationMessage) {
       setError(validationMessage);
       setSaving(false);
@@ -1439,18 +1469,18 @@ export default function AffiliationForm() {
         });
         setMessage('Seccion SARLAFT guardada.');
       } else if (step === 5) {
-        if (!isDataUpdate && (
+        if (!isFormOnly && (
           (!state.finalStep.identityDocumentFile && !uploadedDocumentTypes.has('identity'))
           || (!state.finalStep.employmentCertificateFile && !uploadedDocumentTypes.has('employment_certificate'))
         )) {
           throw new Error('Debes adjuntar documento de identidad y certificado laboral en PDF.');
         }
 
-        setMessage(isDataUpdate
+        setMessage(isFormOnly
           ? 'Declaraciones y autorizaciones listas para revision.'
           : 'Documentos, declaraciones y autorizaciones listos para revision.');
       } else {
-        if (!isDataUpdate && (
+        if (!isFormOnly && (
           (!state.finalStep.identityDocumentFile && !uploadedDocumentTypes.has('identity'))
           || (!state.finalStep.employmentCertificateFile && !uploadedDocumentTypes.has('employment_certificate'))
         )) {
@@ -1462,13 +1492,13 @@ export default function AffiliationForm() {
         }
 
         if (draft && backendMode === 'ready') {
-          if (!isDataUpdate && state.finalStep.identityDocumentFile) {
+          if (!isFormOnly && state.finalStep.identityDocumentFile) {
             await uploadAffiliationDocument(draft.links.documents, {
               documentType: 'identity',
               file: state.finalStep.identityDocumentFile,
             });
           }
-          if (!isDataUpdate && state.finalStep.employmentCertificateFile) {
+          if (!isFormOnly && state.finalStep.employmentCertificateFile) {
             await uploadAffiliationDocument(draft.links.documents, {
               documentType: 'employment_certificate',
               file: state.finalStep.employmentCertificateFile,
@@ -1488,11 +1518,11 @@ export default function AffiliationForm() {
             date: state.finalStep.signatureDate,
           });
           setDraft(submittedDraft);
-          clearStoredDraft();
+          clearStoredDraft(storageKey);
           setUploadedDocumentTypes(new Set());
         }
 
-        clearStoredDraft();
+        clearStoredDraft(storageKey);
         setSubmitted(true);
         setMessage(backendMode === 'ready' ? 'Solicitud enviada al backend.' : 'Solicitud preparada en modo local.');
         return;
@@ -1522,7 +1552,7 @@ export default function AffiliationForm() {
       disabledKeys.add('city');
     }
 
-    if (isDataUpdate) {
+    if (isFormOnly) {
       disabledKeys.add('documentType');
       disabledKeys.add('documentNumber');
     }
@@ -1535,7 +1565,7 @@ export default function AffiliationForm() {
           title="Datos personales y de contacto"
           description="Identificacion, ubicacion, contacto y datos basicos de vinculacion."
         />
-        {isDataUpdate ? (
+        {isFormOnly ? (
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-950">
             El tipo y numero de documento identifican tu cuenta y no pueden modificarse desde esta actualizacion.
           </div>
@@ -2492,8 +2522,8 @@ export default function AffiliationForm() {
           ['Operaciones esperadas', state.sarlaft.expectedOperations.includes('Otros servicios') ? `${state.sarlaft.expectedOperations.join(', ')}: ${state.sarlaft.expectedOperationsOther}` : state.sarlaft.expectedOperations.join(', ')],
         ])}
 
-        {reviewCard(isDataUpdate ? 'Firma y autorizaciones' : 'Documentos y autorizaciones', [
-          ...(!isDataUpdate ? [
+        {reviewCard(isFormOnly ? 'Firma y autorizaciones' : 'Documentos y autorizaciones', [
+          ...(!isFormOnly ? [
             ['Documento de identidad', state.finalStep.identityDocumentFile?.name ?? 'No registra'],
             ['Certificado laboral', state.finalStep.employmentCertificateFile?.name ?? 'No registra'],
           ] as Array<[string, ReactNode]> : []),
@@ -2506,8 +2536,8 @@ export default function AffiliationForm() {
         <div className="rounded-[1.5rem] border border-slate-950 bg-slate-950 p-4 text-white">
           <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-200">Formatos internos</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            {(isDataUpdate
-              ? ['Formulario de afiliacion actualizado']
+            {(isFormOnly
+              ? [draft?.purpose === 'profile_completion' ? 'Formulario de perfil completo' : 'Formulario de afiliacion actualizado']
               : ['Formulario de afiliacion completo', 'Autorizacion de descuento por nomina']
             ).map((document) => (
               <div key={document} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-100">
@@ -2540,15 +2570,17 @@ export default function AffiliationForm() {
         <SectionHeader
           icon={<FileText size={22} />}
           eyebrow="Bloque 6"
-          title={isDataUpdate ? 'Declaraciones, autorizaciones y firma' : 'Documentos, declaraciones y autorizaciones'}
-          description={isDataUpdate
-            ? 'Esta actualizacion conserva los documentos existentes y registra unicamente el nuevo formulario.'
+          title={isFormOnly ? 'Declaraciones, autorizaciones y firma' : 'Documentos, declaraciones y autorizaciones'}
+          description={isFormOnly
+            ? draft?.purpose === 'profile_completion'
+              ? 'Este proceso registra unicamente el formulario del perfil, sin solicitar soportes ni libranza.'
+              : 'Esta actualizacion conserva los documentos existentes y registra unicamente el nuevo formulario.'
             : 'El documento separa esta parte del formulario principal. Aqui quedan el cierre y la firma.'}
         />
 
         <div className="grid gap-5">
           <div className="space-y-4">
-            {!isDataUpdate ? [
+            {!isFormOnly ? [
               {
                 key: 'identityDocumentFile' as const,
                 eyebrow: 'Documento obligatorio 1',
@@ -2757,8 +2789,16 @@ export default function AffiliationForm() {
             <div className="rounded-[1.6rem] border border-slate-950 bg-slate-950 p-4 text-white">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-200">Resumen final</p>
               <div className="mt-3 space-y-2 text-sm text-slate-200">
-                <p>{isDataUpdate ? 'Se generara solamente el formulario actualizado.' : 'Se enviara un documento de identidad.'}</p>
-                {isDataUpdate ? <p>Los documentos y la libranza existentes no seran modificados.</p> : null}
+                <p>{isFormOnly
+                  ? draft?.purpose === 'profile_completion'
+                    ? 'Se generara solamente el formulario de perfil.'
+                    : 'Se generara solamente el formulario actualizado.'
+                  : 'Se enviara un documento de identidad.'}</p>
+                {isFormOnly ? (
+                  <p>{draft?.purpose === 'profile_completion'
+                    ? 'No se solicitaran soportes ni se generara una libranza.'
+                    : 'Los documentos y la libranza existentes no seran modificados.'}</p>
+                ) : null}
                 <p>Se guardaran las declaraciones y autorizaciones requeridas.</p>
                 <p>Los endpoints de Laravel ya quedaron referenciados desde la vista.</p>
               </div>
@@ -2778,11 +2818,13 @@ export default function AffiliationForm() {
           <CheckCircle2 size={34} />
         </div>
         <h2 className="mt-5 text-3xl font-black text-slate-950">
-          {isDataUpdate ? 'Actualizacion enviada' : 'Solicitud preparada'}
+          {isFormOnly ? (draft?.purpose === 'profile_completion' ? 'Perfil enviado' : 'Actualizacion enviada') : 'Solicitud preparada'}
         </h2>
         <p className="mt-3 text-sm leading-6 text-slate-600">
-          {isDataUpdate
-            ? 'El formulario actualizado fue enviado para revision interna. Tus documentos anteriores permanecen sin cambios.'
+          {isFormOnly
+            ? draft?.purpose === 'profile_completion'
+              ? 'La informacion del perfil fue enviada para revision interna. No se genero ni solicito una libranza.'
+              : 'El formulario actualizado fue enviado para revision interna. Tus documentos anteriores permanecen sin cambios.'
             : 'La solicitud fue enviada para revision interna. Los documentos generados quedan protegidos en el backend y se muestran aqui solo como vista previa.'}
         </p>
         {generatedDocuments.length > 0 ? (
@@ -2792,11 +2834,14 @@ export default function AffiliationForm() {
                 <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Documento interno</p>
-                    <h3 className="mt-1 text-xl font-black text-slate-950">{generatedDocumentTitle(document)}</h3>
+                    <h3 className="mt-1 text-xl font-black text-slate-950">{generatedDocumentTitle(document, draft?.purpose)}</h3>
                   </div>
                   <p className="text-xs font-semibold text-slate-500">Vista protegida, sin descarga desde el formulario</p>
                 </div>
-                <StatutesBookViewer url={document.links.preview} title={generatedDocumentTitle(document)} />
+                <StatutesBookViewer
+                  url={affiliationDownloadUrl(document.links.preview)}
+                  title={generatedDocumentTitle(document, draft?.purpose)}
+                />
               </article>
             ))}
           </div>
@@ -2842,14 +2887,20 @@ export default function AffiliationForm() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-700">
-                {isDataUpdate ? 'Actualizacion de datos' : 'Solicitud de afiliación'}
+                {draft?.purpose === 'profile_completion' ? 'Completar perfil' : isFormOnly ? 'Actualizacion de datos' : 'Solicitud de afiliacion'}
               </p>
               <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-                {isDataUpdate ? 'Revise y actualice la informacion del formulario' : 'Complete cada paso para registrar la solicitud'}
+                {draft?.purpose === 'profile_completion'
+                  ? 'Complete la informacion requerida para habilitar su perfil'
+                  : isFormOnly
+                    ? 'Revise y actualice la informacion del formulario'
+                    : 'Complete cada paso para registrar la solicitud'}
               </h2>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-                {isDataUpdate
-                  ? 'La identidad y los documentos existentes se conservan; solo se genera una nueva version del formulario.'
+                {isFormOnly
+                  ? draft?.purpose === 'profile_completion'
+                    ? 'La identidad de la cuenta se conserva y solo se genera el formulario requerido para completar el perfil.'
+                    : 'La identidad y los documentos existentes se conservan; solo se genera una nueva version del formulario.'
                   : 'Los campos están organizados por secciones para facilitar el diligenciamiento y la revisión.'}
               </p>
             </div>
@@ -2889,8 +2940,8 @@ export default function AffiliationForm() {
               {stepLabels.map((item, index) => {
                 const active = index === step;
                 const done = index < step;
-                const title = isDataUpdate && item.key === 'final' ? 'Autorizaciones y cierre' : item.title;
-                const description = isDataUpdate && item.key === 'final'
+                const title = isFormOnly && item.key === 'final' ? 'Autorizaciones y cierre' : item.title;
+                const description = isFormOnly && item.key === 'final'
                   ? 'Declaraciones, autorizaciones y firma.'
                   : item.description;
 
@@ -2927,8 +2978,10 @@ export default function AffiliationForm() {
               })}
             </ol>
             <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-600">
-              {isDataUpdate
-                ? 'Guarde cada bloque antes de continuar. El cierre conserva sus documentos y registra las nuevas autorizaciones.'
+              {isFormOnly
+                ? draft?.purpose === 'profile_completion'
+                  ? 'Guarde cada bloque antes de continuar. El cierre registra el formulario y las autorizaciones, sin solicitar documentos.'
+                  : 'Guarde cada bloque antes de continuar. El cierre conserva sus documentos y registra las nuevas autorizaciones.'
                 : 'Guarde cada bloque antes de continuar. El cierre incluye documentos, declaraciones y autorizaciones.'}
             </div>
           </aside>

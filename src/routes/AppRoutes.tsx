@@ -64,6 +64,8 @@ export default function AppRoutes() {
       />{" "}
       <Route path="/fpqrs" element={<FPQRS />} />{" "}
       <Route path="/afiliacion" element={<Afiliacion />} />{" "}
+      <Route path="/portal-asociado/completar-perfil" element={<Afiliacion flow="profile_completion" />} />{" "}
+      <Route path="/portal-asociado/actualizar-datos" element={<Afiliacion flow="data_update" />} />{" "}
       <Route path="/admin-fonasin" element={<AdminFonasin />} />{" "}
       <Route path="/portal-asociado" element={<Portal />} />{" "}
       <Route path="/recuperar-contrasena" element={<PasswordRecovery />} />{" "}

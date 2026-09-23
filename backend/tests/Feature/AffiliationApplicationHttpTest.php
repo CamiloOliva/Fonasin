@@ -228,6 +228,32 @@ class AffiliationApplicationHttpTest extends TestCase
         ]);
     }
 
+    public function test_profile_completion_submits_without_uploads_and_never_generates_payroll(): void
+    {
+        Storage::fake('local');
+        $application = AffiliationApplication::query()->forceCreate([
+            'purpose' => AffiliationApplicationPurpose::ProfileCompletion->value,
+            'status' => AffiliationApplicationStatus::Draft->value,
+            'current_step' => AffiliationApplicationStep::Personal->value,
+        ]);
+        $headers = $this->protectDraft($application);
+        $this->completeSections($application);
+        $this->acceptRequiredConsents($application, '2026-01');
+
+        $this->postJson($this->signedSubmitUrl($application), [
+            'policy_version' => '2026-01',
+        ], $headers)
+            ->assertOk()
+            ->assertJsonPath('data.purpose', AffiliationApplicationPurpose::ProfileCompletion->value)
+            ->assertJsonCount(1, 'data.generated_documents')
+            ->assertJsonPath('data.generated_documents.0.document_type', ApplicationDocumentType::AffiliationSummary->value);
+
+        $this->assertDatabaseMissing('application_documents', [
+            'application_id' => $application->id,
+            'document_type' => ApplicationDocumentType::PayrollAuthorization->value,
+        ]);
+    }
+
     public function test_data_update_rejects_document_replacement(): void
     {
         Storage::fake('local');
