@@ -75,6 +75,7 @@ vi.mock('../services/adminContributionService', () => ({
   fetchAdminContributionMovements: vi.fn(),
   fetchAdminVoluntarySavingsRequests: vi.fn().mockResolvedValue([]),
   reviewAdminVoluntarySavingsRequest: vi.fn(),
+  uploadSignedVoluntarySavingsAuthorization: vi.fn(),
 }));
 
 vi.mock('../services/passwordRecoveryService', () => ({
@@ -424,6 +425,49 @@ describe('AppRoutes', () => {
       'account-1',
       expect.any(Object),
     );
+  });
+
+  it('shows the final reviewed request and its signed authorization to administrators', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminAffiliationService.currentAdminUser).mockResolvedValueOnce({
+      id: 'admin-user',
+      email: 'admin@fonasin.test',
+      roles: ['admin'],
+      must_change_password: false,
+    });
+    vi.mocked(adminContributionService.fetchAdminVoluntarySavingsRequests).mockResolvedValueOnce([{
+      id: 'savings-request-1',
+      monthly_amount: '250000.00',
+      status: 'approved',
+      submitted_at: '2026-09-23T20:06:40Z',
+      reviewed_at: '2026-09-24T01:28:41Z',
+      signed_authorization_uploaded_at: '2026-09-24T01:30:00Z',
+      review_notes: 'Validada para tramite.',
+      associate: {
+        id: 'associate-1',
+        full_name: 'Asociado Demo',
+        document_type: 'CC',
+        status: 'active',
+      },
+      reviewed_by: { id: 'admin-user', email: 'admin@fonasin.test' },
+      links: {
+        payroll_authorization_preview: '/generated/preview',
+        payroll_authorization_download: '/generated/download',
+        signed_authorization_preview: '/signed/preview',
+        signed_authorization_download: '/signed/download',
+      },
+    }]);
+
+    renderRoute('/admin-fonasin');
+
+    await user.click(await screen.findByRole('button', { name: /^aportes y ahorros$/i }));
+
+    expect(await screen.findByText('Asociado Demo')).toBeInTheDocument();
+    expect(screen.getByText(/aprobada/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /ver firmada/i })).toHaveAttribute('href', '/signed/preview');
+    expect(screen.getByRole('link', { name: /descargar/i })).toHaveAttribute('href', '/signed/download');
+    expect(screen.queryByRole('button', { name: /aprobar/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/libranza firmada de asociado demo/i)).not.toBeInTheDocument();
   });
 
   it('shows operational upload forms inside the imports view', async () => {

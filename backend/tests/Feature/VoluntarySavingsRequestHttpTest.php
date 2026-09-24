@@ -6,12 +6,15 @@ use App\Application\Contributions\Contracts\RendersVoluntarySavingsPayrollAuthor
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Domain\Contributions\Enums\ContributionAuditAction;
 use App\Models\Associate;
+use App\Models\AuditEvent;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\VoluntarySavingsRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class VoluntarySavingsRequestHttpTest extends TestCase
@@ -83,6 +86,26 @@ class VoluntarySavingsRequestHttpTest extends TestCase
             'monthly_amount' => '200000',
             'accept_terms' => true,
         ])->assertUnprocessable();
+    }
+
+    public function test_database_constraint_closes_the_concurrent_pending_request_race(): void
+    {
+        [$user, $associate] = $this->associateUser();
+        $this->actingAs($user)->postJson('/portal/voluntary-savings-requests', [
+            'monthly_amount' => '100000',
+            'accept_terms' => true,
+        ])->assertCreated();
+
+        $this->expectException(QueryException::class);
+        VoluntarySavingsRequest::query()->forceCreate([
+            'id' => (string) Str::uuid(),
+            'associate_id' => $associate->id,
+            'pending_associate_id' => $associate->id,
+            'monthly_amount' => 200000,
+            'status' => 'submitted',
+            'authorization_storage_key' => 'private/test.pdf',
+            'submitted_at' => now(),
+        ]);
     }
 
     public function test_monthly_amount_must_be_integer_and_within_limit(): void
@@ -157,6 +180,15 @@ class VoluntarySavingsRequestHttpTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'approved');
 
+        $secondAdmin = $this->userWithRole('admin');
+        $this->actingAs($secondAdmin)
+            ->patchJson("/admin/voluntary-savings-requests/{$request->id}", [
+                'status' => 'rejected',
+                'notes' => 'Decision simultanea tardia.',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'La solicitud de ahorro voluntario ya fue revisada.');
+
         $this->actingAs($admin)
             ->post("/admin/voluntary-savings-requests/{$request->id}/signed-authorization", [
                 'file' => UploadedFile::fake()->create('libranza-firmada.pdf', 120, 'application/pdf'),
@@ -202,8 +234,19 @@ class VoluntarySavingsRequestHttpTest extends TestCase
         $this->assertDatabaseHas('voluntary_savings_requests', [
             'id' => $request->id,
             'status' => 'approved',
+            'pending_associate_id' => null,
             'reviewed_by_user_id' => $admin->id,
         ]);
+        $this->assertSame(1, AuditEvent::query()
+            ->where('action', ContributionAuditAction::VoluntarySavingsRequestReviewed->value)
+            ->where('subject_id', $request->id)
+            ->count());
+
+        $this->actingAs($associateUser)
+            ->getJson('/portal/voluntary-savings-requests')
+            ->assertOk()
+            ->assertJsonPath('data.0.status', 'approved')
+            ->assertJsonMissingPath('data.0.links');
         $this->assertDatabaseHas('audit_events', [
             'action' => ContributionAuditAction::VoluntarySavingsRequestReviewed->value,
             'subject_id' => $request->id,

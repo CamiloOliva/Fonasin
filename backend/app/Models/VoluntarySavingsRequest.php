@@ -12,6 +12,7 @@ class VoluntarySavingsRequest extends Model
 
     protected $fillable = [
         'associate_id',
+        'pending_associate_id',
         'monthly_amount',
         'status',
         'authorization_storage_key',

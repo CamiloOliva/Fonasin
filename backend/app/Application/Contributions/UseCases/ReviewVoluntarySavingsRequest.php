@@ -32,6 +32,7 @@ class ReviewVoluntarySavingsRequest
 
             $lockedRequest->forceFill([
                 'status' => $status->value,
+                'pending_associate_id' => null,
                 'reviewed_at' => now(),
                 'reviewed_by_user_id' => $actor->id,
                 'review_notes' => $notes,
