@@ -117,9 +117,6 @@ export type PortalVoluntarySavingsRequest = {
   submitted_at: string;
   reviewed_at: string | null;
   review_notes: string | null;
-  links: {
-    authorization: string;
-  };
 };
 
 type RequestOptions = {

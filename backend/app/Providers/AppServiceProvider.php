@@ -3,7 +3,7 @@
 namespace App\Providers;
 
 use App\Application\Affiliation\Contracts\RendersAffiliationSubmissionDocuments;
-use App\Application\Contributions\Contracts\RendersVoluntarySavingsAuthorization;
+use App\Application\Contributions\Contracts\RendersVoluntarySavingsPayrollAuthorization;
 use App\Application\Fpqrs\Contracts\DeliversFpqrsSubmissions;
 use App\Application\Imports\Contracts\ReadsSpreadsheetRows;
 use App\Application\Portal\Contracts\ExportsAssociateProfiles;
@@ -12,7 +12,7 @@ use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Application\Storage\Contracts\GeneratesPrivateStorageKeys;
 use App\Application\Storage\Contracts\StoresPrivateFiles;
 use App\Infrastructure\Affiliation\LaravelDompdfAffiliationSubmissionRenderer;
-use App\Infrastructure\Contributions\LaravelDompdfVoluntarySavingsAuthorizationRenderer;
+use App\Infrastructure\Contributions\LaravelDompdfVoluntarySavingsPayrollAuthorizationRenderer;
 use App\Infrastructure\Imports\SimpleXlsxSpreadsheetReader;
 use App\Infrastructure\Mail\LaravelFpqrsSubmissionMailer;
 use App\Infrastructure\Portal\SimpleXlsxAssociateProfileExporter;
@@ -50,7 +50,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ReadsSpreadsheetRows::class, SimpleXlsxSpreadsheetReader::class);
         $this->app->bind(ExportsAssociateProfiles::class, SimpleXlsxAssociateProfileExporter::class);
         $this->app->bind(RendersAffiliationSubmissionDocuments::class, LaravelDompdfAffiliationSubmissionRenderer::class);
-        $this->app->bind(RendersVoluntarySavingsAuthorization::class, LaravelDompdfVoluntarySavingsAuthorizationRenderer::class);
+        $this->app->bind(RendersVoluntarySavingsPayrollAuthorization::class, LaravelDompdfVoluntarySavingsPayrollAuthorizationRenderer::class);
         $this->app->bind(DeliversFpqrsSubmissions::class, LaravelFpqrsSubmissionMailer::class);
         $this->app->bind(GeneratesPrivateStorageKeys::class, LaravelPrivateStorageKeyGenerator::class);
         $this->app->bind(StoresPrivateFiles::class, LaravelPrivateFileStorage::class);

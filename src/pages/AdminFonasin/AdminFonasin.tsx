@@ -73,6 +73,7 @@ import {
   fetchAdminContributionMovements,
   fetchAdminVoluntarySavingsRequests,
   reviewAdminVoluntarySavingsRequest,
+  uploadSignedVoluntarySavingsAuthorization,
   type AdminContributionAccount,
   type AdminContributionAccountFilters,
   type AdminContributionAccountPage,
@@ -398,6 +399,19 @@ export default function AdminFonasin() {
       setMessage(status === 'approved' ? 'Solicitud de ahorro voluntario aprobada.' : 'Solicitud de ahorro voluntario rechazada.');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible revisar la solicitud.');
+    }
+  }
+
+  async function handleUploadSignedVoluntarySavingsAuthorization(id: string, file: File) {
+    setError(null);
+    setMessage(null);
+
+    try {
+      const updated = await uploadSignedVoluntarySavingsAuthorization(id, file);
+      setVoluntarySavingsRequests((current) => current.map((item) => item.id === id ? updated : item));
+      setMessage('Libranza firmada guardada correctamente.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible cargar la libranza firmada.');
     }
   }
 
@@ -912,7 +926,7 @@ export default function AdminFonasin() {
                     : activeView === 'credits'
                       ? 'Administracion de creditos'
                       : activeView === 'contributions'
-                        ? 'Administracion de aportes'
+                        ? 'Administracion de aportes y ahorros'
                         : 'Historial de importaciones'}
               </h1>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -1016,7 +1030,7 @@ export default function AdminFonasin() {
             }`}
           >
             <PiggyBank size={16} />
-            Aportes
+            Aportes y ahorros
           </button>
         </nav>
 
@@ -1136,10 +1150,6 @@ export default function AdminFonasin() {
             onFormChange={setCreditForm}
             onCreate={handleCreateCredit}
             onStatusChange={handleCreditStatus}
-            importState={importState}
-            lastImport={lastImport}
-            onImport={handleImportSpreadsheet}
-            onDownloadTemplate={handleDownloadImportTemplate}
             canManage={isAdmin}
           />
         ) : activeView === 'contributions' ? (
@@ -1172,6 +1182,7 @@ export default function AdminFonasin() {
               : Promise.resolve()}
             onSelectAccount={(accountId) => loadContributionMovements(accountId, contributionMovementFilters, 1)}
             onReviewVoluntarySavingsRequest={handleReviewVoluntarySavingsRequest}
+            onUploadSignedAuthorization={handleUploadSignedVoluntarySavingsAuthorization}
             canManage={isAdmin}
           />
         ) : (
@@ -1179,7 +1190,12 @@ export default function AdminFonasin() {
             batches={importBatches}
             meta={importMeta}
             dataState={importHistoryState}
+            importState={importState}
+            lastImport={lastImport}
             typeFilter={importTypeFilter}
+            canManage={isAdmin}
+            onImport={handleImportSpreadsheet}
+            onDownloadTemplate={handleDownloadImportTemplate}
             onTypeFilterChange={(value) => {
               setImportTypeFilter(value);
               void loadImportBatches(value, 1);
@@ -1669,10 +1685,6 @@ export function CreditsPanel({
   onFormChange,
   onCreate,
   onStatusChange,
-  importState,
-  lastImport,
-  onImport,
-  onDownloadTemplate,
   canManage,
 }: {
   credits: AdminCredit[];
@@ -1682,10 +1694,6 @@ export function CreditsPanel({
   onFormChange: (form: CreditFormState) => void;
   onCreate: (event: FormEvent<HTMLFormElement>) => void;
   onStatusChange: (id: string, status: 'active' | 'settled' | 'archived') => void;
-  importState: DataState;
-  lastImport: AdminImportBatch | null;
-  onImport: (type: AdminImportType, event: FormEvent<HTMLFormElement>) => void;
-  onDownloadTemplate: (type: AdminImportType) => void;
   canManage: boolean;
 }) {
   const activeAssociates = associates.filter((associate) => associate.status === 'active');
@@ -1808,73 +1816,6 @@ export function CreditsPanel({
           </button>
         </form>
 
-        <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-slate-100 text-slate-700">
-              <UploadCloud size={22} />
-            </div>
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Carga masiva</p>
-              <h2 className="text-xl font-black text-slate-950">Importar XLSX</h2>
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-3">
-            <ImportForm
-              title="Cartera"
-              description="Columnas: documento, nombre_completo, linea_credito, numero_pagare, valor_inicial, valor_cuota, saldo_actual, fecha_ultimo_pago."
-              disabled={!canManage || importState === 'loading'}
-              onSubmit={(event) => onImport('credits', event)}
-              onDownloadTemplate={() => onDownloadTemplate('credits')}
-            />
-            <ImportForm
-              title="Aportes"
-              description="Columnas: documento, nombre_completo, valor_mensual, saldo, fecha_ultimo_pago."
-              disabled={!canManage || importState === 'loading'}
-              onSubmit={(event) => onImport('contributions', event)}
-              onDownloadTemplate={() => onDownloadTemplate('contributions')}
-            />
-            <ImportForm
-              title="Ahorro voluntario"
-              description="Columnas: documento, nombre_completo, valor_mensual, saldo, fecha_ultimo_pago."
-              disabled={!canManage || importState === 'loading'}
-              onSubmit={(event) => onImport('voluntary_savings', event)}
-              onDownloadTemplate={() => onDownloadTemplate('voluntary_savings')}
-            />
-            <ImportForm
-              title="Ahorro permanente"
-              description="Columnas: documento, nombre_completo, valor_mensual, saldo, fecha_ultimo_pago."
-              disabled={!canManage || importState === 'loading'}
-              onSubmit={(event) => onImport('permanent_savings', event)}
-              onDownloadTemplate={() => onDownloadTemplate('permanent_savings')}
-            />
-          </div>
-
-          {importState === 'loading' ? (
-            <div className="mt-4 flex items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">
-              <Loader2 className="animate-spin" size={18} />
-              Procesando archivo
-            </div>
-          ) : null}
-
-          {lastImport ? (
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-              <p className="font-black text-slate-950">{lastImport.original_filename}</p>
-              <p className="mt-1">
-                {lastImport.rows_created} creados, {lastImport.rows_updated} actualizados, {lastImport.rows_rejected} rechazados.
-              </p>
-              {lastImport.errors?.length ? (
-                <ul className="mt-2 space-y-1">
-                  {lastImport.errors.slice(0, 3).map((item, index) => (
-                    <li key={`${item.row ?? 'general'}-${index}`}>
-                      Fila {item.row ?? 'archivo'}: {item.message}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-          ) : null}
-        </section>
         </div>
       ) : null}
 
@@ -1978,6 +1919,7 @@ function ContributionsPanel({
   onMovementPageChange,
   onSelectAccount,
   onReviewVoluntarySavingsRequest,
+  onUploadSignedAuthorization,
   canManage,
 }: {
   voluntarySavingsRequests: AdminVoluntarySavingsRequest[];
@@ -1998,6 +1940,7 @@ function ContributionsPanel({
   onMovementPageChange: (page: number) => void;
   onSelectAccount: (accountId: string) => void;
   onReviewVoluntarySavingsRequest: (id: string, status: 'approved' | 'rejected') => void;
+  onUploadSignedAuthorization: (id: string, file: File) => void;
   canManage: boolean;
 }) {
   const selectedAccount = accounts.find((account) => account.id === selectedAccountId) ?? null;
@@ -2040,12 +1983,18 @@ function ContributionsPanel({
                   <td className="py-4">
                     <div className="flex flex-wrap gap-2">
                       <a
-                        href={adminContributionDocumentUrl(request.links.authorization)}
+                        href={adminContributionDocumentUrl(request.links.signed_authorization_preview ?? request.links.payroll_authorization_preview)}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-800 hover:bg-emerald-100"
                       >
-                        <FileText size={14} /> Ver PDF
+                        <ExternalLink size={14} /> {request.links.signed_authorization_preview ? 'Ver firmada' : 'Ver libranza'}
+                      </a>
+                      <a
+                        href={adminContributionDocumentUrl(request.links.signed_authorization_download ?? request.links.payroll_authorization_download)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"
+                      >
+                        <Download size={14} /> Descargar
                       </a>
                       {canManage && request.status === 'submitted' ? (
                         <>
@@ -2056,7 +2005,22 @@ function ContributionsPanel({
                             <XCircle size={14} /> Rechazar
                           </button>
                         </>
-                      ) : null}
+                      ) : request.status === 'approved' && canManage && !request.links.signed_authorization_preview ? (
+                        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black text-amber-800 hover:bg-amber-100">
+                          <UploadCloud size={14} /> Subir firmada
+                          <input
+                            type="file"
+                            accept="application/pdf,.pdf"
+                            className="sr-only"
+                            aria-label={`Libranza firmada de ${request.associate?.full_name ?? 'asociado'}`}
+                            onChange={(event) => {
+                              const file = event.target.files?.[0];
+                              if (file) onUploadSignedAuthorization(request.id, file);
+                              event.target.value = '';
+                            }}
+                          />
+                        </label>
+                      ) : <span className="text-xs font-bold text-slate-500">{request.links.signed_authorization_preview ? 'Firmada' : 'Revisada'}</span>}
                     </div>
                   </td>
                 </tr>
@@ -2379,6 +2343,7 @@ function ImportForm({
       <input
         type="file"
         name="file"
+        aria-label={`Archivo ${title}`}
         accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         required
         disabled={disabled}
@@ -2409,7 +2374,12 @@ function ImportHistoryPanel({
   batches,
   meta,
   dataState,
+  importState,
+  lastImport,
   typeFilter,
+  canManage,
+  onImport,
+  onDownloadTemplate,
   onTypeFilterChange,
   onPageChange,
   onDownloadErrors,
@@ -2417,7 +2387,12 @@ function ImportHistoryPanel({
   batches: AdminImportBatch[];
   meta: AdminImportBatchPage['meta'];
   dataState: DataState;
+  importState: DataState;
+  lastImport: AdminImportBatch | null;
   typeFilter: string;
+  canManage: boolean;
+  onImport: (type: AdminImportType, event: FormEvent<HTMLFormElement>) => void;
+  onDownloadTemplate: (type: AdminImportType) => void;
   onTypeFilterChange: (value: string) => void;
   onPageChange: (page: number) => void;
   onDownloadErrors: (batchId: string) => void;
@@ -2426,7 +2401,32 @@ function ImportHistoryPanel({
   const canGoNext = meta.current_page < meta.last_page && dataState !== 'loading';
 
   return (
-    <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="space-y-5">
+      {canManage ? (
+        <section className="rounded-[1.5rem] border border-emerald-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><UploadCloud size={22} /></div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Carga masiva</p>
+              <h2 className="text-xl font-black text-slate-950">Subir archivos operativos</h2>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <ImportForm title="Cartera" description="Columnas: documento, nombre_completo, linea_credito, numero_pagare, valor_inicial, valor_cuota, saldo_actual, fecha_ultimo_pago." disabled={importState === 'loading'} onSubmit={(event) => onImport('credits', event)} onDownloadTemplate={() => onDownloadTemplate('credits')} />
+            <ImportForm title="Aportes" description="Columnas: documento, nombre_completo, valor_mensual, saldo, fecha_ultimo_pago." disabled={importState === 'loading'} onSubmit={(event) => onImport('contributions', event)} onDownloadTemplate={() => onDownloadTemplate('contributions')} />
+            <ImportForm title="Ahorro voluntario" description="Columnas: documento, nombre_completo, valor_mensual, saldo, fecha_ultimo_pago." disabled={importState === 'loading'} onSubmit={(event) => onImport('voluntary_savings', event)} onDownloadTemplate={() => onDownloadTemplate('voluntary_savings')} />
+            <ImportForm title="Ahorro permanente" description="Columnas: documento, nombre_completo, valor_mensual, saldo, fecha_ultimo_pago." disabled={importState === 'loading'} onSubmit={(event) => onImport('permanent_savings', event)} onDownloadTemplate={() => onDownloadTemplate('permanent_savings')} />
+          </div>
+          {importState === 'loading' ? <div className="mt-4 flex items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800"><Loader2 className="animate-spin" size={18} />Procesando archivo</div> : null}
+          {lastImport ? (
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              <p className="font-black text-slate-950">{lastImport.original_filename}</p>
+              <p className="mt-1">{lastImport.rows_created} creados, {lastImport.rows_updated} actualizados, {lastImport.rows_rejected} rechazados.</p>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+      <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Historial</p>
@@ -2543,7 +2543,8 @@ function ImportHistoryPanel({
           </button>
         </div>
       </div>
-    </section>
+      </section>
+    </div>
   );
 }
 

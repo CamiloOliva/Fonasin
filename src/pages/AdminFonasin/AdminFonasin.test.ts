@@ -178,10 +178,6 @@ describe('AdminFonasin permissions and imports', () => {
       onFormChange: callback,
       onCreate: callback,
       onStatusChange: callback,
-      importState: 'idle',
-      lastImport: null,
-      onImport: callback,
-      onDownloadTemplate: callback,
       canManage: false,
     }));
 
