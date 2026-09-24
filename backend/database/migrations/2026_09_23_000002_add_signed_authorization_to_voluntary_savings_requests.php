@@ -13,8 +13,13 @@ return new class extends Migration
             $table->timestamp('signed_authorization_uploaded_at')->nullable()->after('signed_authorization_storage_key');
             $table->foreignUuid('signed_authorization_uploaded_by_user_id')
                 ->nullable()
-                ->after('signed_authorization_uploaded_at')
-                ->constrained('users')
+                ->after('signed_authorization_uploaded_at');
+            $table->foreign(
+                'signed_authorization_uploaded_by_user_id',
+                'vsr_signed_auth_uploaded_by_fk',
+            )
+                ->references('id')
+                ->on('users')
                 ->nullOnDelete();
         });
     }
@@ -22,10 +27,11 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('voluntary_savings_requests', function (Blueprint $table): void {
-            $table->dropConstrainedForeignId('signed_authorization_uploaded_by_user_id');
+            $table->dropForeign('vsr_signed_auth_uploaded_by_fk');
             $table->dropColumn([
                 'signed_authorization_storage_key',
                 'signed_authorization_uploaded_at',
+                'signed_authorization_uploaded_by_user_id',
             ]);
         });
     }
