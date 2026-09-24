@@ -50,4 +50,9 @@ class Associate extends Model
     {
         return $this->hasMany(ContributionMovement::class);
     }
+
+    public function voluntarySavingsRequests(): HasMany
+    {
+        return $this->hasMany(VoluntarySavingsRequest::class);
+    }
 }

@@ -110,6 +110,15 @@ export type PortalAffiliationUpdateDraft = {
   };
 };
 
+export type PortalVoluntarySavingsRequest = {
+  id: string;
+  monthly_amount: string;
+  status: 'submitted' | 'approved' | 'rejected';
+  submitted_at: string;
+  reviewed_at: string | null;
+  review_notes: string | null;
+};
+
 type RequestOptions = {
   method?: 'GET' | 'POST';
   body?: BodyInit | null;
@@ -269,6 +278,24 @@ export async function fetchPortalAffiliation(): Promise<PortalAffiliation | null
 export async function startPortalAffiliationUpdate(): Promise<PortalAffiliationUpdateDraft> {
   const response = await requestJson<{ data: PortalAffiliationUpdateDraft }>('/portal/affiliation/update-draft', {
     method: 'POST',
+  });
+
+  return response.data;
+}
+
+export async function fetchPortalVoluntarySavingsRequests(): Promise<PortalVoluntarySavingsRequest[]> {
+  const response = await requestJson<{ data: PortalVoluntarySavingsRequest[] }>('/portal/voluntary-savings-requests');
+
+  return response.data;
+}
+
+export async function submitPortalVoluntarySavingsRequest(monthlyAmount: string): Promise<PortalVoluntarySavingsRequest> {
+  const response = await requestJson<{ data: PortalVoluntarySavingsRequest }>('/portal/voluntary-savings-requests', {
+    method: 'POST',
+    body: JSON.stringify({
+      monthly_amount: monthlyAmount,
+      accept_terms: true,
+    }),
   });
 
   return response.data;

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { ArrowRight, CreditCard, FileText, Loader2, LogOut, PiggyBank, RefreshCw, ShieldCheck, UserRound } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ForcedPasswordChange from '../../components/auth/ForcedPasswordChange';
 import {
   changeOwnPassword,
@@ -8,16 +8,20 @@ import {
   fetchPortalAffiliation,
   fetchPortalContributions,
   fetchPortalCredits,
+  fetchPortalVoluntarySavingsRequests,
   loginPortal,
   logoutPortal,
   portalDocumentPreviewUrl,
   startPortalAffiliationUpdate,
+  submitPortalVoluntarySavingsRequest,
   type PortalAffiliation,
   type PortalAffiliationDocument,
   type PortalAffiliationUpdateDraft,
   type PortalContributions,
+  type PortalContributionMovement,
   type PortalCredit,
   type PortalUser,
+  type PortalVoluntarySavingsRequest,
   PortalServiceError,
 } from '../../services/portalService';
 
@@ -26,9 +30,10 @@ type PrivateDataState = 'idle' | 'loading' | 'ready' | 'error' | 'forbidden' | '
 type CreditsState = PrivateDataState;
 type ContributionsState = PrivateDataState;
 type AffiliationState = PrivateDataState;
-type PortalTab = 'statement' | 'contributions' | 'form';
+type PortalTab = 'statement' | 'savings' | 'form';
 const AFFILIATION_DRAFT_STORAGE_KEY = 'fonasin.portal.affiliation.draft.v1';
 const AFFILIATION_DRAFT_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
+const MAX_VOLUNTARY_SAVINGS_AMOUNT = 10_000_000_000;
 
 const currency = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -42,6 +47,18 @@ function formatMoney(value: string): string {
   return Number.isFinite(amount) ? currency.format(amount) : value;
 }
 
+function formatSavingsAmountInput(value: string): string {
+  const digits = value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  if (!digits) return '';
+
+  const amount = Math.min(Number(digits), MAX_VOLUNTARY_SAVINGS_AMOUNT);
+  return new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(amount);
+}
+
+function savingsAmountValue(value: string): string {
+  return value.replace(/\D/g, '');
+}
+
 function statusLabel(status: string): string {
   const labels: Record<string, string> = {
     active: 'Activo',
@@ -52,21 +69,20 @@ function statusLabel(status: string): string {
   return labels[status] ?? status;
 }
 
-function movementTypeLabel(type: string): string {
-  const labels: Record<string, string> = {
-    permanent_savings: 'Ahorro permanente',
-    voluntary_savings: 'Ahorro voluntario',
-    contribution: 'Aporte',
-    adjustment: 'Ajuste',
-  };
-
-  return labels[type] ?? type;
-}
-
 function movementStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     registered: 'Registrado',
     reversed: 'Reversado',
+  };
+
+  return labels[status] ?? status;
+}
+
+function savingsRequestStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    submitted: 'Pendiente de revision',
+    approved: 'Aprobada',
+    rejected: 'Rechazada',
   };
 
   return labels[status] ?? status;
@@ -197,19 +213,27 @@ function privateDataErrorState(caught: unknown): 'error' | 'forbidden' | 'expire
 }
 export default function PortalAsociado() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const wantsDataUpdate = new URLSearchParams(location.search).get('intent') === 'actualizar-datos';
+  const wantsVoluntarySavings = new URLSearchParams(location.search).get('intent') === 'ahorro-voluntario';
   const [sessionState, setSessionState] = useState<SessionState>('checking');
   const [creditsState, setCreditsState] = useState<CreditsState>('idle');
   const [contributionsState, setContributionsState] = useState<ContributionsState>('idle');
   const [affiliationState, setAffiliationState] = useState<AffiliationState>('idle');
+  const [savingsRequestState, setSavingsRequestState] = useState<PrivateDataState>('idle');
   const [user, setUser] = useState<PortalUser | null>(null);
   const [credits, setCredits] = useState<PortalCredit[]>([]);
   const [contributions, setContributions] = useState<PortalContributions | null>(null);
   const [affiliation, setAffiliation] = useState<PortalAffiliation | null>(null);
+  const [savingsRequests, setSavingsRequests] = useState<PortalVoluntarySavingsRequest[]>([]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
-  const [activeTab, setActiveTab] = useState<PortalTab>('statement');
+  const [activeTab, setActiveTab] = useState<PortalTab>(wantsVoluntarySavings ? 'savings' : 'statement');
   const [startingUpdate, setStartingUpdate] = useState(false);
+  const [savingsAmount, setSavingsAmount] = useState('');
+  const [savingsAccepted, setSavingsAccepted] = useState(false);
+  const [submittingSavings, setSubmittingSavings] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -221,6 +245,11 @@ export default function PortalAsociado() {
     () => credits.reduce((total, credit) => total + Number.parseFloat(credit.initial_balance || '0'), 0),
     [credits],
   );
+  const hasPendingSavingsRequest = useMemo(
+    () => savingsRequests.some((request) => request.status === 'submitted'),
+    [savingsRequests],
+  );
+  const latestSavingsRequest = savingsRequests[0] ?? null;
 
   async function loadCredits() {
     setCreditsState('loading');
@@ -267,6 +296,20 @@ export default function PortalAsociado() {
     }
   }
 
+  async function loadSavingsRequests() {
+    setSavingsRequestState('loading');
+    setError(null);
+
+    try {
+      setSavingsRequests(await fetchPortalVoluntarySavingsRequests());
+      setSavingsRequestState('ready');
+    } catch (caught) {
+      setSavingsRequests([]);
+      setSavingsRequestState(privateDataErrorState(caught));
+      setError(caught instanceof Error ? caught.message : 'No fue posible cargar tus solicitudes de ahorro voluntario.');
+    }
+  }
+
   useEffect(() => {
     let active = true;
 
@@ -279,8 +322,10 @@ export default function PortalAsociado() {
         if (!currentUser.must_change_password) {
           if (shouldOpenProfileCompletion(currentUser)) {
             await openProfileCompletion();
+          } else if (wantsDataUpdate) {
+            await handleStartAffiliationUpdate();
           } else {
-            await loadCredits();
+            await Promise.all([loadCredits(), loadContributions(), loadSavingsRequests()]);
           }
         }
       } catch {
@@ -298,23 +343,23 @@ export default function PortalAsociado() {
     if (
       sessionState === 'authenticated'
       && !user?.must_change_password
-      && activeTab === 'contributions'
-      && contributionsState === 'idle'
-    ) {
-      void loadContributions();
-    }
-  }, [activeTab, contributionsState, sessionState, user?.must_change_password]);
-
-  useEffect(() => {
-    if (
-      sessionState === 'authenticated'
-      && !user?.must_change_password
       && activeTab === 'form'
       && affiliationState === 'idle'
     ) {
       void loadAffiliation();
     }
   }, [activeTab, affiliationState, sessionState, user?.must_change_password]);
+
+  useEffect(() => {
+    if (
+      sessionState === 'authenticated'
+      && !user?.must_change_password
+      && activeTab === 'savings'
+      && savingsRequestState === 'idle'
+    ) {
+      void loadSavingsRequests();
+    }
+  }, [activeTab, savingsRequestState, sessionState, user?.must_change_password]);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -331,8 +376,10 @@ export default function PortalAsociado() {
       if (!loggedUser.must_change_password) {
         if (shouldOpenProfileCompletion(loggedUser)) {
           await openProfileCompletion();
+        } else if (wantsDataUpdate) {
+          await handleStartAffiliationUpdate();
         } else {
-          await loadCredits();
+          await Promise.all([loadCredits(), loadContributions(), loadSavingsRequests()]);
         }
       }
     } catch (caught) {
@@ -341,10 +388,12 @@ export default function PortalAsociado() {
       setCredits([]);
       setContributions(null);
       setAffiliation(null);
+      setSavingsRequests([]);
       setSessionState('guest');
       setCreditsState('idle');
       setContributionsState('idle');
       setAffiliationState('idle');
+      setSavingsRequestState('idle');
       setError(caught instanceof Error ? caught.message : 'No fue posible iniciar sesion.');
     }
   }
@@ -364,6 +413,7 @@ export default function PortalAsociado() {
     setCredits([]);
     setContributions(null);
     setAffiliation(null);
+    setSavingsRequests([]);
     setEmail('');
     setPassword('');
     setRemember(false);
@@ -371,6 +421,7 @@ export default function PortalAsociado() {
     setCreditsState('idle');
     setContributionsState('idle');
     setAffiliationState('idle');
+    setSavingsRequestState('idle');
     setMessage('Sesion cerrada.');
   }
 
@@ -384,8 +435,10 @@ export default function PortalAsociado() {
     setMessage('Contrasena actualizada correctamente.');
     if (shouldOpenProfileCompletion(updatedUser)) {
       await openProfileCompletion();
+    } else if (wantsDataUpdate) {
+      await handleStartAffiliationUpdate();
     } else {
-      await loadCredits();
+      await Promise.all([loadCredits(), loadContributions(), loadSavingsRequests()]);
     }
   }
 
@@ -415,6 +468,26 @@ export default function PortalAsociado() {
       setError(caught instanceof Error ? caught.message : 'No fue posible preparar la actualizacion de datos.');
     } finally {
       setStartingUpdate(false);
+    }
+  }
+
+  async function handleSubmitSavingsRequest(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setMessage(null);
+    setSubmittingSavings(true);
+
+    try {
+      const created = await submitPortalVoluntarySavingsRequest(savingsAmountValue(savingsAmount));
+      setSavingsRequests((current) => [created, ...current]);
+      setSavingsAmount('');
+      setSavingsAccepted(false);
+      setSavingsRequestState('ready');
+      setMessage('Solicitud de ahorro voluntario enviada correctamente.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible enviar la solicitud de ahorro voluntario.');
+    } finally {
+      setSubmittingSavings(false);
     }
   }
   if (sessionState === 'checking') {
@@ -587,7 +660,7 @@ export default function PortalAsociado() {
             <div className="grid gap-2 sm:grid-cols-3">
               {[
                 { id: 'statement' as const, label: 'Estado de cuenta', icon: CreditCard },
-                { id: 'contributions' as const, label: 'Aportes', icon: PiggyBank },
+                { id: 'savings' as const, label: 'Ahorro voluntario', icon: PiggyBank },
                 { id: 'form' as const, label: 'Formulario', icon: FileText },
               ].map((tab) => {
                 const Icon = tab.icon;
@@ -613,15 +686,15 @@ export default function PortalAsociado() {
           </div>
 
           {activeTab === 'statement' ? (
-            <div className="p-5 sm:p-7">
+            <div className="m-5 rounded-xl border border-emerald-200 bg-emerald-50/25 p-5 shadow-sm sm:m-7 sm:p-6">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Estado de cuenta</p>
-                  <h2 className="mt-1 font-heading text-2xl font-black text-fonasin-deep sm:text-3xl">Creditos registrados</h2>
+                  <h2 className="mt-1 font-heading text-2xl font-black text-fonasin-deep sm:text-3xl">Creditos vigentes</h2>
                 </div>
                 <button
                   type="button"
-                  onClick={loadCredits}
+                  onClick={() => void Promise.all([loadCredits(), loadContributions(), loadSavingsRequests()])}
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-fonasin-green/20 bg-fonasin-surface px-4 py-2.5 text-sm font-bold text-fonasin-green transition hover:bg-fonasin-lime/20 focus-ring"
                 >
                   <RefreshCw size={16} />
@@ -651,7 +724,7 @@ export default function PortalAsociado() {
               ) : null}
 
               {creditsState === 'ready' && credits.length > 0 ? (
-                <div className="mt-6 overflow-x-auto rounded-xl border border-slate-100 bg-slate-50/70 p-3 sm:p-4">
+                <div className="mt-6 overflow-x-auto rounded-xl border border-emerald-200 bg-emerald-50/30 p-3 shadow-sm sm:p-4">
                   <table className="w-full min-w-[760px] border-collapse text-left text-sm">
                     <thead>
                       <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.16em] text-slate-500">
@@ -687,23 +760,8 @@ export default function PortalAsociado() {
             </div>
           ) : null}
 
-          {activeTab === 'contributions' ? (
-            <div className="p-5 sm:p-7">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Estado de aportes</p>
-                  <h2 className="mt-1 font-heading text-2xl font-black text-fonasin-deep sm:text-3xl">Aportes registrados</h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={loadContributions}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-fonasin-green/20 bg-fonasin-surface px-4 py-2.5 text-sm font-bold text-fonasin-green transition hover:bg-fonasin-lime/20 focus-ring"
-                >
-                  <RefreshCw size={16} />
-                  Actualizar
-                </button>
-              </div>
-
+          {activeTab === 'statement' ? (
+            <div className="px-5 pb-5 sm:px-7 sm:pb-7">
               {contributionsState === 'loading' ? (
                 <div className="mt-5 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600">
                   <Loader2 className="animate-spin" size={18} />
@@ -734,58 +792,127 @@ export default function PortalAsociado() {
               ) : null}
 
               {contributionsState === 'ready' && contributions?.state === 'available' && contributions.account ? (
-                <div className="mt-6 space-y-5">
-                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
-                      <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Aportes</p>
-                      <p className="mt-3 text-2xl font-black text-fonasin-deep">{formatMoney(contributions.account.contribution_balance)}</p>
-                    </div>
-                    <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
-                      <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Ahorro permanente</p>
-                      <p className="mt-3 text-2xl font-black text-fonasin-deep">{formatMoney(contributions.account.permanent_savings_balance)}</p>
-                    </div>
-                    <div className="rounded-xl border border-emerald-100 bg-white p-5">
-                      <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Ahorro voluntario</p>
-                      <p className="mt-3 text-2xl font-black text-fonasin-deep">{formatMoney(contributions.account.voluntary_savings_balance)}</p>
-                    </div>
-                    <div className="rounded-xl border border-emerald-100 bg-white p-5">
-                      <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Saldo total</p>
-                      <p className="mt-3 text-2xl font-black text-fonasin-deep">{formatMoney(contributions.account.total_balance)}</p>
-                    </div>
-                  </div>
-
-                  <div className="overflow-x-auto rounded-xl border border-slate-100 bg-slate-50/70 p-3 sm:p-4">
-                    <table className="w-full min-w-[720px] border-collapse text-left text-sm">
-                      <thead>
-                        <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.16em] text-slate-500">
-                          <th className="py-3 pr-4">Periodo</th>
-                          <th className="py-3 pr-4">Fecha de corte</th>
-                          <th className="py-3 pr-4">Tipo</th>
-                          <th className="py-3 pr-4">Valor</th>
-                          <th className="py-3 pr-4">Saldo</th>
-                          <th className="py-3">Estado</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {contributions.movements.map((movement) => (
-                          <tr key={movement.id} className="border-b border-slate-200/70 transition hover:bg-white last:border-b-0">
-                            <td className="py-4 pr-4 font-bold text-slate-950">{formatPortalDate(movement.period)}</td>
-                            <td className="py-4 pr-4 text-slate-700">{formatPortalDate(movement.cut_off_date)}</td>
-                            <td className="py-4 pr-4 text-slate-700">{movementTypeLabel(movement.movement_type)}</td>
-                            <td className="py-4 pr-4 font-bold text-slate-950">{formatMoney(movement.amount)}</td>
-                            <td className="py-4 pr-4 text-slate-700">{formatMoney(movement.balance_after)}</td>
-                            <td className="py-4">
-                              <span className="rounded-full bg-fonasin-surface px-3 py-1 text-xs font-bold text-fonasin-green">
-                                {movementStatusLabel(movement.status)}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                <div className="space-y-5">
+                  <ContributionStatementSection
+                    title="Aportes"
+                    balance={contributions.account.contribution_balance}
+                    movements={contributions.movements.filter((movement) => movement.movement_type === 'contribution')}
+                  />
+                  <ContributionStatementSection
+                    title="Ahorro permanente"
+                    balance={contributions.account.permanent_savings_balance}
+                    movements={contributions.movements.filter((movement) => movement.movement_type === 'permanent_savings')}
+                  />
+                  <ContributionStatementSection
+                    title="Ahorro voluntario"
+                    balance={contributions.account.voluntary_savings_balance}
+                    movements={contributions.movements.filter((movement) => movement.movement_type === 'voluntary_savings')}
+                    request={latestSavingsRequest}
+                  />
                 </div>
               ) : null}
+            </div>
+          ) : null}
+
+          {activeTab === 'savings' ? (
+            <div className="p-5 sm:p-7">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Solicitud privada</p>
+                  <h2 className="mt-1 font-heading text-2xl font-black text-fonasin-deep sm:text-3xl">Ahorro voluntario</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={loadSavingsRequests}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-fonasin-green/20 bg-fonasin-surface px-4 py-2.5 text-sm font-bold text-fonasin-green transition hover:bg-fonasin-lime/20 focus-ring"
+                >
+                  <RefreshCw size={16} />
+                  Actualizar
+                </button>
+              </div>
+
+              {savingsRequestState === 'loading' ? (
+                <div className="mt-5 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600">
+                  <Loader2 className="animate-spin" size={18} />
+                  Cargando solicitudes
+                </div>
+              ) : null}
+
+              {savingsRequestState === 'error' || savingsRequestState === 'forbidden' || savingsRequestState === 'expired' ? (
+                <div className="mt-5 rounded-xl border border-amber-100 bg-amber-50 px-4 py-4 text-sm font-semibold text-amber-800">
+                  {error ?? 'No fue posible consultar las solicitudes de ahorro voluntario.'}
+                </div>
+              ) : null}
+
+              <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+                <form onSubmit={handleSubmitSavingsRequest} className="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
+                  <p className="font-black text-fonasin-deep">Nueva solicitud</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Indica el valor que deseas ahorrar mensualmente para que FONASIN revise la solicitud.
+                  </p>
+                  <label className="mt-5 block">
+                    <span className="text-sm font-bold text-slate-800">Valor mensual</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={savingsAmount}
+                      onChange={(event) => setSavingsAmount(formatSavingsAmountInput(event.target.value))}
+                      disabled={hasPendingSavingsRequest}
+                      required
+                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-bold text-slate-950 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 disabled:bg-slate-100"
+                    />
+                  </label>
+                  <label className="mt-4 flex items-start gap-3 text-sm font-semibold leading-6 text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={savingsAccepted}
+                      onChange={(event) => setSavingsAccepted(event.target.checked)}
+                      disabled={hasPendingSavingsRequest}
+                      required
+                      className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    Confirmo que deseo solicitar este ahorro voluntario mensual.
+                  </label>
+                  {hasPendingSavingsRequest ? (
+                    <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                      Ya tienes una solicitud pendiente de revision.
+                    </p>
+                  ) : null}
+                  <button
+                    type="submit"
+                    disabled={submittingSavings || hasPendingSavingsRequest || !savingsAccepted}
+                    className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-fonasin-green px-4 py-3 text-sm font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 focus-ring"
+                  >
+                    {submittingSavings ? <Loader2 className="animate-spin" size={17} /> : <FileText size={17} />}
+                    {submittingSavings ? 'Enviando solicitud' : 'Enviar solicitud'}
+                  </button>
+                </form>
+
+                <div>
+                  <p className="font-black text-slate-950">Solicitudes enviadas</p>
+                  {savingsRequestState === 'ready' && savingsRequests.length === 0 ? (
+                    <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-600">
+                      Aun no tienes solicitudes de ahorro voluntario.
+                    </div>
+                  ) : null}
+                  <div className="mt-3 space-y-3">
+                    {savingsRequests.map((request) => (
+                      <article key={request.id} className="rounded-xl border border-slate-200 bg-white p-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <p className="text-lg font-black text-fonasin-deep">{formatMoney(request.monthly_amount)} mensuales</p>
+                            <p className="mt-1 text-xs font-semibold text-slate-500">Enviada: {formatPortalDate(request.submitted_at)}</p>
+                          </div>
+                          <span className="w-fit rounded-full bg-fonasin-surface px-3 py-1 text-xs font-bold text-fonasin-green">
+                            {savingsRequestStatusLabel(request.status)}
+                          </span>
+                        </div>
+                        {request.review_notes ? <p className="mt-3 text-sm text-slate-600">{request.review_notes}</p> : null}
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           ) : null}
 
@@ -884,6 +1011,80 @@ export default function PortalAsociado() {
           ) : null}
         </div>
       </div>
+    </section>
+  );
+}
+
+function ContributionStatementSection({
+  title,
+  balance,
+  movements,
+  request = null,
+}: {
+  title: string;
+  balance: string;
+  movements: PortalContributionMovement[];
+  request?: PortalVoluntarySavingsRequest | null;
+}) {
+  return (
+    <section className="rounded-xl border border-emerald-200 bg-emerald-50/25 p-5 shadow-sm sm:p-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">Estado de cuenta</p>
+          <h2 className="mt-1 font-heading text-2xl font-black text-fonasin-deep sm:text-3xl">{title}</h2>
+        </div>
+        <div className="sm:text-right">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Saldo actual</p>
+          <p className="mt-1 text-2xl font-black text-fonasin-deep">{formatMoney(balance)}</p>
+        </div>
+      </div>
+
+      {request ? (
+        <div className="mt-5 flex flex-col gap-2 border-l-4 border-emerald-500 bg-white px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-black text-slate-950">Solicitud: {savingsRequestStatusLabel(request.status)}</p>
+            <p className="mt-1 text-slate-600">
+              El valor aprobado se suma al saldo cuando FONASIN registra el descuento recibido.
+            </p>
+          </div>
+          <p className="shrink-0 font-black text-emerald-800">{formatMoney(request.monthly_amount)} mensuales</p>
+        </div>
+      ) : null}
+
+      {movements.length === 0 ? (
+        <p className="mt-5 border border-emerald-100 bg-white/80 px-4 py-7 text-center text-sm font-semibold text-slate-600">
+          No hay movimientos registrados de {title.toLocaleLowerCase('es-CO')}.
+        </p>
+      ) : (
+        <div className="mt-5 overflow-x-auto border border-emerald-100 bg-white/80 px-3 sm:px-4">
+          <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.16em] text-slate-500">
+                <th className="py-3 pr-4">Periodo</th>
+                <th className="py-3 pr-4">Fecha de corte</th>
+                <th className="py-3 pr-4">Valor</th>
+                <th className="py-3 pr-4">Saldo</th>
+                <th className="py-3">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {movements.map((movement) => (
+                <tr key={movement.id} className="border-b border-slate-200/70 transition hover:bg-white last:border-b-0">
+                  <td className="py-4 pr-4 font-bold text-slate-950">{formatPortalDate(movement.period)}</td>
+                  <td className="py-4 pr-4 text-slate-700">{formatPortalDate(movement.cut_off_date)}</td>
+                  <td className="py-4 pr-4 font-bold text-slate-950">{formatMoney(movement.amount)}</td>
+                  <td className="py-4 pr-4 text-slate-700">{formatMoney(movement.balance_after)}</td>
+                  <td className="py-4">
+                    <span className="rounded-full bg-fonasin-surface px-3 py-1 text-xs font-bold text-fonasin-green">
+                      {movementStatusLabel(movement.status)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 }

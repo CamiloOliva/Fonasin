@@ -308,6 +308,17 @@ class ProductionDatabaseSchemaConstraintTest extends TestCase
         $this->assertSame(['active_draft_associate_id'], $indexedColumns);
     }
 
+    public function test_only_one_pending_voluntary_savings_request_is_allowed_per_associate(): void
+    {
+        $associateId = $this->createAssociate($this->createUser());
+
+        $this->insertVoluntarySavingsRequest($associateId, $associateId);
+
+        $this->expectException(QueryException::class);
+
+        $this->insertVoluntarySavingsRequest($associateId, $associateId);
+    }
+
     public function test_duplicate_consent_for_the_same_policy_version_is_rejected(): void
     {
         $applicationId = $this->createAffiliationApplication();
@@ -372,6 +383,23 @@ class ProductionDatabaseSchemaConstraintTest extends TestCase
             'id' => (string) Str::uuid(),
             'associate_id' => $associateId,
             'status' => $status,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    private function insertVoluntarySavingsRequest(string $associateId, ?string $pendingAssociateId): void
+    {
+        $requestId = (string) Str::uuid();
+
+        DB::table('voluntary_savings_requests')->insert([
+            'id' => $requestId,
+            'associate_id' => $associateId,
+            'pending_associate_id' => $pendingAssociateId,
+            'monthly_amount' => 100000,
+            'status' => $pendingAssociateId ? 'submitted' : 'approved',
+            'authorization_storage_key' => "private/{$requestId}.pdf",
+            'submitted_at' => now(),
             'created_at' => now(),
             'updated_at' => now(),
         ]);

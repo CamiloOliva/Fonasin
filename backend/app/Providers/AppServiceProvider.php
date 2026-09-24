@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Application\Affiliation\Contracts\RendersAffiliationSubmissionDocuments;
+use App\Application\Contributions\Contracts\RendersVoluntarySavingsPayrollAuthorization;
 use App\Application\Fpqrs\Contracts\DeliversFpqrsSubmissions;
 use App\Application\Imports\Contracts\ReadsSpreadsheetRows;
 use App\Application\Portal\Contracts\ExportsAssociateProfiles;
@@ -11,6 +12,7 @@ use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Application\Storage\Contracts\GeneratesPrivateStorageKeys;
 use App\Application\Storage\Contracts\StoresPrivateFiles;
 use App\Infrastructure\Affiliation\LaravelDompdfAffiliationSubmissionRenderer;
+use App\Infrastructure\Contributions\LaravelDompdfVoluntarySavingsPayrollAuthorizationRenderer;
 use App\Infrastructure\Imports\SimpleXlsxSpreadsheetReader;
 use App\Infrastructure\Mail\LaravelFpqrsSubmissionMailer;
 use App\Infrastructure\Portal\SimpleXlsxAssociateProfileExporter;
@@ -23,11 +25,13 @@ use App\Models\Associate;
 use App\Models\ContributionAccount;
 use App\Models\CreditAccount;
 use App\Models\ImportBatch;
+use App\Models\VoluntarySavingsRequest;
 use App\Policies\AffiliationApplicationPolicy;
 use App\Policies\AssociatePolicy;
 use App\Policies\ContributionAccountPolicy;
 use App\Policies\CreditAccountPolicy;
 use App\Policies\ImportBatchPolicy;
+use App\Policies\VoluntarySavingsRequestPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -46,6 +50,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ReadsSpreadsheetRows::class, SimpleXlsxSpreadsheetReader::class);
         $this->app->bind(ExportsAssociateProfiles::class, SimpleXlsxAssociateProfileExporter::class);
         $this->app->bind(RendersAffiliationSubmissionDocuments::class, LaravelDompdfAffiliationSubmissionRenderer::class);
+        $this->app->bind(RendersVoluntarySavingsPayrollAuthorization::class, LaravelDompdfVoluntarySavingsPayrollAuthorizationRenderer::class);
         $this->app->bind(DeliversFpqrsSubmissions::class, LaravelFpqrsSubmissionMailer::class);
         $this->app->bind(GeneratesPrivateStorageKeys::class, LaravelPrivateStorageKeyGenerator::class);
         $this->app->bind(StoresPrivateFiles::class, LaravelPrivateFileStorage::class);
@@ -61,6 +66,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ContributionAccount::class, ContributionAccountPolicy::class);
         Gate::policy(CreditAccount::class, CreditAccountPolicy::class);
         Gate::policy(ImportBatch::class, ImportBatchPolicy::class);
+        Gate::policy(VoluntarySavingsRequest::class, VoluntarySavingsRequestPolicy::class);
 
         RateLimiter::for('affiliation-draft-create', function (Request $request): Limit {
             return Limit::perMinute(30)->by('affiliation-draft-create|'.$request->ip());
@@ -92,6 +98,10 @@ class AppServiceProvider extends ServiceProvider
                 : (string) $associate;
 
             return Limit::perMinute(3)->by('associate-activation|'.$request->user()?->id.'|'.$associateId);
+        });
+
+        RateLimiter::for('voluntary-savings-request', function (Request $request): Limit {
+            return Limit::perMinute(5)->by('voluntary-savings-request|'.$request->user()?->id);
         });
     }
 

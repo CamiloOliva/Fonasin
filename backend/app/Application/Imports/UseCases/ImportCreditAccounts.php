@@ -38,7 +38,17 @@ class ImportCreditAccounts
         'fecha_ultimo_pago',
     ];
 
-    private const CREDIT_LINES = ['FONALIBRE', 'FONAPEN', 'FONAPRIMA', 'FONAROTATIVO', 'FONAPORTES'];
+    private const CREDIT_LINES = [
+        'FONALIBRE',
+        'FONAPEN',
+        'FONAPRIMA',
+        'FONAROTATIVO',
+        'FONAPORTES',
+        'CONVENIOS',
+        'CREDIRAPIDO',
+        'LIBRE INVERSION',
+        'APORTES',
+    ];
 
     public function __construct(
         private readonly ReadsSpreadsheetRows $reader,

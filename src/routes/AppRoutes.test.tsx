@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AppRoutes from './AppRoutes';
 import * as adminAffiliationService from '../services/adminAffiliationService';
 import * as adminContributionService from '../services/adminContributionService';
+import * as adminCreditService from '../services/adminCreditService';
 import * as portalService from '../services/portalService';
 
 vi.mock('../components/sections/StatutesBookViewer', () => ({
@@ -21,10 +22,12 @@ vi.mock('../services/portalService', () => ({
   fetchPortalAffiliation: vi.fn().mockResolvedValue(null),
   fetchPortalContributions: vi.fn().mockResolvedValue({ state: 'module_disabled', account: null, movements: [] }),
   fetchPortalCredits: vi.fn().mockResolvedValue([]),
+  fetchPortalVoluntarySavingsRequests: vi.fn().mockResolvedValue([]),
   loginPortal: vi.fn(),
   logoutPortal: vi.fn(),
   portalDocumentPreviewUrl: vi.fn((path: string) => path),
   startPortalAffiliationUpdate: vi.fn(),
+  submitPortalVoluntarySavingsRequest: vi.fn(),
 }));
 
 vi.mock('../services/adminAffiliationService', () => ({
@@ -52,16 +55,30 @@ vi.mock('../services/adminAssociateService', () => ({
 vi.mock('../services/adminCreditService', () => ({
   archiveAdminCredit: vi.fn(),
   createAdminCredit: vi.fn(),
+  downloadAdminImportErrorReport: vi.fn(),
+  downloadAdminImportTemplate: vi.fn(),
   fetchAdminCredits: vi.fn().mockResolvedValue([]),
+  fetchAdminImportBatches: vi.fn().mockResolvedValue({
+    data: [],
+    meta: { current_page: 1, last_page: 1, per_page: 50, total: 0 },
+  }),
+  importAdminSpreadsheet: vi.fn(),
   updateAdminCredit: vi.fn(),
 }));
 
 vi.mock('../services/adminContributionService', () => ({
+  adminContributionDocumentUrl: vi.fn((path: string) => path),
   fetchAdminContributionAccounts: vi.fn().mockResolvedValue({
     data: [],
     meta: { current_page: 1, last_page: 1, per_page: 25, total: 0 },
   }),
   fetchAdminContributionMovements: vi.fn(),
+  fetchAdminVoluntarySavingsRequests: vi.fn().mockResolvedValue({
+    data: [],
+    meta: { current_page: 1, last_page: 1, per_page: 25, total: 0 },
+  }),
+  reviewAdminVoluntarySavingsRequest: vi.fn(),
+  uploadSignedVoluntarySavingsAuthorization: vi.fn(),
 }));
 
 vi.mock('../services/passwordRecoveryService', () => ({
@@ -226,6 +243,88 @@ describe('AppRoutes', () => {
     expect(portalService.startPortalAffiliationUpdate).not.toHaveBeenCalled();
   });
 
+  it('opens the data update flow after portal authentication intent', async () => {
+    vi.mocked(portalService.currentPortalUser).mockResolvedValue({
+      id: 'associate-user',
+      email: 'associate@fonasin.test',
+      roles: ['associate'],
+      must_change_password: false,
+      requires_profile_completion: false,
+      profile_completion_status: null,
+    });
+    vi.mocked(portalService.startPortalAffiliationUpdate).mockResolvedValue({
+      id: 'update-draft-id',
+      status: 'draft',
+      purpose: 'data_update',
+      source_application_id: 'enabled-application-id',
+      draft_access_token: 'draft-token',
+      links: { read: '/affiliation-applications/update-draft-id?signature=test' },
+    });
+
+    renderRoute('/portal-asociado?intent=actualizar-datos');
+
+    expect(await screen.findByRole('heading', { level: 1, name: /actualizar datos/i })).toBeInTheDocument();
+    expect(portalService.startPortalAffiliationUpdate).toHaveBeenCalled();
+  });
+
+  it('opens voluntary savings outside the affiliation flow', async () => {
+    vi.mocked(portalService.currentPortalUser).mockResolvedValue({
+      id: 'associate-user',
+      email: 'associate@fonasin.test',
+      roles: ['associate'],
+      must_change_password: false,
+    });
+
+    renderRoute('/portal-asociado?intent=ahorro-voluntario');
+
+    expect(await screen.findByRole('heading', { level: 2, name: /ahorro voluntario/i })).toBeInTheDocument();
+    expect(portalService.fetchPortalVoluntarySavingsRequests).toHaveBeenCalled();
+    expect(portalService.startPortalAffiliationUpdate).not.toHaveBeenCalled();
+  });
+
+  it('separates credits, contributions and both savings in the account statement', async () => {
+    vi.mocked(portalService.currentPortalUser).mockResolvedValue({
+      id: 'associate-user',
+      email: 'associate@fonasin.test',
+      roles: ['associate'],
+      must_change_password: false,
+      requires_profile_completion: false,
+    });
+    vi.mocked(portalService.fetchPortalCredits).mockResolvedValue([]);
+    vi.mocked(portalService.fetchPortalVoluntarySavingsRequests).mockResolvedValue([{
+      id: 'savings-request-1',
+      monthly_amount: '100000.00',
+      status: 'approved',
+      submitted_at: '2026-09-23T20:06:40Z',
+      reviewed_at: '2026-09-24T01:28:41Z',
+      review_notes: null,
+    }]);
+    vi.mocked(portalService.fetchPortalContributions).mockResolvedValue({
+      state: 'available',
+      account: {
+        id: 'account-1',
+        contribution_balance: '100000.00',
+        permanent_savings_balance: '150000.00',
+        voluntary_savings_balance: '50000.00',
+        total_balance: '300000.00',
+        status: 'active',
+        last_period: '2026-09-01',
+        last_cut_off_date: '2026-09-30',
+        last_movement_at: '2026-09-30T12:00:00Z',
+      },
+      movements: [],
+    });
+
+    renderRoute('/portal-asociado');
+
+    expect(await screen.findByRole('heading', { level: 2, name: /creditos vigentes/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /^aportes$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /^ahorro permanente$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /^ahorro voluntario$/i })).toBeInTheDocument();
+    expect(screen.getByText(/solicitud: aprobada/i)).toBeInTheDocument();
+    expect(screen.getByText(/100\.000.*mensuales/i)).toBeInTheDocument();
+  });
+
   it('rejects admin users from the associate portal', async () => {
     const user = userEvent.setup();
     vi.mocked(portalService.loginPortal).mockResolvedValueOnce({
@@ -320,15 +419,84 @@ describe('AppRoutes', () => {
 
     renderRoute('/admin-fonasin');
 
-    await user.click(await screen.findByRole('button', { name: /^aportes$/i }));
+    await user.click(await screen.findByRole('button', { name: /^aportes y ahorros$/i }));
 
-    expect(await screen.findByRole('heading', { name: /administracion de aportes/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /administracion de aportes y ahorros/i })).toBeInTheDocument();
     expect(await screen.findByText('AP-001')).toBeInTheDocument();
     expect(adminContributionService.fetchAdminContributionAccounts).toHaveBeenCalled();
     expect(adminContributionService.fetchAdminContributionMovements).toHaveBeenCalledWith(
       'account-1',
       expect.any(Object),
     );
+  });
+
+  it('shows the final reviewed request and its signed authorization to administrators', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminAffiliationService.currentAdminUser).mockResolvedValueOnce({
+      id: 'admin-user',
+      email: 'admin@fonasin.test',
+      roles: ['admin'],
+      must_change_password: false,
+    });
+    vi.mocked(adminContributionService.fetchAdminVoluntarySavingsRequests).mockResolvedValueOnce({
+      data: [{
+        id: 'savings-request-1',
+        monthly_amount: '250000.00',
+        status: 'approved',
+        submitted_at: '2026-09-23T20:06:40Z',
+        reviewed_at: '2026-09-24T01:28:41Z',
+        signed_authorization_uploaded_at: '2026-09-24T01:30:00Z',
+        review_notes: 'Validada para tramite.',
+        associate: {
+          id: 'associate-1',
+          full_name: 'Asociado Demo',
+          document_type: 'CC',
+          status: 'active',
+        },
+        reviewed_by: { id: 'admin-user', email: 'admin@fonasin.test' },
+        links: {
+          payroll_authorization_preview: '/generated/preview',
+          payroll_authorization_download: '/generated/download',
+          signed_authorization_preview: '/signed/preview',
+          signed_authorization_download: '/signed/download',
+        },
+      }],
+      meta: { current_page: 1, last_page: 2, per_page: 25, total: 26 },
+    });
+
+    renderRoute('/admin-fonasin');
+
+    await user.click(await screen.findByRole('button', { name: /^aportes y ahorros$/i }));
+
+    expect(await screen.findByText('Asociado Demo')).toBeInTheDocument();
+    expect(screen.getByText(/aprobada/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /ver firmada/i })).toHaveAttribute('href', '/signed/preview');
+    expect(screen.getByRole('link', { name: /descargar/i })).toHaveAttribute('href', '/signed/download');
+    expect(screen.queryByRole('button', { name: /aprobar/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/libranza firmada de asociado demo/i)).not.toBeInTheDocument();
+    const requestsSection = screen.getByRole('heading', { name: /solicitudes de ahorro voluntario/i }).closest('section');
+    expect(requestsSection).not.toBeNull();
+    await user.click(within(requestsSection as HTMLElement).getByRole('button', { name: /siguiente/i }));
+    expect(adminContributionService.fetchAdminVoluntarySavingsRequests).toHaveBeenLastCalledWith(2);
+  });
+
+  it('shows operational upload forms inside the imports view', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminAffiliationService.currentAdminUser).mockResolvedValueOnce({
+      id: 'admin-user',
+      email: 'admin@fonasin.test',
+      roles: ['admin'],
+      must_change_password: false,
+    });
+
+    renderRoute('/admin-fonasin');
+
+    await user.click(await screen.findByRole('button', { name: /^importaciones$/i }));
+
+    expect(await screen.findByRole('heading', { name: /subir archivos operativos/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/archivo ahorro voluntario/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /importar ahorro voluntario/i })).toBeInTheDocument();
+    expect(adminCreditService.fetchAdminImportBatches).toHaveBeenCalled();
   });
 
   it('renders the password recovery route', () => {

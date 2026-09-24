@@ -110,7 +110,7 @@ export const MiFondo: React.FC = () => {
               </span>
             </div>
 
-            <Link to="/afiliacion" className={styles.btnPrimary}>
+            <Link to="/portal-asociado?intent=ahorro-voluntario" className={styles.btnPrimary}>
               <span>Quiero realizar un ahorro voluntario</span>
               <div className={styles.btnIcon}>
                 <ChevronRight size={18} />

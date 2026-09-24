@@ -11,6 +11,7 @@ use App\Http\Controllers\FpqrsSubmissionController;
 use App\Http\Controllers\ImportBatchController;
 use App\Http\Controllers\PortalAccountStatementController;
 use App\Http\Controllers\PortalAffiliationController;
+use App\Http\Controllers\VoluntarySavingsRequestController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -219,6 +220,43 @@ Route::middleware(['auth', 'password.changed'])
 Route::middleware(['auth', 'password.changed'])
     ->post('/portal/affiliation/update-draft', [PortalAffiliationController::class, 'storeUpdateDraft'])
     ->name('portal.affiliation.update-draft.store');
+
+Route::middleware(['auth', 'password.changed'])
+    ->prefix('portal/voluntary-savings-requests')
+    ->name('portal.voluntary-savings-requests.')
+    ->group(function (): void {
+        Route::get('/', [VoluntarySavingsRequestController::class, 'mine'])->name('index');
+        Route::post('/', [VoluntarySavingsRequestController::class, 'store'])
+            ->middleware('throttle:voluntary-savings-request')
+            ->name('store');
+    });
+
+Route::middleware(['auth', 'password.changed'])
+    ->prefix('admin/voluntary-savings-requests')
+    ->name('admin.voluntary-savings-requests.')
+    ->group(function (): void {
+        Route::get('/', [VoluntarySavingsRequestController::class, 'index'])
+            ->middleware('can:viewAny,App\Models\VoluntarySavingsRequest')
+            ->name('index');
+        Route::patch('/{voluntarySavingsRequest}', [VoluntarySavingsRequestController::class, 'review'])
+            ->middleware('can:review,voluntarySavingsRequest')
+            ->name('review');
+        Route::get('/{voluntarySavingsRequest}/payroll-authorization/preview', [VoluntarySavingsRequestController::class, 'previewPayrollAuthorization'])
+            ->middleware('can:view,voluntarySavingsRequest')
+            ->name('payroll-authorization.preview');
+        Route::get('/{voluntarySavingsRequest}/payroll-authorization/download', [VoluntarySavingsRequestController::class, 'downloadPayrollAuthorization'])
+            ->middleware('can:view,voluntarySavingsRequest')
+            ->name('payroll-authorization.download');
+        Route::post('/{voluntarySavingsRequest}/signed-authorization', [VoluntarySavingsRequestController::class, 'storeSignedAuthorization'])
+            ->middleware('can:uploadSignedAuthorization,voluntarySavingsRequest')
+            ->name('signed-authorization.store');
+        Route::get('/{voluntarySavingsRequest}/signed-authorization/preview', [VoluntarySavingsRequestController::class, 'previewSignedAuthorization'])
+            ->middleware('can:view,voluntarySavingsRequest')
+            ->name('signed-authorization.preview');
+        Route::get('/{voluntarySavingsRequest}/signed-authorization/download', [VoluntarySavingsRequestController::class, 'downloadSignedAuthorization'])
+            ->middleware('can:view,voluntarySavingsRequest')
+            ->name('signed-authorization.download');
+    });
 
 Route::post('/fpqrs-submissions', [FpqrsSubmissionController::class, 'store'])
     ->middleware('throttle:fpqrs-public')

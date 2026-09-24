@@ -30,6 +30,23 @@ const application: AdminAffiliationDetail = {
   consents: [],
 };
 
+const applicationWithSections: AdminAffiliationDetail = {
+  ...application,
+  sections_count: 1,
+  sections: [{
+    id: 'section-1',
+    application_id: application.id,
+    section: 'personal',
+    schema_version: 1,
+    completed_at: '2026-09-23T10:00:00Z',
+    data: {
+      firstName: 'Persona',
+      lastName: 'Prueba',
+      residenceAddress: 'Direccion sintetica',
+    },
+  }],
+};
+
 function renderApplicationDetail(canManage: boolean) {
   const callback = vi.fn();
 
@@ -85,6 +102,30 @@ describe('AdminFonasin permissions and imports', () => {
     expect(screen.getByRole('button', { name: 'Habilitar asociado' })).toBeInTheDocument();
   });
 
+  it('shows decrypted application fields to administrators', () => {
+    const callback = vi.fn();
+
+    render(createElement(ApplicationDetail, {
+      application: applicationWithSections,
+      canManage: true,
+      reason: '',
+      signedPayrollFile: null,
+      enableResult: null,
+      onReasonChange: callback,
+      onSignedPayrollFileChange: callback,
+      onStartReview: callback,
+      onRequestCorrection: callback,
+      onApprove: callback,
+      onReject: callback,
+      onUploadSignedPayrollAuthorization: callback,
+      onEnable: callback,
+    }));
+
+    expect(screen.getByText('Informacion completa del formulario')).toBeInTheDocument();
+    expect(screen.getByText('Persona')).toBeInTheDocument();
+    expect(screen.getByText('Direccion sintetica')).toBeInTheDocument();
+  });
+
   it('renders associate and credit lists without mutation controls in read-only mode', () => {
     const callback = vi.fn();
     const associatesView = render(createElement(AssociatesPanel, {
@@ -137,10 +178,6 @@ describe('AdminFonasin permissions and imports', () => {
       onFormChange: callback,
       onCreate: callback,
       onStatusChange: callback,
-      importState: 'idle',
-      lastImport: null,
-      onImport: callback,
-      onDownloadTemplate: callback,
       canManage: false,
     }));
 

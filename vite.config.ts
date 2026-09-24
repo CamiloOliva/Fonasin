@@ -53,6 +53,10 @@ export default defineConfig(({ mode }) => {
           target: backendTarget,
           changeOrigin: true,
         },
+        '/admin/voluntary-savings-requests': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
         '/admin/import-batches': {
           target: backendTarget,
           changeOrigin: true,
