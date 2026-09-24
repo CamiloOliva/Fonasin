@@ -81,6 +81,7 @@ import {
   type AdminContributionMovementFilters,
   type AdminContributionMovementPage,
   type AdminVoluntarySavingsRequest,
+  type AdminVoluntarySavingsRequestPage,
 } from '../../services/adminContributionService';
 import { changeOwnPassword, type PortalUser } from '../../services/portalService';
 
@@ -192,6 +193,7 @@ export default function AdminFonasin() {
   const [contributionMovements, setContributionMovements] = useState<AdminContributionMovement[]>([]);
   const [voluntarySavingsRequests, setVoluntarySavingsRequests] = useState<AdminVoluntarySavingsRequest[]>([]);
   const [voluntarySavingsRequestState, setVoluntarySavingsRequestState] = useState<DataState>('idle');
+  const [voluntarySavingsRequestMeta, setVoluntarySavingsRequestMeta] = useState<AdminVoluntarySavingsRequestPage['meta']>(defaultContributionMeta);
   const [contributionMeta, setContributionMeta] = useState<AdminContributionAccountPage['meta']>(defaultContributionMeta);
   const [contributionMovementMeta, setContributionMovementMeta] = useState<AdminContributionMovementPage['meta']>(defaultContributionMeta);
   const [selectedContributionAccountId, setSelectedContributionAccountId] = useState<string | null>(null);
@@ -375,15 +377,18 @@ export default function AdminFonasin() {
     }
   }
 
-  async function loadVoluntarySavingsRequests() {
+  async function loadVoluntarySavingsRequests(page = 1) {
     setVoluntarySavingsRequestState('loading');
     setError(null);
 
     try {
-      setVoluntarySavingsRequests(await fetchAdminVoluntarySavingsRequests());
+      const response = await fetchAdminVoluntarySavingsRequests(page);
+      setVoluntarySavingsRequests(response.data);
+      setVoluntarySavingsRequestMeta(response.meta);
       setVoluntarySavingsRequestState('ready');
     } catch (caught) {
       setVoluntarySavingsRequests([]);
+      setVoluntarySavingsRequestMeta(defaultContributionMeta);
       setVoluntarySavingsRequestState('error');
       setError(caught instanceof Error ? caught.message : 'No fue posible cargar las solicitudes de ahorro voluntario.');
     }
@@ -945,7 +950,7 @@ export default function AdminFonasin() {
                   if (activeView === 'associates') return loadAssociates();
                   if (activeView === 'contributions') return Promise.all([
                     loadContributionAccounts(contributionFilters, contributionMeta.current_page),
-                    loadVoluntarySavingsRequests(),
+                    loadVoluntarySavingsRequests(voluntarySavingsRequestMeta.current_page),
                   ]);
                   if (activeView === 'imports') return loadImportBatches();
 
@@ -1156,6 +1161,7 @@ export default function AdminFonasin() {
           <ContributionsPanel
             voluntarySavingsRequests={voluntarySavingsRequests}
             voluntarySavingsRequestState={voluntarySavingsRequestState}
+            voluntarySavingsRequestMeta={voluntarySavingsRequestMeta}
             accounts={contributionAccounts}
             movements={contributionMovements}
             associates={associates}
@@ -1183,6 +1189,7 @@ export default function AdminFonasin() {
             onSelectAccount={(accountId) => loadContributionMovements(accountId, contributionMovementFilters, 1)}
             onReviewVoluntarySavingsRequest={handleReviewVoluntarySavingsRequest}
             onUploadSignedAuthorization={handleUploadSignedVoluntarySavingsAuthorization}
+            onVoluntarySavingsRequestPageChange={loadVoluntarySavingsRequests}
             canManage={isAdmin}
           />
         ) : (
@@ -1903,6 +1910,7 @@ export function CreditsPanel({
 function ContributionsPanel({
   voluntarySavingsRequests,
   voluntarySavingsRequestState,
+  voluntarySavingsRequestMeta,
   accounts,
   movements,
   associates,
@@ -1920,10 +1928,12 @@ function ContributionsPanel({
   onSelectAccount,
   onReviewVoluntarySavingsRequest,
   onUploadSignedAuthorization,
+  onVoluntarySavingsRequestPageChange,
   canManage,
 }: {
   voluntarySavingsRequests: AdminVoluntarySavingsRequest[];
   voluntarySavingsRequestState: DataState;
+  voluntarySavingsRequestMeta: AdminVoluntarySavingsRequestPage['meta'];
   accounts: AdminContributionAccount[];
   movements: AdminContributionMovement[];
   associates: AdminAssociate[];
@@ -1941,6 +1951,7 @@ function ContributionsPanel({
   onSelectAccount: (accountId: string) => void;
   onReviewVoluntarySavingsRequest: (id: string, status: 'approved' | 'rejected') => void;
   onUploadSignedAuthorization: (id: string, file: File) => void;
+  onVoluntarySavingsRequestPageChange: (page: number) => void;
   canManage: boolean;
 }) {
   const selectedAccount = accounts.find((account) => account.id === selectedAccountId) ?? null;
@@ -2031,6 +2042,29 @@ function ContributionsPanel({
             <p className="rounded-xl bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">No hay solicitudes de ahorro voluntario.</p>
           ) : null}
         </div>
+        {voluntarySavingsRequestMeta.total > 0 ? (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4 text-sm font-semibold text-slate-600">
+            <span>Pagina {voluntarySavingsRequestMeta.current_page} de {voluntarySavingsRequestMeta.last_page}</span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => onVoluntarySavingsRequestPageChange(voluntarySavingsRequestMeta.current_page - 1)}
+                disabled={voluntarySavingsRequestMeta.current_page <= 1 || voluntarySavingsRequestState === 'loading'}
+                className="rounded-lg border border-slate-200 px-3 py-2 font-bold disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Anterior
+              </button>
+              <button
+                type="button"
+                onClick={() => onVoluntarySavingsRequestPageChange(voluntarySavingsRequestMeta.current_page + 1)}
+                disabled={voluntarySavingsRequestMeta.current_page >= voluntarySavingsRequestMeta.last_page || voluntarySavingsRequestState === 'loading'}
+                className="rounded-lg border border-slate-200 px-3 py-2 font-bold disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">

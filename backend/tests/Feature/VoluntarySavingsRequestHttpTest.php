@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Application\Contributions\Contracts\RendersVoluntarySavingsPayrollAuthorization;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
+use App\Application\Storage\Contracts\StoresPrivateFiles;
 use App\Domain\Contributions\Enums\ContributionAuditAction;
 use App\Models\Associate;
 use App\Models\AuditEvent;
@@ -86,6 +87,28 @@ class VoluntarySavingsRequestHttpTest extends TestCase
             'monthly_amount' => '200000',
             'accept_terms' => true,
         ])->assertUnprocessable();
+    }
+
+    public function test_storage_failure_rolls_back_request_and_audit_event(): void
+    {
+        [$user] = $this->associateUser();
+        $this->app->instance(StoresPrivateFiles::class, new class implements StoresPrivateFiles
+        {
+            public function put(string $storageKey, string $contents): void
+            {
+                throw new \RuntimeException('Storage unavailable.');
+            }
+        });
+
+        $this->actingAs($user)->postJson('/portal/voluntary-savings-requests', [
+            'monthly_amount' => '100000',
+            'accept_terms' => true,
+        ])->assertServerError();
+
+        $this->assertDatabaseCount('voluntary_savings_requests', 0);
+        $this->assertDatabaseMissing('audit_events', [
+            'action' => ContributionAuditAction::VoluntarySavingsRequested->value,
+        ]);
     }
 
     public function test_database_constraint_closes_the_concurrent_pending_request_race(): void
