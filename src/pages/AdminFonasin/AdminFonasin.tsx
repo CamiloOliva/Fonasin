@@ -73,6 +73,7 @@ import {
   fetchAdminContributionMovements,
   fetchAdminVoluntarySavingsRequests,
   reviewAdminVoluntarySavingsRequest,
+  uploadSignedVoluntarySavingsAuthorization,
   type AdminContributionAccount,
   type AdminContributionAccountFilters,
   type AdminContributionAccountPage,
@@ -398,6 +399,19 @@ export default function AdminFonasin() {
       setMessage(status === 'approved' ? 'Solicitud de ahorro voluntario aprobada.' : 'Solicitud de ahorro voluntario rechazada.');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible revisar la solicitud.');
+    }
+  }
+
+  async function handleUploadSignedVoluntarySavingsAuthorization(id: string, file: File) {
+    setError(null);
+    setMessage(null);
+
+    try {
+      const updated = await uploadSignedVoluntarySavingsAuthorization(id, file);
+      setVoluntarySavingsRequests((current) => current.map((item) => item.id === id ? updated : item));
+      setMessage('Libranza firmada guardada correctamente.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible cargar la libranza firmada.');
     }
   }
 
@@ -1168,6 +1182,7 @@ export default function AdminFonasin() {
               : Promise.resolve()}
             onSelectAccount={(accountId) => loadContributionMovements(accountId, contributionMovementFilters, 1)}
             onReviewVoluntarySavingsRequest={handleReviewVoluntarySavingsRequest}
+            onUploadSignedAuthorization={handleUploadSignedVoluntarySavingsAuthorization}
             canManage={isAdmin}
           />
         ) : (
@@ -1904,6 +1919,7 @@ function ContributionsPanel({
   onMovementPageChange,
   onSelectAccount,
   onReviewVoluntarySavingsRequest,
+  onUploadSignedAuthorization,
   canManage,
 }: {
   voluntarySavingsRequests: AdminVoluntarySavingsRequest[];
@@ -1924,6 +1940,7 @@ function ContributionsPanel({
   onMovementPageChange: (page: number) => void;
   onSelectAccount: (accountId: string) => void;
   onReviewVoluntarySavingsRequest: (id: string, status: 'approved' | 'rejected') => void;
+  onUploadSignedAuthorization: (id: string, file: File) => void;
   canManage: boolean;
 }) {
   const selectedAccount = accounts.find((account) => account.id === selectedAccountId) ?? null;
@@ -1966,15 +1983,15 @@ function ContributionsPanel({
                   <td className="py-4">
                     <div className="flex flex-wrap gap-2">
                       <a
-                        href={adminContributionDocumentUrl(request.links.payroll_authorization_preview)}
+                        href={adminContributionDocumentUrl(request.links.signed_authorization_preview ?? request.links.payroll_authorization_preview)}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-800 hover:bg-emerald-100"
                       >
-                        <ExternalLink size={14} /> Ver libranza
+                        <ExternalLink size={14} /> {request.links.signed_authorization_preview ? 'Ver firmada' : 'Ver libranza'}
                       </a>
                       <a
-                        href={adminContributionDocumentUrl(request.links.payroll_authorization_download)}
+                        href={adminContributionDocumentUrl(request.links.signed_authorization_download ?? request.links.payroll_authorization_download)}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"
                       >
                         <Download size={14} /> Descargar
@@ -1988,9 +2005,22 @@ function ContributionsPanel({
                             <XCircle size={14} /> Rechazar
                           </button>
                         </>
-                      ) : (
-                        <span className="text-xs font-bold text-slate-500">Revisada</span>
-                      )}
+                      ) : request.status === 'approved' && canManage && !request.links.signed_authorization_preview ? (
+                        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black text-amber-800 hover:bg-amber-100">
+                          <UploadCloud size={14} /> Subir firmada
+                          <input
+                            type="file"
+                            accept="application/pdf,.pdf"
+                            className="sr-only"
+                            aria-label={`Libranza firmada de ${request.associate?.full_name ?? 'asociado'}`}
+                            onChange={(event) => {
+                              const file = event.target.files?.[0];
+                              if (file) onUploadSignedAuthorization(request.id, file);
+                              event.target.value = '';
+                            }}
+                          />
+                        </label>
+                      ) : <span className="text-xs font-bold text-slate-500">{request.links.signed_authorization_preview ? 'Firmada' : 'Revisada'}</span>}
                     </div>
                   </td>
                 </tr>

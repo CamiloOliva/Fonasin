@@ -75,6 +75,7 @@ export type AdminVoluntarySavingsRequest = {
   status: 'submitted' | 'approved' | 'rejected';
   submitted_at: string;
   reviewed_at: string | null;
+  signed_authorization_uploaded_at?: string | null;
   review_notes: string | null;
   associate: {
     id: string;
@@ -89,6 +90,8 @@ export type AdminVoluntarySavingsRequest = {
   links: {
     payroll_authorization_preview: string;
     payroll_authorization_download: string;
+    signed_authorization_preview?: string;
+    signed_authorization_download?: string;
   };
 };
 
@@ -195,6 +198,31 @@ export async function reviewAdminVoluntarySavingsRequest(
 
   if (!response.ok) {
     throw new Error(typeof payload?.message === 'string' ? payload.message : 'No fue posible revisar la solicitud.');
+  }
+
+  return payload.data as AdminVoluntarySavingsRequest;
+}
+
+export async function uploadSignedVoluntarySavingsAuthorization(
+  id: string,
+  file: File,
+): Promise<AdminVoluntarySavingsRequest> {
+  const token = await csrfToken();
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await fetch(`${backendBaseUrl}/admin/voluntary-savings-requests/${id}/signed-authorization`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+    },
+    body: formData,
+  });
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(typeof payload?.message === 'string' ? payload.message : 'No fue posible cargar la libranza firmada.');
   }
 
   return payload.data as AdminVoluntarySavingsRequest;

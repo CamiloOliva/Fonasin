@@ -15,6 +15,9 @@ class VoluntarySavingsRequest extends Model
         'monthly_amount',
         'status',
         'authorization_storage_key',
+        'signed_authorization_storage_key',
+        'signed_authorization_uploaded_at',
+        'signed_authorization_uploaded_by_user_id',
         'submitted_at',
         'reviewed_at',
         'reviewed_by_user_id',
@@ -23,6 +26,7 @@ class VoluntarySavingsRequest extends Model
 
     protected $hidden = [
         'authorization_storage_key',
+        'signed_authorization_storage_key',
     ];
 
     protected function casts(): array
@@ -31,6 +35,7 @@ class VoluntarySavingsRequest extends Model
             'monthly_amount' => 'decimal:2',
             'submitted_at' => 'datetime',
             'reviewed_at' => 'datetime',
+            'signed_authorization_uploaded_at' => 'datetime',
         ];
     }
 

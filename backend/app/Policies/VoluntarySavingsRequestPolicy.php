@@ -21,4 +21,9 @@ class VoluntarySavingsRequestPolicy
     {
         return $user->hasRole('admin');
     }
+
+    public function uploadSignedAuthorization(User $user, VoluntarySavingsRequest $request): bool
+    {
+        return $user->hasRole('admin');
+    }
 }

@@ -12,4 +12,7 @@ enum ContributionAuditAction: string
     case VoluntarySavingsRequestReviewed = 'contribution.voluntary_savings_request.reviewed';
     case VoluntarySavingsPayrollAuthorizationViewed = 'contribution.voluntary_savings_payroll_authorization.viewed';
     case VoluntarySavingsPayrollAuthorizationDownloaded = 'contribution.voluntary_savings_payroll_authorization.downloaded';
+    case VoluntarySavingsSignedAuthorizationUploaded = 'contribution.voluntary_savings_signed_authorization.uploaded';
+    case VoluntarySavingsSignedAuthorizationViewed = 'contribution.voluntary_savings_signed_authorization.viewed';
+    case VoluntarySavingsSignedAuthorizationDownloaded = 'contribution.voluntary_savings_signed_authorization.downloaded';
 }

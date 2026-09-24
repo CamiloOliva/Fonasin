@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Application\Audit\UseCases\RecordAuditEvent;
 use App\Application\Contributions\UseCases\ReviewVoluntarySavingsRequest as ReviewRequest;
+use App\Application\Contributions\UseCases\RegisterSignedVoluntarySavingsAuthorization;
 use App\Application\Contributions\UseCases\SubmitVoluntarySavingsRequest;
 use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Domain\Audit\Enums\AuditActorType;
@@ -12,6 +13,7 @@ use App\Domain\Contributions\Enums\ContributionAuditAction;
 use App\Domain\Contributions\Enums\VoluntarySavingsRequestStatus;
 use App\Http\Requests\Contributions\ReviewVoluntarySavingsRequest;
 use App\Http\Requests\Contributions\StoreVoluntarySavingsRequest;
+use App\Http\Requests\Contributions\StoreSignedVoluntarySavingsAuthorizationRequest;
 use App\Models\VoluntarySavingsRequest;
 use DomainException;
 use Illuminate\Http\JsonResponse;
@@ -128,6 +130,41 @@ class VoluntarySavingsRequestController extends Controller
         );
     }
 
+    public function storeSignedAuthorization(
+        StoreSignedVoluntarySavingsAuthorizationRequest $request,
+        VoluntarySavingsRequest $voluntarySavingsRequest,
+        RegisterSignedVoluntarySavingsAuthorization $register,
+    ): JsonResponse {
+        try {
+            $updated = $register(
+                request: $voluntarySavingsRequest,
+                contents: $request->file('file')->get(),
+                actor: $request->user(),
+                ipHash: $this->ipHash($request),
+            );
+        } catch (DomainException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
+        }
+
+        return response()->json(['data' => $this->payload($updated->load(['associate', 'reviewedBy']), true)], 201);
+    }
+
+    public function previewSignedAuthorization(
+        Request $request,
+        VoluntarySavingsRequest $voluntarySavingsRequest,
+        RecordAuditEvent $recordAuditEvent,
+    ): StreamedResponse {
+        return $this->signedAuthorizationResponse($request, $voluntarySavingsRequest, $recordAuditEvent, false);
+    }
+
+    public function downloadSignedAuthorization(
+        Request $request,
+        VoluntarySavingsRequest $voluntarySavingsRequest,
+        RecordAuditEvent $recordAuditEvent,
+    ): StreamedResponse {
+        return $this->signedAuthorizationResponse($request, $voluntarySavingsRequest, $recordAuditEvent, true);
+    }
+
     private function payload(VoluntarySavingsRequest $request, bool $admin = false): array
     {
         $payload = [
@@ -154,9 +191,45 @@ class VoluntarySavingsRequestController extends Controller
                 'payroll_authorization_preview' => "/admin/voluntary-savings-requests/{$request->id}/payroll-authorization/preview",
                 'payroll_authorization_download' => "/admin/voluntary-savings-requests/{$request->id}/payroll-authorization/download",
             ];
+            $payload['signed_authorization_uploaded_at'] = $request->signed_authorization_uploaded_at?->toISOString();
+
+            if ($request->getAttribute('signed_authorization_storage_key')) {
+                $payload['links']['signed_authorization_preview'] = "/admin/voluntary-savings-requests/{$request->id}/signed-authorization/preview";
+                $payload['links']['signed_authorization_download'] = "/admin/voluntary-savings-requests/{$request->id}/signed-authorization/download";
+            }
         }
 
         return $payload;
+    }
+
+    private function signedAuthorizationResponse(
+        Request $httpRequest,
+        VoluntarySavingsRequest $savingsRequest,
+        RecordAuditEvent $recordAuditEvent,
+        bool $download,
+    ): StreamedResponse {
+        $storageKey = (string) $savingsRequest->getAttribute('signed_authorization_storage_key');
+        abort_unless($storageKey !== '' && Storage::disk('local')->exists($storageKey), 404);
+
+        ($recordAuditEvent)(
+            module: AuditModule::Contributions,
+            action: $download
+                ? ContributionAuditAction::VoluntarySavingsSignedAuthorizationDownloaded->value
+                : ContributionAuditAction::VoluntarySavingsSignedAuthorizationViewed->value,
+            subjectType: 'voluntary_savings_request',
+            subjectId: $savingsRequest->id,
+            actor: $httpRequest->user(),
+            actorType: AuditActorType::User,
+            ipHash: $this->ipHash($httpRequest),
+            metadata: ['scope' => 'admin'],
+        );
+
+        $filename = "libranza-ahorro-voluntario-firmada-{$savingsRequest->id}.pdf";
+        $headers = ['Content-Type' => 'application/pdf', 'Cache-Control' => 'private, no-store'];
+
+        return $download
+            ? Storage::disk('local')->download($storageKey, $filename, $headers)
+            : Storage::disk('local')->response($storageKey, $filename, $headers);
     }
 
     private function payrollAuthorizationResponse(

@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\VoluntarySavingsRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class VoluntarySavingsRequestHttpTest extends TestCase
@@ -156,6 +157,23 @@ class VoluntarySavingsRequestHttpTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'approved');
 
+        $this->actingAs($admin)
+            ->post("/admin/voluntary-savings-requests/{$request->id}/signed-authorization", [
+                'file' => UploadedFile::fake()->create('libranza-firmada.pdf', 120, 'application/pdf'),
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.links.signed_authorization_preview', "/admin/voluntary-savings-requests/{$request->id}/signed-authorization/preview");
+
+        $request->refresh();
+        Storage::disk('local')->assertExists((string) $request->getAttribute('signed_authorization_storage_key'));
+
+        $this->actingAs($admin)
+            ->post("/admin/voluntary-savings-requests/{$request->id}/signed-authorization", [
+                'file' => UploadedFile::fake()->create('otra-libranza.pdf', 120, 'application/pdf'),
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'La solicitud ya tiene una libranza firmada registrada.');
+
         $adminResponse = $this->actingAs($admin)->getJson('/admin/voluntary-savings-requests');
         $adminResponse->assertOk()
             ->assertJsonPath('data.0.links.payroll_authorization_preview', "/admin/voluntary-savings-requests/{$request->id}/payroll-authorization/preview")
@@ -170,6 +188,16 @@ class VoluntarySavingsRequestHttpTest extends TestCase
             ->get("/admin/voluntary-savings-requests/{$request->id}/payroll-authorization/download")
             ->assertOk()
             ->assertDownload("libranza-ahorro-voluntario-{$request->id}.pdf");
+
+        $this->actingAs($admin)
+            ->get("/admin/voluntary-savings-requests/{$request->id}/signed-authorization/preview")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        $this->actingAs($admin)
+            ->get("/admin/voluntary-savings-requests/{$request->id}/signed-authorization/download")
+            ->assertOk()
+            ->assertDownload("libranza-ahorro-voluntario-firmada-{$request->id}.pdf");
 
         $this->assertDatabaseHas('voluntary_savings_requests', [
             'id' => $request->id,
@@ -186,6 +214,10 @@ class VoluntarySavingsRequestHttpTest extends TestCase
         ]);
         $this->assertDatabaseHas('audit_events', [
             'action' => ContributionAuditAction::VoluntarySavingsPayrollAuthorizationDownloaded->value,
+            'subject_id' => $request->id,
+        ]);
+        $this->assertDatabaseHas('audit_events', [
+            'action' => ContributionAuditAction::VoluntarySavingsSignedAuthorizationUploaded->value,
             'subject_id' => $request->id,
         ]);
     }
