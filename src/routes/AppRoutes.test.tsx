@@ -73,7 +73,10 @@ vi.mock('../services/adminContributionService', () => ({
     meta: { current_page: 1, last_page: 1, per_page: 25, total: 0 },
   }),
   fetchAdminContributionMovements: vi.fn(),
-  fetchAdminVoluntarySavingsRequests: vi.fn().mockResolvedValue([]),
+  fetchAdminVoluntarySavingsRequests: vi.fn().mockResolvedValue({
+    data: [],
+    meta: { current_page: 1, last_page: 1, per_page: 25, total: 0 },
+  }),
   reviewAdminVoluntarySavingsRequest: vi.fn(),
   uploadSignedVoluntarySavingsAuthorization: vi.fn(),
 }));
@@ -435,28 +438,31 @@ describe('AppRoutes', () => {
       roles: ['admin'],
       must_change_password: false,
     });
-    vi.mocked(adminContributionService.fetchAdminVoluntarySavingsRequests).mockResolvedValueOnce([{
-      id: 'savings-request-1',
-      monthly_amount: '250000.00',
-      status: 'approved',
-      submitted_at: '2026-09-23T20:06:40Z',
-      reviewed_at: '2026-09-24T01:28:41Z',
-      signed_authorization_uploaded_at: '2026-09-24T01:30:00Z',
-      review_notes: 'Validada para tramite.',
-      associate: {
-        id: 'associate-1',
-        full_name: 'Asociado Demo',
-        document_type: 'CC',
-        status: 'active',
-      },
-      reviewed_by: { id: 'admin-user', email: 'admin@fonasin.test' },
-      links: {
-        payroll_authorization_preview: '/generated/preview',
-        payroll_authorization_download: '/generated/download',
-        signed_authorization_preview: '/signed/preview',
-        signed_authorization_download: '/signed/download',
-      },
-    }]);
+    vi.mocked(adminContributionService.fetchAdminVoluntarySavingsRequests).mockResolvedValueOnce({
+      data: [{
+        id: 'savings-request-1',
+        monthly_amount: '250000.00',
+        status: 'approved',
+        submitted_at: '2026-09-23T20:06:40Z',
+        reviewed_at: '2026-09-24T01:28:41Z',
+        signed_authorization_uploaded_at: '2026-09-24T01:30:00Z',
+        review_notes: 'Validada para tramite.',
+        associate: {
+          id: 'associate-1',
+          full_name: 'Asociado Demo',
+          document_type: 'CC',
+          status: 'active',
+        },
+        reviewed_by: { id: 'admin-user', email: 'admin@fonasin.test' },
+        links: {
+          payroll_authorization_preview: '/generated/preview',
+          payroll_authorization_download: '/generated/download',
+          signed_authorization_preview: '/signed/preview',
+          signed_authorization_download: '/signed/download',
+        },
+      }],
+      meta: { current_page: 1, last_page: 2, per_page: 25, total: 26 },
+    });
 
     renderRoute('/admin-fonasin');
 
@@ -468,6 +474,10 @@ describe('AppRoutes', () => {
     expect(screen.getByRole('link', { name: /descargar/i })).toHaveAttribute('href', '/signed/download');
     expect(screen.queryByRole('button', { name: /aprobar/i })).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/libranza firmada de asociado demo/i)).not.toBeInTheDocument();
+    const requestsSection = screen.getByRole('heading', { name: /solicitudes de ahorro voluntario/i }).closest('section');
+    expect(requestsSection).not.toBeNull();
+    await user.click(within(requestsSection as HTMLElement).getByRole('button', { name: /siguiente/i }));
+    expect(adminContributionService.fetchAdminVoluntarySavingsRequests).toHaveBeenLastCalledWith(2);
   });
 
   it('shows operational upload forms inside the imports view', async () => {

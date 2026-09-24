@@ -69,6 +69,11 @@ export type AdminContributionMovementPage = {
   meta: PaginationMeta;
 };
 
+export type AdminVoluntarySavingsRequestPage = {
+  data: AdminVoluntarySavingsRequest[];
+  meta: PaginationMeta;
+};
+
 export type AdminVoluntarySavingsRequest = {
   id: string;
   monthly_amount: string;
@@ -172,10 +177,8 @@ export function fetchAdminContributionMovements(
   return getJson<AdminContributionMovementPage>(`/admin/contributions/${accountId}/movements?${query}`);
 }
 
-export async function fetchAdminVoluntarySavingsRequests(): Promise<AdminVoluntarySavingsRequest[]> {
-  const response = await getJson<{ data: AdminVoluntarySavingsRequest[] }>('/admin/voluntary-savings-requests?per_page=100');
-
-  return response.data;
+export function fetchAdminVoluntarySavingsRequests(page = 1): Promise<AdminVoluntarySavingsRequestPage> {
+  return getJson<AdminVoluntarySavingsRequestPage>(`/admin/voluntary-savings-requests?page=${page}&per_page=25`);
 }
 
 export async function reviewAdminVoluntarySavingsRequest(
