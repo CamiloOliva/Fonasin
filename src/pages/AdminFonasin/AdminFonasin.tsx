@@ -912,7 +912,7 @@ export default function AdminFonasin() {
                     : activeView === 'credits'
                       ? 'Administracion de creditos'
                       : activeView === 'contributions'
-                        ? 'Administracion de aportes'
+                        ? 'Administracion de aportes y ahorros'
                         : 'Historial de importaciones'}
               </h1>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -1016,7 +1016,7 @@ export default function AdminFonasin() {
             }`}
           >
             <PiggyBank size={16} />
-            Aportes
+            Aportes y ahorros
           </button>
         </nav>
 
@@ -2040,12 +2040,18 @@ function ContributionsPanel({
                   <td className="py-4">
                     <div className="flex flex-wrap gap-2">
                       <a
-                        href={adminContributionDocumentUrl(request.links.authorization)}
+                        href={adminContributionDocumentUrl(request.links.payroll_authorization_preview)}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-800 hover:bg-emerald-100"
                       >
-                        <FileText size={14} /> Ver PDF
+                        <ExternalLink size={14} /> Ver libranza
+                      </a>
+                      <a
+                        href={adminContributionDocumentUrl(request.links.payroll_authorization_download)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"
+                      >
+                        <Download size={14} /> Descargar
                       </a>
                       {canManage && request.status === 'submitted' ? (
                         <>
@@ -2056,7 +2062,9 @@ function ContributionsPanel({
                             <XCircle size={14} /> Rechazar
                           </button>
                         </>
-                      ) : null}
+                      ) : (
+                        <span className="text-xs font-bold text-slate-500">Revisada</span>
+                      )}
                     </div>
                   </td>
                 </tr>

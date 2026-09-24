@@ -87,7 +87,8 @@ export type AdminVoluntarySavingsRequest = {
     email: string;
   } | null;
   links: {
-    authorization: string;
+    payroll_authorization_preview: string;
+    payroll_authorization_download: string;
   };
 };
 

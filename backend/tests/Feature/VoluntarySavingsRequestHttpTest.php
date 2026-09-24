@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Application\Contributions\Contracts\RendersVoluntarySavingsAuthorization;
+use App\Application\Contributions\Contracts\RendersVoluntarySavingsPayrollAuthorization;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Domain\Contributions\Enums\ContributionAuditAction;
 use App\Models\Associate;
@@ -21,11 +21,11 @@ class VoluntarySavingsRequestHttpTest extends TestCase
     {
         parent::setUp();
         Storage::fake('local');
-        $this->app->instance(RendersVoluntarySavingsAuthorization::class, new class implements RendersVoluntarySavingsAuthorization
+        $this->app->instance(RendersVoluntarySavingsPayrollAuthorization::class, new class implements RendersVoluntarySavingsPayrollAuthorization
         {
             public function render(array $data): string
             {
-                return '%PDF-1.4 voluntary savings authorization';
+                return '%PDF-1.4 payroll authorization';
             }
         });
     }
@@ -37,12 +37,12 @@ class VoluntarySavingsRequestHttpTest extends TestCase
         $this->getJson('/admin/voluntary-savings-requests')->assertUnauthorized();
     }
 
-    public function test_active_associate_can_submit_and_view_private_authorization(): void
+    public function test_active_associate_can_submit_and_view_request(): void
     {
         [$user, $associate] = $this->associateUser();
 
         $response = $this->actingAs($user)->postJson('/portal/voluntary-savings-requests', [
-            'monthly_amount' => '150000.00',
+            'monthly_amount' => '150000',
             'accept_terms' => true,
         ]);
 
@@ -57,12 +57,12 @@ class VoluntarySavingsRequestHttpTest extends TestCase
         $this->actingAs($user)
             ->getJson('/portal/voluntary-savings-requests')
             ->assertOk()
-            ->assertJsonPath('data.0.id', $request->id);
+            ->assertJsonPath('data.0.id', $request->id)
+            ->assertJsonMissingPath('data.0.links');
 
         $this->actingAs($user)
-            ->get("/portal/voluntary-savings-requests/{$request->id}/authorization")
-            ->assertOk()
-            ->assertHeader('Content-Type', 'application/pdf');
+            ->get("/admin/voluntary-savings-requests/{$request->id}/payroll-authorization/preview")
+            ->assertForbidden();
 
         $this->assertDatabaseHas('audit_events', [
             'action' => ContributionAuditAction::VoluntarySavingsRequested->value,
@@ -70,26 +70,33 @@ class VoluntarySavingsRequestHttpTest extends TestCase
         ]);
     }
 
-    public function test_associate_cannot_submit_duplicate_pending_request_or_view_another_authorization(): void
+    public function test_associate_cannot_submit_duplicate_pending_request(): void
     {
         [$user] = $this->associateUser();
-        [$otherUser] = $this->associateUser('other@example.test');
-
         $this->actingAs($user)->postJson('/portal/voluntary-savings-requests', [
             'monthly_amount' => '100000',
             'accept_terms' => true,
         ])->assertCreated();
 
-        $request = VoluntarySavingsRequest::query()->firstOrFail();
-
         $this->actingAs($user)->postJson('/portal/voluntary-savings-requests', [
             'monthly_amount' => '200000',
             'accept_terms' => true,
         ])->assertUnprocessable();
+    }
 
-        $this->actingAs($otherUser)
-            ->get("/portal/voluntary-savings-requests/{$request->id}/authorization")
-            ->assertForbidden();
+    public function test_monthly_amount_must_be_integer_and_within_limit(): void
+    {
+        [$user] = $this->associateUser();
+
+        $this->actingAs($user)->postJson('/portal/voluntary-savings-requests', [
+            'monthly_amount' => '1000.50',
+            'accept_terms' => true,
+        ])->assertUnprocessable()->assertJsonValidationErrors('monthly_amount');
+
+        $this->actingAs($user)->postJson('/portal/voluntary-savings-requests', [
+            'monthly_amount' => '10000000001',
+            'accept_terms' => true,
+        ])->assertUnprocessable()->assertJsonValidationErrors('monthly_amount');
     }
 
     public function test_admin_can_review_request_and_reviewer_is_read_only(): void
@@ -120,6 +127,21 @@ class VoluntarySavingsRequestHttpTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'approved');
 
+        $adminResponse = $this->actingAs($admin)->getJson('/admin/voluntary-savings-requests');
+        $adminResponse->assertOk()
+            ->assertJsonPath('data.0.links.payroll_authorization_preview', "/admin/voluntary-savings-requests/{$request->id}/payroll-authorization/preview")
+            ->assertJsonMissingPath('data.0.authorization_storage_key');
+
+        $this->actingAs($admin)
+            ->get("/admin/voluntary-savings-requests/{$request->id}/payroll-authorization/preview")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        $this->actingAs($admin)
+            ->get("/admin/voluntary-savings-requests/{$request->id}/payroll-authorization/download")
+            ->assertOk()
+            ->assertDownload("libranza-ahorro-voluntario-{$request->id}.pdf");
+
         $this->assertDatabaseHas('voluntary_savings_requests', [
             'id' => $request->id,
             'status' => 'approved',
@@ -127,6 +149,14 @@ class VoluntarySavingsRequestHttpTest extends TestCase
         ]);
         $this->assertDatabaseHas('audit_events', [
             'action' => ContributionAuditAction::VoluntarySavingsRequestReviewed->value,
+            'subject_id' => $request->id,
+        ]);
+        $this->assertDatabaseHas('audit_events', [
+            'action' => ContributionAuditAction::VoluntarySavingsPayrollAuthorizationViewed->value,
+            'subject_id' => $request->id,
+        ]);
+        $this->assertDatabaseHas('audit_events', [
+            'action' => ContributionAuditAction::VoluntarySavingsPayrollAuthorizationDownloaded->value,
             'subject_id' => $request->id,
         ]);
     }

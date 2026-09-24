@@ -270,6 +270,49 @@ describe('AppRoutes', () => {
     expect(portalService.startPortalAffiliationUpdate).not.toHaveBeenCalled();
   });
 
+  it('separates credits, contributions and both savings in the account statement', async () => {
+    vi.mocked(portalService.currentPortalUser).mockResolvedValue({
+      id: 'associate-user',
+      email: 'associate@fonasin.test',
+      roles: ['associate'],
+      must_change_password: false,
+      requires_profile_completion: false,
+    });
+    vi.mocked(portalService.fetchPortalCredits).mockResolvedValue([]);
+    vi.mocked(portalService.fetchPortalVoluntarySavingsRequests).mockResolvedValue([{
+      id: 'savings-request-1',
+      monthly_amount: '100000.00',
+      status: 'approved',
+      submitted_at: '2026-09-23T20:06:40Z',
+      reviewed_at: '2026-09-24T01:28:41Z',
+      review_notes: null,
+    }]);
+    vi.mocked(portalService.fetchPortalContributions).mockResolvedValue({
+      state: 'available',
+      account: {
+        id: 'account-1',
+        contribution_balance: '100000.00',
+        permanent_savings_balance: '150000.00',
+        voluntary_savings_balance: '50000.00',
+        total_balance: '300000.00',
+        status: 'active',
+        last_period: '2026-09-01',
+        last_cut_off_date: '2026-09-30',
+        last_movement_at: '2026-09-30T12:00:00Z',
+      },
+      movements: [],
+    });
+
+    renderRoute('/portal-asociado');
+
+    expect(await screen.findByRole('heading', { level: 2, name: /creditos vigentes/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /^aportes$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /^ahorro permanente$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /^ahorro voluntario$/i })).toBeInTheDocument();
+    expect(screen.getByText(/solicitud: aprobada/i)).toBeInTheDocument();
+    expect(screen.getByText(/100\.000.*mensuales/i)).toBeInTheDocument();
+  });
+
   it('rejects admin users from the associate portal', async () => {
     const user = userEvent.setup();
     vi.mocked(portalService.loginPortal).mockResolvedValueOnce({
@@ -364,9 +407,9 @@ describe('AppRoutes', () => {
 
     renderRoute('/admin-fonasin');
 
-    await user.click(await screen.findByRole('button', { name: /^aportes$/i }));
+    await user.click(await screen.findByRole('button', { name: /^aportes y ahorros$/i }));
 
-    expect(await screen.findByRole('heading', { name: /administracion de aportes/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /administracion de aportes y ahorros/i })).toBeInTheDocument();
     expect(await screen.findByText('AP-001')).toBeInTheDocument();
     expect(adminContributionService.fetchAdminContributionAccounts).toHaveBeenCalled();
     expect(adminContributionService.fetchAdminContributionMovements).toHaveBeenCalledWith(

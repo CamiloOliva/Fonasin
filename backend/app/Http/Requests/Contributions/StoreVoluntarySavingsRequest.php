@@ -14,7 +14,7 @@ class StoreVoluntarySavingsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'monthly_amount' => ['required', 'numeric', 'min:1', 'max:10000000000'],
+            'monthly_amount' => ['required', 'integer', 'min:1', 'max:10000000000'],
             'accept_terms' => ['accepted'],
         ];
     }
@@ -23,6 +23,7 @@ class StoreVoluntarySavingsRequest extends FormRequest
     {
         return [
             'monthly_amount.required' => 'Indica el valor mensual del ahorro voluntario.',
+            'monthly_amount.integer' => 'El valor mensual debe indicarse en pesos enteros.',
             'monthly_amount.max' => 'El valor mensual no puede superar $10.000.000.000.',
             'accept_terms.accepted' => 'Debes aceptar la autorizacion para enviar la solicitud.',
         ];

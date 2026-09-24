@@ -10,5 +10,6 @@ enum ContributionAuditAction: string
     case VoluntarySavingsRequested = 'contribution.voluntary_savings.requested';
     case VoluntarySavingsRequestViewed = 'contribution.voluntary_savings_request.viewed';
     case VoluntarySavingsRequestReviewed = 'contribution.voluntary_savings_request.reviewed';
-    case VoluntarySavingsAuthorizationViewed = 'contribution.voluntary_savings_authorization.viewed';
+    case VoluntarySavingsPayrollAuthorizationViewed = 'contribution.voluntary_savings_payroll_authorization.viewed';
+    case VoluntarySavingsPayrollAuthorizationDownloaded = 'contribution.voluntary_savings_payroll_authorization.downloaded';
 }
