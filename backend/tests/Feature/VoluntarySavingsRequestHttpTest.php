@@ -99,6 +99,35 @@ class VoluntarySavingsRequestHttpTest extends TestCase
         ])->assertUnprocessable()->assertJsonValidationErrors('monthly_amount');
     }
 
+    public function test_payroll_authorization_is_complete_without_mandatory_contribution(): void
+    {
+        $html = view('pdf.contributions.voluntary-savings-payroll-authorization', [
+            'requestId' => 'request-test',
+            'fullName' => 'Synthetic Associate',
+            'documentType' => 'CC',
+            'documentNumber' => '123456789',
+            'issuePlace' => 'Bucaramanga',
+            'employer' => 'Empresa de prueba',
+            'phone' => '3000000000',
+            'email' => 'associate@example.test',
+            'monthlySalary' => 2500000,
+            'voluntarySavings' => 150000,
+            'totalMonthlyDeduction' => 150000,
+            'city' => 'Bucaramanga',
+            'signatureDateLabel' => '23 de septiembre de 2026',
+            'acceptedAt' => '2026-09-23 20:00:00',
+            'verificationCode' => 'ABC123',
+            'logoDataUri' => null,
+        ])->render();
+        $plainText = html_entity_decode(strip_tags($html));
+
+        $this->assertStringContainsString('Datos del solicitante', $plainText);
+        $this->assertStringContainsString('Tratamiento de datos', $plainText);
+        $this->assertStringContainsString('Ahorro voluntario', $plainText);
+        $this->assertStringContainsString('$ 150.000', $plainText);
+        $this->assertStringNotContainsString('Aporte obligatorio', $plainText);
+    }
+
     public function test_admin_can_review_request_and_reviewer_is_read_only(): void
     {
         [$associateUser] = $this->associateUser();

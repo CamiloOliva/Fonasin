@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AppRoutes from './AppRoutes';
 import * as adminAffiliationService from '../services/adminAffiliationService';
 import * as adminContributionService from '../services/adminContributionService';
+import * as adminCreditService from '../services/adminCreditService';
 import * as portalService from '../services/portalService';
 
 vi.mock('../components/sections/StatutesBookViewer', () => ({
@@ -54,7 +55,14 @@ vi.mock('../services/adminAssociateService', () => ({
 vi.mock('../services/adminCreditService', () => ({
   archiveAdminCredit: vi.fn(),
   createAdminCredit: vi.fn(),
+  downloadAdminImportErrorReport: vi.fn(),
+  downloadAdminImportTemplate: vi.fn(),
   fetchAdminCredits: vi.fn().mockResolvedValue([]),
+  fetchAdminImportBatches: vi.fn().mockResolvedValue({
+    data: [],
+    meta: { current_page: 1, last_page: 1, per_page: 50, total: 0 },
+  }),
+  importAdminSpreadsheet: vi.fn(),
   updateAdminCredit: vi.fn(),
 }));
 
@@ -416,6 +424,25 @@ describe('AppRoutes', () => {
       'account-1',
       expect.any(Object),
     );
+  });
+
+  it('shows operational upload forms inside the imports view', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminAffiliationService.currentAdminUser).mockResolvedValueOnce({
+      id: 'admin-user',
+      email: 'admin@fonasin.test',
+      roles: ['admin'],
+      must_change_password: false,
+    });
+
+    renderRoute('/admin-fonasin');
+
+    await user.click(await screen.findByRole('button', { name: /^importaciones$/i }));
+
+    expect(await screen.findByRole('heading', { name: /subir archivos operativos/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/archivo ahorro voluntario/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /importar ahorro voluntario/i })).toBeInTheDocument();
+    expect(adminCreditService.fetchAdminImportBatches).toHaveBeenCalled();
   });
 
   it('renders the password recovery route', () => {
