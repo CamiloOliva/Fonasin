@@ -22,4 +22,14 @@ describe('DocumentsSection', () => {
     expect(screen.getByRole('button', { name: /ver política de tratamiento de datos personales/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /ir a fpqrs/i })).toHaveAttribute('href', '/fpqrs');
   });
+
+  it('abre directamente el visor solicitado desde un enlace legal', () => {
+    render(
+      <MemoryRouter initialEntries={['/estatutos?document=credit-regulation']}>
+        <DocumentsSection variant="estatutos" />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('dialog', { name: /reglamento de crédito y administración de cartera/i })).toBeInTheDocument();
+  });
 });

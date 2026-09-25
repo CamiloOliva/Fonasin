@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { BookOpen, Building2, Download, FileText, Gavel, PieChart, ShieldCheck, X } from 'lucide-react';
 import { documents, type DocumentCategory } from '../../data/documents';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import SectionHeading from '../ui/SectionHeading';
 import StatutesBookViewer from './StatutesBookViewer';
 
@@ -21,8 +21,17 @@ const categories = [
 export default function DocumentsSection({ variant = 'home' }: DocumentsSectionProps) {
   const isHome = variant === 'home';
   const location = useLocation();
+  const navigate = useNavigate();
   const visibleDocuments = isHome ? documents.filter((document) => document.id === 'data-policy') : documents;
   const [activeDocument, setActiveDocument] = useState<DocumentItem | null>(null);
+
+  const closeDocument = useCallback(() => {
+    setActiveDocument(null);
+
+    if (new URLSearchParams(location.search).has('document')) {
+      navigate({ pathname: location.pathname, hash: location.hash }, { replace: true });
+    }
+  }, [location.hash, location.pathname, location.search, navigate]);
 
   useEffect(() => {
     if (isHome || !location.hash) return;
@@ -31,9 +40,19 @@ export default function DocumentsSection({ variant = 'home' }: DocumentsSectionP
   }, [isHome, location.hash]);
 
   useEffect(() => {
+    if (isHome) return;
+    const documentId = new URLSearchParams(location.search).get('document');
+    const requestedDocument = documents.find((document) => document.id === documentId);
+
+    if (requestedDocument) {
+      setActiveDocument(requestedDocument);
+    }
+  }, [isHome, location.search]);
+
+  useEffect(() => {
     if (!activeDocument) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setActiveDocument(null);
+      if (event.key === 'Escape') closeDocument();
     };
     document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', handleKeyDown);
@@ -41,7 +60,7 @@ export default function DocumentsSection({ variant = 'home' }: DocumentsSectionP
       document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [activeDocument]);
+  }, [activeDocument, closeDocument]);
 
   const openDocument = (document: DocumentItem) => setActiveDocument(document);
 
@@ -124,14 +143,14 @@ export default function DocumentsSection({ variant = 'home' }: DocumentsSectionP
           aria-labelledby="estatutos-viewer-title"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
-              setActiveDocument(null);
+              closeDocument();
             }
           }}
         >
           <div className="relative flex h-[calc(100dvh-1rem)] w-full max-w-[1280px] flex-col overflow-hidden rounded-[2.25rem] border border-amber-200/40 bg-[linear-gradient(135deg,#5b3b17,#2c1b0a_38%,#140c04)] p-2 shadow-2xl shadow-black/50 sm:h-[calc(100dvh-2rem)] sm:p-3">
             <button
               type="button"
-              onClick={() => setActiveDocument(null)}
+              onClick={closeDocument}
               className="absolute right-4 top-4 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/20 focus-ring"
               aria-label="Cerrar visor"
             >
@@ -184,7 +203,7 @@ export default function DocumentsSection({ variant = 'home' }: DocumentsSectionP
                       </a>
                       <button
                         type="button"
-                        onClick={() => setActiveDocument(null)}
+                        onClick={closeDocument}
                         className="inline-flex items-center gap-2 rounded-full border border-amber-900/15 bg-white px-4 py-2.5 text-sm font-bold text-amber-950 transition hover:-translate-y-0.5 hover:bg-amber-50 focus-ring"
                       >
                         Cerrar lector <X size={16} />
