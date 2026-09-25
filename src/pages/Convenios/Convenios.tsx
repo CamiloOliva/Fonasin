@@ -86,7 +86,7 @@ export default function Convenios() {
                 )}
                 <img
                   src={c.logo}
-                  alt="Logo provisional"
+                  alt={`Logo de ${c.name}`}
                   className="h-16 w-28 rounded-lg object-contain"
                 />
                 <div className="mt-4 text-xs font-bold uppercase tracking-wider text-fonasin-green">

@@ -1,17 +1,13 @@
-import { ChevronRight, FileText, Globe, Home, Instagram, Link2, MessageCircle, Radio, Users, Youtube } from 'lucide-react';
+import { ChevronRight, FileText, Globe, Home, Instagram, MessageCircle, Radio, Users, Youtube } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { Link } from 'react-router-dom';
 import { navigation } from '../../data/navigation';
 import { WHATSAPP_URL } from '../../data/siteConfig';
 
 const legalLinks = [
-  { label: 'Estatutos', to: '/estatutos' },
-  { label: 'Reglamentos' },
-  {
-    label: 'Politica de tratamiento de datos',
-    href: '/Politica_Tratamiento_Datos_Personales_FONASIN_2026.pdf',
-    download: 'Politica_Tratamiento_Datos_Personales_FONASIN_2026.pdf',
-  },
+  { label: 'Estatutos', to: '/estatutos#marco-institucional' },
+  { label: 'Reglamentos', to: '/estatutos#reglamentos' },
+  { label: 'Política de tratamiento de datos', to: '/estatutos#tratamiento-datos' },
 ];
 
 const socialLinks = [
@@ -20,61 +16,6 @@ const socialLinks = [
   { label: 'YouTube', icon: Youtube },
   { label: 'Canal web', icon: Radio },
 ];
-
-function SoftButton({
-  icon: Icon,
-  label,
-  href,
-  to,
-  download,
-  muted = false,
-}: {
-  icon: ComponentType<{ className?: string }>;
-  label: string;
-  href?: string;
-  to?: string;
-  download?: string;
-  muted?: boolean;
-}) {
-  const baseClass =
-    'group inline-flex items-center justify-between gap-3 rounded-full border px-4 py-3 text-sm font-semibold transition duration-300 focus-ring';
-  const activeClass = 'border-white/20 bg-white/5 text-white hover:bg-white/10 hover:border-white/30';
-  const mutedClass = 'border-white/15 bg-transparent text-white/55 cursor-not-allowed';
-
-  const inner = (
-    <>
-      <span className="flex items-center gap-3">
-        <span className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white/90 ring-1 ring-white/15 transition group-hover:bg-white/15">
-          <Icon className="h-4 w-4" />
-        </span>
-        <span className="text-left">{label}</span>
-      </span>
-      {!muted ? <ChevronRight className="h-4 w-4 shrink-0 text-white/75 transition group-hover:translate-x-0.5 group-hover:text-white" /> : null}
-    </>
-  );
-
-  if (to) {
-    return (
-      <Link to={to} className={`${baseClass} ${activeClass}`}>
-        {inner}
-      </Link>
-    );
-  }
-
-  if (href) {
-    return (
-      <a href={href} download={download} className={`${baseClass} ${activeClass}`}>
-        {inner}
-      </a>
-    );
-  }
-
-  return (
-    <button type="button" aria-disabled="true" title="Proximamente" className={`${baseClass} ${muted ? mutedClass : activeClass}`}>
-      {inner}
-    </button>
-  );
-}
 
 function IconPill({
   icon: Icon,
@@ -216,6 +157,10 @@ export default function Footer() {
                 <ChevronRight className="h-4 w-4 text-[#d9d500] transition group-hover:translate-x-1" />
                 Correo
               </a>
+              <div className="flex items-start gap-3 text-sm font-medium text-white/82">
+                <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-[#d9d500]" />
+                <span>Lunes a viernes, 9:00 a. m. - 1:00 p. m.</span>
+              </div>
               <a
                 href="https://www.google.com/maps/@7.1297229,-73.1261016,976a,75y,280.5h,85.21t/data=!3m7!1e1!3m5!1sW3PTyLJZ4c20uLXzQjIiuQ!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D4.790603214045703%26panoid%3DW3PTyLJZ4c20uLXzQjIiuQ%26yaw%3D280.5047369856187!7i16384!8i8192?entry=ttu&g_ep=EgoyMDI2MDkwMS4wIKXMDSoASAFQAw%3D%3D"
                 target="_blank"
@@ -234,30 +179,16 @@ export default function Footer() {
             </div>
             <h2 className="text-base font-black leading-tight text-[#d9d500]">Legales</h2>
             <div className="mt-2.5 space-y-1.5 leading-tight">
-              {legalLinks.map((item) =>
-                item.to ? (
-                  <Link
-                    key={item.label}
-                    to={item.to}
-                    className="group flex items-center gap-3 text-sm font-medium text-white/82 transition hover:text-white"
-                  >
-                    <ChevronRight className="h-4 w-4 text-[#d9d500] transition group-hover:translate-x-1" />
-                    <span>{item.label}</span>
-                  </Link>
-                ) : item.href ? (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    download={item.download}
-                    className="group flex items-center gap-3 text-sm font-medium text-white/82 transition hover:text-white"
-                  >
-                    <ChevronRight className="h-4 w-4 text-[#d9d500] transition group-hover:translate-x-1" />
-                    <span>{item.label}</span>
-                  </a>
-                ) : (
-                  <SoftButton key={item.label} icon={Link2} label={item.label} muted />
-                ),
-              )}
+              {legalLinks.map((item) => (
+                <Link
+                  key={item.label}
+                  to={item.to}
+                  className="group flex items-center gap-3 text-sm font-medium text-white/82 transition hover:text-white"
+                >
+                  <ChevronRight className="h-4 w-4 text-[#d9d500] transition group-hover:translate-x-1" />
+                  <span>{item.label}</span>
+                </Link>
+              ))}
             </div>
           </section>
 
