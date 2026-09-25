@@ -28,7 +28,7 @@ Solo FONASIN puede mover contenido funcional a `Aceptado`. Una PR puede proponer
 | FE-WEB-001 | Estructura global | En curso | `src/components/layout`, `navbar`, `footer` | Validar teclado y responsive con pruebas reproducibles. |
 | FE-WEB-002 | Inicio | En curso | Ruta `/` y `src/pages/Home` | Sustituir y aprobar todos los contenidos provisionales. |
 | FE-WEB-003 | Institucional | En curso | Secciones About, History y centro documental con archivos oficiales | Aprobar los contenidos institucionales restantes y completar la validacion visual. |
-| FE-WEB-004 | Productos y servicios | En curso | `/productos-y-servicios`, `/creditos`, ahorros y convenios | Aprobar nombres, textos, condiciones y beneficios. |
+| FE-WEB-004 | Productos y servicios | En curso | `/productos-y-servicios`, `/creditos`, ahorros y convenios; fichas turísticas de Caribbean Sol y Mar y Luz Marina Vargas | Aprobar nombres, textos, condiciones y beneficios restantes. |
 | FE-WEB-005 | Transparencia | Implementado | Centro documental con estatutos, politica de datos, manual de lineas de credito, reglamento de cartera y estados financieros 2025 | Validar visualmente los documentos publicados con FONASIN. |
 | FE-WEB-005A | Visor PDF | Implementado | Visor embebido y descarga disponible para cada documento institucional | Validar rendimiento del estado financiero escaneado en el hosting productivo. |
 | FE-WEB-006 | Noticias | Bloqueado | Sin ruta ni datos | Recibir publicaciones iniciales aprobadas; no crear CMS general. |

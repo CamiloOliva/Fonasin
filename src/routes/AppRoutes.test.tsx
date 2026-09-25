@@ -532,6 +532,22 @@ describe('AppRoutes', () => {
     expect(screen.getByText(/\$14\.050/)).toBeInTheDocument();
   });
 
+  it('muestra los contactos confirmados de Caribbean Sol y Mar', () => {
+    renderRoute('/convenios/caribbean-sol-y-mar');
+
+    expect(screen.getByRole('heading', { level: 1, name: /caribbean sol y mar/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /324 558 0932/i })).toHaveAttribute('href', 'https://wa.me/573245580932');
+    expect(screen.getByRole('link', { name: /instagram/i })).toHaveAttribute('href', 'https://www.instagram.com/caribbeansolymar110');
+  });
+
+  it('muestra los contactos confirmados de Luz Marina Vargas', () => {
+    renderRoute('/convenios/luz-marina-vargas');
+
+    expect(screen.getByRole('heading', { level: 1, name: /luz marina vargas/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /lumavapa@hotmail.com/i })).toHaveAttribute('href', 'mailto:lumavapa@hotmail.com');
+    expect(screen.getByRole('link', { name: /facebook/i })).toHaveAttribute('href', expect.stringContaining('61569011393925'));
+  });
+
   it('falls back to the home page for an unknown route', () => {
     renderRoute('/ruta-inexistente');
 
