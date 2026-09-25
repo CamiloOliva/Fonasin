@@ -154,7 +154,7 @@ export default function ConvenioCapillasDeLaFe() {
                 {/* VALOR MENSUAL DESTACADO */}
                 <div className="inline-flex items-center space-x-3 bg-emerald-500/20 border border-emerald-400/50 backdrop-blur-md px-5 py-2.5 rounded-2xl shadow-inner mt-2">
                   <span className="text-xs font-extrabold uppercase text-emerald-300 tracking-wider">Aporte Mensual:</span>
-                  <span className="text-xl sm:text-2xl font-black text-white">$12.700 <span className="text-xs font-bold text-emerald-200">COP</span></span>
+                  <span className="text-xl sm:text-2xl font-black text-white">$14.050 <span className="text-xs font-bold text-emerald-200">COP</span></span>
                 </div>
               </div>
 

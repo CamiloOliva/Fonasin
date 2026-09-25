@@ -7,7 +7,6 @@ import {
   Heart, 
   ArrowLeft,
   Stethoscope,
-  CalendarDays,
   Home,
   Hospital,
   Sparkles,
@@ -28,15 +27,9 @@ export default function ConvenioSanitas() {
   const beneficios = [
     {
       icon: Stethoscope,
-      title: "12 ESPECIALIDADES DIRECTAS",
-      description: "Accede sin remisión médica previa a 12 especialidades clave para una atención oportuna y sin trámites innecesarios.",
+      title: "12 ESPECIALIDADES Y CITAS EN MÁXIMO 5 DÍAS",
+      description: "Accede sin remisión médica previa a 12 especialidades clave, con asignación ágil de citas para una atención oportuna.",
       badge: "Acceso Directo"
-    },
-    {
-      icon: CalendarDays,
-      title: "CITAS EN MÁXIMO 5 DÍAS",
-      description: "Garantía de asignación ágil de citas para atender tus requerimientos de salud cuando realmente los necesitas.",
-      badge: "Atención Rápida"
     },
     {
       icon: Home,
@@ -98,8 +91,21 @@ export default function ConvenioSanitas() {
               </div>
 
               <p className="text-slate-300 text-base md:text-lg font-normal leading-relaxed max-w-2xl">
-                Unimos esfuerzos para brindarte cobertura integral en salud con facilidades únicas, atención médica preferencial y trámites ágiles para ti y tu familia.
+                Pensamos en ti y en tu bienestar. Unimos esfuerzos para brindarte cobertura integral en salud con facilidades únicas, atención médica preferencial y trámites ágiles para ti y tu familia.
               </p>
+
+              <ul className="grid gap-2 text-left text-sm font-semibold text-slate-200">
+                {[
+                  'No tenemos en cuenta preexistencias médicas.',
+                  'Sin límite de edad.',
+                  'Solo necesitas estar afiliado(a) al régimen contributivo de EPS Sanitas.',
+                ].map((condition) => (
+                  <li key={condition} className="flex items-start gap-2">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                    <span>{condition}</span>
+                  </li>
+                ))}
+              </ul>
 
               {/* Pills de Beneficios */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
@@ -185,7 +191,7 @@ export default function ConvenioSanitas() {
             <Zap className="w-8 h-8 text-sky-500 hidden sm:block animate-pulse" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {beneficios.map((beneficio, index) => (
               <div 
                 key={index} 

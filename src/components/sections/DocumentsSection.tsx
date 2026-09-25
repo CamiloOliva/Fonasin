@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { BookOpen, Building2, Download, ExternalLink, FileText, Gavel, PieChart, ShieldCheck, X } from 'lucide-react';
-import { documents } from '../../data/documents';
+import { BookOpen, Building2, Download, FileText, Gavel, PieChart, ShieldCheck, X } from 'lucide-react';
+import { documents, type DocumentCategory } from '../../data/documents';
+import { Link, useLocation } from 'react-router-dom';
 import SectionHeading from '../ui/SectionHeading';
 import StatutesBookViewer from './StatutesBookViewer';
 
@@ -11,16 +12,23 @@ type DocumentsSectionProps = {
 type DocumentItem = (typeof documents)[number];
 
 const categories = [
-  { number: '01', title: 'Marco institucional', description: 'Documentos que establecen la estructura, principios y funcionamiento de FONASIN.', icon: Building2, documentId: 1 },
-  { number: '02', title: 'Normativa y reglamentos', description: 'Reglamentos y politicas que rigen nuestros servicios y la convivencia institucional.', icon: Gavel, documentId: 2 },
-  { number: '03', title: 'Informacion financiera', description: 'Estados financieros, informes y reportes que reflejan la gestion y solidez de FONASIN.', icon: PieChart, documentId: null },
-  { number: '04', title: 'Transparencia y datos', description: 'Politicas y documentos relacionados con la proteccion de datos y la transparencia.', icon: ShieldCheck, documentId: 3 },
+  { id: 'marco-institucional', number: '01', title: 'Marco institucional', description: 'Documentos que establecen la estructura, principios y funcionamiento de FONASIN.', icon: Building2, category: 'institutional' as DocumentCategory },
+  { id: 'reglamentos', number: '02', title: 'Normativa y reglamentos', description: 'Reglamentos y politicas que rigen nuestros servicios y la convivencia institucional.', icon: Gavel, category: 'regulations' as DocumentCategory },
+  { id: 'informacion-financiera', number: '03', title: 'Informacion financiera', description: 'Estados financieros, informes y reportes que reflejan la gestion y solidez de FONASIN.', icon: PieChart, category: 'financial' as DocumentCategory },
+  { id: 'tratamiento-datos', number: '04', title: 'Transparencia y datos', description: 'Politicas y documentos relacionados con la proteccion de datos y la transparencia.', icon: ShieldCheck, category: 'data' as DocumentCategory },
 ];
 
 export default function DocumentsSection({ variant = 'home' }: DocumentsSectionProps) {
   const isHome = variant === 'home';
-  const visibleDocuments = isHome ? documents.filter((document) => document.id === 3) : documents;
+  const location = useLocation();
+  const visibleDocuments = isHome ? documents.filter((document) => document.id === 'data-policy') : documents;
   const [activeDocument, setActiveDocument] = useState<DocumentItem | null>(null);
+
+  useEffect(() => {
+    if (isHome || !location.hash) return;
+    const target = document.getElementById(location.hash.slice(1));
+    target?.scrollIntoView?.({ block: 'start' });
+  }, [isHome, location.hash]);
 
   useEffect(() => {
     if (!activeDocument) return;
@@ -35,7 +43,6 @@ export default function DocumentsSection({ variant = 'home' }: DocumentsSectionP
     };
   }, [activeDocument]);
 
-  const documentById = (id: number | null) => (id ? documents.find((document) => document.id === id) ?? null : null);
   const openDocument = (document: DocumentItem) => setActiveDocument(document);
 
   return (
@@ -74,30 +81,39 @@ export default function DocumentsSection({ variant = 'home' }: DocumentsSectionP
 
           <div className={`mt-8 grid gap-5 ${isHome ? 'md:grid-cols-3' : 'sm:grid-cols-2 xl:grid-cols-4'}`}>
             {isHome ? visibleDocuments.map((document) => {
-              const hasViewer = Boolean(document.href) && (document.id === 1 || document.id === 3);
               return (
                 <article key={document.id} className="flex h-full flex-col rounded-[1.5rem] border border-fonasin-green/10 bg-white p-6 shadow-lg shadow-fonasin-deep/5">
                   <FileText className="text-fonasin-green" size={30} /><h3 className="mt-4 text-xl font-black text-fonasin-deep">{document.title}</h3><p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{document.description}</p>
-                  <div className="mt-5 flex flex-wrap gap-3">{hasViewer ? <button type="button" onClick={() => openDocument(document)} className="inline-flex items-center gap-2 rounded-full bg-fonasin-green px-4 py-2 text-sm font-bold text-white focus-ring">Ver en la pagina <BookOpen size={16} /></button> : null}<a href={document.href ?? '#'} download={document.downloadName} className="inline-flex items-center gap-2 rounded-full border border-fonasin-green/20 px-4 py-2 text-sm font-bold text-fonasin-green focus-ring">Descargar <Download size={16} /></a></div>
+                  <div className="mt-5 flex flex-wrap gap-3"><button type="button" onClick={() => openDocument(document)} className="inline-flex items-center gap-2 rounded-full bg-fonasin-green px-4 py-2 text-sm font-bold text-white focus-ring">Ver en la pagina <BookOpen size={16} /></button><a href={document.href} download={document.downloadName} className="inline-flex items-center gap-2 rounded-full border border-fonasin-green/20 px-4 py-2 text-sm font-bold text-fonasin-green focus-ring">Descargar <Download size={16} /></a></div>
                 </article>
               );
             }) : categories.map((category) => {
-              const document = documentById(category.documentId);
-              const hasViewer = Boolean(document?.href) && (document?.id === 1 || document?.id === 3);
+              const categoryDocuments = documents.filter((document) => document.category === category.category);
               const Icon = category.icon;
               return (
-                <article key={category.title} className="group relative flex min-h-[17rem] flex-col overflow-hidden rounded-[1.4rem] border border-slate-200/80 bg-white p-5 shadow-[0_10px_30px_rgba(13,71,56,0.06)] transition hover:-translate-y-1 hover:shadow-[0_18px_36px_rgba(13,71,56,0.12)]">
+                <article id={category.id} key={category.title} className="group relative flex min-h-[20rem] scroll-mt-28 flex-col overflow-hidden rounded-[1.4rem] border border-fonasin-green/20 bg-white p-5 shadow-[0_10px_30px_rgba(13,71,56,0.06)] transition hover:-translate-y-1 hover:border-fonasin-green/40 hover:shadow-[0_18px_36px_rgba(13,71,56,0.12)]">
                   <span className="pointer-events-none absolute right-4 top-0 text-6xl font-black leading-none text-fonasin-green/20">{category.number}</span>
                   <div className="relative grid h-11 w-11 place-items-center rounded-xl bg-fonasin-deep text-fonasin-lime"><Icon size={23} /></div>
-                  <h3 aria-label={category.documentId === 1 ? "Estatutos" : category.title} className="relative mt-5 font-heading text-lg font-black text-fonasin-deep">{category.title}</h3><div className="mt-2 h-1 w-10 rounded-full bg-fonasin-lime" /><p lang="es" className="mt-3 flex-1 text-justify text-sm leading-6 text-slate-600 [hyphens:auto]">{category.description}</p>
-                  <div className="mt-4 flex items-center justify-between gap-2"><span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] ${document?.href ? 'bg-fonasin-surface text-fonasin-green' : 'bg-amber-50 text-amber-700'}`}>{document?.href ? 'Disponible' : 'Pendiente'}</span>{document?.href ? <span className="text-xs font-bold text-slate-400">PDF</span> : null}</div>
-                  <div className="mt-4 flex gap-2">{document?.href && hasViewer ? <button type="button" onClick={() => openDocument(document)} aria-label="Ver en la pagina" className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg bg-fonasin-deep px-3 py-2 text-xs font-bold text-white focus-ring">Ver documentos <BookOpen size={14} /></button> : <span className="flex-1" />}{document?.href ? <a href={document.href} download={document.downloadName} className="inline-flex items-center gap-1 rounded-lg border border-fonasin-green/20 px-3 py-2 text-xs font-bold text-fonasin-green focus-ring">Descargar <Download size={14} /></a> : null}</div>
+                  <h3 aria-label={category.category === 'institutional' ? 'Estatutos' : category.title} className="relative mt-5 font-heading text-lg font-black text-fonasin-deep">{category.title}</h3>
+                  <div className="mt-2 h-1 w-10 rounded-full bg-fonasin-lime" />
+                  <p lang="es" className="mt-3 text-sm leading-6 text-slate-600">{category.description}</p>
+                  <div className="mt-5 divide-y divide-slate-200 border-y border-slate-200">
+                    {categoryDocuments.map((document) => (
+                      <div key={document.id} className="py-4">
+                        <p className="pr-8 text-sm font-black leading-5 text-fonasin-deep">{document.title}</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button type="button" onClick={() => openDocument(document)} aria-label={`Ver ${document.title}`} className="inline-flex items-center gap-1 rounded-lg bg-fonasin-deep px-3 py-2 text-xs font-bold text-white focus-ring">Ver <BookOpen size={14} /></button>
+                          <a href={document.href} download={document.downloadName} aria-label={`Descargar ${document.title}`} className="inline-flex items-center gap-1 rounded-lg border border-fonasin-green/20 px-3 py-2 text-xs font-bold text-fonasin-green focus-ring">Descargar <Download size={14} /></a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </article>
               );
             })}
           </div>
 
-          {!isHome ? <div className="mt-5 flex flex-col items-center justify-between gap-4 rounded-[1.5rem] border border-fonasin-green/10 bg-white/70 px-6 py-5 sm:flex-row"><div className="flex items-center gap-3"><FileText className="text-fonasin-green" size={28} /><div><h3 className="font-heading font-black text-fonasin-deep">No encuentras lo que buscas?</h3><p className="text-sm text-slate-600">Escribenos y te ayudaremos a encontrar la informacion que necesitas.</p></div></div><a href="mailto:atencion@fonasin.com" className="inline-flex items-center rounded-lg bg-fonasin-deep px-5 py-2.5 text-sm font-bold text-white focus-ring">Contactanos</a></div> : null}
+          {!isHome ? <div className="mt-5 flex flex-col items-center justify-between gap-4 rounded-[1.5rem] border border-fonasin-green/10 bg-white/70 px-6 py-5 sm:flex-row"><div className="flex items-center gap-3"><FileText className="text-fonasin-green" size={28} /><div><h3 className="font-heading font-black text-fonasin-deep">No encuentras lo que buscas?</h3><p className="text-sm text-slate-600">Envia tu consulta mediante nuestro formulario de atencion.</p></div></div><Link to="/fpqrs" className="inline-flex items-center rounded-lg bg-fonasin-deep px-5 py-2.5 text-sm font-bold text-white focus-ring">Ir a FPQRS</Link></div> : null}
         </div>
       </section>
       {activeDocument?.href ? (

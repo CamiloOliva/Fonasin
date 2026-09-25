@@ -122,7 +122,7 @@ describe('AppRoutes', () => {
 
     expect(estatutosCard).not.toBeNull();
 
-    await user.click(within(estatutosCard as HTMLElement).getByRole('button', { name: /ver en la pagina/i }));
+    await user.click(within(estatutosCard as HTMLElement).getByRole('button', { name: /ver estatutos definitivos 2024/i }));
 
     const dialog = screen.getByRole('dialog', { name: /estatutos/i });
 
@@ -516,6 +516,20 @@ describe('AppRoutes', () => {
     renderRoute('/convenios/uma-ips');
 
     expect(screen.getByRole('heading', { name: /medicina integral/i })).toBeInTheDocument();
+  });
+
+  it('muestra las condiciones actualizadas del convenio Sanitas', () => {
+    renderRoute('/convenios/sanitas');
+
+    expect(screen.getByRole('heading', { name: /12 especialidades y citas en máximo 5 días/i })).toBeInTheDocument();
+    expect(screen.getByText(/no tenemos en cuenta preexistencias médicas/i)).toBeInTheDocument();
+    expect(screen.getByText(/régimen contributivo de EPS Sanitas/i)).toBeInTheDocument();
+  });
+
+  it('muestra la tarifa actualizada del convenio Coorserpark', () => {
+    renderRoute('/convenios/coorserpark');
+
+    expect(screen.getByText(/\$14\.050/)).toBeInTheDocument();
   });
 
   it('falls back to the home page for an unknown route', () => {
