@@ -29,6 +29,7 @@ type TourismPageProps = {
   description: string;
   image: string;
   imageAlt: string;
+  brandLogo?: string;
   logoMode?: boolean;
   services: Array<{ title: string; description: string; icon: LucideIcon }>;
   contacts: Contact[];
@@ -39,6 +40,7 @@ function TourismPage({
   description,
   image,
   imageAlt,
+  brandLogo,
   logoMode = false,
   services,
   contacts,
@@ -87,6 +89,13 @@ function TourismPage({
             <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-900/55 to-transparent" />
             <div className="container-page relative flex min-h-[430px] items-center py-14">
               <div className="min-w-0 w-full max-w-2xl text-white">
+                {brandLogo && (
+                  <img
+                    src={brandLogo}
+                    alt={`Logo de ${name}`}
+                    className="mb-6 h-20 w-20 rounded-lg bg-white object-contain p-1 shadow-lg"
+                  />
+                )}
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-300">
                   Convenio de turismo
                 </p>
@@ -152,6 +161,7 @@ export function ConvenioCaribbean() {
       description="Hacemos realidad tus viajes y tus sueños con alternativas de transporte, alojamiento, experiencias y asesoría personalizada."
       image="/images/convenios/caribbean-sol-mar-hero.jpg"
       imageAlt="Playa del Caribe y avión representando los servicios de Caribbean Sol y Mar"
+      brandLogo="/images/convenios/caribbean-sol-mar-logo.jpg"
       services={caribbeanServices}
       contacts={[
         { label: 'WhatsApp 324 558 0932', href: 'https://wa.me/573245580932', icon: MessageCircle, external: true },

@@ -1,7 +1,7 @@
 export type ConvenioCategory='Salud y bienestar'|'Funerarios'|'Turismo'|'Servicios vehiculares'
 export type Convenio={id:number;name:string;category:ConvenioCategory;description:string;website?:string;logo:string}
 export const convenios: Convenio[] = [
- {id:10,name:'Caribbean Sol y Mar',category:'Turismo',description:'Tiquetes, hoteles, tours y asesoría personalizada para viajes nacionales e internacionales.',logo:'/images/convenios/caribbean-sol-mar-hero.jpg'},
+ {id:10,name:'Caribbean Sol y Mar',category:'Turismo',description:'Tiquetes, hoteles, tours y asesoría personalizada para viajes nacionales e internacionales.',logo:'/images/convenios/caribbean-sol-mar-logo.jpg'},
  {id:11,name:'Luz Marina Vargas',category:'Turismo',description:'Agencia de viajes con atención personalizada para asociados FONASIN.',logo:'/images/convenios/luz-marina-vargas.png'},
  {id:1,name:'EMI',category:'Salud y bienestar',description:'Atención médica 24/7 en casa con tarifa especial para asociados FONASIN.',logo:'/images/convenios/emi.png'},
  {id:9,name:'Sanitas',category:'Salud y bienestar',description:'Plan Premium de salud con beneficios exclusivos para asociados FONASIN.',logo:'/images/convenios/sanitas.png'},
