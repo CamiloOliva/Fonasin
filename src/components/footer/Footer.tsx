@@ -5,9 +5,10 @@ import { navigation } from '../../data/navigation';
 import { WHATSAPP_URL } from '../../data/siteConfig';
 
 const legalLinks = [
-  { label: 'Estatutos', to: '/estatutos#marco-institucional' },
-  { label: 'Reglamentos', to: '/estatutos#reglamentos' },
-  { label: 'Política de tratamiento de datos', to: '/estatutos#tratamiento-datos' },
+  { label: 'Estatutos', to: '/estatutos?document=statutes' },
+  { label: 'Manual de líneas de crédito', to: '/estatutos?document=credit-manual' },
+  { label: 'Reglamento de crédito y cartera', to: '/estatutos?document=credit-regulation' },
+  { label: 'Política de tratamiento de datos', to: '/estatutos?document=data-policy' },
 ];
 
 const socialLinks = [

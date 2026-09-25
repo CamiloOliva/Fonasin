@@ -18,9 +18,9 @@ describe('Footer', () => {
     expect(legal).not.toBeNull();
     expect(within(navigation as HTMLElement).getByRole('link', { name: 'Mi Fondo' })).toHaveAttribute('href', '/estatutos');
     expect(within(navigation as HTMLElement).queryByRole('link', { name: 'Estatutos' })).not.toBeInTheDocument();
-    expect(within(legal as HTMLElement).getByRole('link', { name: 'Estatutos' })).toHaveAttribute(
-      'href',
-      '/estatutos#marco-institucional',
-    );
+    expect(within(legal as HTMLElement).getByRole('link', { name: 'Estatutos' })).toHaveAttribute('href', '/estatutos?document=statutes');
+    expect(within(legal as HTMLElement).getByRole('link', { name: /manual de líneas de crédito/i })).toHaveAttribute('href', '/estatutos?document=credit-manual');
+    expect(within(legal as HTMLElement).getByRole('link', { name: /reglamento de crédito y cartera/i })).toHaveAttribute('href', '/estatutos?document=credit-regulation');
+    expect(within(legal as HTMLElement).getByRole('link', { name: /política de tratamiento de datos/i })).toHaveAttribute('href', '/estatutos?document=data-policy');
   });
 });
