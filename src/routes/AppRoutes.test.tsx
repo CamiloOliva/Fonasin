@@ -536,6 +536,9 @@ describe('AppRoutes', () => {
     renderRoute('/convenios/caribbean-sol-y-mar');
 
     expect(screen.getByRole('heading', { level: 1, name: /caribbean sol y mar/i })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /logo de caribbean sol y mar/i })).toHaveAttribute('src', '/images/convenios/caribbean-sol-mar-logo.jpg');
+    expect(screen.getByRole('heading', { level: 2, name: /punta cana/i })).toBeInTheDocument();
+    expect(screen.getByText(/salida desde bucaramanga/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /324 558 0932/i })).toHaveAttribute('href', 'https://wa.me/573245580932');
     expect(screen.getByRole('link', { name: /instagram/i })).toHaveAttribute('href', 'https://www.instagram.com/caribbeansolymar110');
   });
@@ -544,6 +547,7 @@ describe('AppRoutes', () => {
     renderRoute('/convenios/luz-marina-vargas');
 
     expect(screen.getByRole('heading', { level: 1, name: /luz marina vargas/i })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /logo de luz marina vargas/i })).toHaveAttribute('src', '/images/convenios/luz-marina-vargas-logo.jpg');
     expect(screen.getByRole('link', { name: /lumavapa@hotmail.com/i })).toHaveAttribute('href', 'mailto:lumavapa@hotmail.com');
     expect(screen.getByRole('link', { name: /facebook/i })).toHaveAttribute('href', expect.stringContaining('61569011393925'));
   });

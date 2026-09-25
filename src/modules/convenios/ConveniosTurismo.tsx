@@ -30,9 +30,17 @@ type TourismPageProps = {
   image: string;
   imageAlt: string;
   brandLogo?: string;
-  logoMode?: boolean;
   services: Array<{ title: string; description: string; icon: LucideIcon }>;
   contacts: Contact[];
+  promotion?: {
+    image: string;
+    imageAlt: string;
+    title: string;
+    description: string;
+    date: string;
+    departure: string;
+    includes: string[];
+  };
 };
 
 function TourismPage({
@@ -41,9 +49,9 @@ function TourismPage({
   image,
   imageAlt,
   brandLogo,
-  logoMode = false,
   services,
   contacts,
+  promotion,
 }: TourismPageProps) {
   return (
     <main className="min-h-screen overflow-x-hidden bg-white text-slate-900">
@@ -59,52 +67,25 @@ function TourismPage({
         </div>
       </div>
 
-      <section
-        className={
-          logoMode
-            ? 'border-b border-emerald-100 bg-emerald-50/50'
-            : 'relative min-h-[430px] overflow-hidden bg-slate-900'
-        }
-      >
-        {logoMode ? (
-          <div className="container-page grid min-h-[430px] place-items-center py-12 text-center">
-            <div className="max-w-3xl">
+      <section className="relative min-h-[470px] overflow-hidden bg-slate-900">
+        <img src={image} alt={imageAlt} className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-900/60 to-slate-900/5" />
+        <div className="container-page relative flex min-h-[470px] items-center py-14">
+          <div className="min-w-0 w-full max-w-2xl text-white">
+            {brandLogo && (
               <img
-                src={image}
-                alt={imageAlt}
-                className="mx-auto h-32 w-56 object-contain sm:h-40 sm:w-72"
+                src={brandLogo}
+                alt={`Logo de ${name}`}
+                className="mb-6 h-28 w-28 rounded-xl bg-white object-contain p-1.5 shadow-xl"
               />
-              <p className="mt-7 text-xs font-black uppercase tracking-[0.18em] text-fonasin-green">
-                Convenio de turismo
-              </p>
-              <h1 className="mt-2 text-4xl font-black text-fonasin-deep sm:text-5xl">{name}</h1>
-              <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-                {description}
-              </p>
-            </div>
+            )}
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-300">
+              Convenio de turismo
+            </p>
+            <h1 className="mt-3 max-w-full break-words text-3xl font-black sm:text-5xl">{name}</h1>
+            <p className="mt-5 max-w-full text-base leading-7 text-slate-100 sm:text-lg">{description}</p>
           </div>
-        ) : (
-          <>
-            <img src={image} alt={imageAlt} className="absolute inset-0 h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-900/55 to-transparent" />
-            <div className="container-page relative flex min-h-[430px] items-center py-14">
-              <div className="min-w-0 w-full max-w-2xl text-white">
-                {brandLogo && (
-                  <img
-                    src={brandLogo}
-                    alt={`Logo de ${name}`}
-                    className="mb-6 h-20 w-20 rounded-lg bg-white object-contain p-1 shadow-lg"
-                  />
-                )}
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-300">
-                  Convenio de turismo
-                </p>
-                <h1 className="mt-3 max-w-full break-words text-3xl font-black sm:text-5xl">{name}</h1>
-                <p className="mt-5 max-w-full text-base leading-7 text-slate-100 sm:text-lg">{description}</p>
-              </div>
-            </div>
-          </>
-        )}
+        </div>
       </section>
 
       <section className="container-page py-14">
@@ -120,6 +101,23 @@ function TourismPage({
           ))}
         </div>
       </section>
+
+      {promotion && (
+        <section className="container-page pb-14" aria-labelledby="tourism-promotion-title">
+          <h2 id="tourism-promotion-title" className="sr-only">{promotion.title}</h2>
+          <figure className="overflow-hidden rounded-lg border border-sky-100 bg-white shadow-xl">
+            <img
+              src={promotion.image}
+              alt={promotion.imageAlt}
+              className="block h-auto w-full"
+            />
+            <figcaption className="sr-only">
+              {promotion.description} {promotion.date}. {promotion.departure}. Incluye:{' '}
+              {promotion.includes.join(', ')}.
+            </figcaption>
+          </figure>
+        </section>
+      )}
 
       <section className="border-y border-emerald-100 bg-emerald-50/50">
         <div className="container-page py-12">
@@ -163,6 +161,21 @@ export function ConvenioCaribbean() {
       imageAlt="Playa del Caribe y avión representando los servicios de Caribbean Sol y Mar"
       brandLogo="/images/convenios/caribbean-sol-mar-logo.jpg"
       services={caribbeanServices}
+      promotion={{
+        image: '/images/convenios/caribbean-punta-cana.jpg',
+        imageAlt: 'Playa tropical y catamarán representando la promoción de Punta Cana',
+        title: 'Punta Cana',
+        description: 'Sol, playa y diversión en un solo destino.',
+        date: 'Del 30 al 4 de diciembre',
+        departure: 'Salida desde Bucaramanga',
+        includes: [
+          'Tiquetes aéreos ida y regreso',
+          'Alimentación en plan completo',
+          'Asistencia médica',
+          'Tour a Isla Saona',
+          'Transporte aeropuerto, hotel y aeropuerto',
+        ],
+      }}
       contacts={[
         { label: 'WhatsApp 324 558 0932', href: 'https://wa.me/573245580932', icon: MessageCircle, external: true },
         { label: 'WhatsApp 318 829 7925', href: 'https://wa.me/573188297925', icon: MessageCircle, external: true },
@@ -183,9 +196,9 @@ export function ConvenioLuzMarina() {
     <TourismPage
       name="Luz Marina Vargas"
       description="Agente líder de viajes con atención personalizada para consultar destinos y organizar tus próximas experiencias."
-      image="/images/convenios/luz-marina-vargas.png"
-      imageAlt="Logo de Luz Marina Vargas, agente líder de viajes"
-      logoMode
+      image="/images/convenios/luz-marina-vargas-hero.jpg"
+      imageAlt="Aeropuerto y elementos de planificación de viajes"
+      brandLogo="/images/convenios/luz-marina-vargas-logo.jpg"
       services={services}
       contacts={[
         { label: '314 368 0054', href: 'tel:+573143680054', icon: Phone },
