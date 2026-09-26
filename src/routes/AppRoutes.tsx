@@ -17,6 +17,7 @@ import ConvenioPractiCar from "../modules/convenios/ConvenioPractiCar.jsx";
 import ConvenioLosOlivos from "../modules/convenios/ConvenioLosOlivos.jsx";
 import ConvenioSanitas from "../modules/convenios/ConvenioSanitas.jsx";
 import ConvenioCapillasDeLaFe from "../modules/convenios/ConvenioCapillasDeLaFe.jsx";
+import { ConvenioCaribbean, ConvenioLuzMarina } from "../modules/convenios/ConveniosTurismo";
 import FPQRS from "../pages/FPQRS/FPQRS";
 import Home from "../pages/Home/Home";
 import MiFondo from "../pages/MiFondo/MiFondo";
@@ -62,6 +63,8 @@ export default function AppRoutes() {
         path="/convenios/capillas-de-la-fe"
         element={<ConvenioCapillasDeLaFe />}
       />{" "}
+      <Route path="/convenios/caribbean-sol-y-mar" element={<ConvenioCaribbean />} />{" "}
+      <Route path="/convenios/luz-marina-vargas" element={<ConvenioLuzMarina />} />{" "}
       <Route path="/fpqrs" element={<FPQRS />} />{" "}
       <Route path="/afiliacion" element={<Afiliacion />} />{" "}
       <Route path="/portal-asociado/completar-perfil" element={<Afiliacion flow="profile_completion" />} />{" "}

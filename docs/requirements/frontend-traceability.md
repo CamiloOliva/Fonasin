@@ -6,7 +6,7 @@ Esta matriz conecta la especificacion funcional con el codigo, las pruebas y la 
 
 Fuente funcional: `02_GUIA_EQUIPO_FRONTEND_WEB_AFILIACION_PORTAL_V2.docx`, version 2.0 del 15 de agosto de 2026.
 
-Ultima revision tecnica: 23 de septiembre de 2026, rama de trabajo frontend.
+Ultima revision tecnica: 24 de septiembre de 2026, rama de trabajo frontend.
 
 ## Estados permitidos
 
@@ -27,12 +27,12 @@ Solo FONASIN puede mover contenido funcional a `Aceptado`. Una PR puede proponer
 |---|---|---|---|---|
 | FE-WEB-001 | Estructura global | En curso | `src/components/layout`, `navbar`, `footer` | Validar teclado y responsive con pruebas reproducibles. |
 | FE-WEB-002 | Inicio | En curso | Ruta `/` y `src/pages/Home` | Sustituir y aprobar todos los contenidos provisionales. |
-| FE-WEB-003 | Institucional | En curso | Secciones About, History y Documents | Publicar valores y documentos oficiales sin enlaces simulados. |
-| FE-WEB-004 | Productos y servicios | En curso | `/productos-y-servicios`, `/creditos`, ahorros y convenios | Aprobar nombres, textos, condiciones y beneficios. |
-| FE-WEB-005 | Transparencia | Bloqueado | Tarjetas documentales sin archivos | Recibir estatutos, reglamentos, balances, informes, fechas y tipos. |
-| FE-WEB-005A | Visor PDF | Pendiente | Sin visor | Mostrar PDF embebido con descarga y fallback accesible. |
+| FE-WEB-003 | Institucional | En curso | Secciones About, History y centro documental con archivos oficiales | Aprobar los contenidos institucionales restantes y completar la validacion visual. |
+| FE-WEB-004 | Productos y servicios | En curso | `/productos-y-servicios`, `/creditos`, ahorros y convenios; fichas turísticas de Caribbean Sol y Mar y Luz Marina Vargas | Aprobar nombres, textos, condiciones y beneficios restantes. |
+| FE-WEB-005 | Transparencia | Implementado | Centro documental con estatutos, politica de datos, manual de lineas de credito, reglamento de cartera y estados financieros 2025 | Validar visualmente los documentos publicados con FONASIN. |
+| FE-WEB-005A | Visor PDF | Implementado | Visor embebido y descarga disponible para cada documento institucional | Validar rendimiento del estado financiero escaneado en el hosting productivo. |
 | FE-WEB-006 | Noticias | Bloqueado | Sin ruta ni datos | Recibir publicaciones iniciales aprobadas; no crear CMS general. |
-| FE-WEB-007 | Contacto | Bloqueado | WhatsApp parcial | Recibir datos, redes, mapa y horarios oficiales. |
+| FE-WEB-007 | Contacto | En curso | WhatsApp, correo institucional, mapa, horario y acceso a FPQRS publicados | Confirmar y conectar las redes sociales oficiales. |
 | FE-WEB-008 | FPQRS | Implementado | Formulario conectado a `POST /fpqrs-submissions`, adjunto opcional PDF/JPG/PNG hasta 5MB, estados de envio/error, rate limit publico y entrega a correo institucional por backend. | Validar envio real con SMTP de produccion y aprobar politica de retencion. |
 | FE-WEB-009 | WhatsApp | En curso | Enlace configurable con `VITE_WHATSAPP_URL` | Confirmar numero, mensaje y comportamiento oficial. |
 | FE-WEB-010 | SEO y accesibilidad | En curso | HTML en español, description, semantica y foco parcial | Ejecutar auditoria sin errores criticos y agregar pruebas. |

@@ -122,7 +122,7 @@ describe('AppRoutes', () => {
 
     expect(estatutosCard).not.toBeNull();
 
-    await user.click(within(estatutosCard as HTMLElement).getByRole('button', { name: /ver en la pagina/i }));
+    await user.click(within(estatutosCard as HTMLElement).getByRole('button', { name: /ver estatutos definitivos 2024/i }));
 
     const dialog = screen.getByRole('dialog', { name: /estatutos/i });
 
@@ -516,6 +516,40 @@ describe('AppRoutes', () => {
     renderRoute('/convenios/uma-ips');
 
     expect(screen.getByRole('heading', { name: /medicina integral/i })).toBeInTheDocument();
+  });
+
+  it('muestra las condiciones actualizadas del convenio Sanitas', () => {
+    renderRoute('/convenios/sanitas');
+
+    expect(screen.getByRole('heading', { name: /12 especialidades y citas en máximo 5 días/i })).toBeInTheDocument();
+    expect(screen.getByText(/no tenemos en cuenta preexistencias médicas/i)).toBeInTheDocument();
+    expect(screen.getByText(/régimen contributivo de EPS Sanitas/i)).toBeInTheDocument();
+  });
+
+  it('muestra la tarifa actualizada del convenio Coorserpark', () => {
+    renderRoute('/convenios/coorserpark');
+
+    expect(screen.getByText(/\$14\.050/)).toBeInTheDocument();
+  });
+
+  it('muestra los contactos confirmados de Caribbean Sol y Mar', () => {
+    renderRoute('/convenios/caribbean-sol-y-mar');
+
+    expect(screen.getByRole('heading', { level: 1, name: /caribbean sol y mar/i })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /logo de caribbean sol y mar/i })).toHaveAttribute('src', '/images/convenios/caribbean-sol-mar-logo.jpg');
+    expect(screen.getByRole('heading', { level: 2, name: /punta cana/i })).toBeInTheDocument();
+    expect(screen.getByText(/salida desde bucaramanga/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /324 558 0932/i })).toHaveAttribute('href', 'https://wa.me/573245580932');
+    expect(screen.getByRole('link', { name: /instagram/i })).toHaveAttribute('href', 'https://www.instagram.com/caribbeansolymar110');
+  });
+
+  it('muestra los contactos confirmados de Luz Marina Vargas', () => {
+    renderRoute('/convenios/luz-marina-vargas');
+
+    expect(screen.getByRole('heading', { level: 1, name: /luz marina vargas/i })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /logo de luz marina vargas/i })).toHaveAttribute('src', '/images/convenios/luz-marina-vargas-logo.jpg');
+    expect(screen.getByRole('link', { name: /lumavapa@hotmail.com/i })).toHaveAttribute('href', 'mailto:lumavapa@hotmail.com');
+    expect(screen.getByRole('link', { name: /facebook/i })).toHaveAttribute('href', expect.stringContaining('61569011393925'));
   });
 
   it('falls back to the home page for an unknown route', () => {
