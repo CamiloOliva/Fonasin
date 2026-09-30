@@ -11,8 +11,8 @@ use App\Models\AuditEvent;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\VoluntarySavingsRequest;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Database\QueryException;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -63,7 +63,8 @@ class VoluntarySavingsRequestHttpTest extends TestCase
             ->getJson('/portal/voluntary-savings-requests')
             ->assertOk()
             ->assertJsonPath('data.0.id', $request->id)
-            ->assertJsonMissingPath('data.0.links');
+            ->assertJsonPath('data.0.links.payroll_authorization_preview', "/portal/voluntary-savings-requests/{$request->id}/payroll-authorization/preview")
+            ->assertJsonMissingPath('data.0.authorization_storage_key');
 
         $this->actingAs($user)
             ->get("/admin/voluntary-savings-requests/{$request->id}/payroll-authorization/preview")
@@ -269,7 +270,8 @@ class VoluntarySavingsRequestHttpTest extends TestCase
             ->getJson('/portal/voluntary-savings-requests')
             ->assertOk()
             ->assertJsonPath('data.0.status', 'approved')
-            ->assertJsonMissingPath('data.0.links');
+            ->assertJsonPath('data.0.links.signed_authorization_preview', "/portal/voluntary-savings-requests/{$request->id}/signed-authorization/preview")
+            ->assertJsonMissingPath('data.0.signed_authorization_storage_key');
         $this->assertDatabaseHas('audit_events', [
             'action' => ContributionAuditAction::VoluntarySavingsRequestReviewed->value,
             'subject_id' => $request->id,
@@ -286,6 +288,76 @@ class VoluntarySavingsRequestHttpTest extends TestCase
             'action' => ContributionAuditAction::VoluntarySavingsSignedAuthorizationUploaded->value,
             'subject_id' => $request->id,
         ]);
+    }
+
+    public function test_only_the_active_owner_can_read_each_private_document(): void
+    {
+        [$owner, $associate] = $this->associateUser();
+        [$other] = $this->associateUser('other@example.test');
+        $this->actingAs($owner)->postJson('/portal/voluntary-savings-requests', [
+            'monthly_amount' => 150000, 'accept_terms' => true,
+        ])->assertCreated();
+        $request = VoluntarySavingsRequest::query()->firstOrFail();
+        $signedKey = "private/test/{$request->id}.pdf";
+        Storage::disk('local')->put($signedKey, '%PDF-1.4 signed');
+        $request->forceFill(['signed_authorization_storage_key' => $signedKey])->save();
+
+        foreach (['payroll-authorization', 'signed-authorization'] as $document) {
+            foreach (['preview', 'download'] as $action) {
+                $url = "/portal/voluntary-savings-requests/{$request->id}/{$document}/{$action}";
+                $this->actingAs($other)->get($url)->assertForbidden();
+                $this->actingAs($owner)->get($url)->assertOk()->assertHeader('Content-Type', 'application/pdf');
+                $associate->update(['status' => 'inactive']);
+                $this->actingAs($owner->fresh())->get($url)->assertForbidden();
+                $associate->update(['status' => 'active']);
+                $this->actingAs($owner->fresh());
+            }
+        }
+        $this->actingAs($other)->getJson('/portal/voluntary-savings-requests')->assertExactJson(['data' => []]);
+    }
+
+    public function test_rejection_is_immutable_and_retry_creates_a_new_request(): void
+    {
+        [$owner] = $this->associateUser();
+        $admin = $this->userWithRole('admin');
+        $this->actingAs($owner)->postJson('/portal/voluntary-savings-requests', [
+            'monthly_amount' => 150000, 'accept_terms' => true,
+        ])->assertCreated();
+        $first = VoluntarySavingsRequest::query()->firstOrFail();
+        $this->actingAs($admin)->patchJson("/admin/voluntary-savings-requests/{$first->id}", [
+            'status' => 'rejected', 'notes' => 'Revisar el valor solicitado.',
+        ])->assertOk();
+        $this->actingAs($owner)->getJson('/portal/voluntary-savings-requests')
+            ->assertJsonPath('data.0.status', 'rejected')
+            ->assertJsonPath('data.0.review_notes', 'Revisar el valor solicitado.');
+        $response = $this->actingAs($owner)->postJson('/portal/voluntary-savings-requests', [
+            'monthly_amount' => 100000, 'accept_terms' => true,
+        ])->assertCreated()->assertJsonPath('data.status', 'submitted');
+        $this->assertNotSame($first->id, $response->json('data.id'));
+        $this->assertDatabaseHas('voluntary_savings_requests', [
+            'id' => $first->id, 'status' => 'rejected', 'monthly_amount' => '150000.00',
+            'pending_associate_id' => null,
+        ]);
+        $this->actingAs($admin)->patchJson("/admin/voluntary-savings-requests/{$first->id}", [
+            'status' => 'approved',
+        ])->assertUnprocessable();
+        $this->assertDatabaseCount('voluntary_savings_requests', 2);
+    }
+
+    public function test_real_renderer_generates_a_readable_private_pdf(): void
+    {
+        $this->app->forgetInstance(RendersVoluntarySavingsPayrollAuthorization::class);
+        [$owner] = $this->associateUser();
+        $response = $this->actingAs($owner)->postJson('/portal/voluntary-savings-requests', [
+            'monthly_amount' => 150000, 'accept_terms' => true,
+        ])->assertCreated();
+        $request = VoluntarySavingsRequest::query()->findOrFail($response->json('data.id'));
+        $contents = Storage::disk('local')->get($request->authorization_storage_key);
+        $this->assertStringStartsWith('%PDF-', $contents);
+        $this->assertStringContainsString('%%EOF', $contents);
+        $this->assertGreaterThan(1000, strlen($contents));
+        $this->actingAs($owner)->get($response->json('data.links.payroll_authorization_download'))
+            ->assertOk()->assertDownload("libranza-ahorro-voluntario-{$request->id}.pdf");
     }
 
     /** @return array{User, Associate} */

@@ -229,6 +229,18 @@ Route::middleware(['auth', 'password.changed'])
         Route::post('/', [VoluntarySavingsRequestController::class, 'store'])
             ->middleware('throttle:voluntary-savings-request')
             ->name('store');
+        Route::get('/{voluntarySavingsRequest}/payroll-authorization/preview', [VoluntarySavingsRequestController::class, 'previewPayrollAuthorization'])
+            ->middleware('can:viewOwn,voluntarySavingsRequest')
+            ->name('payroll-authorization.preview');
+        Route::get('/{voluntarySavingsRequest}/payroll-authorization/download', [VoluntarySavingsRequestController::class, 'downloadPayrollAuthorization'])
+            ->middleware('can:viewOwn,voluntarySavingsRequest')
+            ->name('payroll-authorization.download');
+        Route::get('/{voluntarySavingsRequest}/signed-authorization/preview', [VoluntarySavingsRequestController::class, 'previewSignedAuthorization'])
+            ->middleware('can:viewOwn,voluntarySavingsRequest')
+            ->name('signed-authorization.preview');
+        Route::get('/{voluntarySavingsRequest}/signed-authorization/download', [VoluntarySavingsRequestController::class, 'downloadSignedAuthorization'])
+            ->middleware('can:viewOwn,voluntarySavingsRequest')
+            ->name('signed-authorization.download');
     });
 
 Route::middleware(['auth', 'password.changed'])

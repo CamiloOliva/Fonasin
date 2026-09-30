@@ -135,6 +135,40 @@ class SpreadsheetImportHttpTest extends TestCase
         $this->assertDatabaseCount('contribution_movements', 3);
     }
 
+    public function test_imports_feed_only_the_own_portal_and_cannot_be_uploaded_by_associates(): void
+    {
+        Storage::fake('local');
+        $admin = $this->userWithRole('admin');
+        $owner = $this->userWithRole('associate', 'owner@example.test');
+        $other = $this->userWithRole('associate', 'other@example.test');
+        $associate = $this->createAssociate('123456789');
+        $associate->update(['user_id' => $owner->id]);
+        $otherAssociate = $this->createAssociate('987654321');
+        $otherAssociate->update(['user_id' => $other->id]);
+
+        foreach ([['contributions', '400000.00'], ['permanent-savings', '300000.00'], ['voluntary-savings', '150000.00']] as [$type, $balance]) {
+            $rows = [$this->contributionHeaders(), ['123456789', 'Synthetic Associate', '10000', $balance, '2026-09-30']];
+            $this->actingAs($owner)->postJson('/admin/import-batches/'.$type, [
+                'file' => $this->xlsx("denied-{$type}.xlsx", $rows),
+            ])->assertForbidden();
+            $this->actingAs($admin)->postJson('/admin/import-batches/'.$type, [
+                'file' => $this->xlsx("{$type}.xlsx", $rows),
+            ])->assertCreated()->assertJsonPath('data.rows_created', 1);
+        }
+
+        $this->actingAs($owner)->getJson('/portal/contributions')
+            ->assertOk()->assertJsonPath('data.state', 'available')
+            ->assertJsonPath('data.account.contribution_balance', '400000.00')
+            ->assertJsonPath('data.account.permanent_savings_balance', '300000.00')
+            ->assertJsonPath('data.account.voluntary_savings_balance', '150000.00')
+            ->assertJsonPath('data.account.total_balance', '850000.00')
+            ->assertJsonCount(3, 'data.movements');
+        $this->actingAs($other)->getJson('/portal/contributions?associate_id='.$associate->id)
+            ->assertOk()->assertJsonPath('data.state', 'empty')
+            ->assertJsonPath('data.account', null)->assertJsonCount(0, 'data.movements');
+        $this->assertDatabaseCount('import_batches', 3);
+    }
+
     public function test_latest_payment_date_determines_balance_when_rows_are_unordered(): void
     {
         Storage::fake('local');

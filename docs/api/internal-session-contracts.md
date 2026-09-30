@@ -474,14 +474,28 @@ Genera un token temporal hasheado y envia un unico correo al asociado selecciona
 ```text
 GET  /portal/voluntary-savings-requests
 POST /portal/voluntary-savings-requests
-GET  /portal/voluntary-savings-requests/{request}/authorization
+GET  /portal/voluntary-savings-requests/{request}/payroll-authorization/preview
+GET  /portal/voluntary-savings-requests/{request}/payroll-authorization/download
+GET  /portal/voluntary-savings-requests/{request}/signed-authorization/preview
+GET  /portal/voluntary-savings-requests/{request}/signed-authorization/download
 ```
 
 Requiere sesion de asociado y contrasena definitiva. El `POST` recibe `monthly_amount` y `accept_terms`; el asociado se resuelve exclusivamente desde la sesion. La autorizacion se genera como PDF privado y una solicitud `submitted` impide crear otra pendiente.
 
+Cada registro incluye `links` con preview/download de la generada y, solo cuando
+existe, de la firmada. Ningun enlace expone storage. La policy bloquea otro
+titular, asociado inactivo y roles ajenos. Una firmada ausente devuelve 404.
+Tras rechazo se admite un POST nuevo; el UUID y la decision previa se conservan.
+Aprobar no modifica los saldos importados.
+
 ```text
 GET   /admin/voluntary-savings-requests
 PATCH /admin/voluntary-savings-requests/{request}
+GET   /admin/voluntary-savings-requests/{request}/payroll-authorization/preview
+GET   /admin/voluntary-savings-requests/{request}/payroll-authorization/download
+POST  /admin/voluntary-savings-requests/{request}/signed-authorization
+GET   /admin/voluntary-savings-requests/{request}/signed-authorization/preview
+GET   /admin/voluntary-savings-requests/{request}/signed-authorization/download
 ```
 
 Administradores y revisores consultan la bandeja; solo administradores pueden cambiar el estado a `approved` o `rejected`. Todos los accesos y cambios dejan auditoria en el modulo `contributions`.

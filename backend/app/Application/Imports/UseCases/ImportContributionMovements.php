@@ -101,6 +101,7 @@ class ImportContributionMovements
                     $associate = Associate::query()
                         ->where('document_number_hash', $validated['document_hash'])
                         ->where('status', 'active')
+                        ->lockForUpdate()
                         ->first();
 
                     if (! $associate) {
@@ -115,7 +116,7 @@ class ImportContributionMovements
                         continue;
                     }
 
-                    $account = ContributionAccount::query()->firstOrCreate(
+                    $account = ContributionAccount::query()->lockForUpdate()->firstOrCreate(
                         ['associate_id' => $associate->id],
                         [
                             'contribution_balance' => 0,
@@ -142,13 +143,14 @@ class ImportContributionMovements
                         ->whereDate('period', $validated['period'])
                         ->where('reference', $validated['reference'])
                         ->where('status', ContributionMovementStatus::Registered->value)
+                        ->lockForUpdate()
                         ->first();
 
                     if ($existing && $existing->source_row_hash !== $sourceRowHash) {
                         $existing->forceFill(['status' => ContributionMovementStatus::Reversed->value])->save();
                     }
 
-                    $movement = ContributionMovement::query()->firstOrNew([
+                    $movement = ContributionMovement::query()->lockForUpdate()->firstOrNew([
                         'associate_id' => $associate->id,
                         'movement_type' => $validated['movement_type'],
                         'period' => $validated['period'],
@@ -184,7 +186,7 @@ class ImportContributionMovements
                 $this->auditCompleted($batch, $actor, $ipHash, $importType);
 
                 return $batch->refresh();
-            });
+            }, 3);
         } catch (CannotImportSpreadsheet $exception) {
             return DB::transaction(function () use ($batch, $exception, $actor, $importType, $ipHash): ImportBatch {
                 $this->failBatch($batch, $exception->getMessage());
@@ -245,8 +247,15 @@ class ImportContributionMovements
             return ['error' => $this->rowError($rowNumber, 'El nombre completo es obligatorio y no puede superar 255 caracteres.')];
         }
 
-        if ($amount === null || $balanceAfter === null || (float) $amount < 0 || (float) $balanceAfter < 0) {
+        if ($amount === null || $balanceAfter === null || str_starts_with($amount, '-') || str_starts_with($balanceAfter, '-')) {
             return ['error' => $this->rowError($rowNumber, 'Los valores numericos deben ser validos y no negativos.')];
+        }
+
+        foreach ([$amount, $balanceAfter] as $money) {
+            [$whole] = explode('.', $money);
+            if (strlen($whole) > 12) {
+                return ['error' => $this->rowError($rowNumber, 'Los valores no pueden superar 999999999999.99 pesos.')];
+            }
         }
 
         if (! $lastPaymentDate) {

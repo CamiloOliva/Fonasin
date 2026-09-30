@@ -2,6 +2,7 @@
 
 namespace App\Application\Contributions\UseCases;
 
+use App\Application\Imports\Exceptions\CannotImportSpreadsheet;
 use App\Domain\Contributions\Enums\ContributionMovementStatus;
 use App\Domain\Contributions\Enums\ContributionMovementType;
 use App\Models\ContributionAccount;
@@ -17,6 +18,7 @@ class RebuildContributionAccountBalances
             ->orderByDesc('cut_off_date')
             ->orderByDesc('reference')
             ->orderByDesc('id')
+            ->lockForUpdate()
             ->get();
 
         $permanent = $movements->firstWhere(
@@ -37,17 +39,19 @@ class RebuildContributionAccountBalances
         $contributionBalance = $contribution?->balance_after ?? '0.00';
         $permanentBalance = $permanent?->balance_after ?? '0.00';
         $voluntaryBalance = $voluntary?->balance_after ?? '0.00';
+        $totalCents = array_sum(array_map(
+            fn (string $value): int => (int) str_replace('.', '', $value),
+            [$contributionBalance, $permanentBalance, $voluntaryBalance],
+        ));
+        if ($totalCents > 99999999999999) {
+            throw CannotImportSpreadsheet::invalidFile('El saldo consolidado supera 999999999999.99 pesos. No se aplico el lote.');
+        }
 
         $account->forceFill([
             'contribution_balance' => $contributionBalance,
             'permanent_savings_balance' => $permanentBalance,
             'voluntary_savings_balance' => $voluntaryBalance,
-            'total_balance' => number_format(
-                (float) $contributionBalance + (float) $permanentBalance + (float) $voluntaryBalance,
-                2,
-                '.',
-                '',
-            ),
+            'total_balance' => intdiv($totalCents, 100).'.'.str_pad((string) ($totalCents % 100), 2, '0', STR_PAD_LEFT),
             'last_period' => $latest?->period,
             'last_cut_off_date' => $latest?->cut_off_date,
             'last_movement_at' => $movements->max('recorded_at'),

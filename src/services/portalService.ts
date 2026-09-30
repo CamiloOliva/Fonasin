@@ -117,6 +117,12 @@ export type PortalVoluntarySavingsRequest = {
   submitted_at: string;
   reviewed_at: string | null;
   review_notes: string | null;
+  links?: {
+    payroll_authorization_preview: string;
+    payroll_authorization_download: string;
+    signed_authorization_preview?: string;
+    signed_authorization_download?: string;
+  };
 };
 
 type RequestOptions = {

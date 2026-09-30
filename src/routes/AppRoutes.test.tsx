@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -16,7 +16,8 @@ vi.mock('../components/sections/StatutesBookViewer', () => ({
   ),
 }));
 
-vi.mock('../services/portalService', () => ({
+vi.mock('../services/portalService', async (importOriginal) => ({
+  PortalServiceError: (await importOriginal<typeof import('../services/portalService')>()).PortalServiceError,
   changeOwnPassword: vi.fn(),
   currentPortalUser: vi.fn().mockRejectedValue(new Error('guest')),
   fetchPortalAffiliation: vi.fn().mockResolvedValue(null),
@@ -98,6 +99,54 @@ describe('AppRoutes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(portalService.currentPortalUser).mockRejectedValue(new Error('guest'));
+  });
+
+  it('keeps the savings form unavailable until its history is loaded and after a failed refresh', async () => {
+    let resolveHistory!: (value: []) => void;
+    const user = userEvent.setup();
+    vi.mocked(portalService.currentPortalUser).mockResolvedValueOnce({ id: 'associate', email: 'associate@fonasin.test', roles: ['associate'], must_change_password: false });
+    vi.mocked(portalService.fetchPortalVoluntarySavingsRequests).mockImplementationOnce(() => new Promise(resolve => { resolveHistory = resolve; }));
+    renderRoute('/portal-asociado?intent=ahorro-voluntario');
+    expect(await screen.findByText('Cargando solicitudes')).toBeInTheDocument();
+    expect(screen.getByLabelText('Valor mensual')).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^enviar solicitud$/i })).toBeDisabled();
+    await act(async () => resolveHistory([]));
+    expect(screen.getByLabelText('Valor mensual')).toBeEnabled();
+    vi.mocked(portalService.fetchPortalVoluntarySavingsRequests).mockRejectedValueOnce(new Error('History unavailable.'));
+    await user.click(screen.getByRole('button', { name: /^actualizar$/i }));
+    await waitFor(() => expect(screen.getByLabelText('Valor mensual')).toBeDisabled());
+    expect(portalService.submitPortalVoluntarySavingsRequest).not.toHaveBeenCalled();
+  });
+
+  it('blocks both review decisions and the signed upload while the selected request is being processed', async () => {
+    const user = userEvent.setup();
+    let resolveReview!: (value: adminContributionService.AdminVoluntarySavingsRequest) => void;
+    let resolveUpload!: (value: adminContributionService.AdminVoluntarySavingsRequest) => void;
+    const request: adminContributionService.AdminVoluntarySavingsRequest = {
+      id: 'request-busy', monthly_amount: '100000.00', status: 'submitted', submitted_at: '2026-09-30T12:00:00Z', reviewed_at: null, review_notes: null,
+      associate: { id: 'associate', full_name: 'Synthetic associate', document_type: 'CC', status: 'active' }, reviewed_by: null,
+      links: { payroll_authorization_preview: '/preview', payroll_authorization_download: '/download' },
+    };
+    vi.mocked(adminAffiliationService.currentAdminUser).mockResolvedValueOnce({ id: 'admin', email: 'admin@fonasin.test', roles: ['admin'], must_change_password: false });
+    vi.mocked(adminContributionService.fetchAdminVoluntarySavingsRequests).mockResolvedValueOnce({ data: [request], meta: { current_page: 1, last_page: 1, per_page: 25, total: 1 } });
+    vi.mocked(adminContributionService.reviewAdminVoluntarySavingsRequest).mockImplementationOnce(() => new Promise(resolve => { resolveReview = resolve; }));
+    renderRoute('/admin-fonasin');
+    await user.click(await screen.findByRole('button', { name: /^aportes y ahorros$/i }));
+    const approve = await screen.findByRole('button', { name: /^aprobar$/i });
+    await user.dblClick(approve);
+    expect(approve).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^rechazar$/i })).toBeDisabled();
+    expect(adminContributionService.reviewAdminVoluntarySavingsRequest).toHaveBeenCalledTimes(1);
+    const approved = { ...request, status: 'approved' as const };
+    await act(async () => resolveReview(approved));
+    const fileInput = screen.getByLabelText('Libranza firmada de Synthetic associate');
+    vi.mocked(adminContributionService.uploadSignedVoluntarySavingsAuthorization).mockImplementationOnce(() => new Promise(resolve => { resolveUpload = resolve; }));
+    await user.upload(fileInput, new File(['%PDF-fixture'], 'signed.pdf', { type: 'application/pdf' }));
+    expect(fileInput).toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent('Procesando solicitud');
+    await act(async () => resolveUpload({ ...approved, links: { ...request.links, signed_authorization_preview: '/signed-preview' } }));
+    expect(screen.queryByLabelText('Libranza firmada de Synthetic associate')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /ver firmada/i })).toHaveAttribute('href', '/signed-preview');
   });
 
   it('renders the public credits route', () => {
@@ -280,6 +329,54 @@ describe('AppRoutes', () => {
     expect(await screen.findByRole('heading', { level: 2, name: /ahorro voluntario/i })).toBeInTheDocument();
     expect(portalService.fetchPortalVoluntarySavingsRequests).toHaveBeenCalled();
     expect(portalService.startPortalAffiliationUpdate).not.toHaveBeenCalled();
+  });
+
+  it('keeps a rejected request visible and submits a new one with an owned authorization', async () => {
+    const user = userEvent.setup();
+    vi.mocked(portalService.currentPortalUser).mockResolvedValue({
+      id: 'associate-user', email: 'associate@fonasin.test', roles: ['associate'], must_change_password: false,
+    });
+    const rejected: portalService.PortalVoluntarySavingsRequest = {
+      id: 'rejected-request', monthly_amount: '150000.00', status: 'rejected',
+      submitted_at: '2026-09-23T20:00:00Z', reviewed_at: '2026-09-24T20:00:00Z',
+      review_notes: 'Revisar el valor solicitado.',
+      links: {
+        payroll_authorization_preview: '/portal/voluntary-savings-requests/rejected-request/payroll-authorization/preview',
+        payroll_authorization_download: '/portal/voluntary-savings-requests/rejected-request/payroll-authorization/download',
+      },
+    };
+    const submitted = { ...rejected, id: 'new-request', status: 'submitted' as const, reviewed_at: null, review_notes: null };
+    vi.mocked(portalService.fetchPortalVoluntarySavingsRequests).mockResolvedValue([rejected]);
+    vi.mocked(portalService.submitPortalVoluntarySavingsRequest).mockResolvedValueOnce(submitted);
+    renderRoute('/portal-asociado?intent=ahorro-voluntario');
+    expect(await screen.findByText('Revisar el valor solicitado.')).toBeInTheDocument();
+    expect(screen.getByText(/envia una nueva solicitud/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^ver libranza$/i })).toHaveAttribute('href', rejected.links?.payroll_authorization_preview);
+    await user.type(screen.getByLabelText(/valor mensual/i), '100000');
+    await user.click(screen.getByRole('checkbox', { name: /confirmo que deseo/i }));
+    await user.click(screen.getByRole('button', { name: /^enviar solicitud$/i }));
+    await waitFor(() => expect(portalService.submitPortalVoluntarySavingsRequest).toHaveBeenCalledWith('100000'));
+    expect(screen.getByText('Revisar el valor solicitado.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^enviar solicitud$/i })).toBeDisabled();
+  });
+
+  it('uses the signed authorization when it is available without enabling another pending request', async () => {
+    vi.mocked(portalService.currentPortalUser).mockResolvedValue({
+      id: 'associate-user', email: 'associate@fonasin.test', roles: ['associate'], must_change_password: false,
+    });
+    vi.mocked(portalService.fetchPortalVoluntarySavingsRequests).mockResolvedValue([{
+      id: 'pending-request', monthly_amount: '150000.00', status: 'submitted',
+      submitted_at: '2026-09-23T20:00:00Z', reviewed_at: null, review_notes: null,
+      links: {
+        payroll_authorization_preview: '/generated-preview', payroll_authorization_download: '/generated-download',
+        signed_authorization_preview: '/signed-preview', signed_authorization_download: '/signed-download',
+      },
+    }]);
+    renderRoute('/portal-asociado?intent=ahorro-voluntario');
+    expect(await screen.findByRole('link', { name: /ver libranza firmada/i })).toHaveAttribute('href', '/signed-preview');
+    expect(screen.getByRole('link', { name: /descargar libranza/i })).toHaveAttribute('href', '/signed-download');
+    expect(screen.getByLabelText(/valor mensual/i)).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^enviar solicitud$/i })).toBeDisabled();
   });
 
   it('separates credits, contributions and both savings in the account statement', async () => {

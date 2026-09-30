@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
   CheckCircle2,
@@ -192,6 +192,8 @@ export default function AdminFonasin() {
   const [contributionAccounts, setContributionAccounts] = useState<AdminContributionAccount[]>([]);
   const [contributionMovements, setContributionMovements] = useState<AdminContributionMovement[]>([]);
   const [voluntarySavingsRequests, setVoluntarySavingsRequests] = useState<AdminVoluntarySavingsRequest[]>([]);
+  const savingsActionsInFlight = useRef(new Set<string>());
+  const [busySavingsRequestIds, setBusySavingsRequestIds] = useState<string[]>([]);
   const [voluntarySavingsRequestState, setVoluntarySavingsRequestState] = useState<DataState>('idle');
   const [voluntarySavingsRequestMeta, setVoluntarySavingsRequestMeta] = useState<AdminVoluntarySavingsRequestPage['meta']>(defaultContributionMeta);
   const [contributionMeta, setContributionMeta] = useState<AdminContributionAccountPage['meta']>(defaultContributionMeta);
@@ -395,6 +397,9 @@ export default function AdminFonasin() {
   }
 
   async function handleReviewVoluntarySavingsRequest(id: string, status: 'approved' | 'rejected') {
+    if (!isAdmin || savingsActionsInFlight.current.has(id)) return;
+    savingsActionsInFlight.current.add(id);
+    setBusySavingsRequestIds([...savingsActionsInFlight.current]);
     setError(null);
     setMessage(null);
 
@@ -404,10 +409,16 @@ export default function AdminFonasin() {
       setMessage(status === 'approved' ? 'Solicitud de ahorro voluntario aprobada.' : 'Solicitud de ahorro voluntario rechazada.');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible revisar la solicitud.');
+    } finally {
+      savingsActionsInFlight.current.delete(id);
+      setBusySavingsRequestIds([...savingsActionsInFlight.current]);
     }
   }
 
   async function handleUploadSignedVoluntarySavingsAuthorization(id: string, file: File) {
+    if (!isAdmin || savingsActionsInFlight.current.has(id)) return;
+    savingsActionsInFlight.current.add(id);
+    setBusySavingsRequestIds([...savingsActionsInFlight.current]);
     setError(null);
     setMessage(null);
 
@@ -417,6 +428,9 @@ export default function AdminFonasin() {
       setMessage('Libranza firmada guardada correctamente.');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible cargar la libranza firmada.');
+    } finally {
+      savingsActionsInFlight.current.delete(id);
+      setBusySavingsRequestIds([...savingsActionsInFlight.current]);
     }
   }
 
@@ -1159,6 +1173,7 @@ export default function AdminFonasin() {
           />
         ) : activeView === 'contributions' ? (
           <ContributionsPanel
+            busySavingsRequestIds={busySavingsRequestIds}
             voluntarySavingsRequests={voluntarySavingsRequests}
             voluntarySavingsRequestState={voluntarySavingsRequestState}
             voluntarySavingsRequestMeta={voluntarySavingsRequestMeta}
@@ -1908,6 +1923,7 @@ export function CreditsPanel({
 }
 
 function ContributionsPanel({
+  busySavingsRequestIds,
   voluntarySavingsRequests,
   voluntarySavingsRequestState,
   voluntarySavingsRequestMeta,
@@ -1931,6 +1947,7 @@ function ContributionsPanel({
   onVoluntarySavingsRequestPageChange,
   canManage,
 }: {
+  busySavingsRequestIds: string[];
   voluntarySavingsRequests: AdminVoluntarySavingsRequest[];
   voluntarySavingsRequestState: DataState;
   voluntarySavingsRequestMeta: AdminVoluntarySavingsRequestPage['meta'];
@@ -2009,10 +2026,10 @@ function ContributionsPanel({
                       </a>
                       {canManage && request.status === 'submitted' ? (
                         <>
-                          <button type="button" onClick={() => onReviewVoluntarySavingsRequest(request.id, 'approved')} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700">
+                          <button type="button" disabled={busySavingsRequestIds.includes(request.id)} onClick={() => onReviewVoluntarySavingsRequest(request.id, 'approved')} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed">
                             <CheckCircle2 size={14} /> Aprobar
                           </button>
-                          <button type="button" onClick={() => onReviewVoluntarySavingsRequest(request.id, 'rejected')} className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs font-black text-red-700 hover:bg-red-100">
+                          <button type="button" disabled={busySavingsRequestIds.includes(request.id)} onClick={() => onReviewVoluntarySavingsRequest(request.id, 'rejected')} className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs font-black text-red-700 hover:bg-red-100 disabled:opacity-60 disabled:cursor-not-allowed">
                             <XCircle size={14} /> Rechazar
                           </button>
                         </>
@@ -2021,6 +2038,7 @@ function ContributionsPanel({
                           <UploadCloud size={14} /> Subir firmada
                           <input
                             type="file"
+                            disabled={busySavingsRequestIds.includes(request.id)}
                             accept="application/pdf,.pdf"
                             className="sr-only"
                             aria-label={`Libranza firmada de ${request.associate?.full_name ?? 'asociado'}`}
@@ -2032,6 +2050,7 @@ function ContributionsPanel({
                           />
                         </label>
                       ) : <span className="text-xs font-bold text-slate-500">{request.links.signed_authorization_preview ? 'Firmada' : 'Revisada'}</span>}
+                      {busySavingsRequestIds.includes(request.id) ? <span role="status" className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700"><Loader2 size={14} className="animate-spin" /> Procesando solicitud</span> : null}
                     </div>
                   </td>
                 </tr>

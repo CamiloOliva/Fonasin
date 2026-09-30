@@ -6,6 +6,7 @@ on:
       - develop
       - main
       - 'feature/**'
+      - 'codex/**'
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
@@ -44,8 +45,6 @@ jobs:
           php-version: '8.3'
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, pdo_sqlite
           tools: composer:v2
-          cache: composer
-          cache-dependency-path: backend/composer.lock
           coverage: none
 
       - name: Install Composer dependencies
@@ -98,8 +97,6 @@ jobs:
           php-version: '8.3'
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, pdo_mysql
           tools: composer:v2
-          cache: composer
-          cache-dependency-path: backend/composer.lock
           coverage: none
 
       - name: Install Composer dependencies
@@ -161,6 +158,93 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  browser-otrosi:
+    name: Otrosi end-to-end (MariaDB, browser)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: fonasin_e2e
+          MARIADB_USER: fonasin
+          MARIADB_PASSWORD: fonasin_e2e_ci
+          MARIADB_ROOT_PASSWORD: fonasin_root_e2e_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      APP_ENV: local
+      DB_CONNECTION: mariadb
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: fonasin_e2e
+      DB_USERNAME: fonasin
+      DB_PASSWORD: fonasin_e2e_ci
+      DATA_HASH_PEPPER: isolated-e2e-ci-only
+      VITE_BACKEND_DEV_PROXY_TARGET: http://127.0.0.1:8017
+      E2E_URL: http://127.0.0.1:5187
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: dom, mbstring, zip, pdo_mysql
+          tools: composer:v2
+          coverage: none
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.2
+          cache: npm
+
+      - name: Install dependencies and browser
+        run: |
+          npm ci
+          cd backend
+          composer install --prefer-dist --no-interaction --no-progress
+          cp .env.example .env
+          php artisan key:generate --force
+          cd ..
+          npx playwright install --with-deps chromium
+
+      - name: Seed isolated data and start apps
+        run: |
+          cd backend
+          php artisan migrate --force
+          php tests/Browser/seed-otrosi.php
+          php artisan serve --host=127.0.0.1 --port=8017 > ../backend-e2e.log 2>&1 &
+          cd ..
+          npm run dev -- --host=127.0.0.1 --port=5187 --strictPort > frontend-e2e.log 2>&1 &
+          for attempt in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:8017/up >/dev/null && curl -fsS http://127.0.0.1:5187/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat backend-e2e.log frontend-e2e.log
+          exit 1
+
+      - name: Exercise all three modules in browser
+        run: npm run test:e2e
+
+      - name: Upload browser evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: otrosi-browser-failure-${{ github.sha }}
+          path: |
+            .e2e-artifacts/*.png
+            backend-e2e.log
+            frontend-e2e.log
+          if-no-files-found: ignore
+
   deploy-cpanel:
     name: Deploy frontend to cPanel Apache
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CPANEL_DEPLOY_ENABLED == 'true'
@@ -168,6 +252,7 @@ jobs:
       - backend
       - backend-mariadb
       - frontend
+      - browser-otrosi
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: production

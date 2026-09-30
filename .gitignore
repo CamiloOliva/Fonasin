@@ -4,8 +4,9 @@ dist
 .env.*
 !.env.example
 .DS_Store
+.e2e-artifacts/
 
-# Laravel / PostgreSQL runtime files (planned backend)
+# Laravel runtime files (database-agnostic)
 /vendor
 /bootstrap/cache/*.php
 /storage/app/private/*

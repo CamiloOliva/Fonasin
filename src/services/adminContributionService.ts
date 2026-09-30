@@ -120,6 +120,29 @@ async function csrfToken(): Promise<string> {
   return cachedCsrfToken;
 }
 
+async function mutateRequest(path: string, method: 'PATCH' | 'POST', body: string | FormData, retried = false): Promise<AdminVoluntarySavingsRequest> {
+  const token = await csrfToken();
+  const response = await fetch(`${backendBaseUrl}${path}`, {
+    method,
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      ...(body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+      ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+    },
+    body,
+  });
+  if (response.status === 419 && !retried) {
+    cachedCsrfToken = '';
+    return mutateRequest(path, method, body, true);
+  }
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(typeof payload?.message === 'string' ? payload.message : 'No fue posible completar la solicitud.');
+  }
+  return payload.data as AdminVoluntarySavingsRequest;
+}
+
 function queryString(values: Record<string, string | number | undefined>): string {
   const params = new URLSearchParams();
 
@@ -186,47 +209,14 @@ export async function reviewAdminVoluntarySavingsRequest(
   status: 'approved' | 'rejected',
   notes = '',
 ): Promise<AdminVoluntarySavingsRequest> {
-  const token = await csrfToken();
-  const response = await fetch(`${backendBaseUrl}/admin/voluntary-savings-requests/${id}`, {
-    method: 'PATCH',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      ...(token ? { 'X-CSRF-TOKEN': token } : {}),
-    },
-    body: JSON.stringify({ status, notes }),
-  });
-  const payload = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw new Error(typeof payload?.message === 'string' ? payload.message : 'No fue posible revisar la solicitud.');
-  }
-
-  return payload.data as AdminVoluntarySavingsRequest;
+  return mutateRequest(`/admin/voluntary-savings-requests/${id}`, 'PATCH', JSON.stringify({ status, notes }));
 }
 
 export async function uploadSignedVoluntarySavingsAuthorization(
   id: string,
   file: File,
 ): Promise<AdminVoluntarySavingsRequest> {
-  const token = await csrfToken();
   const formData = new FormData();
   formData.append('file', file);
-  const response = await fetch(`${backendBaseUrl}/admin/voluntary-savings-requests/${id}/signed-authorization`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      ...(token ? { 'X-CSRF-TOKEN': token } : {}),
-    },
-    body: formData,
-  });
-  const payload = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw new Error(typeof payload?.message === 'string' ? payload.message : 'No fue posible cargar la libranza firmada.');
-  }
-
-  return payload.data as AdminVoluntarySavingsRequest;
+  return mutateRequest(`/admin/voluntary-savings-requests/${id}/signed-authorization`, 'POST', formData);
 }

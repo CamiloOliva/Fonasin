@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { ArrowRight, CreditCard, FileText, Loader2, LogOut, PiggyBank, RefreshCw, ShieldCheck, UserRound } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ForcedPasswordChange from '../../components/auth/ForcedPasswordChange';
+import { formatAccountingPeriod, formatCalendarDate } from '../../utils/calendarDate';
 import {
   changeOwnPassword,
   currentPortalUser,
@@ -473,6 +474,7 @@ export default function PortalAsociado() {
 
   async function handleSubmitSavingsRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (savingsRequestState !== 'ready' || submittingSavings || hasPendingSavingsRequest || !savingsAccepted) return;
     setError(null);
     setMessage(null);
     setSubmittingSavings(true);
@@ -611,9 +613,9 @@ export default function PortalAsociado() {
               <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-xl border border-emerald-100 bg-white p-2 shadow-sm">
                 <img src="/logotipo.png" alt="Logo FONASIN" className="max-h-full max-w-full object-contain" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.24em] text-fonasin-green">Portal asociado</p>
-                <h1 className="mt-2 font-heading text-3xl font-black tracking-tight text-fonasin-deep sm:text-4xl">
+                <h1 className="mt-2 font-heading text-3xl font-black tracking-tight text-fonasin-deep [overflow-wrap:anywhere] sm:text-4xl">
                   Hola, {user?.email}
                 </h1>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -638,11 +640,11 @@ export default function PortalAsociado() {
 
         <div className="grid gap-4 lg:grid-cols-4">
           <div className="rounded-xl bg-fonasin-green p-5 text-white shadow-sm">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-100">Saldo actual</p>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-100">Saldo actual de créditos</p>
             <p className="mt-3 font-heading text-3xl font-black">{currency.format(totalBalance)}</p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Saldo inicial</p>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Saldo inicial de créditos</p>
             <p className="mt-3 text-2xl font-black text-slate-950">{currency.format(totalInitialBalance)}</p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -840,7 +842,7 @@ export default function PortalAsociado() {
 
               {savingsRequestState === 'error' || savingsRequestState === 'forbidden' || savingsRequestState === 'expired' ? (
                 <div className="mt-5 rounded-xl border border-amber-100 bg-amber-50 px-4 py-4 text-sm font-semibold text-amber-800">
-                  {error ?? 'No fue posible consultar las solicitudes de ahorro voluntario.'}
+                  {savingsRequestState === 'forbidden' ? 'No tienes permisos para consultar tus solicitudes.' : savingsRequestState === 'expired' ? 'Tu sesion vencio. Cierra sesion e inicia nuevamente.' : error ?? 'No fue posible consultar las solicitudes de ahorro voluntario.'}
                 </div>
               ) : null}
 
@@ -857,7 +859,7 @@ export default function PortalAsociado() {
                       inputMode="numeric"
                       value={savingsAmount}
                       onChange={(event) => setSavingsAmount(formatSavingsAmountInput(event.target.value))}
-                      disabled={hasPendingSavingsRequest}
+                      disabled={savingsRequestState !== 'ready' || submittingSavings || hasPendingSavingsRequest}
                       required
                       className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-bold text-slate-950 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 disabled:bg-slate-100"
                     />
@@ -867,7 +869,7 @@ export default function PortalAsociado() {
                       type="checkbox"
                       checked={savingsAccepted}
                       onChange={(event) => setSavingsAccepted(event.target.checked)}
-                      disabled={hasPendingSavingsRequest}
+                      disabled={savingsRequestState !== 'ready' || submittingSavings || hasPendingSavingsRequest}
                       required
                       className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                     />
@@ -880,7 +882,7 @@ export default function PortalAsociado() {
                   ) : null}
                   <button
                     type="submit"
-                    disabled={submittingSavings || hasPendingSavingsRequest || !savingsAccepted}
+                    disabled={savingsRequestState !== 'ready' || submittingSavings || hasPendingSavingsRequest || !savingsAccepted}
                     className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-fonasin-green px-4 py-3 text-sm font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 focus-ring"
                   >
                     {submittingSavings ? <Loader2 className="animate-spin" size={17} /> : <FileText size={17} />}
@@ -908,6 +910,30 @@ export default function PortalAsociado() {
                           </span>
                         </div>
                         {request.review_notes ? <p className="mt-3 text-sm text-slate-600">{request.review_notes}</p> : null}
+                        {request.status === 'rejected' ? (
+                          <p className="mt-3 text-sm text-slate-600">Si deseas intentar nuevamente, envia una nueva solicitud. Esta decision se conserva en el historial.</p>
+                        ) : null}
+                        {request.links ? (
+                          <div className="mt-4 flex flex-wrap gap-3">
+                            <a
+                              href={portalDocumentPreviewUrl(request.links.signed_authorization_preview ?? request.links.payroll_authorization_preview)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center justify-center gap-2 rounded-xl bg-fonasin-green px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 focus-ring"
+                            >
+                              <FileText size={16} />
+                              {request.links.signed_authorization_preview ? 'Ver libranza firmada' : 'Ver libranza'}
+                            </a>
+                            <a
+                              href={portalDocumentPreviewUrl(request.links.signed_authorization_download ?? request.links.payroll_authorization_download)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center justify-center rounded-xl border border-fonasin-green/20 bg-fonasin-surface px-4 py-2.5 text-sm font-bold text-fonasin-green transition hover:bg-fonasin-lime/20 focus-ring"
+                            >
+                              Descargar libranza
+                            </a>
+                          </div>
+                        ) : null}
                       </article>
                     ))}
                   </div>
@@ -1070,8 +1096,8 @@ function ContributionStatementSection({
             <tbody>
               {movements.map((movement) => (
                 <tr key={movement.id} className="border-b border-slate-200/70 transition hover:bg-white last:border-b-0">
-                  <td className="py-4 pr-4 font-bold text-slate-950">{formatPortalDate(movement.period)}</td>
-                  <td className="py-4 pr-4 text-slate-700">{formatPortalDate(movement.cut_off_date)}</td>
+                  <td className="py-4 pr-4 font-bold text-slate-950">{formatAccountingPeriod(movement.period)}</td>
+                  <td className="py-4 pr-4 text-slate-700">{formatCalendarDate(movement.cut_off_date)}</td>
                   <td className="py-4 pr-4 font-bold text-slate-950">{formatMoney(movement.amount)}</td>
                   <td className="py-4 pr-4 text-slate-700">{formatMoney(movement.balance_after)}</td>
                   <td className="py-4">

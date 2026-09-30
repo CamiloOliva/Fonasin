@@ -10,6 +10,7 @@ use App\Application\Portal\Contracts\ExportsAssociateProfiles;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Application\Storage\Contracts\GeneratesPrivateStorageKeys;
+use App\Application\Storage\Contracts\ReadsPrivateFiles;
 use App\Application\Storage\Contracts\StoresPrivateFiles;
 use App\Infrastructure\Affiliation\LaravelDompdfAffiliationSubmissionRenderer;
 use App\Infrastructure\Contributions\LaravelDompdfVoluntarySavingsPayrollAuthorizationRenderer;
@@ -18,6 +19,7 @@ use App\Infrastructure\Mail\LaravelFpqrsSubmissionMailer;
 use App\Infrastructure\Portal\SimpleXlsxAssociateProfileExporter;
 use App\Infrastructure\Security\LaravelSensitiveDataCipher;
 use App\Infrastructure\Security\LaravelSensitiveDataHasher;
+use App\Infrastructure\Storage\LaravelPrivateFileReader;
 use App\Infrastructure\Storage\LaravelPrivateFileStorage;
 use App\Infrastructure\Storage\LaravelPrivateStorageKeyGenerator;
 use App\Models\AffiliationApplication;
@@ -54,6 +56,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(DeliversFpqrsSubmissions::class, LaravelFpqrsSubmissionMailer::class);
         $this->app->bind(GeneratesPrivateStorageKeys::class, LaravelPrivateStorageKeyGenerator::class);
         $this->app->bind(StoresPrivateFiles::class, LaravelPrivateFileStorage::class);
+        $this->app->bind(ReadsPrivateFiles::class, LaravelPrivateFileReader::class);
     }
 
     /**
