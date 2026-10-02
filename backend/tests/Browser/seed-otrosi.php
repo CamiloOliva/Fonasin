@@ -4,7 +4,9 @@
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationPurpose;
+use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Models\AffiliationApplication;
+use App\Models\ApplicationSection;
 use App\Models\Associate;
 use App\Models\Role;
 use App\Models\User;
@@ -36,7 +38,31 @@ foreach (['admin', 'associate', 'other', 'reviewer'] as $actor) {
             'document_number_encrypted' => app(EncryptsSensitiveData::class)->encryptArray(['document_number' => $document]),
             'full_name' => "Synthetic E2E {$actor}", 'status' => 'active',
         ]);
-        AffiliationApplication::query()->create(['associate_id' => $associate->id, 'status' => 'enabled', 'purpose' => AffiliationApplicationPurpose::InitialAffiliation->value]);
+        $application = AffiliationApplication::query()->create([
+            'associate_id' => $associate->id,
+            'status' => 'enabled',
+            'purpose' => AffiliationApplicationPurpose::InitialAffiliation->value,
+            'submitted_at' => now()->subDay(),
+        ]);
+        foreach ([
+            AffiliationApplicationStep::Personal->value => [
+                'issuePlace' => 'Bucaramanga',
+                'mobile' => '3000000000',
+                'email' => $email,
+            ],
+            AffiliationApplicationStep::Employment->value => [
+                'employer' => 'Empresa de prueba',
+                'monthlySalary' => 2500000,
+            ],
+        ] as $section => $data) {
+            ApplicationSection::query()->forceCreate([
+                'application_id' => $application->id,
+                'section' => $section,
+                'schema_version' => 1,
+                'data_encrypted' => app(EncryptsSensitiveData::class)->encryptArray($data),
+                'completed_at' => now(),
+            ]);
+        }
         if ($actor === 'associate') {
             $fixture['document'] = $document;
         }

@@ -101,6 +101,17 @@ describe('AppRoutes', () => {
     vi.mocked(portalService.currentPortalUser).mockRejectedValue(new Error('guest'));
   });
 
+  it('offers the contracted public news and social balance routes without inventing publications', () => {
+    const news = renderRoute('/noticias');
+    expect(screen.getByRole('heading', { name: /noticias y comunicados/i })).toBeInTheDocument();
+    expect(screen.getByText(/no ha suministrado publicaciones aprobadas/i)).toBeInTheDocument();
+    news.unmount();
+
+    renderRoute('/balance-social');
+    expect(screen.getByRole('heading', { name: /balance social/i })).toBeInTheDocument();
+    expect(screen.getByText(/no ha suministrado un informe de balance social aprobado/i)).toBeInTheDocument();
+  });
+
   it('keeps the savings form unavailable until its history is loaded and after a failed refresh', async () => {
     let resolveHistory!: (value: []) => void;
     const user = userEvent.setup();
@@ -115,6 +126,19 @@ describe('AppRoutes', () => {
     vi.mocked(portalService.fetchPortalVoluntarySavingsRequests).mockRejectedValueOnce(new Error('History unavailable.'));
     await user.click(screen.getByRole('button', { name: /^actualizar$/i }));
     await waitFor(() => expect(screen.getByLabelText('Valor mensual')).toBeDisabled());
+    expect(portalService.submitPortalVoluntarySavingsRequest).not.toHaveBeenCalled();
+  });
+
+  it('keeps voluntary savings unavailable while the associate profile awaits enablement', async () => {
+    vi.mocked(portalService.currentPortalUser).mockResolvedValueOnce({
+      id: 'associate', email: 'associate@fonasin.test', roles: ['associate'], must_change_password: false,
+      requires_profile_completion: true, profile_completion_status: 'submitted',
+    });
+    renderRoute('/portal-asociado?intent=ahorro-voluntario');
+
+    expect(await screen.findByText(/perfil personal y laboral debe estar completo y habilitado/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('Valor mensual')).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^enviar solicitud$/i })).toBeDisabled();
     expect(portalService.submitPortalVoluntarySavingsRequest).not.toHaveBeenCalled();
   });
 

@@ -144,6 +144,7 @@ jobs:
           test -f dist/.htaccess
           test -f backend/public/.htaccess
           grep -q "RewriteRule" dist/.htaccess
+          grep -Fq 'RewriteRule ^\.deploy(?:/|$) - [F,L,NC]' dist/.htaccess
 
       - name: Package Apache frontend artifact
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

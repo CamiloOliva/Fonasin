@@ -5,7 +5,11 @@ namespace Tests\Feature;
 use App\Application\Contributions\Contracts\RendersVoluntarySavingsPayrollAuthorization;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Application\Storage\Contracts\StoresPrivateFiles;
+use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
+use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Contributions\Enums\ContributionAuditAction;
+use App\Models\AffiliationApplication;
+use App\Models\ApplicationSection;
 use App\Models\Associate;
 use App\Models\AuditEvent;
 use App\Models\Role;
@@ -74,6 +78,38 @@ class VoluntarySavingsRequestHttpTest extends TestCase
             'action' => ContributionAuditAction::VoluntarySavingsRequested->value,
             'subject_id' => $request->id,
         ]);
+    }
+
+    public function test_associate_without_enabled_and_complete_profile_cannot_generate_payroll_authorization(): void
+    {
+        [$user] = $this->associateUser(withProfile: false);
+
+        $this->actingAs($user)->postJson('/portal/voluntary-savings-requests', [
+            'monthly_amount' => '150000',
+            'accept_terms' => true,
+        ])->assertUnprocessable()
+            ->assertJsonPath('message', 'Completa tu perfil y espera su habilitacion antes de solicitar ahorro voluntario.');
+
+        $this->assertDatabaseCount('voluntary_savings_requests', 0);
+        $this->assertDatabaseMissing('audit_events', ['action' => ContributionAuditAction::VoluntarySavingsRequested->value]);
+        $this->assertSame([], Storage::disk('local')->allFiles('contributions/voluntary-savings'));
+    }
+
+    public function test_incomplete_enabled_profile_cannot_generate_payroll_authorization(): void
+    {
+        [$user, $associate] = $this->associateUser();
+        $application = $associate->affiliationApplications()->firstOrFail();
+        $application->sections()->where('section', AffiliationApplicationStep::Employment->value)->update([
+            'data_encrypted' => app(EncryptsSensitiveData::class)->encryptArray(['monthlySalary' => 2500000]),
+        ]);
+
+        $this->actingAs($user)->postJson('/portal/voluntary-savings-requests', [
+            'monthly_amount' => '150000',
+            'accept_terms' => true,
+        ])->assertUnprocessable()
+            ->assertJsonPath('message', 'Actualiza y habilita tus datos personales y laborales antes de generar la libranza.');
+
+        $this->assertDatabaseCount('voluntary_savings_requests', 0);
     }
 
     public function test_associate_cannot_submit_duplicate_pending_request(): void
@@ -361,7 +397,7 @@ class VoluntarySavingsRequestHttpTest extends TestCase
     }
 
     /** @return array{User, Associate} */
-    private function associateUser(string $email = 'associate@example.test'): array
+    private function associateUser(string $email = 'associate@example.test', bool $withProfile = true): array
     {
         $user = User::factory()->create(['email' => $email, 'must_change_password' => false]);
         $role = Role::query()->firstOrCreate(['name' => 'associate']);
@@ -375,6 +411,34 @@ class VoluntarySavingsRequestHttpTest extends TestCase
             'full_name' => 'Synthetic Associate',
             'status' => 'active',
         ]);
+
+        if ($withProfile) {
+            $application = AffiliationApplication::query()->create([
+                'associate_id' => $associate->id,
+                'status' => AffiliationApplicationStatus::Enabled->value,
+                'current_step' => AffiliationApplicationStep::Summary->value,
+                'submitted_at' => now()->subDay(),
+            ]);
+            foreach ([
+                AffiliationApplicationStep::Personal->value => [
+                    'issuePlace' => 'Bucaramanga',
+                    'mobile' => '3000000000',
+                    'email' => $email,
+                ],
+                AffiliationApplicationStep::Employment->value => [
+                    'employer' => 'Empresa de prueba',
+                    'monthlySalary' => 2500000,
+                ],
+            ] as $section => $data) {
+                ApplicationSection::query()->forceCreate([
+                    'application_id' => $application->id,
+                    'section' => $section,
+                    'schema_version' => 1,
+                    'data_encrypted' => app(EncryptsSensitiveData::class)->encryptArray($data),
+                    'completed_at' => now(),
+                ]);
+            }
+        }
 
         return [$user, $associate];
     }

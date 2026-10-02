@@ -58,7 +58,7 @@ export default function Home() {
             </div>
             <h2 className="text-3xl sm:text-4xl font-black mt-2">Haz parte de FONASIN</h2>
             <p className="mt-3 text-white/75 max-w-xl">
-              El proceso de afiliación estará disponible próximamente.
+              Diligencia tu solicitud de afiliación en línea y consulta su avance desde el portal.
             </p>
           </div>
           <Link

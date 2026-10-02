@@ -1,5 +1,8 @@
-Options -MultiViews
+Options -MultiViews -Indexes
 RewriteEngine On
+
+# Release archives are staging artifacts, never public site content.
+RewriteRule ^\.deploy(?:/|$) - [F,L,NC]
 
 # Serve real files and directories without rewriting them.
 RewriteCond %{REQUEST_FILENAME} -f [OR]

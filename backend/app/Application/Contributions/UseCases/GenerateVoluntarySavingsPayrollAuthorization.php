@@ -29,15 +29,29 @@ class GenerateVoluntarySavingsPayrollAuthorization
         }
 
         $document = $this->cipher->decryptArray((string) $associate->getAttribute('document_number_encrypted'));
-        $sections = $this->latestProfileSections($associate->affiliationApplications()
-            ->whereIn('status', [
-                AffiliationApplicationStatus::Enabled->value,
-                AffiliationApplicationStatus::Approved->value,
-            ])
+        $application = $associate->affiliationApplications()
+            ->where('status', AffiliationApplicationStatus::Enabled->value)
             ->latest('submitted_at')
-            ->first());
+            ->first();
+        if (! $application) {
+            throw new DomainException('Completa tu perfil y espera su habilitacion antes de solicitar ahorro voluntario.');
+        }
+
+        $sections = $this->latestProfileSections($application);
         $personal = $sections[AffiliationApplicationStep::Personal->value] ?? [];
         $employment = $sections[AffiliationApplicationStep::Employment->value] ?? [];
+        $email = (string) ($personal['email'] ?? $associate->user?->email ?? '');
+
+        if (
+            blank($personal['issuePlace'] ?? null)
+            || blank($personal['mobile'] ?? null)
+            || blank($employment['employer'] ?? null)
+            || blank($email)
+            || $this->numberValue($employment['monthlySalary'] ?? null) <= 0
+        ) {
+            throw new DomainException('Actualiza y habilita tus datos personales y laborales antes de generar la libranza.');
+        }
+
         $storageKey = "contributions/voluntary-savings/{$associate->id}/{$request->id}-libranza.pdf";
         $submittedAt = $request->submitted_at ?? now();
         $verificationCode = strtoupper(substr(hash('sha256', implode('|', [
@@ -54,7 +68,7 @@ class GenerateVoluntarySavingsPayrollAuthorization
             'issuePlace' => (string) ($personal['issuePlace'] ?? ''),
             'employer' => (string) ($employment['employer'] ?? ''),
             'phone' => (string) ($personal['mobile'] ?? ''),
-            'email' => (string) ($personal['email'] ?? $associate->user?->email ?? ''),
+            'email' => $email,
             'monthlySalary' => $this->numberValue($employment['monthlySalary'] ?? null),
             'voluntarySavings' => (float) $request->monthly_amount,
             'totalMonthlyDeduction' => (float) $request->monthly_amount,

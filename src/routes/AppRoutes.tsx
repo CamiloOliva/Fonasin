@@ -25,6 +25,8 @@ import Estatutos from "../pages/Estatutos/Estatutos";
 import PasswordRecovery from "../pages/PasswordRecovery/PasswordRecovery";
 import Portal from "../pages/PortalAsociado/PortalAsociado";
 import ProductosServicios from "../pages/ProductosServicios/ProductosServicios";
+import Noticias from "../pages/Noticias/Noticias";
+import BalanceSocial from "../pages/BalanceSocial/BalanceSocial";
 export default function AppRoutes() {
   return (
     <Routes>
@@ -44,6 +46,8 @@ export default function AppRoutes() {
       />{" "}
       <Route path="/creditos/:slug" element={<CreditLinePage />} />{" "}
       <Route path="/convenios" element={<Convenios />} />{" "}
+      <Route path="/noticias" element={<Noticias />} />{" "}
+      <Route path="/balance-social" element={<BalanceSocial />} />{" "}
       <Route path="/convenios/emi" element={<ConvenioEmi />} />{" "}
       <Route path="/convenios/emermedica" element={<ConvenioEmermedica />} />{" "}
       <Route path="/convenios/uma-ips" element={<ConvenioUmaIps />} />{" "}

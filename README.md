@@ -10,6 +10,7 @@ FONASIN combina el frontend publico en React/Vite con un backend Laravel 12 orga
 - Existen migraciones y casos de uso para identidad, afiliacion, creditos, aportes/ahorros, importaciones y auditoria.
 - Hay autenticacion, roles, portal del asociado y panel administrativo. Las cargas XLSX de creditos, aportes, ahorro permanente y ahorro voluntario tienen pruebas de permisos, persistencia y aislamiento por asociado.
 - El otrosi aprobado incluye consulta privada de los tres saldos y solicitud de ahorro voluntario con libranza, decision administrativa y nuevo intento tras rechazo. El recorrido automatizado usa datos ficticios; no sustituye la validacion operativa ni la aceptacion de FONASIN con archivos reales anonimizados.
+- Manual operativo basico para validacion y capacitacion: `docs/operations/manual-operativo-fonasin.md`. Requiere aprobacion y registro de capacitacion de FONASIN.
 - `develop` es integracion y simulacion local. Solo `main`, previa revision de Diego, es candidata a produccion en cPanel.
 
 ## Requisitos locales

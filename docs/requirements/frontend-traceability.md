@@ -6,7 +6,7 @@ Esta matriz conecta la especificacion funcional con el codigo, las pruebas y la 
 
 Fuente funcional: `02_GUIA_EQUIPO_FRONTEND_WEB_AFILIACION_PORTAL_V2.docx`, version 2.0 del 15 de agosto de 2026.
 
-Ultima revision tecnica: 24 de septiembre de 2026, rama de trabajo frontend.
+Ultima revision tecnica: 2 de octubre de 2026, rama de integracion del otrosi.
 
 ## Estados permitidos
 
@@ -31,8 +31,9 @@ Solo FONASIN puede mover contenido funcional a `Aceptado`. Una PR puede proponer
 | FE-WEB-004 | Productos y servicios | En curso | `/productos-y-servicios`, `/creditos`, ahorros y convenios; fichas turísticas de Caribbean Sol y Mar y Luz Marina Vargas | Aprobar nombres, textos, condiciones y beneficios restantes. |
 | FE-WEB-005 | Transparencia | Implementado | Centro documental con estatutos, politica de datos, manual de lineas de credito, reglamento de cartera y estados financieros 2025 | Validar visualmente los documentos publicados con FONASIN. |
 | FE-WEB-005A | Visor PDF | Implementado | Visor embebido y descarga disponible para cada documento institucional | Validar rendimiento del estado financiero escaneado en el hosting productivo. |
-| FE-WEB-006 | Noticias | Bloqueado | Sin ruta ni datos | Recibir publicaciones iniciales aprobadas; no crear CMS general. |
-| FE-WEB-007 | Contacto | En curso | WhatsApp, correo institucional, mapa, horario y acceso a FPQRS publicados | Confirmar y conectar las redes sociales oficiales. |
+| FE-WEB-005B | Balance social | En curso | Ruta `/balance-social` y lista de informes aprobados, con estado vacio explicito | FONASIN debe suministrar y aprobar el primer informe. |
+| FE-WEB-006 | Noticias | En curso | Ruta `/noticias` y lista de publicaciones aprobadas, con estado vacio explicito; no hay CMS | FONASIN debe suministrar y aprobar las primeras publicaciones. |
+| FE-WEB-007 | Contacto | En curso | WhatsApp, correo configurable, mapa, horario y acceso a FPQRS publicados; redes solo aparecen si se configuran URL HTTPS del proveedor esperado | Confirmar correo y enlaces oficiales antes del build final. |
 | FE-WEB-008 | FPQRS | Implementado | Formulario conectado a `POST /fpqrs-submissions`, adjunto opcional PDF/JPG/PNG hasta 5MB, estados de envio/error, rate limit publico y entrega a correo institucional por backend. | Validar envio real con SMTP de produccion y aprobar politica de retencion. |
 | FE-WEB-009 | WhatsApp | En curso | Enlace configurable con `VITE_WHATSAPP_URL` | Confirmar numero, mensaje y comportamiento oficial. |
 | FE-WEB-010 | SEO y accesibilidad | En curso | HTML en español, description, semantica y foco parcial | Ejecutar auditoria sin errores criticos y agregar pruebas. |
@@ -84,7 +85,7 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 | FE-OBQ-003A | Aportes y ahorros actuales | OBQ | En curso | Frontend representa `module_disabled`, `empty` y `available` dentro del estado de cuenta unificado. Backend expone `GET /portal/contributions` y `GET /portal/account-statement`. |
 | FE-OBQ-004 | Aislamiento por sesion | OBQ | Implementado | Las consultas privadas resuelven el asociado desde la sesion y bloquean asociado inactivo; no se acepta `associate_id` del navegador. |
 | FE-EXT-004 | Actualizacion de datos | EXT | En curso | El acceso publico "Actualizar datos" envia al login del portal y conserva la intencion para abrir directamente el flujo autenticado. El asociado crea o reutiliza un borrador temporal por 24 horas identificado como `data_update`; las altas operativas sin formulario usan `profile_completion`. Los flujos privados usan rutas y almacenamiento de sesion separados de `/afiliacion`, bloquean cambios de identidad y cargas documentales, generan solo el formulario y permiten al backoffice aplicarlo sin nueva libranza. Falta aprobacion visual final y definir retencion historica. |
-| FE-EXT-004A | Solicitud de ahorro voluntario | EXT / otrosi aprobado por Diego | En curso | Solicitud privada independiente de afiliacion; monto mensual, PDF, aprobacion/rechazo admin, consulta del estado por asociado y nueva solicitud tras rechazo sin borrar el anterior. Solo una pendiente, garantizada por transaccion y restriccion unica. Ambas partes tienen enlaces privados a la libranza propia y firmada; reviewer no modifica. Estados de carga y renovacion CSRF cubiertos por regresiones. La aprobacion de alcance ya fue confirmada; falta completar y registrar validacion integrada y aceptacion operativa de FONASIN. |
+| FE-EXT-004A | Solicitud de ahorro voluntario | EXT / otrosi aprobado por Diego | En curso | Solicitud privada independiente de afiliacion; monto mensual, PDF, aprobacion/rechazo admin, consulta del estado por asociado y nueva solicitud tras rechazo sin borrar el anterior. Solo una pendiente, garantizada por transaccion y restriccion unica. El servidor exige perfil habilitado con datos minimos personales y laborales para no generar libranzas incompletas. Ambas partes tienen enlaces privados a la libranza propia y firmada; reviewer no modifica. Pruebas HTTP, MariaDB y navegador integrado con datos ficticios. Falta decidir la regla de nuevas solicitudes tras aprobacion y obtener aceptacion operativa de FONASIN. |
 | FE-EXT-005 | Simulador | EXT | Pendiente | No iniciar sin formulas y advertencias aprobadas. |
 | FE-EXT-006 | Documentos privados | EXT | En curso | Storage privado con lectura autorizada y auditada; el asociado activo puede ver/descargar su propia libranza de ahorro voluntario, generada o firmada. No puede acceder a libranzas ajenas ni usar las rutas administrativas. |
 
@@ -104,14 +105,14 @@ La pagina publica `/creditos` solo cubre informacion general de `FE-WEB-004`; no
 
 | Control | Estado | Evidencia requerida para `Validado` |
 |---|---|---|
-| Compilacion TypeScript/Vite | Implementado | `npm run build` local y workflow `.github/workflows/frontend-ci.yml` en cada push y pull request. |
+| Compilacion TypeScript/Vite | Implementado | `npm run build` local y workflow `.github/workflows/quality-gates.yml` en cada push y pull request con cambios de codigo. |
 | Rutas SPA en Apache | Implementado | `public/.htaccess` incluido en `dist` y recarga directa verificada. |
-| Pruebas unitarias | En curso | Vitest y Testing Library cubren rutas, roles admin/reviewer, validacion XLSX, navegacion y estados del portal; falta complementar con Browser/E2E contra contratos reales. |
-| Pruebas de integracion | En curso | Pruebas Feature cubren afiliacion publica, links vencidos, documentos protegidos, portal asociado, estado de cuenta, documentos, actualizacion de datos y cierre de sesion. Frontend cubre cambio obligatorio de contrasena hacia `profile_completion` y resolucion de URLs de documentos contra el backend configurado; falta prueba Browser visual end to end. |
+| Pruebas unitarias | En curso | Vitest y Testing Library cubren rutas, roles admin/reviewer, validacion XLSX, navegacion y estados del portal. La prueba Browser integrada usa datos ficticios; faltan ejemplos operativos anonimizados y aceptacion institucional. |
+| Pruebas de integracion | En curso | Pruebas Feature cubren afiliacion publica, links vencidos, documentos protegidos, portal asociado, estado de cuenta, actualizacion de datos y cierre de sesion. El flujo de aportes/ahorros tiene E2E con MariaDB y navegador real en CI; falta validacion con archivos institucionales anonimizados. |
 | Responsive | Pendiente | Matriz movil, tableta y escritorio. |
 | Accesibilidad | Pendiente | Teclado, foco, labels, contraste, semantica y auditoria. |
-| Permisos | Pendiente | Casos positivos y negativos por rol. |
-| Regresion | Pendiente | Pipeline sobre rutas publicas y privadas. |
+| Permisos | En curso | Casos HTTP positivos y negativos por rol, propietario y estado; completar la matriz de aceptacion institucional. |
+| Regresion | Implementado | `quality-gates.yml` cubre backend SQLite, MariaDB, frontend y Browser del otrosi; el deploy de cPanel solo publica frontend. |
 
 ## Regla para cada PR
 

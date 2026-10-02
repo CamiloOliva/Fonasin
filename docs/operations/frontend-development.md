@@ -92,12 +92,19 @@ El hosting debe tener `mod_rewrite` y permitir `.htaccess` en el document root. 
 VITE_BACKEND_BASE_URL=
 VITE_BACKEND_DEV_PROXY_TARGET=http://127.0.0.1:8000
 VITE_WHATSAPP_URL=
+VITE_CONTACT_EMAIL=fonasinbucaramanga@gmail.com
+VITE_FACEBOOK_URL=
+VITE_INSTAGRAM_URL=
+VITE_YOUTUBE_URL=
 ```
 
 - `.env` nunca se sube a Git.
 - Solo publicar con `VITE_*` valores seguros para cualquier visitante.
 - En produccion, `VITE_BACKEND_BASE_URL` debe quedar vacio si Laravel y React comparten dominio, o usar HTTPS y el dominio aprobado si se autoriza otro origen.
 - Los secretos permanecen en `backend/.env` y nunca pasan al build React.
+- El correo predeterminado corresponde al contrato inicial; FONASIN debe confirmar si cambio antes del build final.
+- Las redes solo se muestran cuando FONASIN entrega una URL HTTPS oficial de Facebook, Instagram o YouTube. Configurarlas en el entorno de build, no en cPanel despues de compilar: Vite incrusta esos valores en `dist/`.
+- Noticias y Balance social leen `src/data/institutionalUpdates.ts`. Agregar exclusivamente publicaciones e informes aprobados; sin datos, la pagina muestra un estado vacio honesto. No cargar documentos sensibles en `public/`.
 
 ## Flujo de version y publicacion
 

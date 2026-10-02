@@ -250,6 +250,7 @@ export default function PortalAsociado() {
     () => savingsRequests.some((request) => request.status === 'submitted'),
     [savingsRequests],
   );
+  const needsSavingsProfile = user?.requires_profile_completion === true;
   const latestSavingsRequest = savingsRequests[0] ?? null;
 
   async function loadCredits() {
@@ -474,7 +475,7 @@ export default function PortalAsociado() {
 
   async function handleSubmitSavingsRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (savingsRequestState !== 'ready' || submittingSavings || hasPendingSavingsRequest || !savingsAccepted) return;
+    if (needsSavingsProfile || savingsRequestState !== 'ready' || submittingSavings || hasPendingSavingsRequest || !savingsAccepted) return;
     setError(null);
     setMessage(null);
     setSubmittingSavings(true);
@@ -852,6 +853,11 @@ export default function PortalAsociado() {
                   <p className="mt-2 text-sm leading-6 text-slate-600">
                     Indica el valor que deseas ahorrar mensualmente para que FONASIN revise la solicitud.
                   </p>
+                  {needsSavingsProfile ? (
+                    <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                      Tu perfil personal y laboral debe estar completo y habilitado antes de solicitar ahorro voluntario.
+                    </p>
+                  ) : null}
                   <label className="mt-5 block">
                     <span className="text-sm font-bold text-slate-800">Valor mensual</span>
                     <input
@@ -859,7 +865,7 @@ export default function PortalAsociado() {
                       inputMode="numeric"
                       value={savingsAmount}
                       onChange={(event) => setSavingsAmount(formatSavingsAmountInput(event.target.value))}
-                      disabled={savingsRequestState !== 'ready' || submittingSavings || hasPendingSavingsRequest}
+                      disabled={needsSavingsProfile || savingsRequestState !== 'ready' || submittingSavings || hasPendingSavingsRequest}
                       required
                       className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-bold text-slate-950 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 disabled:bg-slate-100"
                     />
@@ -869,7 +875,7 @@ export default function PortalAsociado() {
                       type="checkbox"
                       checked={savingsAccepted}
                       onChange={(event) => setSavingsAccepted(event.target.checked)}
-                      disabled={savingsRequestState !== 'ready' || submittingSavings || hasPendingSavingsRequest}
+                      disabled={needsSavingsProfile || savingsRequestState !== 'ready' || submittingSavings || hasPendingSavingsRequest}
                       required
                       className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                     />
@@ -882,7 +888,7 @@ export default function PortalAsociado() {
                   ) : null}
                   <button
                     type="submit"
-                    disabled={savingsRequestState !== 'ready' || submittingSavings || hasPendingSavingsRequest || !savingsAccepted}
+                    disabled={needsSavingsProfile || savingsRequestState !== 'ready' || submittingSavings || hasPendingSavingsRequest || !savingsAccepted}
                     className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-fonasin-green px-4 py-3 text-sm font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 focus-ring"
                   >
                     {submittingSavings ? <Loader2 className="animate-spin" size={17} /> : <FileText size={17} />}

@@ -1,8 +1,8 @@
-import { ChevronRight, FileText, Globe, Home, Instagram, MessageCircle, Radio, Users, Youtube } from 'lucide-react';
+import { ChevronRight, FileText, Globe, Home, Instagram, MessageCircle, Users, Youtube } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { Link } from 'react-router-dom';
 import { navigation } from '../../data/navigation';
-import { WHATSAPP_URL } from '../../data/siteConfig';
+import { CONTACT_EMAIL, OFFICIAL_SOCIAL_URLS, WHATSAPP_URL } from '../../data/siteConfig';
 
 const legalLinks = [
   { label: 'Estatutos', to: '/estatutos?document=statutes' },
@@ -12,29 +12,31 @@ const legalLinks = [
 ];
 
 const socialLinks = [
-  { label: 'Facebook', icon: Globe },
-  { label: 'Instagram', icon: Instagram },
-  { label: 'YouTube', icon: Youtube },
-  { label: 'Canal web', icon: Radio },
-];
+  { label: 'Facebook', icon: Globe, href: OFFICIAL_SOCIAL_URLS.facebook },
+  { label: 'Instagram', icon: Instagram, href: OFFICIAL_SOCIAL_URLS.instagram },
+  { label: 'YouTube', icon: Youtube, href: OFFICIAL_SOCIAL_URLS.youtube },
+].filter((social): social is { label: string; icon: typeof Globe; href: string } => social.href !== null);
 
 function IconPill({
   icon: Icon,
   label,
+  href,
 }: {
   icon: ComponentType<{ className?: string }>;
   label: string;
+  href: string;
 }) {
   return (
-    <button
-      type="button"
-      aria-disabled="true"
-      title="Proximamente"
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={label}
       className="group inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white/85 transition hover:border-white/30 hover:bg-white/10 focus-ring"
     >
       <Icon className="h-5 w-5" aria-hidden="true" />
       <span className="sr-only">{label}</span>
-    </button>
+    </a>
   );
 }
 
@@ -152,7 +154,7 @@ export default function Footer() {
                 WhatsApp
               </a>
               <a
-                href="mailto:fonasin.bucaramanga@fonasin.com"
+                href={`mailto:${CONTACT_EMAIL}`}
                 className="group flex items-center gap-3 text-sm font-medium text-white/82 transition hover:text-white"
               >
                 <ChevronRight className="h-4 w-4 text-[#d9d500] transition group-hover:translate-x-1" />
@@ -198,14 +200,15 @@ export default function Footer() {
               <Users className="h-5 w-5" />
             </div>
             <h2 className="text-base font-black leading-tight text-[#d9d500]">Siguenos</h2>
-            <p className="mt-4 max-w-xs text-sm leading-6 text-white/78">
-              Conoce nuestras novedades a traves de nuestros canales.
-            </p>
-            <div className="mt-3.5 flex flex-wrap gap-2">
-              {socialLinks.map((social) => (
-                <IconPill key={social.label} icon={social.icon} label={social.label} />
-              ))}
-            </div>
+            {socialLinks.length > 0 ? (
+              <div className="mt-3.5 flex flex-wrap gap-2">
+                {socialLinks.map((social) => (
+                  <IconPill key={social.label} icon={social.icon} label={social.label} href={social.href} />
+                ))}
+              </div>
+            ) : (
+              <p className="mt-4 max-w-xs text-sm leading-6 text-white/78">FONASIN aún no ha confirmado enlaces oficiales de redes sociales.</p>
+            )}
           </section>
         </div>
 

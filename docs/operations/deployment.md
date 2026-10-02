@@ -21,7 +21,7 @@ La validacion automatizada comprueba que `public/.htaccess` se copie a `dist/.ht
 
 ## Backend Laravel en Apache/cPanel
 
-Cuando el Backend entre en produccion, Apache debe apuntar exclusivamente a `backend/public/`. El codigo de `backend/` debe permanecer fuera del document root. El servidor debe tener PHP compatible, extensiones requeridas, Composer, MariaDB 10.11 o superior y permisos controlados para `backend/storage/` y `backend/bootstrap/cache/`.
+El Backend productivo usa el subdominio API, cuyo document root debe apuntar exclusivamente a `backend/public/`. El codigo de `backend/` debe permanecer fuera del document root. El servidor debe tener PHP compatible, extensiones requeridas, Composer, MariaDB 10.11 o superior y permisos controlados para `backend/storage/` y `backend/bootstrap/cache/`.
 
 XAMPP, PHP local, `vendor/` local y los archivos `.env` de desarrollo nunca se suben a `main` ni al servidor. En produccion se instala Composer en el servidor o mediante un artefacto de despliegue aprobado y se configura un `.env` propio.
 
@@ -47,7 +47,7 @@ El repositorio cPanel debe permanecer asociado a `main`. No configurar `develop`
 
 ## Publicacion del frontend
 
-Como cPanel no dispone de Node.js para la cuenta, el bundle Vite se compila fuera del servidor. La opcion objetivo es una automatizacion de GitHub Actions que, al actualizar `main`, ejecute `npm ci`, `npm run build` y copie solo `dist/` al document root del dominio principal mediante una conexion segura.
+Como cPanel no dispone de Node.js para la cuenta, el bundle Vite se compila fuera del servidor. El workflow `quality-gates.yml` puede compilar `main` y copiar solo `dist/` al document root del dominio principal cuando `CPANEL_DEPLOY_ENABLED=true` y estan configurados los secretos de cPanel. No actualiza el Backend Laravel: esa publicacion sigue un procedimiento controlado por separado.
 
 No confirmar `dist/` en Git como solucion permanente y no copiar `node_modules` al hosting.
 
@@ -123,4 +123,4 @@ Antes de ejecutar `2026_09_06_000002_rehash_sensitive_lookup_values_with_hmac.ph
 
 La migracion recalcula hashes de busqueda desde valores cifrados o campos operativos ya existentes. No exponer ni copiar el pepper a GitHub, Markdown, capturas o tickets.
 
-No se configura despliegue automatico ni `.cpanel.yml` hasta confirmar usuario de cPanel, rutas reales, version de PHP, Composer, Node y version exacta de MariaDB.
+No activar el job productivo sin confirmar y probar usuario de cPanel, rutas reales, SSH, permisos, Composer y version exacta de MariaDB. No existe `.cpanel.yml`; el backend no forma parte del job de frontend.

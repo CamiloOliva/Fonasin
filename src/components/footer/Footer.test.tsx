@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import Footer from './Footer';
 
 describe('Footer', () => {
-  it('lleva Mi Fondo a la informacion institucional sin duplicar Estatutos', () => {
+  it('lleva Mi Fondo a ahorros y mantiene el centro documental separado', () => {
     render(
       <MemoryRouter>
         <Footer />
@@ -16,11 +16,14 @@ describe('Footer', () => {
 
     expect(navigation).not.toBeNull();
     expect(legal).not.toBeNull();
-    expect(within(navigation as HTMLElement).getByRole('link', { name: 'Mi Fondo' })).toHaveAttribute('href', '/estatutos');
+    expect(within(navigation as HTMLElement).getByRole('link', { name: 'Mi Fondo' })).toHaveAttribute('href', '/mi-fondo');
+    expect(within(navigation as HTMLElement).getByRole('link', { name: 'Balance social' })).toHaveAttribute('href', '/balance-social');
     expect(within(navigation as HTMLElement).queryByRole('link', { name: 'Estatutos' })).not.toBeInTheDocument();
     expect(within(legal as HTMLElement).getByRole('link', { name: 'Estatutos' })).toHaveAttribute('href', '/estatutos?document=statutes');
     expect(within(legal as HTMLElement).getByRole('link', { name: /manual de líneas de crédito/i })).toHaveAttribute('href', '/estatutos?document=credit-manual');
     expect(within(legal as HTMLElement).getByRole('link', { name: /reglamento de crédito y cartera/i })).toHaveAttribute('href', '/estatutos?document=credit-regulation');
     expect(within(legal as HTMLElement).getByRole('link', { name: /política de tratamiento de datos/i })).toHaveAttribute('href', '/estatutos?document=data-policy');
+    expect(screen.getByRole('link', { name: 'Correo' })).toHaveAttribute('href', 'mailto:fonasinbucaramanga@gmail.com');
+    expect(screen.queryByRole('button', { name: 'Facebook' })).not.toBeInTheDocument();
   });
 });
