@@ -14,6 +14,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Shuchkin\SimpleXLSXGen;
 use Tests\TestCase;
@@ -74,6 +75,35 @@ class SpreadsheetImportHttpTest extends TestCase
         $this->assertDatabaseHas('credit_accounts', [
             'credit_line' => 'CONVENIOS',
         ]);
+    }
+
+    public function test_imports_reject_dates_with_trailing_text_without_changing_financial_data(): void
+    {
+        Storage::fake('local');
+        $admin = $this->userWithRole('admin');
+        $this->createAssociate('123456789');
+
+        $this->actingAs($admin)->postJson('/admin/import-batches/credits', [
+            'file' => $this->xlsx('bad-credit-date.xlsx', [
+                $this->creditHeaders(),
+                $this->creditRow(['fecha_ultimo_pago' => '2026-09-30GARBAGE']),
+            ]),
+        ])->assertCreated()->assertJsonPath('data.status', 'completed_with_errors')
+            ->assertJsonPath('data.rows_rejected', 1);
+
+        foreach (['contributions', 'permanent-savings', 'voluntary-savings'] as $type) {
+            $this->actingAs($admin)->postJson('/admin/import-batches/'.$type, [
+                'file' => $this->xlsx('bad-'.$type.'-date.xlsx', [
+                    $this->contributionHeaders(),
+                    ['123456789', 'Synthetic Associate', '100.00', '100.00', '2026-09-30GARBAGE'],
+                ]),
+            ])->assertCreated()->assertJsonPath('data.status', 'completed_with_errors')
+                ->assertJsonPath('data.rows_rejected', 1);
+        }
+
+        $this->assertDatabaseCount('credit_accounts', 0);
+        $this->assertDatabaseCount('contribution_movements', 0);
+        $this->assertDatabaseCount('contribution_accounts', 0);
     }
 
     public function test_credit_import_updates_by_promissory_note_and_rejects_unknown_associate(): void
@@ -276,6 +306,45 @@ class SpreadsheetImportHttpTest extends TestCase
         $this->actingAs($admin)->postJson('/admin/import-batches/voluntary-savings', [
             'file' => $this->xlsxFromContents('movimientos.xlsx', $contents),
         ])->assertCreated();
+    }
+
+    public function test_duplicate_insert_race_returns_422_without_storing_a_second_file_for_every_import_type(): void
+    {
+        Storage::fake('local');
+        $admin = $this->userWithRole('admin');
+
+        foreach (['associates' => 'associates', 'credits' => 'credits', 'contributions' => 'contributions', 'permanent-savings' => 'permanent_savings', 'voluntary-savings' => 'voluntary_savings'] as $route => $type) {
+            $file = $this->xlsx('race-'.$route.'.xlsx', [['dummy'], ['value']]);
+            $contents = file_get_contents($file->getRealPath());
+            $this->assertIsString($contents);
+            $hash = hash('sha256', $contents);
+            $race = (object) ['injected' => false];
+
+            DB::listen(function ($query) use ($type, $hash, $admin, $race): void {
+                if ($race->injected || ! str_contains($query->sql, 'import_batches') || ! str_contains($query->sql, 'exists')) {
+                    return;
+                }
+
+                $race->injected = true;
+                ImportBatch::query()->create([
+                    'imported_by_user_id' => $admin->id,
+                    'import_type' => $type,
+                    'original_filename' => 'winner.xlsx',
+                    'storage_key' => 'private/imports/'.$type.'/winner.xlsx',
+                    'file_hash' => $hash,
+                    'mime_type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'byte_size' => 1,
+                    'status' => 'completed',
+                    'started_at' => now(),
+                ]);
+            });
+
+            $response = $this->actingAs($admin)->postJson('/admin/import-batches/'.$route, ['file' => $file]);
+            $this->assertSame(422, $response->status(), 'Concurrent duplicate must return 422 for '.$type.': '.$response->getContent());
+            $this->assertTrue($race->injected, 'The test must insert the winning batch after the initial duplicate check.');
+            $this->assertSame(0, count(Storage::disk('local')->allFiles('private/imports')));
+            $this->assertSame(1, ImportBatch::query()->where('import_type', $type)->count());
+        }
     }
 
     public function test_invalid_columns_are_reported_and_non_admins_are_forbidden(): void

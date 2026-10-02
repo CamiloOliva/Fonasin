@@ -14,6 +14,7 @@ use App\Domain\Imports\Enums\ImportAuditAction;
 use App\Models\ImportBatch;
 use App\Models\User;
 use DomainException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -41,7 +42,17 @@ class ImportAssociates
             throw CannotImportSpreadsheet::duplicateFile();
         }
 
-        $batch = $this->createBatch($file, $actor, $fileHash);
+        try {
+            $batch = $this->createBatch($file, $actor, $fileHash);
+        } catch (UniqueConstraintViolationException $exception) {
+            if (! ImportBatch::query()->where('import_type', self::IMPORT_TYPE)->where('file_hash', $fileHash)->exists()) {
+                throw $exception;
+            }
+
+            $this->auditRejected($actor, $ipHash, 'duplicate_file');
+
+            throw CannotImportSpreadsheet::duplicateFile();
+        }
 
         try {
             $rows = $this->reader->read($file->path);
@@ -108,19 +119,23 @@ class ImportAssociates
     private function createBatch(UploadedSpreadsheet $file, User $actor, string $fileHash): ImportBatch
     {
         $storageKey = 'private/imports/'.self::IMPORT_TYPE.'/'.Str::uuid().'.xlsx';
-        $this->storage->put($storageKey, $file->contents);
 
-        return ImportBatch::query()->create([
-            'imported_by_user_id' => $actor->id,
-            'import_type' => self::IMPORT_TYPE,
-            'original_filename' => basename($file->originalName),
-            'storage_key' => $storageKey,
-            'file_hash' => $fileHash,
-            'mime_type' => $file->mimeType,
-            'byte_size' => $file->byteSize,
-            'status' => 'processing',
-            'started_at' => now(),
-        ]);
+        return DB::transaction(function () use ($file, $actor, $fileHash, $storageKey): ImportBatch {
+            $batch = ImportBatch::query()->create([
+                'imported_by_user_id' => $actor->id,
+                'import_type' => self::IMPORT_TYPE,
+                'original_filename' => basename($file->originalName),
+                'storage_key' => $storageKey,
+                'file_hash' => $fileHash,
+                'mime_type' => $file->mimeType,
+                'byte_size' => $file->byteSize,
+                'status' => 'processing',
+                'started_at' => now(),
+            ]);
+            $this->storage->put($storageKey, $file->contents);
+
+            return $batch;
+        });
     }
 
     /** @param array<int, array<string, string>> $rows */

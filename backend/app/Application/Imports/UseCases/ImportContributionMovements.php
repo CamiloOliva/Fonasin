@@ -21,6 +21,7 @@ use App\Models\ContributionAccount;
 use App\Models\ContributionMovement;
 use App\Models\ImportBatch;
 use App\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -60,7 +61,17 @@ class ImportContributionMovements
             throw CannotImportSpreadsheet::duplicateFile();
         }
 
-        $batch = $this->createBatch($file, $actor, $fileHash, $importType);
+        try {
+            $batch = $this->createBatch($file, $actor, $fileHash, $importType);
+        } catch (UniqueConstraintViolationException $exception) {
+            if (! ImportBatch::query()->where('import_type', $importType)->where('file_hash', $fileHash)->exists()) {
+                throw $exception;
+            }
+
+            $this->auditRejected($actor, $ipHash, $importType, 'duplicate_file');
+
+            throw CannotImportSpreadsheet::duplicateFile();
+        }
 
         try {
             $rows = $this->reader->read($file->path);
@@ -200,19 +211,23 @@ class ImportContributionMovements
     private function createBatch(UploadedSpreadsheet $file, User $actor, string $fileHash, string $importType): ImportBatch
     {
         $storageKey = 'private/imports/'.$importType.'/'.Str::uuid().'.xlsx';
-        $this->storage->put($storageKey, $file->contents);
 
-        return ImportBatch::query()->create([
-            'imported_by_user_id' => $actor->id,
-            'import_type' => $importType,
-            'original_filename' => basename($file->originalName),
-            'storage_key' => $storageKey,
-            'file_hash' => $fileHash,
-            'mime_type' => $file->mimeType,
-            'byte_size' => $file->byteSize,
-            'status' => 'processing',
-            'started_at' => now(),
-        ]);
+        return DB::transaction(function () use ($file, $actor, $fileHash, $importType, $storageKey): ImportBatch {
+            $batch = ImportBatch::query()->create([
+                'imported_by_user_id' => $actor->id,
+                'import_type' => $importType,
+                'original_filename' => basename($file->originalName),
+                'storage_key' => $storageKey,
+                'file_hash' => $fileHash,
+                'mime_type' => $file->mimeType,
+                'byte_size' => $file->byteSize,
+                'status' => 'processing',
+                'started_at' => now(),
+            ]);
+            $this->storage->put($storageKey, $file->contents);
+
+            return $batch;
+        });
     }
 
     /**
@@ -285,11 +300,14 @@ class ImportContributionMovements
 
     private function parseDate(string $value): ?Carbon
     {
-        $date = substr(trim($value), 0, 10);
+        $cell = trim($value);
 
-        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        // SimpleXLSX renders date-formatted Excel cells with a midnight time suffix.
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}(?: 00:00:00)?\z/', $cell)) {
             return null;
         }
+
+        $date = substr($cell, 0, 10);
 
         try {
             $parsed = Carbon::createFromFormat('Y-m-d', $date)->startOfDay();

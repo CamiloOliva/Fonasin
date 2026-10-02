@@ -315,9 +315,9 @@ Reglas:
 - `numero_pagare` es obligatorio, se almacena cifrado y su HMAC unico identifica la obligacion que se debe actualizar.
 - valores numericos no negativos.
 - se aceptan formatos `1250.00`, `1250,00` y `1.250,00`.
-- `fecha_ultimo_pago` usa formato `YYYY-MM-DD`.
+- `fecha_ultimo_pago` usa formato `YYYY-MM-DD`. Se acepta tambien la representacion exacta `YYYY-MM-DD 00:00:00` que produce el lector para celdas de fecha Excel; otros sufijos se rechazan por fila.
 - numero de pagare duplicado dentro del archivo se rechaza por fila.
-- un archivo ya importado para creditos se rechaza por hash.
+- un archivo ya importado para creditos se rechaza por hash, incluso si dos cargas identicas llegan simultaneamente; solo una reserva lote y archivo privado.
 - cada credito creado o modificado registra auditoria correlacionada con el lote; se guardan nombres de campos cambiados, no valores financieros.
 
 Respuesta:
@@ -396,12 +396,12 @@ Reglas:
 - `documento` se usa solo para busqueda HMAC de asociado activo.
 - `nombre_completo` debe coincidir con el asociado del documento, ignorando mayusculas, espacios repetidos y tildes.
 - el endpoint determina el tipo: aporte ordinario, ahorro voluntario o ahorro permanente; el navegador no lo envia dentro de cada fila.
-- `fecha_ultimo_pago` usa formato `YYYY-MM-DD` y determina el periodo y la fecha de corte internos.
+- `fecha_ultimo_pago` usa formato `YYYY-MM-DD` y determina el periodo y la fecha de corte internos. Se acepta tambien la representacion exacta `YYYY-MM-DD 00:00:00` del lector Excel; otros sufijos se rechazan por fila.
 - valores numericos no negativos.
 - se aceptan formatos `1250.00`, `1250,00` y `1.250,00`.
 - el sistema genera una referencia tecnica estable a partir del tipo y la fecha de ultimo pago.
 - documento + tipo + periodo + referencia duplicado dentro del archivo se rechaza por fila.
-- un archivo ya importado para el mismo tipo de carga se rechaza por hash.
+- un archivo ya importado para el mismo tipo de carga se rechaza por hash, incluso ante dos cargas simultaneas; solo una reserva lote y archivo privado.
 - una correccion del mismo asociado, tipo y fecha revierte el movimiento anterior y registra el nuevo para no perder historial.
 - los saldos de las cuentas afectadas se reconstruyen al terminar la carga usando el movimiento registrado cronologicamente mas reciente de cada tipo, sin depender del orden de filas.
 
