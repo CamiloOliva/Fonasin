@@ -1,15 +1,16 @@
 # FONASIN - Plataforma institucional
 
-FONASIN combina el frontend publico actual en React/Vite con un backend Laravel 12 en construccion. El objetivo es un monolito modular con MariaDB, afiliacion digital, portal privado, administracion limitada y trazabilidad.
+FONASIN combina el frontend publico en React/Vite con un backend Laravel 12 organizado como monolito modular. MariaDB conserva los datos operativos de afiliacion, creditos, aportes y ahorros; el portal privado y la administracion consumen esos casos de uso.
 
 ## Estado actual
 
 - El frontend publico vive en `src/` y se compila como archivos estaticos en `dist/`.
 - Laravel vive en `backend/`; no agregar codigo de backend en los esqueletos homonimos de la raiz.
 - MariaDB es la fuente de verdad para datos operativos.
-- Las migraciones base de Identity, Affiliation, Credits y Audit ya estan creadas.
-- Identity ya cuenta con los modelos `User`, `Role` y `Associate`, sus relaciones y los roles iniciales versionados mediante seeder.
-- La autenticacion, los casos de uso, el portal privado y la administracion siguen pendientes.
+- Existen migraciones y casos de uso para identidad, afiliacion, creditos, aportes/ahorros, importaciones y auditoria.
+- Hay autenticacion, roles, portal del asociado y panel administrativo. Las cargas XLSX de creditos, aportes, ahorro permanente y ahorro voluntario tienen pruebas de permisos, persistencia y aislamiento por asociado.
+- El otrosi aprobado incluye consulta privada de los tres saldos y solicitud de ahorro voluntario con libranza, decision administrativa y nuevo intento tras rechazo. El recorrido automatizado usa datos ficticios; no sustituye la validacion operativa ni la aceptacion de FONASIN con archivos reales anonimizados.
+- `develop` es integracion y simulacion local. Solo `main`, previa revision de Diego, es candidata a produccion en cPanel.
 
 ## Requisitos locales
 
