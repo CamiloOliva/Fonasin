@@ -30,7 +30,7 @@ vi.mock('../services/portalService', async (importOriginal) => ({
   fetchPortalAffiliation: vi.fn().mockResolvedValue(null),
   fetchPortalContributions: vi.fn().mockResolvedValue({ state: 'module_disabled', account: null, movements: [] }),
   fetchPortalCredits: vi.fn().mockResolvedValue([]),
-  fetchPortalVoluntarySavingsRequests: vi.fn().mockResolvedValue([]),
+  fetchPortalVoluntarySavingsRequests: vi.fn().mockResolvedValue({ data: [], pagination: { page: 1, has_more: false } }),
   loginPortal: vi.fn(),
   logoutPortal: vi.fn(),
   portalDocumentPreviewUrl: vi.fn((path: string) => path),
@@ -106,6 +106,7 @@ describe('AppRoutes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(portalService.currentPortalUser).mockRejectedValue(new Error('guest'));
+    vi.mocked(portalService.fetchPortalVoluntarySavingsRequests).mockResolvedValue({ data: [], pagination: { page: 1, has_more: false } });
   });
 
   it('offers the contracted public news and social balance routes without inventing publications', async () => {
@@ -131,7 +132,7 @@ describe('AppRoutes', () => {
   });
 
   it('keeps the savings form unavailable until its history is loaded and after a failed refresh', async () => {
-    let resolveHistory!: (value: []) => void;
+    let resolveHistory!: (value: portalService.PortalVoluntarySavingsPage) => void;
     const user = userEvent.setup();
     vi.mocked(portalService.currentPortalUser).mockResolvedValueOnce({ id: 'associate', email: 'associate@fonasin.test', roles: ['associate'], must_change_password: false });
     vi.mocked(portalService.fetchPortalVoluntarySavingsRequests).mockImplementationOnce(() => new Promise(resolve => { resolveHistory = resolve; }));
@@ -139,7 +140,7 @@ describe('AppRoutes', () => {
     expect(await screen.findByText('Cargando solicitudes')).toBeInTheDocument();
     expect(screen.getByLabelText('Valor mensual')).toBeDisabled();
     expect(screen.getByRole('button', { name: /^enviar solicitud$/i })).toBeDisabled();
-    await act(async () => resolveHistory([]));
+    await act(async () => resolveHistory({ data: [], pagination: { page: 1, has_more: false } }));
     expect(screen.getByLabelText('Valor mensual')).toBeEnabled();
     vi.mocked(portalService.fetchPortalVoluntarySavingsRequests).mockRejectedValueOnce(new Error('History unavailable.'));
     await user.click(screen.getByRole('button', { name: /^actualizar$/i }));
@@ -389,7 +390,7 @@ describe('AppRoutes', () => {
       },
     };
     const submitted = { ...rejected, id: 'new-request', status: 'submitted' as const, reviewed_at: null, review_notes: null };
-    vi.mocked(portalService.fetchPortalVoluntarySavingsRequests).mockResolvedValue([rejected]);
+    vi.mocked(portalService.fetchPortalVoluntarySavingsRequests).mockResolvedValue({ data: [rejected], pagination: { page: 1, has_more: false } });
     vi.mocked(portalService.submitPortalVoluntarySavingsRequest).mockResolvedValueOnce(submitted);
     renderRoute('/portal-asociado?intent=ahorro-voluntario');
     expect(await screen.findByText('Revisar el valor solicitado.')).toBeInTheDocument();
@@ -407,19 +408,40 @@ describe('AppRoutes', () => {
     vi.mocked(portalService.currentPortalUser).mockResolvedValue({
       id: 'associate-user', email: 'associate@fonasin.test', roles: ['associate'], must_change_password: false,
     });
-    vi.mocked(portalService.fetchPortalVoluntarySavingsRequests).mockResolvedValue([{
+    vi.mocked(portalService.fetchPortalVoluntarySavingsRequests).mockResolvedValue({ data: [{
       id: 'pending-request', monthly_amount: '150000.00', status: 'submitted',
       submitted_at: '2026-09-23T20:00:00Z', reviewed_at: null, review_notes: null,
       links: {
         payroll_authorization_preview: '/generated-preview', payroll_authorization_download: '/generated-download',
         signed_authorization_preview: '/signed-preview', signed_authorization_download: '/signed-download',
       },
-    }]);
+    }], pagination: { page: 1, has_more: false } });
     renderRoute('/portal-asociado?intent=ahorro-voluntario');
     expect(await screen.findByRole('link', { name: /ver libranza firmada/i })).toHaveAttribute('href', '/signed-preview');
     expect(screen.getByRole('link', { name: /descargar libranza/i })).toHaveAttribute('href', '/signed-download');
     expect(screen.getByLabelText(/valor mensual/i)).toBeDisabled();
     expect(screen.getByRole('button', { name: /^enviar solicitud$/i })).toBeDisabled();
+  });
+
+  it('lets an associate inspect older voluntary savings requests', async () => {
+    const user = userEvent.setup();
+    vi.mocked(portalService.currentPortalUser).mockResolvedValue({
+      id: 'associate-user', email: 'associate@fonasin.test', roles: ['associate'], must_change_password: false,
+    });
+    const request = (id: string): portalService.PortalVoluntarySavingsRequest => ({
+      id, monthly_amount: '100000.00', status: 'approved', submitted_at: '2026-09-23T20:00:00Z',
+      reviewed_at: null, review_notes: null,
+    });
+    vi.mocked(portalService.fetchPortalVoluntarySavingsRequests).mockImplementation(async (page = 1) =>
+      page === 1
+        ? { data: [request('recent')], pagination: { page: 1, has_more: true } }
+        : { data: [request('older')], pagination: { page: 2, has_more: false } });
+    renderRoute('/portal-asociado?intent=ahorro-voluntario');
+    expect(await screen.findByText('Referencia: recent')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ver solicitudes anteriores' }));
+    expect(await screen.findByText('Referencia: older')).toBeInTheDocument();
+    expect(portalService.fetchPortalVoluntarySavingsRequests).toHaveBeenCalledWith(2);
+    expect(screen.queryByRole('button', { name: 'Ver solicitudes anteriores' })).not.toBeInTheDocument();
   });
 
   it('separates credits, contributions and both savings in the account statement', async () => {
@@ -431,14 +453,14 @@ describe('AppRoutes', () => {
       requires_profile_completion: false,
     });
     vi.mocked(portalService.fetchPortalCredits).mockResolvedValue([]);
-    vi.mocked(portalService.fetchPortalVoluntarySavingsRequests).mockResolvedValue([{
+    vi.mocked(portalService.fetchPortalVoluntarySavingsRequests).mockResolvedValue({ data: [{
       id: 'savings-request-1',
       monthly_amount: '100000.00',
       status: 'approved',
       submitted_at: '2026-09-23T20:06:40Z',
       reviewed_at: '2026-09-24T01:28:41Z',
       review_notes: null,
-    }]);
+    }], pagination: { page: 1, has_more: false } });
     vi.mocked(portalService.fetchPortalContributions).mockResolvedValue({
       state: 'available',
       account: {
@@ -458,7 +480,7 @@ describe('AppRoutes', () => {
     renderRoute('/portal-asociado');
 
     expect(await screen.findByRole('heading', { level: 2, name: /creditos vigentes/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: /^aportes$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /^aporte mensual$/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: /^ahorro permanente$/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: /^ahorro voluntario$/i })).toBeInTheDocument();
     expect(screen.getByText(/solicitud: aprobada/i)).toBeInTheDocument();

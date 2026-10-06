@@ -472,7 +472,7 @@ Genera un token temporal hasheado y envia un unico correo al asociado selecciona
 ## Solicitud de ahorro voluntario
 
 ```text
-GET  /portal/voluntary-savings-requests
+GET  /portal/voluntary-savings-requests?page=1
 POST /portal/voluntary-savings-requests
 GET  /portal/voluntary-savings-requests/{request}/payroll-authorization/preview
 GET  /portal/voluntary-savings-requests/{request}/payroll-authorization/download
@@ -480,7 +480,7 @@ GET  /portal/voluntary-savings-requests/{request}/signed-authorization/preview
 GET  /portal/voluntary-savings-requests/{request}/signed-authorization/download
 ```
 
-Requiere sesion de asociado y contrasena definitiva. El `POST` recibe `monthly_amount` y `accept_terms`; el asociado se resuelve exclusivamente desde la sesion. La autorizacion se genera como PDF privado y una solicitud `submitted` impide crear otra pendiente.
+Requiere sesion de asociado y contrasena definitiva. El `GET` devuelve `data` con hasta 12 solicitudes de ese asociado y `pagination: { page, has_more }`; `page` es entero positivo y permite consultar el historial completo sin exponer registros ajenos. El `POST` recibe `monthly_amount` y `accept_terms`; el asociado se resuelve exclusivamente desde la sesion. La autorizacion se genera como PDF privado y una solicitud `submitted` impide crear otra pendiente.
 
 Cada registro incluye `links` con preview/download de la generada y, solo cuando
 existe, de la firmada. Ningun enlace expone storage. La policy bloquea otro
@@ -498,4 +498,4 @@ GET   /admin/voluntary-savings-requests/{request}/signed-authorization/preview
 GET   /admin/voluntary-savings-requests/{request}/signed-authorization/download
 ```
 
-Administradores y revisores consultan la bandeja; solo administradores pueden cambiar el estado a `approved` o `rejected`. Todos los accesos y cambios dejan auditoria en el modulo `contributions`.
+Administradores y revisores consultan la bandeja; solo administradores pueden rechazar o registrar revision favorable. Esta ultima deja la solicitud esperando autorizacion empresarial; la aprobacion definitiva ocurre al cargar el PDF que el administrador declara firmado por la empresa. El sistema no valida criptograficamente la firma. Todos los accesos y cambios dejan auditoria en el modulo `contributions`.

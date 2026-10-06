@@ -289,10 +289,13 @@ export async function startPortalAffiliationUpdate(): Promise<PortalAffiliationU
   return response.data;
 }
 
-export async function fetchPortalVoluntarySavingsRequests(): Promise<PortalVoluntarySavingsRequest[]> {
-  const response = await requestJson<{ data: PortalVoluntarySavingsRequest[] }>('/portal/voluntary-savings-requests');
+export type PortalVoluntarySavingsPage = {
+  data: PortalVoluntarySavingsRequest[];
+  pagination: { page: number; has_more: boolean };
+};
 
-  return response.data;
+export async function fetchPortalVoluntarySavingsRequests(page = 1): Promise<PortalVoluntarySavingsPage> {
+  return requestJson<PortalVoluntarySavingsPage>(`/portal/voluntary-savings-requests?page=${page}`);
 }
 
 export async function submitPortalVoluntarySavingsRequest(monthlyAmount: string): Promise<PortalVoluntarySavingsRequest> {

@@ -78,6 +78,28 @@ class PublicContentHttpTest extends TestCase
         $this->assertSame(2, AuditEvent::query()->where('action', 'content.media_uploaded')->where('subject_id', $id)->count());
     }
 
+    public function test_content_media_rejects_disallowed_type_and_oversized_file_without_publishing(): void
+    {
+        Storage::fake('local');
+        $admin = $this->actor('admin');
+        $id = $this->actingAs($admin)->postJson('/admin/content', [
+            'kind' => 'news', 'title' => 'Comunicado sin medios',
+        ])->assertCreated()->json('data.id');
+
+        foreach ([
+            UploadedFile::fake()->create('imagen.svg', 20, 'image/svg+xml'),
+            UploadedFile::fake()->create('imagen.png', 10241, 'image/png'),
+        ] as $file) {
+            $this->actingAs($admin)->post("/admin/content/{$id}/media", [
+                'kind' => 'image', 'file' => $file,
+            ], ['Accept' => 'application/json'])->assertUnprocessable()->assertJsonValidationErrors('file');
+        }
+
+        $item = PublicContentItem::query()->findOrFail($id);
+        $this->assertNull($item->image_storage_key);
+        $this->assertFalse($item->published);
+    }
+
     public function test_settings_validate_social_hosts_and_publish_email_without_build(): void
     {
         $admin = $this->actor('admin');

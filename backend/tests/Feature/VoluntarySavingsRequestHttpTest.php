@@ -80,6 +80,32 @@ class VoluntarySavingsRequestHttpTest extends TestCase
         ]);
     }
 
+    public function test_associate_can_page_through_all_historical_requests_without_exposing_another_associate(): void
+    {
+        [$owner, $associate] = $this->associateUser();
+        [$other] = $this->associateUser('other-history@example.test');
+        for ($index = 0; $index < 13; $index++) {
+            VoluntarySavingsRequest::query()->forceCreate([
+                'associate_id' => $associate->id,
+                'monthly_amount' => '100000.00',
+                'status' => 'approved',
+                'authorization_storage_key' => 'test/private/'.$index.'.pdf',
+                'submitted_at' => now()->subDays(13 - $index),
+            ]);
+        }
+
+        $this->actingAs($owner)->getJson('/portal/voluntary-savings-requests?page=1')
+            ->assertOk()->assertJsonCount(12, 'data')
+            ->assertJsonPath('pagination.has_more', true);
+        $this->actingAs($owner)->getJson('/portal/voluntary-savings-requests?page=2')
+            ->assertOk()->assertJsonCount(1, 'data')
+            ->assertJsonPath('pagination.has_more', false);
+        $this->actingAs($other)->getJson('/portal/voluntary-savings-requests?page=1')
+            ->assertOk()->assertJsonCount(0, 'data');
+        $this->actingAs($owner)->getJson('/portal/voluntary-savings-requests?page=0')
+            ->assertUnprocessable();
+    }
+
     public function test_associate_without_enabled_and_complete_profile_cannot_generate_payroll_authorization(): void
     {
         [$user] = $this->associateUser(withProfile: false);
@@ -355,7 +381,9 @@ class VoluntarySavingsRequestHttpTest extends TestCase
                 $this->actingAs($owner->fresh());
             }
         }
-        $this->actingAs($other)->getJson('/portal/voluntary-savings-requests')->assertExactJson(['data' => []]);
+        $this->actingAs($other)->getJson('/portal/voluntary-savings-requests')->assertExactJson([
+            'data' => [], 'pagination' => ['page' => 1, 'has_more' => false],
+        ]);
     }
 
     public function test_rejection_is_immutable_and_retry_creates_a_new_request(): void

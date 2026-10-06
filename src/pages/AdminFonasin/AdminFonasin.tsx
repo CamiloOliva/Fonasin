@@ -2253,7 +2253,7 @@ function ContributionsPanel({
 
             <div className="grid gap-3 py-5 sm:grid-cols-3">
               <BalanceSummary label="Ahorro permanente" value={selectedAccount.permanent_savings_balance} />
-              <BalanceSummary label="Aportes" value={selectedAccount.contribution_balance} />
+              <BalanceSummary label="Aporte Mensual" value={selectedAccount.contribution_balance} />
               <BalanceSummary label="Ahorro voluntario" value={selectedAccount.voluntary_savings_balance} />
               <BalanceSummary label="Saldo total" value={selectedAccount.total_balance} emphasized />
             </div>
@@ -2550,7 +2550,7 @@ function ImportHistoryPanel({
             <option value="">Todas</option>
             <option value="associates">Asociados</option>
             <option value="credits">Creditos</option>
-            <option value="contributions">Aportes</option>
+            <option value="contributions">Aporte Mensual</option>
             <option value="voluntary_savings">Ahorro voluntario</option>
             <option value="permanent_savings">Ahorro permanente</option>
           </select>

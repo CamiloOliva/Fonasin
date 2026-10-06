@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Application\Contributions\Contracts\RendersVoluntarySavingsPayrollAuthorization;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationPurpose;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
@@ -215,6 +216,58 @@ class AssociateImportOnboardingHttpTest extends TestCase
         $this->actingAs($user)
             ->getJson('/auth/user')
             ->assertJsonPath('data.requires_profile_completion', false);
+    }
+
+    public function test_imported_legacy_associate_can_request_savings_after_form_only_profile_is_enabled(): void
+    {
+        $associate = $this->importedAssociate();
+        $user = $associate->user;
+        $user->forceFill(['must_change_password' => false])->save();
+        $admin = $this->userWithRole('admin', 'savings-admin@example.test');
+        $cipher = app(EncryptsSensitiveData::class);
+        $application = $associate->affiliationApplications()->create([
+            'purpose' => AffiliationApplicationPurpose::ProfileCompletion->value,
+            'status' => AffiliationApplicationStatus::Approved->value,
+            'current_step' => 'summary',
+            'submitted_at' => now(),
+        ]);
+        foreach ([
+            'personal' => [
+                'firstName' => 'Persona', 'lastName' => 'Asociada',
+                'documentType' => 'CC', 'documentNumber' => '1099001122',
+                'issuePlace' => 'Bucaramanga', 'mobile' => '3000000000', 'email' => $user->email,
+            ],
+            'employment' => ['employer' => 'Empresa de prueba', 'monthlySalary' => 2500000],
+        ] as $section => $data) {
+            ApplicationSection::query()->forceCreate([
+                'application_id' => $application->id,
+                'section' => $section,
+                'schema_version' => 1,
+                'data_encrypted' => $cipher->encryptArray($data),
+                'completed_at' => now(),
+            ]);
+        }
+        $this->app->instance(RendersVoluntarySavingsPayrollAuthorization::class, new class implements RendersVoluntarySavingsPayrollAuthorization
+        {
+            public function render(array $data): string
+            {
+                return '%PDF-1.4 legacy savings authorization';
+            }
+        });
+
+        $this->actingAs($admin)->postJson("/admin/affiliation-applications/{$application->id}/enable")
+            ->assertOk();
+        $this->actingAs($user)->getJson('/auth/user')
+            ->assertJsonPath('data.requires_profile_completion', false);
+        $this->actingAs($user)->postJson('/portal/voluntary-savings-requests', [
+            'monthly_amount' => '100000', 'accept_terms' => true,
+        ])->assertCreated()->assertJsonPath('data.monthly_amount', '100000.00');
+
+        $this->assertDatabaseCount('voluntary_savings_requests', 1);
+        $this->assertDatabaseMissing('application_documents', [
+            'application_id' => $application->id,
+            'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
+        ]);
     }
 
     private function importedAssociate(): Associate

@@ -47,7 +47,7 @@ El repositorio cPanel debe permanecer asociado a `main`. No configurar `develop`
 
 ## Publicacion del frontend
 
-Como cPanel no dispone de Node.js para la cuenta, el bundle Vite se compila fuera del servidor. El workflow `quality-gates.yml` puede compilar `main` y copiar solo `dist/` al document root del dominio principal cuando `CPANEL_DEPLOY_ENABLED=true` y estan configurados los secretos de cPanel. No actualiza el Backend Laravel: esa publicacion sigue un procedimiento controlado por separado.
+Como cPanel no dispone de Node.js para la cuenta, el bundle Vite se compila fuera del servidor. El workflow `quality-gates.yml` puede compilar `main` y copiar solo `dist/` al document root del dominio principal cuando `CPANEL_DEPLOY_ENABLED=true` y estan configurados los secretos de cPanel. No actualiza el Backend Laravel: esa publicacion sigue un procedimiento controlado por separado. **Antes de copiar `dist/`**, el job SSH exige que `/home/fonasinc/fonasin-api` este exactamente en el SHA de `main`, sin cambios locales en codigo/configuracion del backend, y que `php artisan release:verify` confirme cero migraciones pendientes. Si falla, la web existente permanece intacta. Tras actualizar y migrar el backend mediante el procedimiento autorizado, se debe reejecutar el job fallido para ese mismo SHA; nunca desactivar el control para forzar el frontend.
 
 No confirmar `dist/` en Git como solucion permanente y no copiar `node_modules` al hosting.
 

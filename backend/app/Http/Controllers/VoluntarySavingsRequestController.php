@@ -27,7 +27,10 @@ class VoluntarySavingsRequestController extends Controller
     {
         $associate = $request->user()->associate;
         abort_unless($associate && $associate->status === 'active', 403);
-        $requests = $associate->voluntarySavingsRequests()->latest('submitted_at')->limit(12)->get();
+        $parameters = $request->validate(['page' => ['sometimes', 'integer', 'min:1']]);
+        $page = (int) ($parameters['page'] ?? 1);
+        $requests = $associate->voluntarySavingsRequests()
+            ->latest('submitted_at')->orderByDesc('id')->paginate(12, ['*'], 'page', $page);
 
         ($recordAuditEvent)(
             module: AuditModule::Contributions,
@@ -37,10 +40,16 @@ class VoluntarySavingsRequestController extends Controller
             actor: $request->user(),
             actorType: AuditActorType::User,
             ipHash: $this->ipHash($request),
-            metadata: ['scope' => 'portal', 'count' => $requests->count()],
+            metadata: ['scope' => 'portal', 'count' => $requests->count(), 'page' => $page],
         );
 
-        return response()->json(['data' => $requests->map(fn (VoluntarySavingsRequest $item): array => $this->payload($item))->values()]);
+        return response()->json([
+            'data' => $requests->getCollection()->map(fn (VoluntarySavingsRequest $item): array => $this->payload($item))->values(),
+            'pagination' => [
+                'page' => $requests->currentPage(),
+                'has_more' => $requests->hasMorePages(),
+            ],
+        ]);
     }
 
     public function store(StoreVoluntarySavingsRequest $request, SubmitVoluntarySavingsRequest $submit): JsonResponse

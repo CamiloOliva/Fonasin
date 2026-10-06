@@ -301,6 +301,28 @@ class AssociateAdminHttpTest extends TestCase
         ]);
     }
 
+    public function test_legacy_identity_support_rejects_disallowed_type_and_oversized_file(): void
+    {
+        Storage::fake('local');
+        $admin = $this->userWithRole('admin');
+        $id = $this->actingAs($admin)->postJson('/admin/associates', [
+            'document_type' => 'CC', 'document_number' => '783456124',
+            'full_name' => 'Asociada de Prueba', 'email' => 'cedula-prueba@fonasin.test',
+        ])->assertCreated()->json('data.id');
+
+        foreach ([
+            UploadedFile::fake()->create('cedula.svg', 20, 'image/svg+xml'),
+            UploadedFile::fake()->create('cedula.pdf', 5121, 'application/pdf'),
+        ] as $file) {
+            $this->actingAs($admin)->post("/admin/associates/{$id}/identity-support", [
+                'file' => $file,
+            ], ['Accept' => 'application/json'])->assertUnprocessable()->assertJsonValidationErrors('file');
+        }
+
+        $this->assertNull(Associate::query()->findOrFail($id)->identity_support_storage_key);
+        $this->assertSame([], Storage::disk('local')->allFiles('associates'));
+    }
+
     public function test_manual_legacy_creation_cannot_reuse_backoffice_identity(): void
     {
         $admin = $this->userWithRole('admin');

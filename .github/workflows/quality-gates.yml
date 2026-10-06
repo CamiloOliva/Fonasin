@@ -269,6 +269,25 @@ jobs:
         with:
           name: fonasin-dist-${{ github.sha }}
 
+      - name: Verify production backend release and database schema
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          RELEASE_ID: ${{ github.sha }}
+        with:
+          host: ${{ secrets.CPANEL_SSH_HOST }}
+          port: ${{ secrets.CPANEL_SSH_PORT }}
+          username: ${{ secrets.CPANEL_SSH_USER }}
+          key: ${{ secrets.CPANEL_SSH_KEY }}
+          envs: RELEASE_ID
+          script: |
+            set -eu
+            repo="$HOME/fonasin-api"
+            test -f "$repo/backend/artisan"
+            test "$(git -C "$repo" rev-parse HEAD)" = "$RELEASE_ID"
+            git -C "$repo" diff --quiet HEAD -- backend/app backend/database backend/routes backend/bootstrap backend/config backend/composer.json backend/composer.lock
+            cd "$repo/backend"
+            php artisan release:verify --no-interaction
+
       - name: Prepare remote release directory
         uses: appleboy/ssh-action@v1.2.0
         env:

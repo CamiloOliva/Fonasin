@@ -62,7 +62,7 @@ test('otrosi: real browser, sessions, XLSX, MariaDB, decisions and private PDF',
       contributions.data.account.contribution_balance, contributions.data.account.permanent_savings_balance,
       contributions.data.account.voluntary_savings_balance, contributions.data.account.total_balance,
     ], ['400000.00', '300000.00', '150000.00', '850000.00']);
-    for (const title of ['Aportes', 'Ahorro permanente', 'Ahorro voluntario']) await owner.page.getByRole('heading', { name: title, exact: true }).waitFor();
+    for (const title of ['Aporte Mensual', 'Ahorro permanente', 'Ahorro voluntario']) await owner.page.getByRole('heading', { name: title, exact: true }).waitFor();
     assert.equal(await owner.page.getByText('septiembre de 2026', { exact: true }).count(), 3);
     assert.equal(await owner.page.getByText('30/09/2026', { exact: true }).count(), 3);
     await owner.page.screenshot({ path: path.join(artifacts, 'associate-statement.png'), fullPage: true });

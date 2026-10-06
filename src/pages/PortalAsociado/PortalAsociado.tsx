@@ -219,6 +219,8 @@ export default function PortalAsociado() {
   const [contributions, setContributions] = useState<PortalContributions | null>(null);
   const [affiliation, setAffiliation] = useState<PortalAffiliation | null>(null);
   const [savingsRequests, setSavingsRequests] = useState<PortalVoluntarySavingsRequest[]>([]);
+  const [nextSavingsPage, setNextSavingsPage] = useState<number | null>(null);
+  const [loadingMoreSavings, setLoadingMoreSavings] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
@@ -295,12 +297,33 @@ export default function PortalAsociado() {
     setError(null);
 
     try {
-      setSavingsRequests(await fetchPortalVoluntarySavingsRequests());
+      const result = await fetchPortalVoluntarySavingsRequests();
+      setSavingsRequests(result.data);
+      setNextSavingsPage(result.pagination.has_more ? 2 : null);
       setSavingsRequestState('ready');
     } catch (caught) {
       setSavingsRequests([]);
+      setNextSavingsPage(null);
       setSavingsRequestState(privateDataErrorState(caught));
       setError(caught instanceof Error ? caught.message : 'No fue posible cargar tus solicitudes de ahorro voluntario.');
+    }
+  }
+
+  async function loadMoreSavingsRequests() {
+    if (!nextSavingsPage || loadingMoreSavings) return;
+    setLoadingMoreSavings(true);
+    setError(null);
+    try {
+      const result = await fetchPortalVoluntarySavingsRequests(nextSavingsPage);
+      setSavingsRequests((current) => {
+        const existing = new Set(current.map((request) => request.id));
+        return [...current, ...result.data.filter((request) => !existing.has(request.id))];
+      });
+      setNextSavingsPage(result.pagination.has_more ? nextSavingsPage + 1 : null);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible cargar más solicitudes.');
+    } finally {
+      setLoadingMoreSavings(false);
     }
   }
 
@@ -791,7 +814,7 @@ export default function PortalAsociado() {
               {contributionsState === 'ready' && contributions?.state === 'available' && contributions.account ? (
                 <div className="space-y-5">
                   <ContributionStatementSection
-                    title="Aportes"
+                    title="Aporte Mensual"
                     balance={contributions.account.contribution_balance}
                     movements={contributions.movements.filter((movement) => movement.movement_type === 'contribution')}
                   />
@@ -938,6 +961,16 @@ export default function PortalAsociado() {
                       </article>
                     ))}
                   </div>
+                  {nextSavingsPage ? (
+                    <button
+                      type="button"
+                      onClick={loadMoreSavingsRequests}
+                      disabled={loadingMoreSavings}
+                      className="mt-4 rounded-xl border border-fonasin-green/20 bg-fonasin-surface px-4 py-2.5 text-sm font-bold text-fonasin-green transition hover:bg-fonasin-lime/20 disabled:opacity-60 focus-ring"
+                    >
+                      {loadingMoreSavings ? 'Cargando...' : 'Ver solicitudes anteriores'}
+                    </button>
+                  ) : null}
                 </div>
               </div>
             </div>
