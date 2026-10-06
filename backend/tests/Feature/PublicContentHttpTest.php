@@ -138,4 +138,31 @@ class PublicContentHttpTest extends TestCase
         ])->assertUnprocessable();
         $this->getJson('/public/content')->assertJsonMissing(['id' => $bannerId]);
     }
+
+    public function test_legacy_agreement_keeps_stable_detail_route_after_edit_and_disappears_when_unpublished(): void
+    {
+        $agreement = PublicContentItem::query()->forceCreate([
+            'kind' => 'agreement', 'title' => 'Sanitas', 'summary' => 'Condiciones originales',
+            'category' => 'Salud y bienestar', 'static_image_path' => '/images/convenios/sanitas.png',
+            'published' => true, 'published_at' => now(),
+        ]);
+        $this->getJson('/public/content')->assertJsonFragment([
+            'id' => $agreement->id, 'legacy_detail_slug' => 'sanitas', 'legacy_detail_modified' => false,
+        ]);
+
+        $admin = $this->actor('admin');
+        $this->actingAs($admin)->patchJson("/admin/content/{$agreement->id}", [
+            'title' => 'Nuevo nombre Sanitas', 'summary' => 'Condiciones vigentes',
+        ])->assertOk()->assertJsonPath('data.legacy_detail_slug', 'sanitas')
+            ->assertJsonPath('data.legacy_detail_modified', true);
+        $this->getJson('/public/content')->assertJsonFragment([
+            'id' => $agreement->id, 'title' => 'Nuevo nombre Sanitas',
+            'legacy_detail_slug' => 'sanitas', 'legacy_detail_modified' => true,
+        ]);
+
+        $this->actingAs($admin)->patchJson("/admin/content/{$agreement->id}", [
+            'published' => false,
+        ])->assertOk();
+        $this->getJson('/public/content')->assertJsonMissing(['id' => $agreement->id]);
+    }
 }

@@ -12,6 +12,8 @@ export type PublicContentItem = {
   published_at: string | null;
   image_url: string | null;
   document_url: string | null;
+  legacy_detail_slug?: string | null;
+  legacy_detail_modified?: boolean;
 };
 
 export type PublicSiteSettings = {

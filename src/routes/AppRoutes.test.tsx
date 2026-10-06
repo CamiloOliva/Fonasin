@@ -107,6 +107,22 @@ describe('AppRoutes', () => {
     vi.clearAllMocks();
     vi.mocked(portalService.currentPortalUser).mockRejectedValue(new Error('guest'));
     vi.mocked(portalService.fetchPortalVoluntarySavingsRequests).mockResolvedValue({ data: [], pagination: { page: 1, has_more: false } });
+    const agreements = [
+      ['manejar', 'Manejar', '/images/convenios/manejar.png'],
+      ['uma-ips', 'UMA IPS', '/images/convenios/uma-ips.png'],
+      ['sanitas', 'Sanitas', '/images/convenios/sanitas.png'],
+      ['coorserpark', 'Coorserpark', '/images/convenios/coorserpark.png'],
+      ['caribbean-sol-y-mar', 'Caribbean Sol y Mar', '/images/convenios/caribbean-sol-mar-logo.jpg'],
+      ['luz-marina-vargas', 'Luz Marina Vargas', '/images/convenios/luz-marina-vargas-logo.jpg'],
+    ].map(([slug, title, image_url]) => ({
+      id: slug, kind: 'agreement' as const, title, summary: 'Descripción vigente', category: 'Turismo',
+      link_url: null, sort_order: 0, published: true, published_at: null, image_url,
+      document_url: null, legacy_detail_slug: slug, legacy_detail_modified: false,
+    }));
+    vi.mocked(publicContentService.fetchPublicContent).mockResolvedValue({
+      data: agreements,
+      settings: { contact_email: 'fonasin.bucaramanga@fonasin.com', facebook_url: null, instagram_url: null, youtube_url: null },
+    });
   });
 
   it('offers the contracted public news and social balance routes without inventing publications', async () => {
@@ -668,36 +684,36 @@ describe('AppRoutes', () => {
     expect(screen.getByRole('button', { name: /enviar enlace temporal/i })).toBeInTheDocument();
   });
 
-  it('renders the Manejar detail route', () => {
+  it('renders the Manejar detail route', async () => {
     renderRoute('/convenios/manejar');
 
-    expect(screen.getByRole('heading', { name: /protección vial, seguros y/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /protección vial, seguros y/i })).toBeInTheDocument();
   });
 
-  it('renders the UMA IPS detail route', () => {
+  it('renders the UMA IPS detail route', async () => {
     renderRoute('/convenios/uma-ips');
 
-    expect(screen.getByRole('heading', { name: /medicina integral/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /medicina integral/i })).toBeInTheDocument();
   });
 
-  it('muestra las condiciones actualizadas del convenio Sanitas', () => {
+  it('muestra las condiciones actualizadas del convenio Sanitas', async () => {
     renderRoute('/convenios/sanitas');
 
-    expect(screen.getByRole('heading', { name: /12 especialidades y citas en máximo 5 días/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /12 especialidades y citas en máximo 5 días/i })).toBeInTheDocument();
     expect(screen.getByText(/no tenemos en cuenta preexistencias médicas/i)).toBeInTheDocument();
     expect(screen.getByText(/régimen contributivo de EPS Sanitas/i)).toBeInTheDocument();
   });
 
-  it('muestra la tarifa actualizada del convenio Coorserpark', () => {
+  it('muestra la tarifa actualizada del convenio Coorserpark', async () => {
     renderRoute('/convenios/coorserpark');
 
-    expect(screen.getByText(/\$14\.050/)).toBeInTheDocument();
+    expect(await screen.findByText(/\$14\.050/)).toBeInTheDocument();
   });
 
-  it('muestra los contactos confirmados de Caribbean Sol y Mar', () => {
+  it('muestra los contactos confirmados de Caribbean Sol y Mar', async () => {
     renderRoute('/convenios/caribbean-sol-y-mar');
 
-    expect(screen.getByRole('heading', { level: 1, name: /caribbean sol y mar/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: /caribbean sol y mar/i })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /logo de caribbean sol y mar/i })).toHaveAttribute('src', '/images/convenios/caribbean-sol-mar-logo.jpg');
     expect(screen.getByRole('heading', { level: 2, name: /punta cana/i })).toBeInTheDocument();
     expect(screen.getByText(/salida desde bucaramanga/i)).toBeInTheDocument();
@@ -705,13 +721,58 @@ describe('AppRoutes', () => {
     expect(screen.getByRole('link', { name: /instagram/i })).toHaveAttribute('href', 'https://www.instagram.com/caribbeansolymar110');
   });
 
-  it('muestra los contactos confirmados de Luz Marina Vargas', () => {
+  it('muestra los contactos confirmados de Luz Marina Vargas', async () => {
     renderRoute('/convenios/luz-marina-vargas');
 
-    expect(screen.getByRole('heading', { level: 1, name: /luz marina vargas/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: /luz marina vargas/i })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /logo de luz marina vargas/i })).toHaveAttribute('src', '/images/convenios/luz-marina-vargas-logo.jpg');
     expect(screen.getByRole('link', { name: /lumavapa@hotmail.com/i })).toHaveAttribute('href', 'mailto:lumavapa@hotmail.com');
     expect(screen.getByRole('link', { name: /facebook/i })).toHaveAttribute('href', expect.stringContaining('61569011393925'));
+  });
+
+  it('keeps the agreement route stable after an edit and never shows stale static terms', async () => {
+    const edited: publicContentService.PublicContentItem = {
+      id: 'sanitas', kind: 'agreement', title: 'Salud Renovada', summary: 'Condiciones actualizadas por FONASIN',
+      category: 'Salud y bienestar', link_url: null, sort_order: 0, published: true, published_at: null,
+      image_url: '/images/convenios/sanitas.png', document_url: null,
+      legacy_detail_slug: 'sanitas', legacy_detail_modified: true,
+    };
+    vi.mocked(publicContentService.fetchPublicContent).mockResolvedValue({
+      data: [edited], settings: { contact_email: 'fonasin.bucaramanga@fonasin.com', facebook_url: null, instagram_url: null, youtube_url: null },
+    });
+    const listing = renderRoute('/convenios');
+    expect(await screen.findByRole('link', { name: /salud renovada/i })).toHaveAttribute('href', '/convenios/sanitas');
+    listing.unmount();
+    renderRoute('/convenios/sanitas');
+    expect(await screen.findByRole('heading', { name: 'Salud Renovada' })).toBeInTheDocument();
+    expect(screen.getByText('Condiciones actualizadas por FONASIN')).toBeInTheDocument();
+    expect(screen.queryByText(/12 especialidades y citas en máximo 5 días/i)).not.toBeInTheDocument();
+  });
+
+  it('does not expose a withdrawn agreement through its old direct route', async () => {
+    vi.mocked(publicContentService.fetchPublicContent).mockResolvedValue({
+      data: [], settings: { contact_email: 'fonasin.bucaramanga@fonasin.com', facebook_url: null, instagram_url: null, youtube_url: null },
+    });
+    renderRoute('/convenios/sanitas');
+    expect(await screen.findByRole('heading', { name: 'Convenio no disponible' })).toBeInTheDocument();
+    expect(screen.queryByText(/12 especialidades y citas en máximo 5 días/i)).not.toBeInTheDocument();
+  });
+
+  it('provides a stable internal detail route for a new agreement without an external link', async () => {
+    const newAgreement: publicContentService.PublicContentItem = {
+      id: 'new-agreement-id', kind: 'agreement', title: 'Nuevo aliado', summary: 'Beneficio confirmado',
+      category: 'Bienestar', link_url: null, sort_order: 0, published: true, published_at: null,
+      image_url: null, document_url: null, legacy_detail_slug: null, legacy_detail_modified: true,
+    };
+    vi.mocked(publicContentService.fetchPublicContent).mockResolvedValue({
+      data: [newAgreement], settings: { contact_email: 'fonasin.bucaramanga@fonasin.com', facebook_url: null, instagram_url: null, youtube_url: null },
+    });
+    const listing = renderRoute('/convenios');
+    expect(await screen.findByRole('link', { name: /nuevo aliado/i })).toHaveAttribute('href', '/convenios/new-agreement-id');
+    listing.unmount();
+    renderRoute('/convenios/new-agreement-id');
+    expect(await screen.findByRole('heading', { name: 'Nuevo aliado' })).toBeInTheDocument();
+    expect(screen.getByText('Beneficio confirmado')).toBeInTheDocument();
   });
 
   it('falls back to the home page for an unknown route', () => {

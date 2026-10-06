@@ -9,15 +9,7 @@ import SimuladorFonasin from "../modules/credits/pages/SimuladorFonasin.jsx";
 import Afiliacion from "../pages/Afiliacion/Afiliacion";
 import AdminFonasin from "../pages/AdminFonasin/AdminFonasin";
 import Convenios from "../pages/Convenios/Convenios";
-import ConvenioEmi from "../modules/convenios/ConvenioEmi.jsx";
-import ConvenioEmermedica from "../modules/convenios/ConvenioEmermedica.jsx";
-import ConvenioUmaIps from "../modules/convenios/ConvenioUmaIps.jsx";
-import ConvenioGrupoManejar from "../modules/convenios/ConvenioGrupoManejar.jsx";
-import ConvenioPractiCar from "../modules/convenios/ConvenioPractiCar.jsx";
-import ConvenioLosOlivos from "../modules/convenios/ConvenioLosOlivos.jsx";
-import ConvenioSanitas from "../modules/convenios/ConvenioSanitas.jsx";
-import ConvenioCapillasDeLaFe from "../modules/convenios/ConvenioCapillasDeLaFe.jsx";
-import { ConvenioCaribbean, ConvenioLuzMarina } from "../modules/convenios/ConveniosTurismo";
+import ManagedAgreementDetail from "../pages/Convenios/ManagedAgreementDetail";
 import FPQRS from "../pages/FPQRS/FPQRS";
 import Home from "../pages/Home/Home";
 import MiFondo from "../pages/MiFondo/MiFondo";
@@ -48,27 +40,7 @@ export default function AppRoutes() {
       <Route path="/convenios" element={<Convenios />} />{" "}
       <Route path="/noticias" element={<Noticias />} />{" "}
       <Route path="/balance-social" element={<BalanceSocial />} />{" "}
-      <Route path="/convenios/emi" element={<ConvenioEmi />} />{" "}
-      <Route path="/convenios/emermedica" element={<ConvenioEmermedica />} />{" "}
-      <Route path="/convenios/uma-ips" element={<ConvenioUmaIps />} />{" "}
-      <Route path="/convenios/manejar" element={<ConvenioGrupoManejar />} />{" "}
-      <Route path="/convenios/practicar" element={<ConvenioPractiCar />} />{" "}
-      <Route path="/convenios/los-olivos" element={<ConvenioLosOlivos />} />{" "}
-      <Route path="/convenios/sanitas" element={<ConvenioSanitas />} />{" "}
-      <Route
-        path="/convenios/coorserpark"
-        element={<ConvenioCapillasDeLaFe />}
-      />{" "}
-      <Route
-        path="/convenios/cooserpark"
-        element={<ConvenioCapillasDeLaFe />}
-      />{" "}
-      <Route
-        path="/convenios/capillas-de-la-fe"
-        element={<ConvenioCapillasDeLaFe />}
-      />{" "}
-      <Route path="/convenios/caribbean-sol-y-mar" element={<ConvenioCaribbean />} />{" "}
-      <Route path="/convenios/luz-marina-vargas" element={<ConvenioLuzMarina />} />{" "}
+      <Route path="/convenios/:slug" element={<ManagedAgreementDetail />} />{" "}
       <Route path="/fpqrs" element={<FPQRS />} />{" "}
       <Route path="/afiliacion" element={<Afiliacion />} />{" "}
       <Route path="/portal-asociado/completar-perfil" element={<Afiliacion flow="profile_completion" />} />{" "}

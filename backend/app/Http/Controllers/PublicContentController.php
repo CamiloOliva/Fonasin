@@ -17,6 +17,19 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PublicContentController extends Controller
 {
+    private const LEGACY_AGREEMENT_SLUGS = [
+        '/images/convenios/caribbean-sol-mar-logo.jpg' => 'caribbean-sol-y-mar',
+        '/images/convenios/luz-marina-vargas-logo.jpg' => 'luz-marina-vargas',
+        '/images/convenios/emi.png' => 'emi',
+        '/images/convenios/sanitas.png' => 'sanitas',
+        '/images/convenios/emermedica.png' => 'emermedica',
+        '/images/convenios/uma-ips.png' => 'uma-ips',
+        '/images/convenios/coorserpark.png' => 'coorserpark',
+        '/images/convenios/los-olivos.png' => 'los-olivos',
+        '/images/convenios/manejar.png' => 'manejar',
+        '/images/convenios/practicar.png' => 'practicar',
+    ];
+
     public function index(): JsonResponse
     {
         return response()->json([
@@ -127,6 +140,8 @@ class PublicContentController extends Controller
             'summary' => $item->summary, 'category' => $item->category,
             'link_url' => $item->link_url, 'sort_order' => $item->sort_order,
             'published' => $item->published, 'published_at' => $item->published_at?->toISOString(),
+            'legacy_detail_slug' => self::LEGACY_AGREEMENT_SLUGS[$item->static_image_path] ?? null,
+            'legacy_detail_modified' => $item->updated_by_user_id !== null,
             'image_url' => $item->image_storage_key ? "/public/content/{$item->id}/image" : $item->static_image_path,
             'document_url' => $item->document_storage_key ? "/public/content/{$item->id}/document" : null,
         ];

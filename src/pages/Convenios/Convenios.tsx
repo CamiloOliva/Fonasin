@@ -24,6 +24,7 @@ export default function Convenios() {
       description: item.summary ?? '',
       logo: publicContentMediaUrl(item.image_url) ?? '/images/logo-placeholder.svg',
       website: item.link_url,
+      detailSlug: item.legacy_detail_slug,
     })), [content]);
   const [cat, setCat] = useState<(typeof cats)[number]>('Todos');
   const items = useMemo(
@@ -64,16 +65,16 @@ export default function Convenios() {
         {!loading && !error && items.length === 0 && <p className="mt-9 text-slate-600">No hay convenios publicados en esta categoría.</p>}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-9">
           {items.map((c) => {
-            const isEmi = c.name === 'EMI';
-            const isLosOlivos = c.name === 'Funeraria Los Olivos';
-            const isSanitas = c.name === 'Sanitas';
-            const isEmermedica = c.name === 'Emermédica';
-            const isUmaIps = c.name === 'UMA IPS';
-            const isPracticar = c.name === 'Practicar';
-            const isManejar = c.name === 'Manejar';
-            const isCoorserpark = c.name === 'Coorserpark';
-            const isCaribbean = c.name === 'Caribbean Sol y Mar';
-            const isLuzMarina = c.name === 'Luz Marina Vargas';
+            const isEmi = c.detailSlug === 'emi';
+            const isLosOlivos = c.detailSlug === 'los-olivos';
+            const isSanitas = c.detailSlug === 'sanitas';
+            const isEmermedica = c.detailSlug === 'emermedica';
+            const isUmaIps = c.detailSlug === 'uma-ips';
+            const isPracticar = c.detailSlug === 'practicar';
+            const isManejar = c.detailSlug === 'manejar';
+            const isCoorserpark = c.detailSlug === 'coorserpark';
+            const isCaribbean = c.detailSlug === 'caribbean-sol-y-mar';
+            const isLuzMarina = c.detailSlug === 'luz-marina-vargas';
             const isTourism = isCaribbean || isLuzMarina;
             const isFeatured = isEmi || isEmermedica || isUmaIps || isLosOlivos || isSanitas || isPracticar || isManejar || isCoorserpark || isTourism;
             const card = (
@@ -128,16 +129,14 @@ export default function Convenios() {
 
             return c.website ? (
               <a key={c.id} href={c.website} target="_blank" rel="noopener noreferrer" className="block h-full rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">{card}</a>
-            ) : isFeatured ? (
+            ) : (
               <Link
                 key={c.id}
-                to={isEmi ? '/convenios/emi' : isSanitas ? '/convenios/sanitas' : isEmermedica ? '/convenios/emermedica' : isUmaIps ? '/convenios/uma-ips' : isPracticar ? '/convenios/practicar' : isManejar ? '/convenios/manejar' : isCoorserpark ? '/convenios/coorserpark' : isCaribbean ? '/convenios/caribbean-sol-y-mar' : isLuzMarina ? '/convenios/luz-marina-vargas' : '/convenios/los-olivos'}
+                to={`/convenios/${c.detailSlug ?? c.id}`}
                 className="block h-full rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
               >
                 {card}
               </Link>
-            ) : (
-              <div key={c.id}>{card}</div>
             );
           })}
         </div>
