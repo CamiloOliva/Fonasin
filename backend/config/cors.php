@@ -18,6 +18,7 @@ return [
         'affiliation-applications/*',
         'portal/*',
         'admin/*',
+        'public/*',
         'fpqrs-submissions',
     ],
 

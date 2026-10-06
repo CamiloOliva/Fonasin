@@ -7,6 +7,13 @@ import * as adminAffiliationService from '../services/adminAffiliationService';
 import * as adminContributionService from '../services/adminContributionService';
 import * as adminCreditService from '../services/adminCreditService';
 import * as portalService from '../services/portalService';
+import * as publicContentService from '../services/publicContentService';
+
+vi.mock('../services/publicContentService', () => ({
+  fetchPublicContent: vi.fn().mockResolvedValue({ data: [], settings: { contact_email: 'fonasin.bucaramanga@fonasin.com', facebook_url: null, instagram_url: null, youtube_url: null } }),
+  fetchAdminPublicContent: vi.fn().mockResolvedValue({ data: [], settings: { contact_email: 'fonasin.bucaramanga@fonasin.com', facebook_url: null, instagram_url: null, youtube_url: null } }),
+  publicContentMediaUrl: vi.fn((path: string) => path),
+}));
 
 vi.mock('../components/sections/StatutesBookViewer', () => ({
   default: () => (
@@ -101,15 +108,26 @@ describe('AppRoutes', () => {
     vi.mocked(portalService.currentPortalUser).mockRejectedValue(new Error('guest'));
   });
 
-  it('offers the contracted public news and social balance routes without inventing publications', () => {
+  it('offers the contracted public news and social balance routes without inventing publications', async () => {
     const news = renderRoute('/noticias');
     expect(screen.getByRole('heading', { name: /noticias y comunicados/i })).toBeInTheDocument();
-    expect(screen.getByText(/no ha suministrado publicaciones aprobadas/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no ha suministrado publicaciones aprobadas/i)).toBeInTheDocument();
     news.unmount();
 
     renderRoute('/balance-social');
     expect(screen.getByRole('heading', { name: /balance social/i })).toBeInTheDocument();
-    expect(screen.getByText(/no ha suministrado un informe de balance social aprobado/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no ha suministrado un informe de balance social aprobado/i)).toBeInTheDocument();
+    expect(publicContentService.fetchPublicContent).toHaveBeenCalled();
+  });
+
+  it('abre la administración limitada de contenido para admin', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminAffiliationService.currentAdminUser).mockResolvedValueOnce({ id: 'admin', email: 'admin@fonasin.test', roles: ['admin'], must_change_password: false });
+    renderRoute('/admin-fonasin');
+    await user.click(await screen.findByRole('button', { name: /contenido del sitio/i }));
+    expect(await screen.findByRole('heading', { name: 'Publicaciones' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Nueva' })).toBeInTheDocument();
+    expect(screen.getByDisplayValue('fonasin.bucaramanga@fonasin.com')).toBeInTheDocument();
   });
 
   it('keeps the savings form unavailable until its history is loaded and after a failed refresh', async () => {
@@ -156,19 +174,20 @@ describe('AppRoutes', () => {
     vi.mocked(adminContributionService.reviewAdminVoluntarySavingsRequest).mockImplementationOnce(() => new Promise(resolve => { resolveReview = resolve; }));
     renderRoute('/admin-fonasin');
     await user.click(await screen.findByRole('button', { name: /^aportes y ahorros$/i }));
-    const approve = await screen.findByRole('button', { name: /^aprobar$/i });
+    const approve = await screen.findByRole('button', { name: /^revision favorable$/i });
     await user.dblClick(approve);
     expect(approve).toBeDisabled();
     expect(screen.getByRole('button', { name: /^rechazar$/i })).toBeDisabled();
     expect(adminContributionService.reviewAdminVoluntarySavingsRequest).toHaveBeenCalledTimes(1);
-    const approved = { ...request, status: 'approved' as const };
+    const approved = { ...request, status: 'awaiting_employer_authorization' as const };
     await act(async () => resolveReview(approved));
     const fileInput = screen.getByLabelText('Libranza firmada de Synthetic associate');
     vi.mocked(adminContributionService.uploadSignedVoluntarySavingsAuthorization).mockImplementationOnce(() => new Promise(resolve => { resolveUpload = resolve; }));
+    vi.spyOn(window, 'confirm').mockReturnValueOnce(true);
     await user.upload(fileInput, new File(['%PDF-fixture'], 'signed.pdf', { type: 'application/pdf' }));
     expect(fileInput).toBeDisabled();
     expect(screen.getByRole('status')).toHaveTextContent('Procesando solicitud');
-    await act(async () => resolveUpload({ ...approved, links: { ...request.links, signed_authorization_preview: '/signed-preview' } }));
+    await act(async () => resolveUpload({ ...approved, status: 'approved', links: { ...request.links, signed_authorization_preview: '/signed-preview' } }));
     expect(screen.queryByLabelText('Libranza firmada de Synthetic associate')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /ver firmada/i })).toHaveAttribute('href', '/signed-preview');
   });

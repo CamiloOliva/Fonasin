@@ -12,7 +12,7 @@ FONASIN evoluciona desde un sitio React/Vite hacia una plataforma institucional 
 - administracion interna limitada;
 - MariaDB, documentos privados y trazabilidad.
 
-El alcance vigente no incluye un CMS general, pasarela de pagos, integraciones con nomina/ERP, firma digital certificada, aplicacion movil nativa ni un sistema FPQRS con radicado y seguimiento. No agregar ninguno de estos elementos sin aprobacion escrita y, si aplica, ajuste formal de alcance.
+El alcance vigente no incluye un CMS general, pasarela de pagos, integraciones con nomina/ERP, firma digital certificada, aplicacion movil nativa ni un sistema FPQRS con radicado y seguimiento. FONASIN aprobo el 5 de octubre de 2026 una **administracion limitada** de noticias, balance social, redes, correo, convenios y banners; ver ADR-005. No ampliar esa lista sin aprobacion escrita.
 
 ## 2. Estado actual y transicion
 

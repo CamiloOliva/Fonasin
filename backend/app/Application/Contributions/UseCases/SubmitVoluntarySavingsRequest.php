@@ -38,8 +38,8 @@ class SubmitVoluntarySavingsRequest
                     throw new DomainException('Se requiere un asociado activo para solicitar ahorro voluntario.');
                 }
 
-                if ($associate->voluntarySavingsRequests()->where('status', VoluntarySavingsRequestStatus::Submitted->value)->exists()) {
-                    throw new DomainException('Ya tienes una solicitud de ahorro voluntario pendiente de revision.');
+                if ($associate->voluntarySavingsRequests()->whereNotNull('pending_associate_id')->exists()) {
+                    throw new DomainException('Ya tienes una solicitud de ahorro voluntario pendiente de autorizacion definitiva.');
                 }
 
                 $requestId = (string) Str::uuid();
@@ -75,7 +75,7 @@ class SubmitVoluntarySavingsRequest
                 || str_contains($message, 'voluntary_savings_requests.pending_associate_id');
 
             if ($isPendingRequestConflict) {
-                throw new DomainException('Ya tienes una solicitud de ahorro voluntario pendiente de revision.', previous: $exception);
+                throw new DomainException('Ya tienes una solicitud de ahorro voluntario pendiente de autorizacion definitiva.', previous: $exception);
             }
 
             throw $exception;

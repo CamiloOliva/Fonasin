@@ -29,6 +29,14 @@ export default defineConfig(({ mode }) => {
           target: backendTarget,
           changeOrigin: true,
         },
+        '/public/': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
+        '/admin/content': {
+          target: backendTarget,
+          changeOrigin: true,
+        },
         '/affiliation-applications': {
           target: backendTarget,
           changeOrigin: true,

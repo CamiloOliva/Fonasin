@@ -113,7 +113,7 @@ export type PortalAffiliationUpdateDraft = {
 export type PortalVoluntarySavingsRequest = {
   id: string;
   monthly_amount: string;
-  status: 'submitted' | 'approved' | 'rejected';
+  status: 'submitted' | 'awaiting_employer_authorization' | 'approved' | 'rejected';
   submitted_at: string;
   reviewed_at: string | null;
   review_notes: string | null;

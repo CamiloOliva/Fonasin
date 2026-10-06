@@ -6,7 +6,7 @@ Esta matriz conecta la especificacion funcional con el codigo, las pruebas y la 
 
 Fuente funcional: `02_GUIA_EQUIPO_FRONTEND_WEB_AFILIACION_PORTAL_V2.docx`, version 2.0 del 15 de agosto de 2026.
 
-Ultima revision tecnica: 2 de octubre de 2026, rama de integracion del otrosi.
+Ultima revision tecnica: 5 de octubre de 2026, reglas escritas de FONASIN (ADR-005). Aun pendiente validacion visual y aceptacion final.
 
 ## Estados permitidos
 
@@ -31,16 +31,16 @@ Solo FONASIN puede mover contenido funcional a `Aceptado`. Una PR puede proponer
 | FE-WEB-004 | Productos y servicios | En curso | `/productos-y-servicios`, `/creditos`, ahorros y convenios; fichas turísticas de Caribbean Sol y Mar y Luz Marina Vargas | Aprobar nombres, textos, condiciones y beneficios restantes. |
 | FE-WEB-005 | Transparencia | Implementado | Centro documental con estatutos, politica de datos, manual de lineas de credito, reglamento de cartera y estados financieros 2025 | Validar visualmente los documentos publicados con FONASIN. |
 | FE-WEB-005A | Visor PDF | Implementado | Visor embebido y descarga disponible para cada documento institucional | Validar rendimiento del estado financiero escaneado en el hosting productivo. |
-| FE-WEB-005B | Balance social | En curso | Ruta `/balance-social` y lista de informes aprobados, con estado vacio explicito | FONASIN debe suministrar y aprobar el primer informe. |
-| FE-WEB-006 | Noticias | En curso | Ruta `/noticias` y lista de publicaciones aprobadas, con estado vacio explicito; no hay CMS | FONASIN debe suministrar y aprobar las primeras publicaciones. |
-| FE-WEB-007 | Contacto | En curso | WhatsApp, correo configurable, mapa, horario y acceso a FPQRS publicados; redes solo aparecen si se configuran URL HTTPS del proveedor esperado | Confirmar correo y enlaces oficiales antes del build final. |
+| FE-WEB-005B | Balance social | En curso | Ruta `/balance-social` consulta solo informes publicados desde `public_content_items`; panel permite PDF privado y borrador | FONASIN debe suministrar y aprobar el primer informe. |
+| FE-WEB-006 | Noticias | En curso | Ruta `/noticias` consulta solo comunicados publicados desde Backend; panel permite redactar y retirar | FONASIN debe suministrar y aprobar las primeras publicaciones. |
+| FE-WEB-007 | Contacto | En curso | Correo institucional oficial y redes administrables en panel, con validacion de hosts HTTPS; redes vacias no se muestran | FONASIN debe entregar enlaces oficiales. |
 | FE-WEB-008 | FPQRS | Implementado | Formulario conectado a `POST /fpqrs-submissions`, adjunto opcional PDF/JPG/PNG hasta 5MB, estados de envio/error, rate limit publico y entrega a correo institucional por backend. | Validar envio real con SMTP de produccion y aprobar politica de retencion. |
 | FE-WEB-009 | WhatsApp | En curso | Enlace configurable con `VITE_WHATSAPP_URL` | Confirmar numero, mensaje y comportamiento oficial. |
 | FE-WEB-010 | SEO y accesibilidad | En curso | HTML en español, description, semantica y foco parcial | Ejecutar auditoria sin errores criticos y agregar pruebas. |
 | FE-WEB-011 | Transacciones y QR | Pendiente | Acceso marcado `Proximamente` | Publicar QR, destino, concepto, instrucciones, advertencia y descarga. |
 | FE-WEB-012 | Analitica opcional | Pendiente | No integrada | Requiere aprobacion de finalidad, identificador y consentimiento. |
 
-El carrusel estatico de tres imagenes existe, pero permanece `En curso` hasta recibir y aprobar piezas oficiales de FONASIN. No se implementara biblioteca de medios ni administracion de imagenes porque estan fuera del alcance vigente.
+El carrusel y los convenios consultan los registros publicados del modulo Content. Los archivos estaticos vigentes se migran como registros editables; no se inventan noticias ni balances. La administracion limitada fue aprobada por FONASIN el 5 de octubre de 2026; ver ADR-005. Los banners provisionales permanecen `En curso` hasta reemplazo/aprobacion de piezas.
 
 ## Afiliacion
 
@@ -71,7 +71,7 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 | FE-ADM-010 | Importar cartera XLSX | En curso | Frontend y Backend usan la estructura operativa de ocho columnas: documento, nombre, linea, pagare, saldos, cuota y ultimo pago. El pagare se cifra y se identifica por HMAC; la carga valida identidad, formatos colombianos, duplicados y audita cambios. Falta aprobacion institucional final de la plantilla. |
 | FE-ADM-010A | Importar aportes y ahorros XLSX | En curso | La pestana administrativa `Importaciones` muestra las plantillas y cargas separadas para aporte ordinario, ahorro voluntario y ahorro permanente, cada una con documento, nombre, valor mensual, saldo y ultimo pago, seguidas por su historial operativo. Backend conserva historial, revierte correcciones y reconstruye los tres saldos sin depender del orden del archivo. Falta aprobacion institucional final y regla definitiva de conciliacion. |
 | FE-ADM-010B | Consultar cuentas y movimientos de aportes | Implementado | `/admin-fonasin` incluye cuentas, saldos y libro de movimientos con filtros por asociado, estado, tipo y periodo; Backend expone consultas paginadas solo para admin/reviewer, valida filtros y audita accesos sin exponer hashes privados. |
-| FE-ADM-010C | Preparar asociados desde XLSX | En curso | Admin dispone de plantilla y carga privada con documento, nombre completo y correo, validacion por fila, duplicados, historial y reporte de errores. La carga no divide nombres ni envia correos automaticamente; la activacion es individual, auditada y conduce al formulario `profile_completion` sin soportes ni libranza. Falta aprobacion institucional de plantilla y validacion SMTP en produccion. |
+| FE-ADM-010C | Preparar asociados desde XLSX | En curso | Alta manual y XLSX dejan al asociado antiguo inactivo; copia privada de cedula y aprobacion individual `admin` con fecha/usuario son obligatorias antes de activar/enviar acceso. El perfil posterior usa `profile_completion`, sin repetir afiliacion ni libranza. Falta validacion visual y SMTP productivo. |
 | FE-ADM-011 | Historial de importaciones | En curso | Backend expone `GET /admin/import-batches` con paginacion, permisos, auditoria y resumen de importaciones; `/admin-fonasin` incluye vista interna de historial con filtro por tipo, paginacion, errores resumidos y descarga CSV de filas rechazadas. Falta aprobacion final de operacion. |
 | FE-ADM-012 | Prohibir alta manual irregular | Pendiente | Debe imponerse con permisos y casos de uso del Backend. |
 
@@ -85,7 +85,7 @@ La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente 
 | FE-OBQ-003A | Aportes y ahorros actuales | OBQ | En curso | Frontend representa `module_disabled`, `empty` y `available` dentro del estado de cuenta unificado. Backend expone `GET /portal/contributions` y `GET /portal/account-statement`. |
 | FE-OBQ-004 | Aislamiento por sesion | OBQ | Implementado | Las consultas privadas resuelven el asociado desde la sesion y bloquean asociado inactivo; no se acepta `associate_id` del navegador. |
 | FE-EXT-004 | Actualizacion de datos | EXT | En curso | El acceso publico "Actualizar datos" envia al login del portal y conserva la intencion para abrir directamente el flujo autenticado. El asociado crea o reutiliza un borrador temporal por 24 horas identificado como `data_update`; las altas operativas sin formulario usan `profile_completion`. Los flujos privados usan rutas y almacenamiento de sesion separados de `/afiliacion`, bloquean cambios de identidad y cargas documentales, generan solo el formulario y permiten al backoffice aplicarlo sin nueva libranza. Falta aprobacion visual final y definir retencion historica. |
-| FE-EXT-004A | Solicitud de ahorro voluntario | EXT / otrosi aprobado por Diego | En curso | Solicitud privada independiente de afiliacion; monto mensual, PDF, aprobacion/rechazo admin, consulta del estado por asociado y nueva solicitud tras rechazo sin borrar el anterior. Solo una pendiente, garantizada por transaccion y restriccion unica. El servidor exige perfil habilitado con datos minimos personales y laborales para no generar libranzas incompletas. Ambas partes tienen enlaces privados a la libranza propia y firmada; reviewer no modifica. Pruebas HTTP, MariaDB y navegador integrado con datos ficticios. Falta decidir la regla de nuevas solicitudes tras aprobacion y obtener aceptacion operativa de FONASIN. |
+| FE-EXT-004A | Solicitud de ahorro voluntario | EXT / otrosi aprobado por FONASIN | En curso | Solicitud privada, PDF y referencia visible; solo una pendiente. Revision favorable deja estado `awaiting_employer_authorization`; el PDF empresarial firmado y confirmado marca aprobacion definitiva. Tras ella puede haber nueva solicitud y coexistir aprobaciones. Pruebas HTTP y de frontend locales. Pendiente cotejar el formato oficial con Carlos, conciliar `approved` historicos sin firma y obtener aceptacion operativa. |
 | FE-EXT-005 | Simulador | EXT | Pendiente | No iniciar sin formulas y advertencias aprobadas. |
 | FE-EXT-006 | Documentos privados | EXT | En curso | Storage privado con lectura autorizada y auditada; el asociado activo puede ver/descargar su propia libranza de ahorro voluntario, generada o firmada. No puede acceder a libranzas ajenas ni usar las rutas administrativas. |
 

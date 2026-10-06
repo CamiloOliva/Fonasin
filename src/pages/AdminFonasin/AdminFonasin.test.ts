@@ -139,7 +139,6 @@ describe('AdminFonasin permissions and imports', () => {
         document_number: '',
         full_name: '',
         email: '',
-        status: 'active',
       },
       createdAccess: null,
       onSearchChange: callback,
@@ -153,6 +152,8 @@ describe('AdminFonasin permissions and imports', () => {
       onFormChange: callback,
       onCreate: callback,
       onStatusChange: callback,
+      onUploadIdentitySupport: callback,
+      onDownloadIdentitySupport: callback,
       canManage: false,
     }));
 

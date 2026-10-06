@@ -29,12 +29,11 @@ class RegisterSignedVoluntarySavingsAuthorization
         return DB::transaction(function () use ($request, $contents, $actor, $ipHash): VoluntarySavingsRequest {
             $lockedRequest = VoluntarySavingsRequest::query()->lockForUpdate()->findOrFail($request->id);
 
-            if ($lockedRequest->status !== VoluntarySavingsRequestStatus::Approved->value) {
-                throw new DomainException('La solicitud debe estar aprobada antes de cargar la libranza firmada.');
-            }
-
             if ($lockedRequest->getAttribute('signed_authorization_storage_key')) {
                 throw new DomainException('La solicitud ya tiene una libranza firmada registrada.');
+            }
+            if ($lockedRequest->status !== VoluntarySavingsRequestStatus::AwaitingEmployerAuthorization->value) {
+                throw new DomainException('La solicitud debe estar en espera de autorizacion empresarial para cargar la libranza firmada.');
             }
 
             $storageKey = "contributions/voluntary-savings/{$lockedRequest->associate_id}/{$lockedRequest->id}-libranza-firmada.pdf";
@@ -43,6 +42,8 @@ class RegisterSignedVoluntarySavingsAuthorization
                 'signed_authorization_storage_key' => $storageKey,
                 'signed_authorization_uploaded_at' => now(),
                 'signed_authorization_uploaded_by_user_id' => $actor->id,
+                'status' => VoluntarySavingsRequestStatus::Approved->value,
+                'pending_associate_id' => null,
             ])->save();
 
             ($this->recordAuditEvent)(

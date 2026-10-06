@@ -9,6 +9,7 @@ use App\Domain\Audit\Enums\AuditActorType;
 use App\Domain\Audit\Enums\AuditModule;
 use App\Models\Associate;
 use App\Models\User;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -32,8 +33,14 @@ class UpdateAssociateStatus
 
             $fromStatus = $associate->status;
 
+            if ($status === 'active' && $associate->legacy_validation_required && ! $associate->identity_support_storage_key) {
+                throw new DomainException('Carga la copia de la cedula antes de aprobar este asociado antiguo.');
+            }
+
             $associate->forceFill([
                 'status' => $status,
+                'legacy_validated_at' => $status === 'active' && $associate->legacy_validation_required ? now() : $associate->legacy_validated_at,
+                'legacy_validated_by_user_id' => $status === 'active' && $associate->legacy_validation_required ? $actor->id : $associate->legacy_validated_by_user_id,
             ])->save();
 
             $linkedUser = $associate->user;

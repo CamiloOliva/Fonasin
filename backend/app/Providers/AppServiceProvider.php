@@ -27,12 +27,14 @@ use App\Models\Associate;
 use App\Models\ContributionAccount;
 use App\Models\CreditAccount;
 use App\Models\ImportBatch;
+use App\Models\PublicContentItem;
 use App\Models\VoluntarySavingsRequest;
 use App\Policies\AffiliationApplicationPolicy;
 use App\Policies\AssociatePolicy;
 use App\Policies\ContributionAccountPolicy;
 use App\Policies\CreditAccountPolicy;
 use App\Policies\ImportBatchPolicy;
+use App\Policies\PublicContentItemPolicy;
 use App\Policies\VoluntarySavingsRequestPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -69,6 +71,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ContributionAccount::class, ContributionAccountPolicy::class);
         Gate::policy(CreditAccount::class, CreditAccountPolicy::class);
         Gate::policy(ImportBatch::class, ImportBatchPolicy::class);
+        Gate::policy(PublicContentItem::class, PublicContentItemPolicy::class);
         Gate::policy(VoluntarySavingsRequest::class, VoluntarySavingsRequestPolicy::class);
 
         RateLimiter::for('affiliation-draft-create', function (Request $request): Limit {

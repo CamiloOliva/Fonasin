@@ -50,6 +50,9 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
+      - name: Audit production PHP dependencies
+        run: composer audit --no-dev --format=summary
+
       - name: Configure test environment
         run: |
           cp .env.example .env
@@ -126,6 +129,9 @@ jobs:
 
       - name: Install frontend dependencies
         run: npm ci
+
+      - name: Audit production frontend dependencies
+        run: npm audit --omit=dev --audit-level=moderate
 
       - name: Run Vitest
         run: npm run test -- --reporter=dot

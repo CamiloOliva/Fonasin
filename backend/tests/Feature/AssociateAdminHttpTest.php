@@ -9,7 +9,9 @@ use App\Models\Associate;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -103,7 +105,9 @@ class AssociateAdminHttpTest extends TestCase
             ->assertJsonPath('data.document_type', 'CC')
             ->assertJsonPath('data.document_number_masked', '******7890')
             ->assertJsonPath('data.full_name', 'Persona Sintetica')
-            ->assertJsonPath('data.status', 'active')
+            ->assertJsonPath('data.status', 'inactive')
+            ->assertJsonPath('data.legacy_validation_required', true)
+            ->assertJsonPath('data.has_identity_support', false)
             ->assertJsonPath('data.user.email', 'persona.sintetica@fonasin.test')
             ->assertJsonPath('data.activation_required', true)
             ->assertJsonMissingPath('data.temporary_password')
@@ -113,6 +117,7 @@ class AssociateAdminHttpTest extends TestCase
         $associateId = $response->json('data.id');
         $user = User::query()->where('email', 'persona.sintetica@fonasin.test')->firstOrFail();
         $this->assertTrue($user->must_change_password);
+        $this->assertSame('inactive', $user->status);
         $this->assertTrue($user->roles()->where('name', 'associate')->exists());
         $this->assertDatabaseHas('associates', [
             'id' => $associateId,
@@ -259,6 +264,57 @@ class AssociateAdminHttpTest extends TestCase
             'action' => AffiliationAuditAction::AssociateActivated->value,
             'subject_id' => $associate->id,
         ]);
+    }
+
+    public function test_legacy_associate_requires_private_identity_support_and_admin_validation_before_access(): void
+    {
+        Storage::fake('local');
+        $admin = $this->userWithRole('admin');
+        $reviewer = $this->userWithRole('reviewer');
+        $id = $this->actingAs($admin)->postJson('/admin/associates', [
+            'document_type' => 'CC', 'document_number' => '783456123',
+            'full_name' => 'Asociada Antigua', 'email' => 'antigua@fonasin.test',
+        ])->assertCreated()->json('data.id');
+
+        $this->actingAs($admin)->postJson("/admin/associates/{$id}/activate")
+            ->assertUnprocessable();
+        $this->actingAs($reviewer)->post("/admin/associates/{$id}/identity-support", [
+            'file' => UploadedFile::fake()->create('cedula.pdf', 20, 'application/pdf'),
+        ])->assertForbidden();
+        $this->actingAs($reviewer)->get("/admin/associates/{$id}/identity-support")->assertForbidden();
+        $this->actingAs($admin)->post("/admin/associates/{$id}/identity-support", [
+            'file' => UploadedFile::fake()->create('cedula.pdf', 20, 'application/pdf'),
+        ], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('data.has_identity_support', true);
+        $associate = Associate::query()->findOrFail($id);
+        Storage::disk('local')->assertExists($associate->identity_support_storage_key);
+        auth()->logout();
+        $this->getJson("/admin/associates/{$id}/identity-support")->assertUnauthorized();
+        $download = $this->actingAs($admin)->get("/admin/associates/{$id}/identity-support")->assertOk();
+        $this->assertStringContainsString('no-store', $download->headers->get('Cache-Control'));
+        $this->assertStringContainsString('private', $download->headers->get('Cache-Control'));
+        $this->actingAs($admin)->postJson("/admin/associates/{$id}/activate")
+            ->assertOk()->assertJsonPath('data.status', 'active')
+            ->assertJsonPath('data.legacy_validated_by_user_id', $admin->id);
+        $this->assertNotNull($associate->refresh()->legacy_validated_at);
+        $this->assertDatabaseHas('audit_events', [
+            'subject_id' => $id, 'action' => AffiliationAuditAction::AssociateIdentitySupportUploaded->value,
+        ]);
+    }
+
+    public function test_manual_legacy_creation_cannot_reuse_backoffice_identity(): void
+    {
+        $admin = $this->userWithRole('admin');
+        $backoffice = $this->userWithRole('reviewer');
+        $backoffice->forceFill([
+            'email' => 'reviewer-legacy@fonasin.test',
+            'document_number_hash' => $this->documentHash('555666777'),
+        ])->save();
+
+        $this->actingAs($admin)->postJson('/admin/associates', [
+            'document_type' => 'CC', 'document_number' => '555666777',
+            'full_name' => 'No corresponde', 'email' => 'reviewer-legacy@fonasin.test',
+        ])->assertUnprocessable();
+        $this->assertDatabaseCount('associates', 0);
     }
 
     public function test_deactivating_associate_deactivates_user_and_revokes_sessions(): void

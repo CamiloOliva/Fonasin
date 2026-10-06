@@ -238,7 +238,11 @@ class VoluntarySavingsRequestHttpTest extends TestCase
                 'notes' => 'Validada para tramite.',
             ])
             ->assertOk()
-            ->assertJsonPath('data.status', 'approved');
+            ->assertJsonPath('data.status', 'awaiting_employer_authorization');
+
+        $this->actingAs($associateUser)->postJson('/portal/voluntary-savings-requests', [
+            'monthly_amount' => 260000, 'accept_terms' => true,
+        ])->assertUnprocessable();
 
         $secondAdmin = $this->userWithRole('admin');
         $this->actingAs($secondAdmin)
@@ -252,6 +256,7 @@ class VoluntarySavingsRequestHttpTest extends TestCase
         $this->actingAs($admin)
             ->post("/admin/voluntary-savings-requests/{$request->id}/signed-authorization", [
                 'file' => UploadedFile::fake()->create('libranza-firmada.pdf', 120, 'application/pdf'),
+                'confirm_employer_authorization' => true,
             ])
             ->assertCreated()
             ->assertJsonPath('data.links.signed_authorization_preview', "/admin/voluntary-savings-requests/{$request->id}/signed-authorization/preview");
@@ -262,6 +267,7 @@ class VoluntarySavingsRequestHttpTest extends TestCase
         $this->actingAs($admin)
             ->post("/admin/voluntary-savings-requests/{$request->id}/signed-authorization", [
                 'file' => UploadedFile::fake()->create('otra-libranza.pdf', 120, 'application/pdf'),
+                'confirm_employer_authorization' => true,
             ])
             ->assertUnprocessable()
             ->assertJsonPath('message', 'La solicitud ya tiene una libranza firmada registrada.');
@@ -378,6 +384,46 @@ class VoluntarySavingsRequestHttpTest extends TestCase
             'status' => 'approved',
         ])->assertUnprocessable();
         $this->assertDatabaseCount('voluntary_savings_requests', 2);
+    }
+
+    public function test_company_signature_is_required_for_final_approval_and_two_approved_requests_can_coexist(): void
+    {
+        [$owner] = $this->associateUser();
+        $admin = $this->userWithRole('admin');
+        $firstId = $this->actingAs($owner)->postJson('/portal/voluntary-savings-requests', [
+            'monthly_amount' => 120000, 'accept_terms' => true,
+        ])->assertCreated()->json('data.id');
+
+        $this->actingAs($admin)->patchJson("/admin/voluntary-savings-requests/{$firstId}", [
+            'status' => 'approved',
+        ])->assertJsonPath('data.status', 'awaiting_employer_authorization');
+        $this->actingAs($owner)->postJson('/portal/voluntary-savings-requests', [
+            'monthly_amount' => 180000, 'accept_terms' => true,
+        ])->assertUnprocessable();
+        $this->actingAs($admin)->post("/admin/voluntary-savings-requests/{$firstId}/signed-authorization", [
+            'file' => UploadedFile::fake()->create('firma.pdf', 20, 'application/pdf'),
+        ], ['Accept' => 'application/json'])->assertUnprocessable()
+            ->assertJsonValidationErrors('confirm_employer_authorization');
+        $this->assertDatabaseHas('voluntary_savings_requests', [
+            'id' => $firstId, 'status' => 'awaiting_employer_authorization',
+        ]);
+        $this->actingAs($admin)->post("/admin/voluntary-savings-requests/{$firstId}/signed-authorization", [
+            'file' => UploadedFile::fake()->create('firma.pdf', 20, 'application/pdf'),
+            'confirm_employer_authorization' => true,
+        ], ['Accept' => 'application/json'])->assertCreated()->assertJsonPath('data.status', 'approved');
+
+        $secondId = $this->actingAs($owner)->postJson('/portal/voluntary-savings-requests', [
+            'monthly_amount' => 180000, 'accept_terms' => true,
+        ])->assertCreated()->json('data.id');
+        $this->assertNotSame($firstId, $secondId);
+        $this->actingAs($admin)->patchJson("/admin/voluntary-savings-requests/{$secondId}", [
+            'status' => 'approved',
+        ])->assertJsonPath('data.status', 'awaiting_employer_authorization');
+        $this->actingAs($admin)->post("/admin/voluntary-savings-requests/{$secondId}/signed-authorization", [
+            'file' => UploadedFile::fake()->create('firma2.pdf', 20, 'application/pdf'),
+            'confirm_employer_authorization' => true,
+        ], ['Accept' => 'application/json'])->assertCreated()->assertJsonPath('data.status', 'approved');
+        $this->assertSame(2, VoluntarySavingsRequest::query()->where('status', 'approved')->count());
     }
 
     public function test_real_renderer_generates_a_readable_private_pdf(): void

@@ -19,12 +19,22 @@ class Associate extends Model
         'document_number_encrypted',
         'full_name',
         'status',
+        'legacy_validation_required',
     ];
 
     protected $hidden = [
         'document_number_hash',
         'document_number_encrypted',
+        'identity_support_storage_key',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'legacy_validation_required' => 'boolean',
+            'legacy_validated_at' => 'immutable_datetime',
+        ];
+    }
 
     public function user(): BelongsTo
     {

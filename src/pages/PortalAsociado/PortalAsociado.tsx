@@ -70,18 +70,10 @@ function statusLabel(status: string): string {
   return labels[status] ?? status;
 }
 
-function movementStatusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    registered: 'Registrado',
-    reversed: 'Reversado',
-  };
-
-  return labels[status] ?? status;
-}
-
 function savingsRequestStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     submitted: 'Pendiente de revision',
+    awaiting_employer_authorization: 'Pendiente de autorizacion de la empresa',
     approved: 'Aprobada',
     rejected: 'Rechazada',
   };
@@ -247,7 +239,7 @@ export default function PortalAsociado() {
     [credits],
   );
   const hasPendingSavingsRequest = useMemo(
-    () => savingsRequests.some((request) => request.status === 'submitted'),
+    () => savingsRequests.some((request) => request.status === 'submitted' || request.status === 'awaiting_employer_authorization'),
     [savingsRequests],
   );
   const needsSavingsProfile = user?.requires_profile_completion === true;
@@ -735,6 +727,7 @@ export default function PortalAsociado() {
                         <th className="py-3 pr-4">Saldo inicial</th>
                         <th className="py-3 pr-4">Saldo actual</th>
                         <th className="py-3 pr-4">Cuota</th>
+                        <th className="py-3 pr-4">Fecha del ultimo pago</th>
                         <th className="py-3 pr-4">Plazo</th>
                         <th className="py-3 pr-4">Tasa</th>
                         <th className="py-3">Estado</th>
@@ -747,6 +740,7 @@ export default function PortalAsociado() {
                           <td className="py-4 pr-4 text-slate-700">{formatMoney(credit.initial_balance)}</td>
                           <td className="py-4 pr-4 font-bold text-slate-950">{formatMoney(credit.current_balance)}</td>
                           <td className="py-4 pr-4 text-slate-700">{formatMoney(credit.installment_amount)}</td>
+                          <td className="py-4 pr-4 text-slate-700">{credit.last_payment_date ? formatCalendarDate(credit.last_payment_date) : 'No informada'}</td>
                           <td className="py-4 pr-4 text-slate-700">{credit.term_months ? `${credit.term_months} meses` : 'No informado'}</td>
                           <td className="py-4 pr-4 text-slate-700">{credit.interest_rate ? `${credit.interest_rate}%` : 'No informada'}</td>
                           <td className="py-4">
@@ -910,6 +904,7 @@ export default function PortalAsociado() {
                           <div>
                             <p className="text-lg font-black text-fonasin-deep">{formatMoney(request.monthly_amount)} mensuales</p>
                             <p className="mt-1 text-xs font-semibold text-slate-500">Enviada: {formatPortalDate(request.submitted_at)}</p>
+                            <p className="mt-1 max-w-full break-all text-xs text-slate-500">Referencia: {request.id}</p>
                           </div>
                           <span className="w-fit rounded-full bg-fonasin-surface px-3 py-1 text-xs font-bold text-fonasin-green">
                             {savingsRequestStatusLabel(request.status)}
@@ -1092,11 +1087,10 @@ function ContributionStatementSection({
           <table className="w-full min-w-[640px] border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.16em] text-slate-500">
-                <th className="py-3 pr-4">Periodo</th>
-                <th className="py-3 pr-4">Fecha de corte</th>
-                <th className="py-3 pr-4">Valor</th>
+                <th className="py-3 pr-4">Mes del ultimo pago</th>
+                <th className="py-3 pr-4">Fecha del ultimo pago</th>
+                <th className="py-3 pr-4">Valor mensual</th>
                 <th className="py-3 pr-4">Saldo</th>
-                <th className="py-3">Estado</th>
               </tr>
             </thead>
             <tbody>
@@ -1106,11 +1100,6 @@ function ContributionStatementSection({
                   <td className="py-4 pr-4 text-slate-700">{formatCalendarDate(movement.cut_off_date)}</td>
                   <td className="py-4 pr-4 font-bold text-slate-950">{formatMoney(movement.amount)}</td>
                   <td className="py-4 pr-4 text-slate-700">{formatMoney(movement.balance_after)}</td>
-                  <td className="py-4">
-                    <span className="rounded-full bg-fonasin-surface px-3 py-1 text-xs font-bold text-fonasin-green">
-                      {movementStatusLabel(movement.status)}
-                    </span>
-                  </td>
                 </tr>
               ))}
             </tbody>

@@ -40,6 +40,24 @@ a acta de recibo ni contiene credenciales o datos de asociados.
    sumar de nuevo. La aprobacion de ahorro voluntario tampoco aumenta el
    saldo: este cambia al importar datos institucionales.
 
+Las plantillas de aporte, ahorro permanente y ahorro voluntario fueron aprobadas
+el 5 de octubre de 2026. En la pantalla del asociado, `Valor mensual` es el
+valor informado en la ultima carga, `Saldo` es acumulado a la fecha de corte y
+`Mes del ultimo pago` deriva de la fecha del ultimo pago. El estado tecnico de
+un movimiento no indica si el asociado esta activo.
+
+## Alta de asociados antiguos
+
+1. `admin` crea/importa el registro. Queda **inactivo** y no recibe acceso
+   automaticamente; no requiere una nueva afiliacion digital.
+2. Cargar en la fila del asociado la copia de cedula PDF/JPG/PNG, de hasta 5 MB.
+   El archivo queda privado y solo `admin` puede consultarlo. Verificar que
+   corresponda a la identidad antes de continuar.
+3. `admin` pulsa `Aprobar y activar`. Se registran la fecha y el usuario que
+   efectuo la validacion. Solo despues enviar el enlace de acceso.
+4. Si el archivo cargado es erroneo, no activar; escalar para correccion
+   auditada. No reemplazarlo con SQL ni colocar copias en `public_html`.
+
 ## Solicitud de ahorro voluntario
 
 1. El asociado activo completa y obtiene habilitacion de su perfil personal y
@@ -48,20 +66,28 @@ a acta de recibo ni contiene credenciales o datos de asociados.
 2. En `Portal asociado > Ahorro voluntario`, indica el valor mensual, acepta
    la autorizacion y envia. Puede consultar su estado y descargar **su** PDF.
 3. En `Admin FONASIN > Aportes y ahorros`, `admin` revisa la solicitud y la
-   libranza, decide `Aprobar` o `Rechazar` y, si corresponde, registra la
-   libranza firmada. `reviewer` no puede decidir ni cargar documentos.
+   libranza; marca `Revision favorable` o `Rechazar`. La revision favorable
+   **no** aprueba definitivamente. FONASIN descarga y envia la libranza a la
+   empresa contratante; al recibir el PDF firmado, lo carga y confirma que la
+   empresa lo autorizo. Solo entonces queda `Aprobada`. `reviewer` no puede
+   decidir ni cargar documentos.
 4. Una solicitud rechazada conserva su historial; el asociado inicia otra
-   solicitud nueva. No modificar ni borrar la anterior. La regla de una
-   solicitud nueva **despues de una aprobacion** requiere decision de FONASIN
-   antes de declararse cerrada.
+   solicitud nueva. Tras una aprobacion definitiva tambien puede solicitar
+   otra; las aprobadas coexisten. Identificar cada una por su referencia y
+   fecha, sin modificar ni borrar las anteriores.
 
 ## Publicaciones del sitio
 
-El sitio no tiene CMS. Noticias y Balance social se publican mediante un
-cambio revisado en `src/data/institutionalUpdates.ts`, con textos/documentos
-aprobados por FONASIN. Los enlaces de redes se entregan al responsable del
-build como variables `VITE_FACEBOOK_URL`, `VITE_INSTAGRAM_URL` y
-`VITE_YOUTUBE_URL`. Si no se entregan, el sitio no muestra enlaces falsos.
+`Admin FONASIN > Contenido del sitio` permite crear borradores de noticias,
+Balance Social, convenios y banners; editar titulo, texto, categoria, enlace,
+orden, imagen o PDF segun el tipo, y publicar o retirar. Solo los publicados
+aparecen en la web. El Balance Social exige PDF y el banner exige imagen antes
+de publicar. Los textos y piezas requieren aprobacion institucional previa.
+Al reemplazar una imagen o PDF, el elemento publicado vuelve a borrador: usar
+la vista previa autenticada, verificar la nueva pieza y publicarla de nuevo.
+Esto evita que una carga sin revisar aparezca inmediatamente en el sitio.
+En el mismo panel se actualizan correo oficial y redes; las redes vacias no se
+muestran. La administracion es limitada, no un CMS general.
 
 ## Incidentes y datos personales
 

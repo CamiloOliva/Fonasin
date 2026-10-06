@@ -41,11 +41,8 @@ class CreateAssociateManually
                 throw CannotManageAssociate::duplicateDocument();
             }
 
-            $status = $data['status'] ?? 'active';
-
-            if (! in_array($status, ['active', 'inactive'], true)) {
-                throw CannotManageAssociate::invalidStatus($status);
-            }
+            // A legacy record is not approved merely because it was typed or imported.
+            $status = 'inactive';
 
             $email = Str::lower(trim($data['email']));
             $user = User::query()->where('email', $email)->first();
@@ -66,6 +63,10 @@ class CreateAssociateManually
                 throw CannotManageAssociate::identityConflict();
             }
 
+            if ($user && $user->roles()->whereIn('name', ['admin', 'reviewer'])->exists()) {
+                throw CannotManageAssociate::identityConflict();
+            }
+
             $activationRequired = false;
 
             if (! $user) {
@@ -80,7 +81,7 @@ class CreateAssociateManually
                     ]),
                     'password' => Str::password(40),
                     'must_change_password' => true,
-                    'status' => 'active',
+                    'status' => 'inactive',
                 ]);
             }
 
@@ -109,6 +110,7 @@ class CreateAssociateManually
                 ]),
                 'full_name' => trim($data['full_name']),
                 'status' => $status,
+                'legacy_validation_required' => true,
             ]);
 
             ($this->recordAuditEvent)(

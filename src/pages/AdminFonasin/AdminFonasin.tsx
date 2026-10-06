@@ -21,6 +21,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import ForcedPasswordChange from '../../components/auth/ForcedPasswordChange';
+import ContentPanel from './ContentPanel';
 import {
   adminAffiliationDocumentUrl,
   approveAdminAffiliationApplication,
@@ -43,11 +44,13 @@ import {
   activateAdminAssociate,
   createAdminAssociate,
   deactivateAdminAssociate,
+  downloadAdminAssociateIdentitySupport,
   downloadAdminAssociateProfile,
   fetchAdminAssociateProfile,
   fetchAdminAssociates,
   searchAdminAssociateProfile,
   sendAdminAssociateActivation,
+  uploadAdminAssociateIdentitySupport,
   type AdminAssociate,
   type AdminAssociateProfile,
 } from '../../services/adminAssociateService';
@@ -87,11 +90,12 @@ import { changeOwnPassword, type PortalUser } from '../../services/portalService
 
 type SessionState = 'checking' | 'guest' | 'authenticated';
 type DataState = 'idle' | 'loading' | 'ready' | 'error';
-type AdminPanelView = 'applications' | 'associates' | 'credits' | 'contributions' | 'imports';
+type AdminPanelView = 'applications' | 'associates' | 'credits' | 'contributions' | 'imports' | 'content';
 
 const statusLabels: Record<string, string> = {
   draft: 'Borrador',
   submitted: 'Enviada',
+  awaiting_employer_authorization: 'Pendiente de firma empresarial',
   under_review: 'En revision',
   pending_correction: 'Correccion solicitada',
   approved: 'Aprobada',
@@ -182,6 +186,7 @@ export default function AdminFonasin() {
   const [contributionMovementState, setContributionMovementState] = useState<DataState>('idle');
   const [importHistoryState, setImportHistoryState] = useState<DataState>('idle');
   const [activeView, setActiveView] = useState<AdminPanelView>('applications');
+  const [contentRefreshToken, setContentRefreshToken] = useState(0);
   const [user, setUser] = useState<PortalUser | null>(null);
   const [applications, setApplications] = useState<AdminAffiliationApplication[]>([]);
   const [associates, setAssociates] = useState<AdminAssociate[]>([]);
@@ -219,7 +224,6 @@ export default function AdminFonasin() {
     document_number: '',
     full_name: '',
     email: '',
-    status: 'active',
   });
   const [createdAssociateAccess, setCreatedAssociateAccess] = useState<{
     email: string;
@@ -406,7 +410,7 @@ export default function AdminFonasin() {
     try {
       const updated = await reviewAdminVoluntarySavingsRequest(id, status);
       setVoluntarySavingsRequests((current) => current.map((item) => item.id === id ? updated : item));
-      setMessage(status === 'approved' ? 'Solicitud de ahorro voluntario aprobada.' : 'Solicitud de ahorro voluntario rechazada.');
+      setMessage(status === 'approved' ? 'Revision favorable. La aprobacion definitiva espera la libranza firmada por la empresa.' : 'Solicitud de ahorro voluntario rechazada.');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible revisar la solicitud.');
     } finally {
@@ -423,9 +427,10 @@ export default function AdminFonasin() {
     setMessage(null);
 
     try {
+      if (!window.confirm('¿Confirmas que el PDF contiene la autorizacion firmada por la empresa contratante? Esta carga aprobara definitivamente la solicitud.')) return;
       const updated = await uploadSignedVoluntarySavingsAuthorization(id, file);
       setVoluntarySavingsRequests((current) => current.map((item) => item.id === id ? updated : item));
-      setMessage('Libranza firmada guardada correctamente.');
+      setMessage('Libranza empresarial guardada y solicitud aprobada definitivamente.');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible cargar la libranza firmada.');
     } finally {
@@ -614,14 +619,13 @@ export default function AdminFonasin() {
         document_number: '',
         full_name: '',
         email: '',
-        status: 'active',
       });
       setCreatedAssociateAccess({
         email: created.user?.email ?? associateForm.email,
         activationRequired: Boolean(created.activation_required),
       });
       await loadAssociates();
-      setMessage('Asociado creado correctamente.');
+      setMessage('Asociado creado como pendiente. Carga la cedula y aprueba su activacion individualmente.');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible crear el asociado.');
     }
@@ -643,6 +647,27 @@ export default function AdminFonasin() {
       setMessage(status === 'active' ? 'Asociado activado correctamente.' : 'Asociado desactivado correctamente.');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible cambiar el estado del asociado.');
+    }
+  }
+
+  async function handleAssociateIdentitySupport(id: string, file: File) {
+    if (!isAdmin) return;
+    setError(null);
+    setMessage(null);
+    try {
+      await uploadAdminAssociateIdentitySupport(id, file);
+      await loadAssociates();
+      setMessage('Copia de cedula guardada en el expediente privado. Revisa el archivo antes de aprobar.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible cargar la cedula.');
+    }
+  }
+
+  async function handleDownloadAssociateIdentitySupport(id: string) {
+    try {
+      await downloadAdminAssociateIdentitySupport(id);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible descargar la cedula.');
     }
   }
 
@@ -946,7 +971,7 @@ export default function AdminFonasin() {
                       ? 'Administracion de creditos'
                       : activeView === 'contributions'
                         ? 'Administracion de aportes y ahorros'
-                        : 'Historial de importaciones'}
+                        : activeView === 'content' ? 'Contenido institucional' : 'Historial de importaciones'}
               </h1>
               <div className="mt-3 flex flex-wrap gap-2">
                 {(user?.roles ?? []).map((role) => (
@@ -967,6 +992,7 @@ export default function AdminFonasin() {
                     loadVoluntarySavingsRequests(voluntarySavingsRequestMeta.current_page),
                   ]);
                   if (activeView === 'imports') return loadImportBatches();
+                  if (activeView === 'content') { setContentRefreshToken((token) => token + 1); return; }
 
                   return loadCredits();
                 }}
@@ -1050,6 +1076,10 @@ export default function AdminFonasin() {
           >
             <PiggyBank size={16} />
             Aportes y ahorros
+          </button>
+          <button type="button" onClick={() => setActiveView('content')}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black transition ${activeView === 'content' ? 'bg-emerald-600 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>
+            <FileText size={16} /> Contenido del sitio
           </button>
         </nav>
 
@@ -1158,6 +1188,8 @@ export default function AdminFonasin() {
             onFormChange={setAssociateForm}
             onCreate={handleCreateAssociate}
             onStatusChange={handleAssociateStatus}
+            onUploadIdentitySupport={handleAssociateIdentitySupport}
+            onDownloadIdentitySupport={handleDownloadAssociateIdentitySupport}
             canManage={isAdmin}
           />
         ) : activeView === 'credits' ? (
@@ -1207,6 +1239,8 @@ export default function AdminFonasin() {
             onVoluntarySavingsRequestPageChange={loadVoluntarySavingsRequests}
             canManage={isAdmin}
           />
+        ) : activeView === 'content' ? (
+          <ContentPanel key={contentRefreshToken} canManage={isAdmin} />
         ) : (
           <ImportHistoryPanel
             batches={importBatches}
@@ -1236,7 +1270,6 @@ type AssociateFormState = {
   document_number: string;
   full_name: string;
   email: string;
-  status: string;
 };
 
 export function AssociatesPanel({
@@ -1258,6 +1291,8 @@ export function AssociatesPanel({
   onFormChange,
   onCreate,
   onStatusChange,
+  onUploadIdentitySupport,
+  onDownloadIdentitySupport,
   canManage,
 }: {
   associates: AdminAssociate[];
@@ -1278,6 +1313,8 @@ export function AssociatesPanel({
   onFormChange: (form: AssociateFormState) => void;
   onCreate: (event: FormEvent<HTMLFormElement>) => void;
   onStatusChange: (id: string, status: 'active' | 'inactive') => void;
+  onUploadIdentitySupport: (id: string, file: File) => void;
+  onDownloadIdentitySupport: (id: string) => void;
   canManage: boolean;
 }) {
   return (
@@ -1346,11 +1383,9 @@ export function AssociatesPanel({
 
         {createdAccess ? (
           <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
-            <p className="font-black">Acceso creado para {createdAccess.email}</p>
+            <p className="font-black">Registro pendiente para {createdAccess.email}</p>
             <p className="mt-1 font-semibold">
-              {createdAccess.activationRequired
-                ? 'Debe definir su contrasena desde Recuperar contrasena con correo y documento.'
-                : 'El usuario ya existia y conserva su acceso actual.'}
+              Primero carga y revisa la copia de cedula; luego aprueba la activacion individual. Solo entonces envia el enlace de acceso.
             </p>
           </div>
         ) : null}
@@ -1366,7 +1401,7 @@ export function AssociatesPanel({
 
       <ImportForm
         title="Asociados"
-        description="Columnas: documento, nombre_completo y correo. La carga crea accesos pendientes, pero no envia correos automaticamente."
+        description="Columnas: documento, nombre_completo y correo. La carga deja asociados inactivos; cada uno requiere cedula y aprobacion individual. No envia correos automaticamente."
         disabled={importState === 'loading'}
         onSubmit={(event) => onImport('associates', event)}
         onDownloadTemplate={() => onDownloadTemplate('associates')}
@@ -1456,20 +1491,35 @@ export function AssociatesPanel({
                       {associate.activation_required ? (
                         <button
                           type="button"
-                          title="Enviar activacion"
+                          disabled={associate.status !== 'active'}
+                          title="Enviar enlace de acceso"
                           onClick={() => onSendActivation(associate.id)}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-sky-200 px-3 py-2 text-xs font-black text-sky-800 transition hover:bg-sky-50"
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-sky-200 px-3 py-2 text-xs font-black text-sky-800 transition hover:bg-sky-50 disabled:opacity-40"
                         >
                           <Send size={15} />
-                          Activar
+                          Enviar acceso
                         </button>
+                      ) : null}
+                      {associate.legacy_validation_required && !associate.has_identity_support && associate.status !== 'active' ? (
+                        <label className="cursor-pointer rounded-xl border border-emerald-200 px-3 py-2 text-xs font-black text-emerald-800 hover:bg-emerald-50">
+                          Cargar cedula
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" className="sr-only" onChange={(event) => {
+                            const file = event.currentTarget.files?.[0];
+                            if (file) onUploadIdentitySupport(associate.id, file);
+                            event.currentTarget.value = '';
+                          }} />
+                        </label>
+                      ) : null}
+                      {associate.has_identity_support ? (
+                        <button type="button" onClick={() => onDownloadIdentitySupport(associate.id)} className="rounded-xl border border-emerald-200 px-3 py-2 text-xs font-black text-emerald-800 hover:bg-emerald-50">Ver cedula</button>
                       ) : null}
                       <button
                         type="button"
+                        disabled={associate.status !== 'active' && associate.legacy_validation_required && !associate.has_identity_support}
                         onClick={() => onStatusChange(associate.id, associate.status === 'active' ? 'inactive' : 'active')}
-                        className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50"
+                        className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
                       >
-                        {associate.status === 'active' ? 'Desactivar' : 'Activar'}
+                        {associate.status === 'active' ? 'Desactivar' : associate.legacy_validation_required ? 'Aprobar y activar' : 'Activar'}
                       </button>
                     </div>
                     </td>
@@ -2004,10 +2054,14 @@ function ContributionsPanel({
             <tbody>
               {voluntarySavingsRequests.map((request) => (
                 <tr key={request.id} className="border-b border-slate-100 last:border-b-0">
-                  <td className="py-4 pr-4 font-black text-slate-950">{request.associate?.full_name ?? 'Asociado no disponible'}</td>
+                  <td className="py-4 pr-4 font-black text-slate-950">{request.associate?.full_name ?? 'Asociado no disponible'}
+                    <span className="mt-1 block max-w-48 break-all text-xs font-normal text-slate-500">Referencia: {request.id}</span>
+                  </td>
                   <td className="py-4 pr-4 font-bold text-emerald-800">{formatCurrency(request.monthly_amount)}</td>
                   <td className="py-4 pr-4 text-slate-600">{formatDate(request.submitted_at)}</td>
-                  <td className="py-4 pr-4"><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">{statusLabel(request.status)}</span></td>
+                  <td className="py-4 pr-4"><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">{statusLabel(request.status)}</span>
+                    {request.reviewed_at && <span className="mt-2 block text-xs text-slate-500">Revisada: {formatDate(request.reviewed_at)}</span>}
+                  </td>
                   <td className="py-4">
                     <div className="flex flex-wrap gap-2">
                       <a
@@ -2027,15 +2081,15 @@ function ContributionsPanel({
                       {canManage && request.status === 'submitted' ? (
                         <>
                           <button type="button" disabled={busySavingsRequestIds.includes(request.id)} onClick={() => onReviewVoluntarySavingsRequest(request.id, 'approved')} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed">
-                            <CheckCircle2 size={14} /> Aprobar
+                            <CheckCircle2 size={14} /> Revision favorable
                           </button>
                           <button type="button" disabled={busySavingsRequestIds.includes(request.id)} onClick={() => onReviewVoluntarySavingsRequest(request.id, 'rejected')} className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs font-black text-red-700 hover:bg-red-100 disabled:opacity-60 disabled:cursor-not-allowed">
                             <XCircle size={14} /> Rechazar
                           </button>
                         </>
-                      ) : request.status === 'approved' && canManage && !request.links.signed_authorization_preview ? (
+                      ) : request.status === 'awaiting_employer_authorization' && canManage && !request.links.signed_authorization_preview ? (
                         <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black text-amber-800 hover:bg-amber-100">
-                          <UploadCloud size={14} /> Subir firmada
+                          <UploadCloud size={14} /> Cargar firma empresa
                           <input
                             type="file"
                             disabled={busySavingsRequestIds.includes(request.id)}
@@ -2215,7 +2269,7 @@ function ContributionsPanel({
                   <option value="">Todos</option>
                   <option value="permanent_savings">Ahorro permanente</option>
                   <option value="voluntary_savings">Ahorro voluntario</option>
-                  <option value="contribution">Aporte</option>
+                  <option value="contribution">Aporte Mensual</option>
                   <option value="adjustment">Ajuste</option>
                 </select>
               </label>
@@ -2365,7 +2419,7 @@ function contributionTypeLabel(type: string): string {
   const labels: Record<string, string> = {
     permanent_savings: 'Ahorro permanente',
     voluntary_savings: 'Ahorro voluntario',
-    contribution: 'Aporte',
+    contribution: 'Aporte Mensual',
     adjustment: 'Ajuste',
   };
 
@@ -2466,7 +2520,7 @@ function ImportHistoryPanel({
           </div>
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <ImportForm title="Cartera" description="Columnas: documento, nombre_completo, linea_credito, numero_pagare, valor_inicial, valor_cuota, saldo_actual, fecha_ultimo_pago." disabled={importState === 'loading'} onSubmit={(event) => onImport('credits', event)} onDownloadTemplate={() => onDownloadTemplate('credits')} />
-            <ImportForm title="Aportes" description="Columnas: documento, nombre_completo, valor_mensual, saldo, fecha_ultimo_pago." disabled={importState === 'loading'} onSubmit={(event) => onImport('contributions', event)} onDownloadTemplate={() => onDownloadTemplate('contributions')} />
+            <ImportForm title="Aporte Mensual" description="Columnas: documento, nombre_completo, valor_mensual, saldo, fecha_ultimo_pago." disabled={importState === 'loading'} onSubmit={(event) => onImport('contributions', event)} onDownloadTemplate={() => onDownloadTemplate('contributions')} />
             <ImportForm title="Ahorro voluntario" description="Columnas: documento, nombre_completo, valor_mensual, saldo, fecha_ultimo_pago." disabled={importState === 'loading'} onSubmit={(event) => onImport('voluntary_savings', event)} onDownloadTemplate={() => onDownloadTemplate('voluntary_savings')} />
             <ImportForm title="Ahorro permanente" description="Columnas: documento, nombre_completo, valor_mensual, saldo, fecha_ultimo_pago." disabled={importState === 'loading'} onSubmit={(event) => onImport('permanent_savings', event)} onDownloadTemplate={() => onDownloadTemplate('permanent_savings')} />
           </div>

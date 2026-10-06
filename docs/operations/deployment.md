@@ -71,6 +71,31 @@ React Router requiere el fallback de Apache incluido en `public/.htaccess`; este
 6. Verificar autenticacion, cargas documentales y funciones publicas.
 7. Verificar cabeceras HTTP en produccion: CSP, `X-Frame-Options`, `X-Content-Type-Options` y `Referrer-Policy`.
 
+### Cambio funcional del 5 de octubre de 2026 (ADR-005)
+
+La publicacion del frontend de contenido administrable **depende** de instalar
+primero el Backend del mismo commit y ejecutar sus migraciones nuevas. Si se
+publica solo `dist/`, noticias, convenios y banners consultaran una API que no
+existe y apareceran vacios. Preparar respaldo de MariaDB y storage privado;
+probar el despliegue en entorno local/CI antes de promover a `main`.
+
+Antes de promover, revisar de forma **solo lectura** las solicitudes historicas
+de ahorro voluntario que figuren aprobadas sin autorizacion empresarial cargada:
+
+```sql
+SELECT id, associate_id, submitted_at, reviewed_at
+FROM voluntary_savings_requests
+WHERE status = 'approved' AND signed_authorization_storage_key IS NULL
+ORDER BY submitted_at;
+```
+
+Si hay filas, detener la promocion y obtener decision documentada de FONASIN
+sobre cada caso; no inventar firma, no borrar historial y no reclasificar por
+SQL ad-hoc. El nuevo estado `awaiting_employer_authorization` solo afecta las
+revisiones hechas con el codigo nuevo. El flujo de aprobacion de creditos por
+nomina y el cotejo de formatos oficiales siguen pendientes de Carlos; no
+presentar ese frente como implementado.
+
 ### Diagnostico previo de consentimientos
 
 Antes de ejecutar `2026_08_17_140950_add_unique_constraint_to_consent_records.php` en una base que ya contenga consentimientos, ejecutar:

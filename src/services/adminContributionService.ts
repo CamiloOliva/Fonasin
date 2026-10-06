@@ -77,7 +77,7 @@ export type AdminVoluntarySavingsRequestPage = {
 export type AdminVoluntarySavingsRequest = {
   id: string;
   monthly_amount: string;
-  status: 'submitted' | 'approved' | 'rejected';
+  status: 'submitted' | 'awaiting_employer_authorization' | 'approved' | 'rejected';
   submitted_at: string;
   reviewed_at: string | null;
   signed_authorization_uploaded_at?: string | null;
@@ -218,5 +218,6 @@ export async function uploadSignedVoluntarySavingsAuthorization(
 ): Promise<AdminVoluntarySavingsRequest> {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('confirm_employer_authorization', '1');
   return mutateRequest(`/admin/voluntary-savings-requests/${id}/signed-authorization`, 'POST', formData);
 }

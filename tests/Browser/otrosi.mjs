@@ -19,7 +19,7 @@ test('otrosi: real browser, sessions, XLSX, MariaDB, decisions and private PDF',
     contexts.push(context);
     const page = await context.newPage();
     page.on('pageerror', error => errors.push(error.message));
-    await page.goto(route);
+    await page.goto(route, { waitUntil: 'domcontentloaded' });
     await page.getByLabel('Correo electronico', { exact: true }).fill(fixture[role]);
     await page.getByLabel('Contrasena', { exact: true }).fill(fixture.password);
     await page.getByRole('button', { name: /entrar al panel|entrar al portal/i }).click();
@@ -33,8 +33,22 @@ test('otrosi: real browser, sessions, XLSX, MariaDB, decisions and private PDF',
   }
   try {
     const admin = await actor('admin', '/admin-fonasin');
+    const newsTitle = `Comunicado sintetico E2E ${fixture.run}-${Date.now()}`;
+    await admin.page.getByRole('button', { name: /contenido del sitio/i }).click();
+    await admin.page.getByLabel('Título').fill(newsTitle);
+    await admin.page.getByLabel('Descripción').fill('Contenido institucional de prueba aislada.');
+    await admin.page.getByRole('button', { name: 'Guardar', exact: true }).click();
+    await admin.page.getByText('Contenido guardado.', { exact: false }).waitFor();
+    await admin.page.getByLabel('Publicar en el sitio').check();
+    const published = admin.page.waitForResponse(response => response.url().includes('/admin/content/') && response.request().method() === 'PATCH');
+    await admin.page.getByRole('button', { name: 'Guardar', exact: true }).click();
+    assert.equal((await published).status(), 200);
+    const publicPage = await admin.context.newPage();
+    await publicPage.goto('/noticias');
+    await publicPage.getByText(newsTitle).waitFor();
+    await publicPage.close();
     await admin.page.getByRole('button', { name: /^importaciones$/i }).click();
-    for (const [type, title] of [['contributions', 'Aportes'], ['permanent-savings', 'Ahorro permanente'], ['voluntary-savings', 'Ahorro voluntario']]) {
+    for (const [type, title] of [['contributions', 'Aporte Mensual'], ['permanent-savings', 'Ahorro permanente'], ['voluntary-savings', 'Ahorro voluntario']]) {
       await admin.page.getByLabel(`Archivo ${title}`, { exact: true }).setInputFiles(path.join(artifacts, `${type}.xlsx`));
       const completed = admin.page.waitForResponse(response => response.url().endsWith(`/admin/import-batches/${type}`) && response.request().method() === 'POST');
       await admin.page.getByRole('button', { name: `Importar ${title.toLowerCase()}`, exact: true }).click();
@@ -77,16 +91,22 @@ test('otrosi: real browser, sessions, XLSX, MariaDB, decisions and private PDF',
     assert.notEqual(second.id, first.id);
     await admin.page.reload();
     await admin.page.getByRole('button', { name: /^aportes y ahorros$/i }).click();
-    await admin.page.getByRole('button', { name: /^aprobar$/i }).click();
-    await admin.page.getByText('Solicitud de ahorro voluntario aprobada.', { exact: true }).waitFor();
+    await admin.page.getByRole('button', { name: /^revision favorable$/i }).click();
+    await admin.page.getByText(/aprobacion definitiva espera la libranza firmada por la empresa/i).waitFor();
     await owner.page.reload();
     const history = (await json(owner.context, '/portal/voluntary-savings-requests')).data;
     assert.equal(history.find(item => item.id === first.id).status, 'rejected');
-    assert.equal(history.find(item => item.id === second.id).status, 'approved');
+    assert.equal(history.find(item => item.id === second.id).status, 'awaiting_employer_authorization');
+    admin.page.once('dialog', dialog => dialog.accept());
     await admin.page.getByLabel('Libranza firmada de Synthetic E2E associate').setInputFiles({ name: 'signed-fixture.pdf', mimeType: 'application/pdf', buffer: await pdf.body() });
-    await admin.page.getByText('Libranza firmada guardada correctamente.', { exact: true }).waitFor();
+    await admin.page.getByText('Libranza empresarial guardada y solicitud aprobada definitivamente.', { exact: true }).waitFor();
     await owner.page.reload();
     await owner.page.getByRole('link', { name: 'Ver libranza firmada', exact: true }).waitFor();
+    const third = await submit('90000');
+    assert.notEqual(third.id, second.id);
+    const afterNewRequest = (await json(owner.context, '/portal/voluntary-savings-requests')).data;
+    assert.equal(afterNewRequest.find(item => item.id === second.id).status, 'approved');
+    assert.equal(afterNewRequest.find(item => item.id === third.id).status, 'submitted');
     const other = await actor('other', '/portal-asociado');
     assert.equal((await json(other.context, '/portal/contributions')).data.state, 'empty');
     const signed = (await json(owner.context, '/portal/voluntary-savings-requests')).data.find(item => item.id === second.id);
@@ -96,7 +116,7 @@ test('otrosi: real browser, sessions, XLSX, MariaDB, decisions and private PDF',
     const reviewer = await actor('reviewer', '/admin-fonasin');
     await reviewer.page.getByRole('button', { name: /^aportes y ahorros$/i }).click();
     await reviewer.page.getByRole('heading', { name: /solicitudes de ahorro voluntario/i }).waitFor();
-    assert.equal(await reviewer.page.getByRole('button', { name: /^aprobar$|^rechazar$/i }).count(), 0);
+    assert.equal(await reviewer.page.getByRole('button', { name: /^revision favorable$|^rechazar$/i }).count(), 0);
     await owner.page.screenshot({ path: path.join(artifacts, 'associate.png'), fullPage: true });
     await admin.page.screenshot({ path: path.join(artifacts, 'admin.png'), fullPage: true });
     await owner.page.setViewportSize({ width: 390, height: 844 });

@@ -41,4 +41,9 @@ class AssociatePolicy
     {
         return $user->hasRole('admin');
     }
+
+    public function manageIdentitySupport(User $user, Associate $associate): bool
+    {
+        return $user->hasRole('admin');
+    }
 }

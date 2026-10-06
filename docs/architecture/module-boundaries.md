@@ -12,7 +12,7 @@ Evitar que el crecimiento del proyecto convierta el codigo en una sola capa de d
 | Affiliation | formulario por etapas y revision | solicitudes, secciones, documentos, consentimientos | estado de solicitud y evento de aprobacion/rechazo |
 | Credits | carga administrativa y consulta privada | creditos y su historial | resumen autorizado para Portal |
 | Portal | sesion de asociado | no es propietario de datos financieros | vistas del asociado autenticado |
-| Content | administracion limitada | carrusel y convenios | contenido publico publicado |
+| Content | administracion limitada de contenido institucional | `public_content_items`, `public_site_settings`, imagenes y PDF privados | API publica de elementos publicados; gestion autenticada y auditada |
 | FPQRS | formulario publico | entrega y estado interno minimo | confirmacion de envio |
 
 ## Comunicacion permitida

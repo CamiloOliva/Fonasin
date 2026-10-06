@@ -55,6 +55,8 @@ class AssociateImportOnboardingHttpTest extends TestCase
         $this->assertSame('persona.uno@example.test', $user->email);
         $this->assertTrue($user->must_change_password);
         $this->assertTrue($user->hasRole('associate'));
+        $this->assertSame('inactive', $associate->status);
+        $this->assertSame('inactive', $user->status);
         $this->assertNull($user->email_verified_at);
         Mail::assertNothingSent();
         Storage::disk('local')->assertExists(ImportBatch::query()->firstOrFail()->storage_key);
@@ -226,7 +228,13 @@ class AssociateImportOnboardingHttpTest extends TestCase
             ]),
         ])->assertCreated();
 
-        return Associate::query()->with('user')->firstOrFail();
+        $associate = Associate::query()->with('user')->firstOrFail();
+        $this->actingAs($admin)->post("/admin/associates/{$associate->id}/identity-support", [
+            'file' => UploadedFile::fake()->create('cedula.pdf', 64, 'application/pdf'),
+        ], ['Accept' => 'application/json'])->assertOk();
+        $this->actingAs($admin)->postJson("/admin/associates/{$associate->id}/activate")->assertOk();
+
+        return $associate->fresh('user');
     }
 
     /** @param array<int, array<int, string>> $rows */

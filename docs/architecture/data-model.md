@@ -257,8 +257,8 @@ El caso de uso inicial de envio exige las secciones de formulario completas, los
 
 ## Contenido y FPQRS
 
-- `carousel_assets`: entidad propuesta para imagen, texto alternativo, enlace, orden, estado y publicacion. No existe migracion/modelo en el alcance actual.
-- `convenios`: entidad propuesta para nombre, categoria, logo, contenido y estado de publicacion. No existe migracion/modelo en el alcance actual.
+- `public_content_items`: UUID, tipo (`news`, `social_balance`, `agreement`, `banner`), titulo, resumen, categoria, enlace HTTPS, orden, publicacion, fecha, usuario editor y claves privadas opcionales de imagen/PDF. Sustituye propuestas separadas de `carousel_assets` y `convenios`. La migracion traslada las tarjetas y banners estaticos vigentes a registros editables sin copiar sus archivos.
+- `public_site_settings`: clave, valor, usuario editor y fechas para correo y redes oficiales; las redes requieren dominios HTTPS permitidos. Actualizar no exige recompilar React. Ver ADR-005.
 - `fpqrs_submissions`: nombre, correo, hash HMAC del correo, tipo, mensaje, adjunto opcional en storage privado, estado de entrega de correo y fecha. No implementa radicado ni seguimiento publico. Nombre, correo, mensaje y adjunto permanecen en claro para operacion interna; antes de produccion se debe aprobar finalidad, retencion, responsable y procedimiento de eliminacion/anonimizacion si aplica.
 
 ## Indices minimos

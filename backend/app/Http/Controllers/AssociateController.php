@@ -3,15 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Application\Affiliation\UseCases\CreateAssociateManually;
+use App\Application\Affiliation\UseCases\OpenAssociateIdentitySupport;
+use App\Application\Affiliation\UseCases\StoreAssociateIdentitySupport;
 use App\Application\Affiliation\UseCases\UpdateAssociateStatus;
 use App\Application\Identity\UseCases\SendAssociateActivationLink;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Http\Requests\Associates\StoreAssociateRequest;
+use App\Http\Requests\Associates\StoreIdentitySupportRequest;
 use App\Models\Associate;
 use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 class AssociateController extends Controller
@@ -74,6 +78,49 @@ class AssociateController extends Controller
         return $this->changeStatus($request, $associate, $updateAssociateStatus, $cipher, $hasher, 'active');
     }
 
+    public function storeIdentitySupport(
+        StoreIdentitySupportRequest $request,
+        Associate $associate,
+        StoreAssociateIdentitySupport $store,
+        EncryptsSensitiveData $cipher,
+        HashesSensitiveData $hasher,
+    ): JsonResponse {
+        try {
+            $file = $request->file('file');
+            $updated = $store($associate, $request->user(), $file->get(), $file->getMimeType(), $this->ipHash($request, $hasher));
+        } catch (DomainException $exception) {
+            return $this->domainError($exception);
+        }
+
+        return response()->json(['data' => $this->associatePayload($updated->load('user'), $cipher)]);
+    }
+
+    public function downloadIdentitySupport(
+        Request $request,
+        Associate $associate,
+        OpenAssociateIdentitySupport $open,
+        HashesSensitiveData $hasher,
+    ): StreamedResponse {
+        try {
+            $stream = $open($associate, $request->user(), $this->ipHash($request, $hasher));
+        } catch (DomainException) {
+            abort(404);
+        }
+
+        return response()->stream(function () use ($stream): void {
+            try {
+                fpassthru($stream);
+            } finally {
+                fclose($stream);
+            }
+        }, 200, [
+            'Content-Type' => $associate->identity_support_mime_type ?: 'application/octet-stream',
+            'Content-Disposition' => 'attachment; filename="cedula-asociado.'.$this->identitySupportExtension($associate->identity_support_mime_type).'"',
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
     public function deactivate(
         Request $request,
         Associate $associate,
@@ -102,6 +149,10 @@ class AssociateController extends Controller
                 'status' => $associate->user->status,
             ] : null,
             'activation_required' => (bool) $associate->user?->must_change_password,
+            'legacy_validation_required' => (bool) $associate->legacy_validation_required,
+            'has_identity_support' => (bool) $associate->identity_support_storage_key,
+            'legacy_validated_at' => $associate->legacy_validated_at?->toJSON(),
+            'legacy_validated_by_user_id' => $associate->legacy_validated_by_user_id,
             'affiliation_applications_count' => $associate->affiliation_applications_count ?? 0,
             'credit_accounts_count' => $associate->credit_accounts_count ?? 0,
             'created_at' => $associate->created_at?->toJSON(),
@@ -195,5 +246,14 @@ class AssociateController extends Controller
         $ip = $request->ip();
 
         return $ip ? $hasher->ip($ip) : null;
+    }
+
+    private function identitySupportExtension(?string $mime): string
+    {
+        return match ($mime) {
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            default => 'pdf',
+        };
     }
 }

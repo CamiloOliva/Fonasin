@@ -16,6 +16,7 @@ class StoreSignedVoluntarySavingsAuthorizationRequest extends FormRequest
     {
         return [
             'file' => ['required', 'file', 'max:5120', 'mimetypes:application/pdf'],
+            'confirm_employer_authorization' => ['accepted'],
         ];
     }
 
@@ -26,6 +27,7 @@ class StoreSignedVoluntarySavingsAuthorizationRequest extends FormRequest
             'file.uploaded' => 'El servidor no pudo recibir la libranza firmada.',
             'file.max' => 'La libranza firmada no debe superar 5 MB.',
             'file.mimetypes' => 'La libranza firmada debe ser un PDF.',
+            'confirm_employer_authorization.accepted' => 'Confirma que la empresa contratante firmo la libranza antes de la aprobacion definitiva.',
         ];
     }
 }

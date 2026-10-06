@@ -17,6 +17,8 @@ enum AffiliationAuditAction: string
     case DocumentViewed = 'document.viewed';
     case DocumentDownloaded = 'document.downloaded';
     case AssociateCreated = 'associate.created';
+    case AssociateIdentitySupportUploaded = 'associate.identity_support.uploaded';
+    case AssociateIdentitySupportDownloaded = 'associate.identity_support.downloaded';
     case AssociateActivated = 'associate.activated';
     case AssociateDeactivated = 'associate.deactivated';
 }

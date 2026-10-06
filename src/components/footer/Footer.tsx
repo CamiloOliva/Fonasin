@@ -3,6 +3,8 @@ import type { ComponentType } from 'react';
 import { Link } from 'react-router-dom';
 import { navigation } from '../../data/navigation';
 import { CONTACT_EMAIL, OFFICIAL_SOCIAL_URLS, WHATSAPP_URL } from '../../data/siteConfig';
+import { usePublicContent } from '../../hooks/usePublicContent';
+import { officialSocialUrl } from '../../data/siteConfig';
 
 const legalLinks = [
   { label: 'Estatutos', to: '/estatutos?document=statutes' },
@@ -10,12 +12,6 @@ const legalLinks = [
   { label: 'Reglamento de crédito y cartera', to: '/estatutos?document=credit-regulation' },
   { label: 'Política de tratamiento de datos', to: '/estatutos?document=data-policy' },
 ];
-
-const socialLinks = [
-  { label: 'Facebook', icon: Globe, href: OFFICIAL_SOCIAL_URLS.facebook },
-  { label: 'Instagram', icon: Instagram, href: OFFICIAL_SOCIAL_URLS.instagram },
-  { label: 'YouTube', icon: Youtube, href: OFFICIAL_SOCIAL_URLS.youtube },
-].filter((social): social is { label: string; icon: typeof Globe; href: string } => social.href !== null);
 
 function IconPill({
   icon: Icon,
@@ -41,7 +37,14 @@ function IconPill({
 }
 
 export default function Footer() {
+  const { content } = usePublicContent();
   const currentYear = new Date().getFullYear();
+  const contactEmail = content?.settings.contact_email || CONTACT_EMAIL;
+  const socialLinks = [
+    { label: 'Facebook', icon: Globe, href: content ? officialSocialUrl(content.settings.facebook_url ?? undefined, ['facebook.com']) : OFFICIAL_SOCIAL_URLS.facebook },
+    { label: 'Instagram', icon: Instagram, href: content ? officialSocialUrl(content.settings.instagram_url ?? undefined, ['instagram.com']) : OFFICIAL_SOCIAL_URLS.instagram },
+    { label: 'YouTube', icon: Youtube, href: content ? officialSocialUrl(content.settings.youtube_url ?? undefined, ['youtube.com', 'youtu.be']) : OFFICIAL_SOCIAL_URLS.youtube },
+  ].filter((social): social is { label: string; icon: typeof Globe; href: string } => social.href !== null);
 
   return (
     <footer className="relative mt-8 overflow-hidden bg-[#062f1a] text-white">
@@ -154,7 +157,7 @@ export default function Footer() {
                 WhatsApp
               </a>
               <a
-                href={`mailto:${CONTACT_EMAIL}`}
+                href={`mailto:${contactEmail}`}
                 className="group flex items-center gap-3 text-sm font-medium text-white/82 transition hover:text-white"
               >
                 <ChevronRight className="h-4 w-4 text-[#d9d500] transition group-hover:translate-x-1" />

@@ -31,8 +31,10 @@ class ReviewVoluntarySavingsRequest
             }
 
             $lockedRequest->forceFill([
-                'status' => $status->value,
-                'pending_associate_id' => null,
+                'status' => $status === VoluntarySavingsRequestStatus::Approved
+                    ? VoluntarySavingsRequestStatus::AwaitingEmployerAuthorization->value
+                    : $status->value,
+                'pending_associate_id' => $status === VoluntarySavingsRequestStatus::Rejected ? null : $lockedRequest->associate_id,
                 'reviewed_at' => now(),
                 'reviewed_by_user_id' => $actor->id,
                 'review_notes' => $notes,
@@ -46,7 +48,7 @@ class ReviewVoluntarySavingsRequest
                 actor: $actor,
                 actorType: AuditActorType::User,
                 ipHash: $ipHash,
-                metadata: ['status' => $status->value],
+                metadata: ['decision' => $status->value, 'status' => $lockedRequest->status],
             );
 
             return $lockedRequest->refresh();

@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
-import { convenios, ConvenioCategory } from '../../data/convenios';
+import type { ConvenioCategory } from '../../data/convenios';
+import { usePublicContent } from '../../hooks/usePublicContent';
+import { publicContentMediaUrl } from '../../services/publicContentService';
 
 const cats: Array<'Todos' | ConvenioCategory> = [
   'Todos',
@@ -12,10 +14,21 @@ const cats: Array<'Todos' | ConvenioCategory> = [
 ];
 
 export default function Convenios() {
+  const { content, error, loading } = usePublicContent();
+  const convenios = useMemo(() => (content?.data ?? [])
+    .filter((item) => item.kind === 'agreement')
+    .map((item) => ({
+      id: item.id,
+      name: item.title,
+      category: item.category as ConvenioCategory,
+      description: item.summary ?? '',
+      logo: publicContentMediaUrl(item.image_url) ?? '/images/logo-placeholder.svg',
+      website: item.link_url,
+    })), [content]);
   const [cat, setCat] = useState<(typeof cats)[number]>('Todos');
   const items = useMemo(
     () => (cat === 'Todos' ? convenios : convenios.filter((c) => c.category === cat)),
-    [cat],
+    [cat, convenios],
   );
 
   return (
@@ -46,6 +59,9 @@ export default function Convenios() {
           ))}
         </div>
 
+        {loading && <p className="mt-9 text-slate-600">Cargando convenios…</p>}
+        {error && <p className="mt-9 text-slate-600">No fue posible consultar los convenios. Intenta nuevamente más tarde.</p>}
+        {!loading && !error && items.length === 0 && <p className="mt-9 text-slate-600">No hay convenios publicados en esta categoría.</p>}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-9">
           {items.map((c) => {
             const isEmi = c.name === 'EMI';
@@ -110,7 +126,9 @@ export default function Convenios() {
               </article>
             );
 
-            return isFeatured ? (
+            return c.website ? (
+              <a key={c.id} href={c.website} target="_blank" rel="noopener noreferrer" className="block h-full rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">{card}</a>
+            ) : isFeatured ? (
               <Link
                 key={c.id}
                 to={isEmi ? '/convenios/emi' : isSanitas ? '/convenios/sanitas' : isEmermedica ? '/convenios/emermedica' : isUmaIps ? '/convenios/uma-ips' : isPracticar ? '/convenios/practicar' : isManejar ? '/convenios/manejar' : isCoorserpark ? '/convenios/coorserpark' : isCaribbean ? '/convenios/caribbean-sol-y-mar' : isLuzMarina ? '/convenios/luz-marina-vargas' : '/convenios/los-olivos'}

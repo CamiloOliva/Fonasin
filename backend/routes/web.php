@@ -11,6 +11,7 @@ use App\Http\Controllers\FpqrsSubmissionController;
 use App\Http\Controllers\ImportBatchController;
 use App\Http\Controllers\PortalAccountStatementController;
 use App\Http\Controllers\PortalAffiliationController;
+use App\Http\Controllers\PublicContentController;
 use App\Http\Controllers\VoluntarySavingsRequestController;
 use Illuminate\Support\Facades\Route;
 
@@ -20,6 +21,20 @@ Route::get('/', function () {
 
 Route::get('/csrf-token', fn (): array => ['data' => ['token' => csrf_token()]])
     ->name('csrf-token');
+
+Route::get('/public/content', [PublicContentController::class, 'index'])->name('public.content.index');
+Route::get('/public/content/{item}/image', [PublicContentController::class, 'image'])->name('public.content.image');
+Route::get('/public/content/{item}/document', [PublicContentController::class, 'document'])->name('public.content.document');
+
+Route::middleware(['auth', 'password.changed'])->prefix('admin/content')->name('admin.content.')->group(function (): void {
+    Route::get('/', [PublicContentController::class, 'adminIndex'])->middleware('can:viewAny,App\\Models\\PublicContentItem')->name('index');
+    Route::get('/{item}/image', [PublicContentController::class, 'previewImage'])->middleware('can:viewAny,App\\Models\\PublicContentItem')->name('image.preview');
+    Route::get('/{item}/document', [PublicContentController::class, 'previewDocument'])->middleware('can:viewAny,App\\Models\\PublicContentItem')->name('document.preview');
+    Route::post('/', [PublicContentController::class, 'store'])->middleware('can:manage,App\\Models\\PublicContentItem')->name('store');
+    Route::patch('/{item}', [PublicContentController::class, 'update'])->middleware('can:manage,item')->name('update');
+    Route::post('/{item}/media', [PublicContentController::class, 'storeMedia'])->middleware('can:manage,item')->name('media.store');
+    Route::put('/settings', [PublicContentController::class, 'saveSettings'])->middleware('can:manage,App\\Models\\PublicContentItem')->name('settings.update');
+});
 
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])
     ->name('login');
@@ -115,6 +130,12 @@ Route::middleware(['auth', 'password.changed'])
         Route::post('/{associate}/activate', [AssociateController::class, 'activate'])
             ->middleware('can:updateStatus,associate')
             ->name('activate');
+        Route::post('/{associate}/identity-support', [AssociateController::class, 'storeIdentitySupport'])
+            ->middleware('can:manageIdentitySupport,associate')
+            ->name('identity-support.store');
+        Route::get('/{associate}/identity-support', [AssociateController::class, 'downloadIdentitySupport'])
+            ->middleware('can:manageIdentitySupport,associate')
+            ->name('identity-support.download');
         Route::post('/{associate}/deactivate', [AssociateController::class, 'deactivate'])
             ->middleware('can:updateStatus,associate')
             ->name('deactivate');

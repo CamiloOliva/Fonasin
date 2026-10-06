@@ -12,14 +12,19 @@ no equivale a que FONASIN haya aceptado la entrega. Ver ADR-004.
    el perfil habilitado contiene datos personales y laborales minimos. Sin
    perfil, el servidor devuelve error sin solicitud ni PDF. Una pendiente
    bloquea otra en UI y servidor. La confirmacion es obligatoria.
-4. Reviewer consulta; admin decide y registra firmada. Rechazo conserva historial
-   y permite una solicitud nueva. Aprobacion no aumenta saldo sin importacion.
+4. Reviewer consulta; admin marca revision favorable o rechazo. Revision favorable
+   queda pendiente de autorizacion empresarial; solo cargar y confirmar el PDF
+   firmado por la empresa aprueba definitivamente. Rechazo conserva historial
+   y permite una solicitud nueva; dos aprobadas pueden coexistir. Aprobacion no
+   aumenta saldo sin importacion.
 5. Token CSRF vencido se renueva una vez. Error de permisos no se reintenta.
 6. MariaDB real, tests de regresion y navegador integrado pasan. Un HTTP 200 no
    demuestra por si solo contenido, PDF, roles ni persistencia.
 
-Pendiente de decision funcional: si una solicitud ya aprobada permite otra,
-reemplaza la vigente o la bloquea. No afirmar que esta regla esta aceptada.
+Regla aceptada el 5 de octubre de 2026: una nueva solicitud despues de aprobacion
+definitiva es posible y no sustituye las anteriores. Ver ADR-005. Antes de
+produccion, revisar solicitudes `approved` antiguas sin PDF firmado; no se
+clasifican automaticamente.
 
 ## Dependencias
 

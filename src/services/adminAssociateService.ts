@@ -11,6 +11,10 @@ export type AdminAssociate = {
     status: string;
   } | null;
   activation_required?: boolean;
+  legacy_validation_required: boolean;
+  has_identity_support: boolean;
+  legacy_validated_at: string | null;
+  legacy_validated_by_user_id: string | null;
   affiliation_applications_count: number;
   credit_accounts_count: number;
   created_at: string | null;
@@ -22,7 +26,6 @@ export type CreateAssociatePayload = {
   document_number: string;
   full_name: string;
   email: string;
-  status?: string;
 };
 
 export type AdminAssociateProfile = {
@@ -184,6 +187,34 @@ export async function deactivateAdminAssociate(id: string): Promise<AdminAssocia
   });
 
   return response.data;
+}
+
+export async function uploadAdminAssociateIdentitySupport(id: string, file: File): Promise<AdminAssociate> {
+  const body = new FormData();
+  body.append('file', file);
+  const response = await requestJson<{ data: AdminAssociate }>(`/admin/associates/${id}/identity-support`, {
+    method: 'POST',
+    body,
+  });
+  return response.data;
+}
+
+export async function downloadAdminAssociateIdentitySupport(id: string): Promise<void> {
+  const response = await fetch(buildUrl(`/admin/associates/${id}/identity-support`), {
+    credentials: 'include',
+    headers: { Accept: 'application/pdf,image/jpeg,image/png' },
+  });
+  if (!response.ok) throw new Error('No fue posible descargar el soporte de identidad.');
+  const extension = response.headers.get('Content-Type')?.includes('image/jpeg') ? 'jpg'
+    : response.headers.get('Content-Type')?.includes('image/png') ? 'png' : 'pdf';
+  const url = URL.createObjectURL(await response.blob());
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `cedula-asociado.${extension}`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
 }
 
 export async function sendAdminAssociateActivation(id: string): Promise<void> {

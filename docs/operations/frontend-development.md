@@ -92,7 +92,7 @@ El hosting debe tener `mod_rewrite` y permitir `.htaccess` en el document root. 
 VITE_BACKEND_BASE_URL=
 VITE_BACKEND_DEV_PROXY_TARGET=http://127.0.0.1:8000
 VITE_WHATSAPP_URL=
-VITE_CONTACT_EMAIL=fonasinbucaramanga@gmail.com
+VITE_CONTACT_EMAIL=fonasin.bucaramanga@fonasin.com
 VITE_FACEBOOK_URL=
 VITE_INSTAGRAM_URL=
 VITE_YOUTUBE_URL=
@@ -102,9 +102,9 @@ VITE_YOUTUBE_URL=
 - Solo publicar con `VITE_*` valores seguros para cualquier visitante.
 - En produccion, `VITE_BACKEND_BASE_URL` debe quedar vacio si Laravel y React comparten dominio, o usar HTTPS y el dominio aprobado si se autoriza otro origen.
 - Los secretos permanecen en `backend/.env` y nunca pasan al build React.
-- El correo predeterminado corresponde al contrato inicial; FONASIN debe confirmar si cambio antes del build final.
-- Las redes solo se muestran cuando FONASIN entrega una URL HTTPS oficial de Facebook, Instagram o YouTube. Configurarlas en el entorno de build, no en cPanel despues de compilar: Vite incrusta esos valores en `dist/`.
-- Noticias y Balance social leen `src/data/institutionalUpdates.ts`. Agregar exclusivamente publicaciones e informes aprobados; sin datos, la pagina muestra un estado vacio honesto. No cargar documentos sensibles en `public/`.
+- El correo predeterminado es `fonasin.bucaramanga@fonasin.com`, confirmado el 5 de octubre de 2026. El panel administrativo guarda el valor vigente en MariaDB; no requiere un nuevo build para cambiarlo.
+- Las redes solo se muestran cuando FONASIN suministra y configura una URL HTTPS oficial. El panel administrativo guarda esos enlaces. Las variables `VITE_*` de redes se conservan solo como respaldo para versiones previas sin API; no son la fuente de verdad después de cargar el contenido.
+- Noticias, Balance Social, convenios y banners consultan `GET /public/content`; crear y publicar contenido aprobado desde `Admin FONASIN > Contenido del sitio`. No editar arreglos TypeScript para cada actualización. PDF e imágenes cargados quedan en storage privado hasta publicarse; no copiar documentos sensibles a `public/`.
 
 ## Flujo de version y publicacion
 

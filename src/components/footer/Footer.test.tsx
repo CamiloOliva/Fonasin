@@ -23,7 +23,7 @@ describe('Footer', () => {
     expect(within(legal as HTMLElement).getByRole('link', { name: /manual de líneas de crédito/i })).toHaveAttribute('href', '/estatutos?document=credit-manual');
     expect(within(legal as HTMLElement).getByRole('link', { name: /reglamento de crédito y cartera/i })).toHaveAttribute('href', '/estatutos?document=credit-regulation');
     expect(within(legal as HTMLElement).getByRole('link', { name: /política de tratamiento de datos/i })).toHaveAttribute('href', '/estatutos?document=data-policy');
-    expect(screen.getByRole('link', { name: 'Correo' })).toHaveAttribute('href', 'mailto:fonasinbucaramanga@gmail.com');
+    expect(screen.getByRole('link', { name: 'Correo' })).toHaveAttribute('href', 'mailto:fonasin.bucaramanga@fonasin.com');
     expect(screen.queryByRole('button', { name: 'Facebook' })).not.toBeInTheDocument();
   });
 });
