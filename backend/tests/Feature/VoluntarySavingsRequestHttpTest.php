@@ -46,6 +46,51 @@ class VoluntarySavingsRequestHttpTest extends TestCase
         $this->getJson('/admin/voluntary-savings-requests')->assertUnauthorized();
     }
 
+    public function test_new_associate_has_no_invented_voluntary_request_history(): void
+    {
+        [$user] = $this->associateUser();
+
+        $this->actingAs($user)->getJson('/portal/voluntary-savings-requests')
+            ->assertOk()
+            ->assertJsonPath('data', [])
+            ->assertJsonPath('pagination.has_more', false);
+        $this->assertDatabaseCount('voluntary_savings_requests', 0);
+    }
+
+    public function test_voluntary_authorization_renderer_receives_the_available_identity_and_amount_fields(): void
+    {
+        [$user] = $this->associateUser();
+        $renderer = new class implements RendersVoluntarySavingsPayrollAuthorization
+        {
+            /** @var array<string, mixed> */
+            public array $data = [];
+
+            public function render(array $data): string
+            {
+                $this->data = $data;
+
+                return '%PDF-1.4 payroll authorization';
+            }
+        };
+        $this->app->instance(RendersVoluntarySavingsPayrollAuthorization::class, $renderer);
+
+        $this->actingAs($user)->postJson('/portal/voluntary-savings-requests', [
+            'monthly_amount' => '150000', 'accept_terms' => true,
+        ])->assertCreated();
+
+        $this->assertSame('Synthetic Associate', $renderer->data['fullName']);
+        $this->assertSame('CC', $renderer->data['documentType']);
+        $this->assertSame('Bucaramanga', $renderer->data['issuePlace']);
+        $this->assertSame('Empresa de prueba', $renderer->data['employer']);
+        $this->assertSame('3000000000', $renderer->data['phone']);
+        $this->assertSame(2500000.0, $renderer->data['monthlySalary']);
+        $this->assertSame(150000.0, $renderer->data['voluntarySavings']);
+        $this->assertSame(150000.0, $renderer->data['totalMonthlyDeduction']);
+        $this->assertNotEmpty($renderer->data['requestId']);
+        $this->assertNotEmpty($renderer->data['acceptedAt']);
+        $this->assertNotEmpty($renderer->data['verificationCode']);
+    }
+
     public function test_active_associate_can_submit_and_view_request(): void
     {
         [$user, $associate] = $this->associateUser();

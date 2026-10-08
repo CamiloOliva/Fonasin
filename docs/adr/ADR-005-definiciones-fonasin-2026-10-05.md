@@ -2,6 +2,8 @@
 
 Estado: aprobado funcionalmente por FONASIN; implementación técnica en revisión local. Fuente: respuesta escrita de Bibian transmitida por Carlos el 5 de octubre de 2026. La aprobación de reglas no equivale a aceptación de la entrega.
 
+Actualizacion: las precisiones transmitidas por Carlos el 7 de octubre sobre creditos, historial y asociados antiguos se registran en ADR-006. Los puntos 2 a 4 de este documento conservan el contexto original, pero no deben usarse solos como instruccion de implementacion vigente.
+
 ## Decisiones
 
 1. Una solicitud de ahorro voluntario pendiente impide otra. Un rechazo conserva el registro y permite una solicitud nueva. Después de la aprobación definitiva, el asociado puede iniciar otra; aprobaciones anteriores no se cancelan ni sustituyen.
