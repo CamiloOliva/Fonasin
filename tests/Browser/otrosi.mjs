@@ -69,7 +69,7 @@ test('otrosi: real browser, sessions, XLSX, MariaDB, decisions and private PDF',
     await owner.page.goto('/portal-asociado?intent=ahorro-voluntario');
     async function submit(amount) {
       await owner.page.getByLabel('Valor mensual', { exact: true }).fill(amount);
-      await owner.page.getByRole('checkbox', { name: /confirmo que deseo/i }).check();
+      await owner.page.getByRole('checkbox', { name: /confirmo que solicito y autorizo/i }).check();
       const submitted = owner.page.waitForResponse(response => response.url().endsWith('/portal/voluntary-savings-requests') && response.request().method() === 'POST');
       await owner.page.getByRole('button', { name: /^enviar solicitud$/i }).click();
       const response = await submitted;
