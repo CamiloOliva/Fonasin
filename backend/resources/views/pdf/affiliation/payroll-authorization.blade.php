@@ -98,7 +98,7 @@
     </p>
     <p class="paragraph">
         Autorizo igualmente que, en caso de terminaci&oacute;n del v&iacute;nculo laboral por cualquier causa, los valores pendientes sean
-        descontados de salarios, prestaciones sociales, liquidaci&oacute;n final o cualquier otro pago a que tenga derecho, conforme a
+        descontados de mis salarios, prestaciones sociales, liquidaci&oacute;n final o cualquier otro pago a que tenga derecho, conforme a
         la normatividad vigente.
     </p>
 </div>

@@ -86,9 +86,10 @@ class VoluntarySavingsRequestHttpTest extends TestCase
         $this->assertSame(2500000.0, $renderer->data['monthlySalary']);
         $this->assertSame(150000.0, $renderer->data['voluntarySavings']);
         $this->assertSame(150000.0, $renderer->data['totalMonthlyDeduction']);
+        $this->assertArrayNotHasKey('mandatoryContribution', $renderer->data);
         $this->assertNotEmpty($renderer->data['requestId']);
         $this->assertNotEmpty($renderer->data['acceptedAt']);
-        $this->assertNotEmpty($renderer->data['verificationCode']);
+        $this->assertArrayNotHasKey('verificationCode', $renderer->data);
     }
 
     public function test_active_associate_can_submit_and_view_request(): void
@@ -123,6 +124,12 @@ class VoluntarySavingsRequestHttpTest extends TestCase
             'action' => ContributionAuditAction::VoluntarySavingsRequested->value,
             'subject_id' => $request->id,
         ]);
+        $consentAudit = AuditEvent::query()
+            ->where('action', ContributionAuditAction::VoluntarySavingsRequested->value)
+            ->where('subject_id', $request->id)
+            ->firstOrFail();
+        $this->assertSame('nomina-ahorro-voluntario-2026-10-08', $consentAudit->metadata['authorization_consent_version']);
+        $this->assertTrue($consentAudit->metadata['authorization_accepted']);
     }
 
     public function test_associate_can_page_through_all_historical_requests_without_exposing_another_associate(): void
@@ -271,7 +278,6 @@ class VoluntarySavingsRequestHttpTest extends TestCase
             'city' => 'Bucaramanga',
             'signatureDateLabel' => '23 de septiembre de 2026',
             'acceptedAt' => '2026-09-23 20:00:00',
-            'verificationCode' => 'ABC123',
             'logoDataUri' => null,
         ])->render();
         $plainText = html_entity_decode(strip_tags($html));
@@ -281,6 +287,11 @@ class VoluntarySavingsRequestHttpTest extends TestCase
         $this->assertStringContainsString('Ahorro voluntario', $plainText);
         $this->assertStringContainsString('$ 150.000', $plainText);
         $this->assertStringNotContainsString('Aporte obligatorio', $plainText);
+        $this->assertStringContainsString('los valores pendientes sean descontados de mis salarios', $plainText);
+        $this->assertStringContainsString('exclusivamente para fines relacionados con mi vinculación como asociado', $plainText);
+        $this->assertStringContainsString('Aceptación registrada', $plainText);
+        $this->assertStringNotContainsString('Firmado electrónicamente', $plainText);
+        $this->assertStringNotContainsString('Código de verificación', $plainText);
     }
 
     public function test_admin_can_review_request_and_reviewer_is_read_only(): void

@@ -887,6 +887,15 @@ export default function PortalAsociado() {
                       className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-bold text-slate-950 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 disabled:bg-slate-100"
                     />
                   </label>
+                  <details className="mt-4 rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm leading-6 text-slate-700">
+                    <summary className="cursor-pointer font-bold text-fonasin-deep">Leer la autorización de descuento por nómina</summary>
+                    <div className="mt-3 space-y-2">
+                      <p>Autorizo a mi empleador a descontar mensualmente el valor de ahorro voluntario que indiqué y trasladarlo a FONASIN. Esta solicitud no incluye un valor de aportes.</p>
+                      <p>Autorizo a FONASIN para el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 y demás normas aplicables, exclusivamente para fines relacionados con mi vinculación como asociado.</p>
+                      <p>En caso de terminación del vínculo laboral por cualquier causa, los valores pendientes podrán descontarse de mis salarios, prestaciones sociales, liquidación final o cualquier otro pago a que tenga derecho, conforme a la normatividad vigente.</p>
+                      <p>La solicitud queda pendiente de revisión de FONASIN y de autorización del pagador. Enviarla no registra por sí misma un abono a mi ahorro.</p>
+                    </div>
+                  </details>
                   <label className="mt-4 flex items-start gap-3 text-sm font-semibold leading-6 text-slate-700">
                     <input
                       type="checkbox"
@@ -896,7 +905,7 @@ export default function PortalAsociado() {
                       required
                       className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                     />
-                    Confirmo que deseo solicitar este ahorro voluntario mensual.
+                    Confirmo que solicito y autorizo el descuento mensual por n&oacute;mina del ahorro voluntario indicado. Esta nueva autorizaci&oacute;n no incluye el valor de mis aportes.
                   </label>
                   {hasPendingSavingsRequest ? (
                     <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">

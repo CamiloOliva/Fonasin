@@ -17,6 +17,8 @@ use Illuminate\Support\Str;
 
 class SubmitVoluntarySavingsRequest
 {
+    private const AUTHORIZATION_CONSENT_VERSION = 'nomina-ahorro-voluntario-2026-10-08';
+
     public function __construct(
         private readonly RecordAuditEvent $recordAuditEvent,
         private readonly GenerateVoluntarySavingsPayrollAuthorization $generatePayrollAuthorization,
@@ -63,7 +65,11 @@ class SubmitVoluntarySavingsRequest
                     actor: $actor,
                     actorType: AuditActorType::User,
                     ipHash: $ipHash,
-                    metadata: ['status' => $request->status],
+                    metadata: [
+                        'status' => $request->status,
+                        'authorization_consent_version' => self::AUTHORIZATION_CONSENT_VERSION,
+                        'authorization_accepted' => true,
+                    ],
                     occurredAt: $submittedAt,
                 );
 

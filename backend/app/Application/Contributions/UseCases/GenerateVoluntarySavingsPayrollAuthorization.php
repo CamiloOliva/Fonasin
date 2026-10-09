@@ -54,12 +54,6 @@ class GenerateVoluntarySavingsPayrollAuthorization
 
         $storageKey = "contributions/voluntary-savings/{$associate->id}/{$request->id}-libranza.pdf";
         $submittedAt = $request->submitted_at ?? now();
-        $verificationCode = strtoupper(substr(hash('sha256', implode('|', [
-            $request->id,
-            $associate->id,
-            $request->monthly_amount,
-            $submittedAt->toISOString(),
-        ])), 0, 16));
         $pdf = $this->renderer->render([
             'requestId' => $request->id,
             'fullName' => $associate->full_name,
@@ -75,7 +69,6 @@ class GenerateVoluntarySavingsPayrollAuthorization
             'city' => 'Bucaramanga',
             'signatureDateLabel' => $this->spanishDate($submittedAt),
             'acceptedAt' => $submittedAt->copy()->timezone('America/Bogota')->format('Y-m-d H:i:s'),
-            'verificationCode' => $verificationCode,
         ]);
 
         $this->privateFiles->put($storageKey, $pdf);

@@ -1,6 +1,6 @@
 # ADR-006 — Precisiones transmitidas por Carlos sobre libranza y asociados antiguos
 
-Fecha: 7 de octubre de 2026. Estado: **parcial, pendiente de confirmacion documental de FONASIN**. Fuente: conversacion de WhatsApp aportada por Diego y foto de un formato fisico de FONASIN. No sustituye el escaneo oficial ni la aceptacion de Bibian.
+Fecha: 7 de octubre de 2026. Estado: **parcial, uso y alcance numerico confirmados; contenido y procedimiento de firmas pendientes de aceptacion**. Fuente inicial: conversacion de WhatsApp aportada por Diego y foto de un formato fisico de FONASIN. El 8 de octubre Diego aporto el archivo digital `FORMATO DE AUTORIZACION DESCUENTO POR NOMINA - APORTES.docx` (SHA-256 `90495c9db389cb1c780f44df6e115e6ba9e1b66704e0c27ec19ca20cfb3c6bdd`). El original se conserva fuera del repositorio. El DOCX no declara numero de version ni fecha de vigencia. Bibian confirmo por escrito el 8 de octubre que para el asociado existente se genera **una nueva solicitud**, se usa **el mismo formato** y el valor autorizado corresponde **solo al ahorro voluntario, sin valor de aportes**.
 
 ## Definiciones transmitidas
 
@@ -10,15 +10,24 @@ Fecha: 7 de octubre de 2026. Estado: **parcial, pendiente de confirmacion docume
 
 ## Formato de libranza: inventario para cotejo
 
-La foto fisica permite identificar encabezado, ciudad/fecha, destinatario de nomina, identidad y empleador, salario mensual, aporte obligatorio de 1,5 %, ahorro voluntario de valor fijo, total mensual, periodicidad, mes de inicio, autorizaciones y espacios de firma del solicitante y del pagador. **No permite verificar version, texto completo ni vigencia.**
+El DOCX confirma encabezado, ciudad/fecha, destinatario de nomina, identidad y empleador, salario mensual, aporte obligatorio de 1,5 %, ahorro voluntario de valor fijo, total mensual, periodicidad, mes de inicio, autorizaciones y espacios de firma del solicitante y del pagador. Sus casillas `Aplica` y `No aplica` se refieren al ahorro voluntario. El documento no fija cifras ni fechas: son espacios para llenar. El texto fue leido estructuralmente del Word; el runtime de documentos de esta maquina no dispone de LibreOffice para verificar el render visual, por lo que no se afirma equivalencia de maquetacion.
 
-Los PDF actuales son dos vistas separadas: `backend/resources/views/pdf/affiliation/payroll-authorization.blade.php` y `backend/resources/views/pdf/contributions/voluntary-savings-payroll-authorization.blade.php`. El caso de uso de ahorro voluntario ya entrega nombre, documento, lugar de expedicion, empleador, telefono, correo, salario, valor mensual, fecha y referencia al renderer. Las pruebas fijan ese contrato de datos, no aprueban el texto legal ni el diseno. Al recibir el formato digital se debe:
+| Punto de cotejo | PDF de afiliacion actual | PDF de solicitud posterior de ahorro voluntario actual | Accion antes de aceptacion |
+|---|---|---|---|
+| Conceptos y total | Incluye aporte obligatorio y ahorro voluntario; el valor voluntario puede ser `No aplica`. | Incluye solo el nuevo ahorro y total igual a ese monto. | **Resuelto por Bibian:** mismo formato para la solicitud posterior, sin valor de aportes; el total autorizado de esta solicitud es solo el nuevo ahorro voluntario. No sumar aportes vigentes. |
+| Inicio de descuentos | Recibe mes/anio, hoy vacios y mostrados como por definir. | Muestra `Por definir con el pagador`. | Definir quien fija mes/anio y en que etapa; no inventar una fecha. |
+| Aceptacion y firmas | Agrega bloque de aceptacion electronica del solicitante y deja espacio para firma del pagador. | Hace lo mismo, con un bloque distinto. | Confirmar que la aceptacion electronica cumple el procedimiento operativo de FONASIN; el formato Word tiene espacios para firmas manuales. |
+| Texto de tratamiento y terminacion laboral | Cercano al DOCX, sujeto a cotejo final. | Ajustado a las clausulas del DOCX en el codigo local; conserva solo el concepto y total del nuevo ahorro. | Verificar PDF renderizado y obtener aceptacion de FONASIN; no atribuir aprobacion juridica automatica a la confirmacion de uso. |
 
-1. Registrar archivo de origen, version, fecha y aprobacion de FONASIN fuera del repositorio si contiene datos personales o firmas reales.
-2. Cotejar literalmente las dos vistas contra el documento aprobado y documentar diferencias antes de cambiar la redaccion.
-3. Definir para la solicitud **posterior** de ahorro voluntario si se autoriza solo el monto adicional o si el documento debe repetir el aporte obligatorio vigente y mostrar un total combinado. La foto tiene ambas filas, pero no resuelve el caso de un asociado que ya aporta.
-4. Confirmar si la aceptacion electronica del asociado y el PDF devuelto con firma del pagador son el procedimiento aceptado. El codigo no supone que una foto equivalga a esa confirmacion.
-5. Ajustar vistas y pruebas de generacion/descarga privada; verificar visualmente un PDF ficticio, sin datos reales, y obtener aprobacion de contenido de FONASIN.
+Los PDF actuales son dos vistas separadas: `backend/resources/views/pdf/affiliation/payroll-authorization.blade.php` y `backend/resources/views/pdf/contributions/voluntary-savings-payroll-authorization.blade.php`. El caso de uso de ahorro voluntario entrega nombre, documento, lugar de expedicion, empleador, telefono, correo, salario, valor mensual, fecha y referencia al renderer. Las pruebas fijan ese contrato de datos, no aprueban por si solas el texto legal ni el diseno. Para cerrar el formato se debe:
+
+En la solicitud posterior, el PDF no se rotula como firma electronica verificada ni presenta un codigo de verificacion sin mecanismo comprobable. El portal muestra la autorizacion antes del envio; el evento inmutable de solicitud registra la version del consentimiento aceptado. La aprobacion definitiva sigue siendo una decision administrativa sobre el PDF devuelto por el pagador, no una verificacion criptografica automatica.
+
+1. Registrar la version y fecha de vigencia del archivo cuando FONASIN las suministre. La confirmacion escrita de Bibian cubre su uso en la solicitud posterior, pero no aprueba por si sola cada clausula ni el procedimiento de firmas. Conservar el original fuera del repositorio si incorpora firmas o datos reales.
+2. Revisar con FONASIN el cotejo textual y visual de las dos vistas contra el DOCX. El ajuste local del PDF posterior reproduce las clausulas principales del archivo, pero no equivale a aceptacion final de todo el contenido.
+3. Mantener la regla confirmada para la solicitud **posterior**: nueva solicitud, mismo formato, solo el valor nuevo de ahorro voluntario y total igual a este monto. La fila de aportes del DOCX no debe presentar un valor en este tramite.
+4. Confirmar si la aceptacion electronica del asociado y el PDF devuelto con firma del pagador son el procedimiento aceptado. El DOCX por si solo no confirma ese procedimiento.
+5. Obtener aprobacion de contenido de FONASIN. El PDF posterior fue generado y revisado visualmente con datos ficticios en una pagina A4; la descarga privada y los permisos estan cubiertos por las pruebas de backend.
 
 ## Limites de implementacion
 

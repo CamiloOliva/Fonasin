@@ -412,8 +412,10 @@ describe('AppRoutes', () => {
     expect(await screen.findByText('Revisar el valor solicitado.')).toBeInTheDocument();
     expect(screen.getByText(/envia una nueva solicitud/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^ver libranza$/i })).toHaveAttribute('href', rejected.links?.payroll_authorization_preview);
+    expect(screen.getByText(/leer la autorización de descuento por nómina/i)).toBeInTheDocument();
+    expect(screen.getByText(/esta solicitud no incluye un valor de aportes/i)).toBeInTheDocument();
     await user.type(screen.getByLabelText(/valor mensual/i), '100000');
-    await user.click(screen.getByRole('checkbox', { name: /confirmo que deseo/i }));
+    await user.click(screen.getByRole('checkbox', { name: /confirmo que solicito y autorizo/i }));
     await user.click(screen.getByRole('button', { name: /^enviar solicitud$/i }));
     await waitFor(() => expect(portalService.submitPortalVoluntarySavingsRequest).toHaveBeenCalledWith('100000'));
     expect(screen.getByText('Revisar el valor solicitado.')).toBeInTheDocument();
