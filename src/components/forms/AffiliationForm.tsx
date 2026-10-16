@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -290,6 +290,13 @@ const citiesByDepartment = new Map(
 const colombiaCityOptions = colombiaDepartments.flatMap((department) =>
   department.cities.map((city) => `${city.name} - ${department.department}`),
 );
+const featuredWorkCities = [
+  'Bucaramanga - Santander',
+  'Bogotá, D.C. - Bogotá, D.C.',
+  'Medellín - Antioquia',
+  'Barranquilla - Atlántico',
+  'Santiago de Cali - Valle del Cauca',
+].filter((city) => colombiaCityOptions.includes(city));
 const economicActivityOptions = (economicActivitiesCatalog as EconomicActivity[]).map((activity) => ({
   value: activity.code,
   label: `${activity.code} - ${activity.name}`,
@@ -326,7 +333,7 @@ type RecoverableAffiliationDraft = Pick<AffiliationDraft, 'id'> & {
   links: Pick<AffiliationDraftLinks, 'read'>;
 };
 
-type StorableAffiliationDraft = RecoverableAffiliationDraft & Pick<AffiliationDraft, 'status'> & {
+type StorableAffiliationDraft = RecoverableAffiliationDraft & Pick<AffiliationDraft, 'status' | 'purpose'> & {
   draft_access_token?: string;
 };
 
@@ -339,7 +346,7 @@ function readStoredDraft(storageKey: string): RecoverableAffiliationDraft | null
     const draftId = stored.id ?? stored.draft?.id;
     const readUrl = stored.readUrl ?? stored.draft?.links?.read;
 
-    if (!draftId || !readUrl || Date.now() - stored.savedAt > DRAFT_STORAGE_TTL_MS) {
+    if (!draftId || !readUrl || (Date.now() - stored.savedAt > DRAFT_STORAGE_TTL_MS && stored.status !== 'pending_correction')) {
       window.sessionStorage.removeItem(storageKey);
       return null;
     }
@@ -369,7 +376,7 @@ function readStoredDraftAccessToken(storageKey: string): string {
 }
 
 function storeDraft(draft: StorableAffiliationDraft, storageKey: string): void {
-  if (draft.status !== 'draft') return;
+  if (draft.status !== 'draft' && draft.status !== 'pending_correction') return;
 
   const draftAccessToken = draft.draft_access_token ?? readStoredDraftAccessToken(storageKey);
 
@@ -380,6 +387,7 @@ function storeDraft(draft: StorableAffiliationDraft, storageKey: string): void {
       readUrl: draft.links.read,
       draftAccessToken,
       status: draft.status,
+      purpose: draft.purpose,
     }));
   } catch {
     // El formulario sigue funcionando aunque el navegador bloquee storage local.
@@ -763,6 +771,12 @@ function validateCurrentStep(
     }
     if (state.financial.voluntarySavings === 'Si' && isBlank(state.financial.voluntarySavingsValue)) {
       return 'Indica el valor mensual del ahorro voluntario.';
+    }
+    if (Number(state.financial.totalIncome) > MONEY_MAX_VALUE) {
+      return `El total de ingresos mensuales no puede superar ${moneyLabel(MONEY_MAX_VALUE)}. Ajusta sus componentes.`;
+    }
+    if (Number(state.financial.totalExpenses) > MONEY_MAX_VALUE) {
+      return `El total de egresos mensuales no puede superar ${moneyLabel(MONEY_MAX_VALUE)}. Ajusta sus componentes.`;
     }
   }
 
@@ -1181,7 +1195,11 @@ function ComboInput({
   const [open, setOpen] = useState(false);
   const currentValue = typeof value === 'string' ? value : '';
   const normalizedValue = currentValue.trim().toLocaleLowerCase('es-CO');
-  const visibleOptions = options
+  const sourceOptions = normalizedValue ? options : [
+    ...featuredWorkCities.filter((city) => options.includes(city)),
+    ...options.filter((city) => !featuredWorkCities.includes(city)),
+  ];
+  const visibleOptions = sourceOptions
     .filter((option) => (normalizedValue ? option.toLocaleLowerCase('es-CO').includes(normalizedValue) : true))
     .slice(0, 8);
 
@@ -1214,7 +1232,7 @@ function ComboInput({
         }}
       />
       {open && visibleOptions.length > 0 ? (
-        <div className="absolute left-0 right-0 z-30 mt-2 max-h-72 overflow-y-auto rounded-2xl border border-emerald-100 bg-white p-1.5 shadow-xl shadow-slate-900/12">
+        <div className="absolute left-0 right-0 z-30 mt-2 max-h-72 overflow-y-auto rounded-2xl border border-emerald-100 bg-white p-1.5 shadow-xl ">
           {visibleOptions.map((option) => (
             <button
               key={option}
@@ -1348,6 +1366,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
   const [submitted, setSubmitted] = useState(false);
   const [uploadedDocumentTypes, setUploadedDocumentTypes] = useState<Set<RequiredDocumentType>>(new Set());
   const [selectedLegalDocument, setSelectedLegalDocument] = useState<(typeof legalDocuments)[number]>(legalDocuments[0]);
+  const legalDocumentViewerRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<SectionState>(createInitialState);
   const isFormOnly = draft?.purpose === 'data_update' || draft?.purpose === 'profile_completion';
   const storageKey = flow === 'initial_affiliation' ? PUBLIC_DRAFT_STORAGE_KEY : PORTAL_DRAFT_STORAGE_KEY;
@@ -1400,9 +1419,14 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
                 ),
             ));
             setBackendMode('ready');
-            setBackendMessage('Encontramos un borrador guardado en este navegador. Puedes continuar donde ibas durante las proximas 24 horas.');
+            setBackendMessage(recoveredDraft.status === 'pending_correction'
+              ? `Correccion solicitada por FONASIN: ${recoveredDraft.correction?.reason ?? 'Revisa tu informacion antes de reenviar.'}`
+              : 'Encontramos un borrador guardado en este navegador. Puedes continuar donde ibas durante las proximas 24 horas.');
             return;
           } catch {
+            if (window.sessionStorage.getItem(storageKey)?.includes('pending_correction')) {
+              throw new Error('No fue posible retomar la correccion. El enlace puede haber vencido; solicita uno nuevo a FONASIN.');
+            }
             clearStoredDraft(storageKey);
           }
         }
@@ -1423,8 +1447,14 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
         storeDraft(response, storageKey);
         setBackendMode('ready');
         setBackendMessage(`Borrador ${response.id} listo para sincronizar secciones.`);
-      } catch {
+        setState(stateFromDraft(response));
+      } catch (cause) {
         if (!active) return;
+        if (window.sessionStorage.getItem(storageKey)?.includes('pending_correction')) {
+          setBackendMode('unavailable');
+          setBackendMessage(cause instanceof Error ? cause.message : 'No fue posible retomar la correccion.');
+          return;
+        }
         if (import.meta.env.DEV) {
           setBackendMode('local');
           setBackendMessage('Modo local de desarrollo activo. El backend aun no responde en este entorno.');
@@ -1591,7 +1621,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
     }
 
     return (
-      <div className="space-y-6">
+      <div className="legacy-space-y-6">
         <SectionHeader
           icon={<Users size={22} />}
           eyebrow="Bloque 1"
@@ -1652,7 +1682,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
 
   function renderEmploymentSection() {
     return (
-      <div className="space-y-6">
+      <div className="legacy-space-y-6">
         <SectionHeader
           icon={<Briefcase size={22} />}
           eyebrow="Bloque 2"
@@ -1699,7 +1729,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
 
   function renderFinancialSection() {
     return (
-      <div className="space-y-6">
+      <div className="legacy-space-y-6">
         <SectionHeader
           icon={<Banknote size={22} />}
           eyebrow="Bloque 3"
@@ -1754,7 +1784,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
 
   function renderBeneficiariesSection() {
     return (
-      <div className="space-y-6">
+      <div className="legacy-space-y-6">
         <SectionHeader
           icon={<HeartHandshake size={22} />}
           eyebrow="Bloque 4"
@@ -1779,7 +1809,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
           </button>
         </div>
 
-        <div className="space-y-4">
+        <div className="legacy-space-y-4">
           {state.beneficiaries.map((beneficiary, index) => (
             <div key={index} className="rounded-[1.6rem] border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center justify-between gap-3">
@@ -1938,7 +1968,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
 
   function renderSarlaftSection() {
     return (
-      <div className="space-y-6">
+      <div className="legacy-space-y-6">
         <SectionHeader
           icon={<ShieldCheck size={22} />}
           eyebrow="Bloque 5"
@@ -2465,7 +2495,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
     );
 
     return (
-      <div className="space-y-6">
+      <div className="legacy-space-y-6">
         <SectionHeader
           icon={<CheckCircle2 size={22} />}
           eyebrow="Bloque 7"
@@ -2596,7 +2626,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
     ];
 
     return (
-      <div className="space-y-6">
+      <div className="legacy-space-y-6">
         <SectionHeader
           icon={<FileText size={22} />}
           eyebrow="Bloque 6"
@@ -2609,7 +2639,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
         />
 
         <div className="grid gap-5">
-          <div className="space-y-4">
+          <div className="legacy-space-y-4">
             {!isFormOnly ? [
               {
                 key: 'identityDocumentFile' as const,
@@ -2713,7 +2743,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
                 })}
               </div>
 
-              <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+              <div ref={legalDocumentViewerRef} className="mt-4 scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                 <iframe
                   key={selectedLegalDocument.key}
                   title={selectedLegalDocument.title}
@@ -2725,7 +2755,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
 
             <div className="rounded-[1.6rem] border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Declaraciones del asociado</p>
-              <div className="mt-4 space-y-3">
+              <div className="mt-4 legacy-space-y-3">
                 {declarationItems.map(([key, text]) => (
                   <label key={String(key)} className="flex gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
                     <input
@@ -2748,10 +2778,10 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="legacy-space-y-4">
             <div className="rounded-[1.6rem] border border-sky-100 bg-sky-50 p-4">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-sky-700">Autorizaciones obligatorias</p>
-              <div className="mt-4 space-y-3">
+              <div className="mt-4 legacy-space-y-3">
                 {consentItems.map(([key, text, document]) => (
                   <label key={String(key)} className="flex gap-3 rounded-2xl border border-sky-100 bg-white p-4 text-sm text-slate-700">
                     <input
@@ -2775,6 +2805,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
                           onClick={(event) => {
                             event.preventDefault();
                             setSelectedLegalDocument(document);
+                            legalDocumentViewerRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
                           }}
                           className="ml-1 font-bold text-emerald-700 underline-offset-4 hover:underline"
                         >
@@ -2818,7 +2849,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
 
             <div className="rounded-[1.6rem] border border-slate-950 bg-slate-950 p-4 text-white">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-200">Resumen final</p>
-              <div className="mt-3 space-y-2 text-sm text-slate-200">
+              <div className="mt-3 legacy-space-y-2 text-sm text-slate-200">
                 <p>{isFormOnly
                   ? draft?.purpose === 'profile_completion'
                     ? 'Se generara solamente el formulario de perfil.'
@@ -2858,7 +2889,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
             : 'La solicitud fue enviada para revision interna. Los documentos generados quedan protegidos en el backend y se muestran aqui solo como vista previa.'}
         </p>
         {generatedDocuments.length > 0 ? (
-          <div className="mt-6 space-y-5 text-left">
+          <div className="mt-6 legacy-space-y-5 text-left">
             {generatedDocuments.map((document) => (
               <article key={document.id} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
                 <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -2912,7 +2943,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
 
   return (
     <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
-      <div className="space-y-6">
+      <div className="legacy-space-y-6">
         <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-5 py-5 sm:px-6 sm:py-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -2966,7 +2997,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
         <div className="grid gap-5 xl:grid-cols-[.7fr_1.3fr]">
           <aside className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
             <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Secciones</p>
-            <ol className="mt-4 space-y-2">
+            <ol className="mt-4 legacy-space-y-2">
               {stepLabels.map((item, index) => {
                 const active = index === step;
                 const done = index < step;

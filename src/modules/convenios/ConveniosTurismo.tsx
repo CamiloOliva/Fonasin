@@ -208,13 +208,13 @@ function TourismPage({
 const caribbeanTheme: TourismTheme = {
   page: 'bg-sky-50/40',
   eyebrow: 'text-amber-300',
-  heroOverlay: 'bg-gradient-to-r from-sky-950/95 via-blue-900/72 to-cyan-700/10',
+  heroOverlay: 'legacy-bg-gradient-to-r from-sky-950/95  to-cyan-700/10',
   logoRing: 'ring-cyan-300/40',
   primaryButton: 'bg-amber-400 text-sky-950 hover:bg-amber-300',
   sectionEyebrow: 'text-sky-700',
   serviceBorder: 'border-sky-200 hover:border-cyan-400',
   serviceIcon: 'bg-sky-100 text-sky-700',
-  contactBand: 'border-y border-sky-800 bg-gradient-to-r from-sky-950 via-blue-950 to-cyan-950',
+  contactBand: 'border-y border-sky-800 legacy-bg-gradient-to-r from-sky-950 via-blue-950 to-cyan-950',
   contactEyebrow: 'text-amber-300',
   contactButton: 'border-sky-700 bg-white/10 text-white hover:border-amber-300 hover:bg-white/15',
 };
@@ -222,13 +222,13 @@ const caribbeanTheme: TourismTheme = {
 const luzMarinaTheme: TourismTheme = {
   page: 'bg-emerald-50/30',
   eyebrow: 'text-yellow-300',
-  heroOverlay: 'bg-gradient-to-r from-emerald-950/95 via-teal-950/76 to-slate-900/15',
+  heroOverlay: 'legacy-bg-gradient-to-r from-emerald-950/95  to-slate-900/15',
   logoRing: 'ring-yellow-300/40',
   primaryButton: 'bg-yellow-300 text-emerald-950 hover:bg-yellow-200',
   sectionEyebrow: 'text-teal-700',
   serviceBorder: 'border-teal-200 hover:border-yellow-400',
   serviceIcon: 'bg-teal-100 text-teal-800',
-  contactBand: 'border-y border-teal-800 bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-950',
+  contactBand: 'border-y border-teal-800 legacy-bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-950',
   contactEyebrow: 'text-yellow-300',
   contactButton: 'border-teal-700 bg-white/10 text-white hover:border-yellow-300 hover:bg-white/15',
 };

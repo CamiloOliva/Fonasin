@@ -287,7 +287,7 @@ export default function SimuladorFonasin() {
         </div>
 
         {/* Hero Title */}
-        <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 rounded-3xl p-8 text-white shadow-xl mb-8 relative overflow-hidden">
+        <div className="legacy-bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 rounded-3xl p-8 text-white shadow-xl mb-8 relative overflow-hidden">
           <div className="absolute top-0 right-0 transform translate-x-8 -translate-y-8 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
           <div className="relative z-10 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
@@ -308,7 +308,7 @@ export default function SimuladorFonasin() {
 
         {/* Disclaimer Nota Importante */}
         <div className="bg-amber-50/80 border-l-4 border-amber-500 p-4 rounded-xl mb-8 shadow-sm">
-          <div className="flex items-start space-x-3">
+          <div className="flex items-start legacy-space-x-3">
             <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div>
               <h4 className="text-sm font-bold text-amber-900">Nota Importante FONASIN</h4>
@@ -322,7 +322,7 @@ export default function SimuladorFonasin() {
         {/* Mensaje de Alerta si aplica */}
         {alerta && (
           <div className="bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-2xl mb-6 flex items-center justify-between shadow-sm">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center legacy-space-x-2">
               <AlertTriangle className="w-5 h-5 text-rose-600" />
               <span className="text-sm font-medium">{alerta}</span>
             </div>
@@ -334,7 +334,7 @@ export default function SimuladorFonasin() {
 
         {/* Formulario Principal */}
         <div className="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100 mb-8">
-          <div className="flex items-center space-x-3 mb-6 pb-4 border-b border-slate-100">
+          <div className="flex items-center legacy-space-x-3 mb-6 pb-4 border-b border-slate-100">
             <div className="bg-emerald-100 p-2.5 rounded-xl text-emerald-700">
               <Calculator className="w-5 h-5" />
             </div>
@@ -447,7 +447,7 @@ export default function SimuladorFonasin() {
             </div>
 
             {abonosExtras.length > 0 && (
-              <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <div className="legacy-space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                 {abonosExtras.map((item, idx) => (
                   <div key={idx} className="flex flex-col sm:flex-row items-center gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
                     <div className="w-full sm:w-1/3">
@@ -488,7 +488,7 @@ export default function SimuladorFonasin() {
           <div className="mt-8">
             <button
               onClick={calcularSimulacion}
-              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all duration-200 flex items-center justify-center space-x-2 text-base"
+              className="w-full legacy-bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all duration-200 flex items-center justify-center legacy-space-x-2 text-base"
             >
               <Calculator className="w-5 h-5" />
               <span>Calcular Simulación FONASIN</span>
@@ -498,9 +498,9 @@ export default function SimuladorFonasin() {
 
         {/* Resultados */}
         {resultado && (
-          <div className="space-y-8 animate-fadeIn">
+          <div className="legacy-space-y-8 animate-fadeIn">
             {/* Card Resumen KPI */}
-            <div className="bg-gradient-to-br from-slate-900 to-emerald-950 text-white rounded-3xl p-6 md:p-8 shadow-2xl border border-emerald-800">
+            <div className="legacy-bg-gradient-to-br from-slate-900 to-emerald-950 text-white rounded-3xl p-6 md:p-8 shadow-2xl border border-emerald-800">
               <h3 className="text-xl font-bold mb-6 flex items-center text-emerald-300">
                 <CheckCircle className="w-5 h-5 mr-2" /> Resumen General del Crédito
               </h3>
@@ -562,7 +562,7 @@ export default function SimuladorFonasin() {
             </div>
 
             {/* Banner Call to Action */}
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-3xl p-8 text-center text-white shadow-xl">
+            <div className="legacy-bg-gradient-to-r from-emerald-600 to-teal-600 rounded-3xl p-8 text-center text-white shadow-xl">
               <ShieldCheck className="w-12 h-12 mx-auto mb-3 text-emerald-200" />
               <h3 className="text-2xl font-extrabold mb-2">¿Te satisface esta simulación?</h3>
               <p className="text-emerald-100 text-sm max-w-lg mx-auto mb-6">

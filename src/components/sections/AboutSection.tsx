@@ -54,7 +54,7 @@ export default function AboutSection() {
             text="Conoce el propósito que orienta a FONASIN y su compromiso con el bienestar de los asociados y sus familias."
           />
 
-          <div className="mt-8 space-y-3">
+          <div className="mt-8 legacy-space-y-3">
             {aboutItems.map((item) => (
               <details
                 key={item.title}

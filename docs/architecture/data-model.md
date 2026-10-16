@@ -79,6 +79,15 @@ Solo puede existir un borrador activo (`status = draft`) por asociado. MariaDB m
 
 Una solicitud con `purpose = data_update` conserva la identidad documental del asociado, genera solo una nueva version del formulario de afiliacion y mantiene inmutables los archivos y la libranza de la afiliacion original.
 
+### `application_corrections`
+
+Cada devolucion conserva UUID, `application_id`, `requested_by_user_id`, motivo
+cifrado (`reason_encrypted`), vencimiento (`expires_at`), revocacion (`revoked_at`)
+y reenvio (`completed_at`), ademas de timestamps UTC. Reemitir conserva la fila
+anterior y revoca su acceso. El hash del token vigente queda en la solicitud;
+reenviar la solicitud lo borra y completa la correccion. El motivo se entrega
+solo por lectura autorizada, nunca en auditoria ni en la URL. Ver ADR-007.
+
 ### `application_sections`
 
 Una fila por etapa de formulario: `personal`, `employment`, `financial`, `beneficiaries` y `sarlaft`. Los pasos `documents`, `consents` y `summary` coordinan otras tablas o vistas y no se guardan en `application_sections`.
@@ -142,14 +151,18 @@ Una solicitud solo puede registrar una aceptacion por tipo y version de politica
 | `promissory_note_number_encrypted` | text nullable | numero de pagare cifrado |
 | `initial_balance` | numeric(14,2) | mayor o igual a cero |
 | `current_balance` | numeric(14,2) | mayor o igual a cero |
-| `term_months` | integer nullable | mayor que cero cuando se informa |
-| `interest_rate` | numeric(7,4) nullable | tasa registrada cuando se informa |
+| `term_months` | integer nullable | en la nueva plantilla XLSX, entero de 1 a 60 meses |
+| `interest_rate` | numeric(7,4) nullable | en nuevas importaciones, `Tasa Int mv` mensual; los registros anteriores conservan su valor sin reinterpretacion automatica |
+| `interest_rate_nominal_annual` | numeric(7,4) nullable | `Tasa Int NA` informada por FONASIN; null en registros historicos sin dato |
+| `interest_rate_basis` | varchar(20) nullable | `monthly` para mv registrada/importada con unidad conocida; null historico sin reinterpretacion |
 | `installment_amount` | numeric(14,2) | mayor o igual a cero |
 | `last_payment_date` | date nullable | fecha del ultimo pago reportado |
 | `status` | varchar(30) | `active`, `settled`, `archived` |
 | `registered_by_user_id` | UUID | FK al administrador responsable |
 
 Un asociado puede tener varios creditos. No se deben borrar; una correccion crea auditoria y un credito no vigente se archiva. Los casos de uso iniciales de Credits permiten registrar, actualizar campos existentes, archivar, importar desde XLSX y consultar creditos propios desde la sesion del asociado; no aceptan `associate_id` del navegador para consultas privadas. La importacion XLSX identifica cada obligacion por el HMAC unico del numero de pagare y valida que documento y nombre correspondan a un asociado activo. Cada alta o modificacion importada registra un evento del credito, correlacionado con el lote, con los nombres de los campos cambiados pero sin copiar valores financieros a auditoria.
+
+La plantilla nueva de cartera exige `Plazo`, `Tasa Int NA` y `Tasa Int mv`. Se validan como datos independientes; no se calcula una tasa a partir de la otra. El lector convierte fracciones con formato porcentual de Excel a puntos porcentuales. Una tasa historica sin `interest_rate_basis` no se rotula como mv; una mv nueva conocida se muestra aunque NA no exista. Los tres importes admiten de 0 a 999999999999.99, coherentes con DECIMAL(14,2).
 
 ## Aportes e importaciones
 
@@ -257,7 +270,8 @@ El caso de uso inicial de envio exige las secciones de formulario completas, los
 
 ## Contenido y FPQRS
 
-- `public_content_items`: UUID, tipo (`news`, `social_balance`, `agreement`, `banner`), titulo, resumen, categoria, enlace HTTPS, orden, publicacion, fecha, usuario editor y claves privadas opcionales de imagen/PDF. Sustituye propuestas separadas de `carousel_assets` y `convenios`. La migracion traslada las tarjetas y banners estaticos vigentes a registros editables sin copiar sus archivos.
+- `public_content_items`: UUID, tipo (`news`, `social_balance`, `agreement`, `banner`), titulo, resumen, condiciones extensas del convenio, categoria, enlace HTTPS, orden, publicacion, fecha, usuario editor y claves privadas opcionales de imagen/PDF. Sustituye propuestas separadas de `carousel_assets` y `convenios`. La migracion traslada las tarjetas y banners estaticos vigentes a registros editables sin copiar sus archivos. Una edicion de un convenio publicado requiere condiciones aprobadas antes de sustituir su ficha original; el sistema no las inventa desde el resumen.
+- `legacy_detail_slug` nullable y unico conserva las direcciones historicas de convenios con independencia de su imagen; reemplazar el logo no cambia la ruta.
 - `public_site_settings`: clave, valor, usuario editor y fechas para correo y redes oficiales; las redes requieren dominios HTTPS permitidos. Actualizar no exige recompilar React. Ver ADR-005.
 - `fpqrs_submissions`: nombre, correo, hash HMAC del correo, tipo, mensaje, adjunto opcional en storage privado, estado de entrega de correo y fecha. No implementa radicado ni seguimiento publico. Nombre, correo, mensaje y adjunto permanecen en claro para operacion interna; antes de produccion se debe aprobar finalidad, retencion, responsable y procedimiento de eliminacion/anonimizacion si aplica.
 

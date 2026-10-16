@@ -24,7 +24,7 @@ class SavePublicContent
             if (! $isNew && isset($data['kind']) && $data['kind'] !== $kind) {
                 throw new DomainException('No se puede cambiar el tipo de una publicacion existente.');
             }
-            $item->fill(collect($data)->only(['title', 'summary', 'category', 'link_url', 'sort_order'])->all());
+            $item->fill(collect($data)->only(['title', 'summary', 'conditions', 'category', 'link_url', 'sort_order'])->all());
             if ($isNew) {
                 $item->kind = $kind;
             }
@@ -32,6 +32,13 @@ class SavePublicContent
                 throw new DomainException('Selecciona una categoria para el convenio.');
             }
             $publishing = array_key_exists('published', $data) && (bool) $data['published'];
+            // Seeded agreements keep their original rich page until their first administrative edit.
+            // Once edited, an approved conditions text is required to avoid silently replacing it with a summary.
+            if ($kind === 'agreement'
+                && ($publishing || (! array_key_exists('published', $data) && $item->published))
+                && trim((string) $item->conditions) === '') {
+                throw new DomainException('Registra las condiciones completas y aprobadas del convenio antes de publicar la edicion.');
+            }
             if ($publishing && $kind === 'social_balance' && ! $item->document_storage_key) {
                 throw new DomainException('Carga el PDF de balance social antes de publicarlo.');
             }

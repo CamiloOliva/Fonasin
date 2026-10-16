@@ -26,10 +26,17 @@ export type PortalCredit = {
   current_balance: string;
   term_months: number | null;
   interest_rate: string | null;
+  interest_rate_basis?: 'monthly' | null;
+  interest_rate_nominal_annual: string | null;
   installment_amount: string;
   last_payment_date: string | null;
   status: string;
 };
+
+export function monthlyCreditRateLabel(credit: Pick<PortalCredit, 'interest_rate' | 'interest_rate_basis'>): string {
+  return credit.interest_rate != null && credit.interest_rate_basis === 'monthly'
+    ? `${credit.interest_rate}%` : 'No informada';
+}
 
 export type PortalContributionAccount = {
   id: string;

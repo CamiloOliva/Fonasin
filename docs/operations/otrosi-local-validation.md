@@ -65,7 +65,8 @@ php artisan serve --host=127.0.0.1 --port=8017
 ```
 
 El fixture exige host local, MariaDB y nombre exacto fonasin_e2e; crea usuarios
-sinteticos con contrasena aleatoria, perfil afiliado habilitado y tres XLSX.
+sinteticos con contrasena aleatoria, perfil afiliado habilitado, cuatro XLSX
+(cartera y los tres conceptos), PDF publico y una correccion de afiliacion.
 Credenciales y capturas solo en `.e2e-artifacts/`, ignorado por Git. No es un
 seeder de produccion y nunca habilita usuarios reales.
 
@@ -89,6 +90,18 @@ real con cuatro roles, carga XLSX mediante UI, verifica importes persistidos,
 solicita, rechaza, reintenta, aprueba y registra PDF; comprueba propietario ajeno
 y reviewer. Las capturas desktop/movil son evidencia visual, no aceptacion del
 cliente. Reejecutar el fixture antes de cada corrida para evitar reusar lotes.
+
+La cartera del fixture contiene porcentajes numericos reales de Excel y plazo;
+el navegador exige sus valores visibles, ademas del saldo total de los tres
+conceptos. La prueba verifica tambien publicacion de noticias con PDF y cambio
+de logo de convenio sin perder su ruta. El segundo recorrido sigue el enlace
+privado de devolucion, modifica y reenvia la misma afiliacion. Mail se simula
+solo para capturar ese enlace: no se envia correo real ni se prueba SMTP.
+
+Ejecutar las suites de SQLite y MariaDB en serie, no simultaneamente: ademas
+de la base, los tests usan directorios compartidos de Storage::fake. La prueba
+de concurrencia MariaDB utiliza dos procesos y observa la espera real del
+bloqueo; no reemplazarla por una demora arbitraria o una prueba sobre SQLite.
 
 Si PHP CLI no tiene zip habilitado, usar `php -d extension=zip` para pruebas.
 Para el servidor integrado ese flag no se propaga desde artisan serve a su

@@ -27,6 +27,7 @@ class RegisterCreditAccount
      *     current_balance: int|float|string,
      *     term_months: int,
      *     interest_rate: int|float|string,
+     *     interest_rate_nominal_annual?: int|float|string|null,
      *     installment_amount: int|float|string,
      *     status?: string
      * }  $data
@@ -52,6 +53,8 @@ class RegisterCreditAccount
                 'current_balance' => $data['current_balance'],
                 'term_months' => $data['term_months'],
                 'interest_rate' => $data['interest_rate'],
+                'interest_rate_basis' => 'monthly',
+                'interest_rate_nominal_annual' => $data['interest_rate_nominal_annual'] ?? null,
                 'installment_amount' => $data['installment_amount'],
                 'status' => $data['status'] ?? CreditAccountStatus::Active->value,
                 'registered_by_user_id' => $actor->id,

@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\Process\Process;
+use Tests\Support\ProcessOutputMarker;
 use Tests\TestCase;
 
 class ContributionImportConcurrencyTest extends TestCase
@@ -40,20 +41,35 @@ class ContributionImportConcurrencyTest extends TestCase
             'document_type' => 'CC', 'document_number_hash' => app(HashesSensitiveData::class)->documentNumber('123456789'),
             'document_number_encrypted' => 'synthetic-test-only', 'full_name' => 'Synthetic Concurrent Associate', 'status' => 'active',
         ]);
-        $first = $this->worker($admin->id, '100.00', 2000);
+        $lockRelease = tempnam(sys_get_temp_dir(), 'fonasin-lock-release-');
+        $this->assertIsString($lockRelease);
+        unlink($lockRelease);
+        $first = $this->worker($admin->id, '100.00', 0, lockReleaseFile: $lockRelease);
         $second = $this->worker($admin->id, '200.00', 0);
         try {
             $first->start();
-            $locked = $first->waitUntil(fn ($type, $output): bool => str_contains($output, 'LOCKED'));
-            $this->assertTrue($locked, $first->getErrorOutput());
+            $locked = (new ProcessOutputMarker('LOCKED'))->waitFor($first);
+            $this->assertTrue($locked, $first->getOutput().$first->getErrorOutput());
+            $baselineWaits = (int) DB::selectOne("SHOW GLOBAL STATUS LIKE 'Innodb_row_lock_current_waits'")->Value;
             $second->start();
+            $this->assertTrue((new ProcessOutputMarker('WAITING'))->waitFor($second), $second->getOutput().$second->getErrorOutput());
+            $deadline = microtime(true) + 5;
+            do {
+                $waits = (int) DB::selectOne("SHOW GLOBAL STATUS LIKE 'Innodb_row_lock_current_waits'")->Value;
+                if ($waits > $baselineWaits) {
+                    break;
+                }
+                usleep(10_000);
+            } while (microtime(true) < $deadline);
+            $this->assertGreaterThan($baselineWaits, $waits, 'MariaDB must report a real row-lock wait before the first worker is released.');
+            $this->assertStringNotContainsString('LOCKED', $second->getOutput(), 'The second transaction cannot acquire the row before release.');
+            $this->assertSame(2, file_put_contents($lockRelease, 'go'), 'The first worker must receive an actual release signal.');
             $first->wait();
             $second->wait();
             $this->assertSame(0, $first->getExitCode(), $first->getErrorOutput());
             $this->assertSame(0, $second->getExitCode(), $second->getErrorOutput());
             preg_match('/LOCKED ([0-9.]+)/', $second->getOutput(), $match);
             $this->assertNotEmpty($match, 'Second worker did not perform its locking read.');
-            $this->assertGreaterThan(300, (float) $match[1], 'Second transaction must actually wait for the first transaction lock.');
             $this->assertSame(1, ContributionMovement::query()->where('status', 'registered')->count());
             $this->assertSame(1, ContributionMovement::query()->where('status', 'reversed')->count());
             $this->assertSame('200.00', ContributionAccount::query()->firstOrFail()->total_balance);
@@ -64,6 +80,9 @@ class ContributionImportConcurrencyTest extends TestCase
             }
             if ($second->isRunning()) {
                 $second->stop();
+            }
+            if (is_file($lockRelease)) {
+                unlink($lockRelease);
             }
         }
     }
@@ -89,10 +108,10 @@ class ContributionImportConcurrencyTest extends TestCase
 
         try {
             $first->start();
-            $this->assertTrue($first->waitUntil(fn ($type, $output): bool => str_contains($output, 'CHECKED')), $first->getErrorOutput());
+            $this->assertTrue((new ProcessOutputMarker('CHECKED'))->waitFor($first), $first->getOutput().$first->getErrorOutput());
             $second->start();
-            $this->assertTrue($second->waitUntil(fn ($type, $output): bool => str_contains($output, 'CHECKED')), $second->getErrorOutput());
-            file_put_contents($releaseFile, 'go');
+            $this->assertTrue((new ProcessOutputMarker('CHECKED'))->waitFor($second), $second->getOutput().$second->getErrorOutput());
+            $this->assertSame(2, file_put_contents($releaseFile, 'go'), 'Both workers must receive an actual release signal.');
             $first->wait();
             $second->wait();
             $this->assertSame(0, $first->getExitCode(), $first->getErrorOutput());
@@ -119,15 +138,15 @@ class ContributionImportConcurrencyTest extends TestCase
         }
     }
 
-    private function worker(string $adminId, string $amount, int $delay, ?string $releaseFile = null, ?string $storageLog = null): Process
+    private function worker(string $adminId, string $amount, int $delay, ?string $releaseFile = null, ?string $storageLog = null, ?string $lockReleaseFile = null): Process
     {
         $connection = config('database.connections.mariadb');
 
-        return new Process([PHP_BINARY, base_path('tests/Fixtures/contribution-import-worker.php'), $adminId, $amount, (string) $delay, ...($releaseFile === null ? [] : [$releaseFile, $storageLog])], base_path(), [
+        return new Process([PHP_BINARY, base_path('tests/Fixtures/contribution-import-worker.php'), $adminId, $amount, (string) $delay, $releaseFile ?? '', $storageLog ?? '', $lockReleaseFile ?? ''], base_path(), [
             'APP_ENV' => 'testing', 'APP_KEY' => config('app.key'), 'DATA_HASH_PEPPER' => config('security.hashing.pepper'),
             'DB_CONNECTION' => 'mariadb', 'DB_URL' => '', 'DB_HOST' => $connection['host'], 'DB_PORT' => (string) $connection['port'],
             'DB_DATABASE' => $connection['database'], 'DB_USERNAME' => $connection['username'], 'DB_PASSWORD' => $connection['password'],
             'CACHE_STORE' => 'array', 'SESSION_DRIVER' => 'array',
-        ], null, 20);
+        ], null, 60);
     }
 }

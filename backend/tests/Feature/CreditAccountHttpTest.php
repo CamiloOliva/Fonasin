@@ -77,6 +77,8 @@ class CreditAccountHttpTest extends TestCase
         $response->assertCreated()
             ->assertJsonPath('data.associate_id', $associate->id)
             ->assertJsonPath('data.credit_line', 'FONALIBRE')
+            ->assertJsonPath('data.interest_rate_basis', 'monthly')
+            ->assertJsonPath('data.interest_rate_nominal_annual', null)
             ->assertJsonPath('data.status', CreditAccountStatus::Active->value);
 
         $creditId = $response->json('data.id');
@@ -84,6 +86,29 @@ class CreditAccountHttpTest extends TestCase
             'actor_user_id' => $admin->id,
             'action' => CreditAuditAction::CreditRegistered->value,
             'subject_id' => $creditId,
+        ]);
+    }
+
+    public function test_manual_credit_keeps_nominal_annual_and_monthly_rates_separate(): void
+    {
+        $associate = $this->createAssociate();
+        $admin = $this->userWithRole('admin');
+
+        $response = $this->actingAs($admin)->postJson('/admin/credits', [
+            'associate_id' => $associate->id,
+            ...array_replace($this->creditData(), [
+                'interest_rate' => '1.5000',
+                'interest_rate_nominal_annual' => '18.0000',
+            ]),
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.interest_rate', '1.5000')
+            ->assertJsonPath('data.interest_rate_nominal_annual', '18.0000');
+        $this->assertDatabaseHas('credit_accounts', [
+            'id' => $response->json('data.id'),
+            'interest_rate' => '1.5000',
+            'interest_rate_nominal_annual' => '18.0000',
         ]);
     }
 

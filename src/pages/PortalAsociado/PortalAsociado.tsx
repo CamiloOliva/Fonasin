@@ -12,6 +12,7 @@ import {
   fetchPortalVoluntarySavingsRequests,
   loginPortal,
   logoutPortal,
+  monthlyCreditRateLabel,
   portalDocumentPreviewUrl,
   startPortalAffiliationUpdate,
   submitPortalVoluntarySavingsRequest,
@@ -472,14 +473,9 @@ export default function PortalAsociado() {
 
     try {
       const storedDraft = readStoredAffiliationUpdateDraft();
-      if (storedDraft) {
-        setMessage('Retomando el borrador de actualizacion existente.');
-        navigate(affiliationFlowPath(storedDraft.purpose));
-        return;
-      }
-
       const updateDraft = await startPortalAffiliationUpdate();
       storeAffiliationUpdateDraft(updateDraft);
+      if (storedDraft?.id === updateDraft.id) setMessage('Retomando el borrador de actualizacion existente.');
       navigate(affiliationFlowPath(updateDraft.purpose));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible preparar la actualizacion de datos.');
@@ -524,7 +520,7 @@ export default function PortalAsociado() {
   if (sessionState === 'guest') {
     return (
       <section className="portal-login-scene relative min-h-[calc(100vh-5rem)] overflow-hidden bg-slate-950 bg-[url(/Fondo.png)] bg-cover bg-center py-10 sm:py-14">
-        <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[1px]" /><div className="portal-login-light pointer-events-none absolute -left-24 top-[-20%] h-[145%] w-[48%]" /><div className="absolute inset-0 bg-gradient-to-r from-amber-50/65 via-white/20 to-transparent" /><div className="container-page relative grid min-h-[calc(100vh-5rem)] gap-7 lg:grid-cols-[.9fr_1.1fr] lg:items-center">
+        <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[1px]" /><div className="portal-login-light pointer-events-none absolute -left-24 top-[-20%] h-[145%] w-[48%]" /><div className="absolute inset-0 legacy-bg-gradient-to-r from-amber-50/65 via-white/20 to-transparent" /><div className="container-page relative grid min-h-[calc(100vh-5rem)] gap-7 lg:grid-cols-[.9fr_1.1fr] lg:items-center">
           <div className="portal-login-content relative rounded-[2rem] border border-white/40 bg-white/25 p-5 shadow-lg shadow-slate-950/10 backdrop-blur-[3px] sm:p-7">
             <div className="mb-7 grid h-16 w-16 place-items-center overflow-hidden rounded-2xl border border-white/70 bg-white/85 p-2 shadow-xl backdrop-blur sm:h-20 sm:w-20"><img src="/logotipo.png" alt="Logo FONASIN" className="max-h-full max-w-full object-contain" /></div><p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-900">Portal asociado</p>
             <h1 className="mt-3 max-w-xl text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
@@ -554,7 +550,7 @@ export default function PortalAsociado() {
             <h2 className="mt-4 text-2xl font-black text-slate-950">Iniciar sesion</h2>
             <p className="mt-2 text-sm leading-6 text-slate-800">Usa el correo y contrasena asignados por FONASIN.</p>
 
-            <div className="mt-5 space-y-4">
+            <div className="mt-5 legacy-space-y-4">
               <label className="block">
                 <span className="text-sm font-bold text-slate-950">Correo electronico</span>
                 <input
@@ -599,7 +595,7 @@ export default function PortalAsociado() {
 
             <button
               type="submit"
-              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-600 to-lime-500 px-5 py-3.5 text-base font-black text-white shadow-lg shadow-emerald-700/25 transition hover:from-emerald-700 hover:to-emerald-600 focus-ring"
+              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full legacy-bg-gradient-to-r from-emerald-600 to-lime-500 px-5 py-3.5 text-base font-black text-white shadow-lg shadow-emerald-700/25 transition hover:from-emerald-700 hover:to-emerald-600 focus-ring"
             >
               Entrar al portal <ArrowRight size={18} />
             </button>
@@ -622,7 +618,7 @@ export default function PortalAsociado() {
 
   return (
     <section className="bg-slate-50 py-8 sm:py-10">
-      <div className="container-page space-y-6">
+      <div className="container-page legacy-space-y-6">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -752,7 +748,8 @@ export default function PortalAsociado() {
                         <th className="py-3 pr-4">Cuota</th>
                         <th className="py-3 pr-4">Fecha del ultimo pago</th>
                         <th className="py-3 pr-4">Plazo</th>
-                        <th className="py-3 pr-4">Tasa</th>
+                        <th className="py-3 pr-4">Tasa Int NA</th>
+                        <th className="py-3 pr-4">Tasa Int mv</th>
                         <th className="py-3">Estado</th>
                       </tr>
                     </thead>
@@ -765,7 +762,8 @@ export default function PortalAsociado() {
                           <td className="py-4 pr-4 text-slate-700">{formatMoney(credit.installment_amount)}</td>
                           <td className="py-4 pr-4 text-slate-700">{credit.last_payment_date ? formatCalendarDate(credit.last_payment_date) : 'No informada'}</td>
                           <td className="py-4 pr-4 text-slate-700">{credit.term_months ? `${credit.term_months} meses` : 'No informado'}</td>
-                          <td className="py-4 pr-4 text-slate-700">{credit.interest_rate ? `${credit.interest_rate}%` : 'No informada'}</td>
+                          <td className="py-4 pr-4 text-slate-700">{credit.interest_rate_nominal_annual != null ? `${credit.interest_rate_nominal_annual}%` : 'No informada'}</td>
+                          <td className="py-4 pr-4 text-slate-700">{monthlyCreditRateLabel(credit)}</td>
                           <td className="py-4">
                             <span className="rounded-full bg-fonasin-surface px-3 py-1 text-xs font-bold text-fonasin-green">
                               {statusLabel(credit.status)}
@@ -812,7 +810,11 @@ export default function PortalAsociado() {
               ) : null}
 
               {contributionsState === 'ready' && contributions?.state === 'available' && contributions.account ? (
-                <div className="space-y-5">
+                <div className="legacy-space-y-5">
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm" aria-label="Saldo total del estado de cuenta">
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-800">Saldo total: aportes y ahorros</p>
+                    <p className="mt-1 text-2xl font-black text-fonasin-deep">{formatMoney(contributions.account.total_balance)}</p>
+                  </div>
                   <ContributionStatementSection
                     title="Aporte Mensual"
                     balance={contributions.account.contribution_balance}
@@ -889,7 +891,7 @@ export default function PortalAsociado() {
                   </label>
                   <details className="mt-4 rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm leading-6 text-slate-700">
                     <summary className="cursor-pointer font-bold text-fonasin-deep">Leer la autorización de descuento por nómina</summary>
-                    <div className="mt-3 space-y-2">
+                    <div className="mt-3 legacy-space-y-2">
                       <p>Autorizo a mi empleador a descontar mensualmente el valor de ahorro voluntario que indiqué y trasladarlo a FONASIN. Esta solicitud no incluye un valor de aportes.</p>
                       <p>Autorizo a FONASIN para el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 y demás normas aplicables, exclusivamente para fines relacionados con mi vinculación como asociado.</p>
                       <p>En caso de terminación del vínculo laboral por cualquier causa, los valores pendientes podrán descontarse de mis salarios, prestaciones sociales, liquidación final o cualquier otro pago a que tenga derecho, conforme a la normatividad vigente.</p>
@@ -929,7 +931,7 @@ export default function PortalAsociado() {
                       Aun no tienes solicitudes de ahorro voluntario.
                     </div>
                   ) : null}
-                  <div className="mt-3 space-y-3">
+                  <div className="mt-3 legacy-space-y-3">
                     {savingsRequests.map((request) => (
                       <article key={request.id} className="rounded-xl border border-slate-200 bg-white p-4">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -1026,7 +1028,7 @@ export default function PortalAsociado() {
               ) : null}
 
               {affiliationState === 'ready' && affiliation ? (
-                <div className="mt-5 space-y-4">
+                <div className="mt-5 legacy-space-y-4">
                   <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-fonasin-green">Afiliacion</p>
                     <div className="mt-3 grid gap-3 text-sm sm:grid-cols-3">

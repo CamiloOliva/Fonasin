@@ -6,7 +6,7 @@ import { fonapenStyles } from '../styles/creditPageStyles';
 
 function ComingSoon({ title }: { title: string }) {
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-slate-100 via-gray-100 to-slate-200 py-10 sm:py-14">
+    <div className="relative overflow-hidden legacy-bg-gradient-to-br from-slate-100 via-gray-100 to-slate-200 py-10 sm:py-14">
       <div className="container-page relative z-10">
         <div className="mx-auto max-w-3xl rounded-[2rem] border border-slate-300 bg-white/80 p-6 text-slate-800 shadow-xl backdrop-blur-md sm:p-10">
           <span className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-slate-200/80 px-3 py-1 text-xs font-black uppercase tracking-[.18em] text-slate-700">

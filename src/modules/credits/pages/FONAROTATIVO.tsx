@@ -29,7 +29,7 @@ function ComingSoon({ title }: { title: string }) {
     <div className="relative overflow-hidden bg-[#0a1d47] py-10 sm:py-14">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(125,211,252,0.2),transparent_55%),linear-gradient(135deg,rgba(8,20,58,0.96),rgba(6,12,36,0.98))]" />
       <div className="container-page relative z-10">
-        <div className="mx-auto max-w-3xl rounded-[2rem] border border-white/10 bg-white/8 p-6 text-white shadow-2xl shadow-black/20 backdrop-blur-sm sm:p-10">
+        <div className="mx-auto max-w-3xl rounded-[2rem] border border-white/10  p-6 text-white shadow-2xl shadow-black/20 backdrop-blur-sm sm:p-10">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[.18em] text-sky-200">
             <Sparkles size={14} aria-hidden="true" />
             Próximamente

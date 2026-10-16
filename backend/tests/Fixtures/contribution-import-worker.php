@@ -18,8 +18,15 @@ if (! app()->environment('testing') || DB::getDriverName() !== 'mariadb' || DB::
 }
 $amount = $argv[2];
 $delay = (int) $argv[3];
-$releaseFile = $argv[4] ?? null;
-$storageLog = $argv[5] ?? null;
+$releaseFile = ($argv[4] ?? '') ?: null;
+$storageLog = ($argv[5] ?? '') ?: null;
+$lockReleaseFile = ($argv[6] ?? '') ?: null;
+DB::connection()->beforeExecuting(function ($sql): void {
+    if (str_contains($sql, 'from `associates`') && str_contains($sql, 'for update')) {
+        echo 'WAITING'.PHP_EOL;
+        flush();
+    }
+});
 $app->instance(ReadsSpreadsheetRows::class, new class($amount) implements ReadsSpreadsheetRows
 {
     public function __construct(private string $amount) {}
@@ -43,17 +50,40 @@ $app->instance(StoresPrivateFiles::class, new class($storageLog) implements Stor
         }
     }
 });
-DB::listen(function ($query) use ($delay, $releaseFile): void {
+DB::listen(function ($query) use ($delay, $releaseFile, $lockReleaseFile): void {
     if ($releaseFile !== null && str_contains($query->sql, 'import_batches') && str_contains($query->sql, 'exists')) {
         echo 'CHECKED'.PHP_EOL;
         flush();
-        while (! is_file($releaseFile)) {
+        $deadline = microtime(true) + 45;
+        while (true) {
+            // The parent writes this signal from another process. Do not rely
+            // on a cached stat result, especially on Windows filesystems.
+            clearstatcache(true, $releaseFile);
+            if (is_file($releaseFile)) {
+                break;
+            }
+            if (microtime(true) > $deadline) {
+                throw new RuntimeException('Timed out waiting for the duplicate-race release signal.');
+            }
             usleep(10_000);
         }
     }
     if (str_contains($query->sql, 'from `associates`') && str_contains($query->sql, 'for update')) {
         echo 'LOCKED '.$query->time.PHP_EOL;
         flush();
+        if ($lockReleaseFile !== null) {
+            $deadline = microtime(true) + 45;
+            while (true) {
+                clearstatcache(true, $lockReleaseFile);
+                if (is_file($lockReleaseFile)) {
+                    break;
+                }
+                if (microtime(true) > $deadline) {
+                    throw new RuntimeException('Timed out waiting for the test to release the row lock.');
+                }
+                usleep(10_000);
+            }
+        }
         if ($delay > 0) {
             usleep($delay * 1000);
         }

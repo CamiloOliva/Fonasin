@@ -38,6 +38,20 @@ Registrar quien hizo una accion, sobre que registro, cuando ocurrio y cual fue e
 
 `event_type` registra `login_succeeded`, `login_failed`, `logout`, `password_reset_requested`, `password_reset_completed`, `account_blocked` y cambios de segundo factor. La primera implementacion reusable para autenticacion es `App\Application\Identity\UseCases\RecordAuthEvent`.
 
+Las peticiones web comprueban tambien el estado de una cuenta ya autenticada.
+Una cuenta inactiva pierde su sesion, cookie de recuerdo y token CSRF; recibe
+403 y registra `logout` con `reason=inactive_session`, sin correo ni token.
+No basta con bloquear un nuevo login: admin, reviewer y asociado deben perder
+tambien el acceso previamente concedido. El control precede al controlador,
+incluidas la consulta de sesion y el cambio de contrasena.
+
+La recuperacion de contrasena registra password_reset_completed con
+method=email_token y sessions_revoked=true. El cambio de contrasena, rotacion
+de recuerdo, consumo del token y revocacion de sesiones en la base operativa
+se ejecutan junto al evento. No se incluyen credenciales ni identificadores
+de sesion en metadata. El control de sesion tambien contrasta el HMAC de la
+contrasena para rechazar sesiones previas reescritas por peticiones en vuelo.
+
 ## Eventos obligatorios
 
 - envio, aprobacion, rechazo y cancelacion de una afiliacion;
@@ -69,6 +83,15 @@ Si el cambio o la auditoria fallan, se revierte todo. No registrar diffs complet
 La primera implementacion reutilizable es `App\Application\Audit\UseCases\RecordAuditEvent`. Los casos de uso sensibles deben invocarla dentro de su propia transaccion de negocio. El envio de afiliacion registra `application.submitted` con metadatos redactados de cambio de estado, proposito, solicitud de origen y version de politica. La generacion automatica del resumen de afiliacion y la autorizacion de descuento por nomina registra `document.generated` sin incluir datos personales o financieros en `metadata`; una actualizacion de datos genera solo el resumen. Las acciones de backoffice de afiliacion registran `application.review_started`, `application.correction_requested`, `application.approved`, `application.enabled` y `application.rejected` sin guardar razones completas ni documentos en `metadata`. La carga de libranza externa firmada registra `document.uploaded` con metadatos tecnicos del archivo y archivado logico de versiones previas. FPQRS registra `submission.received`, `delivery.sent` o `delivery.failed` sin guardar correo, mensaje completo ni contenido del adjunto en auditoria.
 
 Las importaciones XLSX registran el resultado del lote y eventos `credit.registered` o `credit.updated` por credito afectado con el mismo `correlation_id`. Los eventos de actualizacion incluyen solo nombres de campos cambiados y, cuando aplica, la transicion de estado; nunca incluyen saldos, tasas, cuotas ni documentos.
+
+Las correcciones de afiliacion conservan su motivo cifrado en
+`application_corrections`. El evento `application.correction_requested` registra
+el ID de correccion, si existe motivo y el numero de autorizaciones empresariales
+anteriores archivadas. Reemitir el enlace conserva el registro anterior revocado.
+`application.submitted` registra el reenvio desde `pending_correction`; el registro
+de correccion conserva `completed_at`. No se incluyen enlaces, tokens ni motivos
+completos en eventos. Una libranza regenerada archiva cualquier autorizacion
+empresarial previa y lo refleja en `document.generated`.
 
 La importacion de asociados usa el tipo `associates`, registra conteos del lote y reutiliza `associate.created` por cada alta aceptada. El envio individual del acceso registra `associate.activation_sent` en Identity con canal y vigencia; no incluye correo, cedula ni token.
 

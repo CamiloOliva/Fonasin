@@ -7,6 +7,10 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 ## Identidad y autorizacion
 
 - Todo acceso al portal requiere sesion autenticada.
+- Toda peticion web comprueba tambien que la cuenta autenticada siga activa.
+  Si fue desactivada, se cierra la sesion existente, se invalida el recuerdo de
+  acceso y se renueva CSRF antes de denegar con 403. El evento `logout` registra
+  solo `reason=inactive_session`; no se limita el control a nuevos ingresos.
 - Los roles iniciales son `admin`, `reviewer` y `associate`.
 - Cada accion privada debe pasar por una policy de Laravel; ocultar un boton no es autorizacion.
 - Un asociado solo puede leer recursos relacionados con su propio `associate_id` resuelto en el servidor.
@@ -30,6 +34,55 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 - Un asociado cargado desde XLSX que todavia no tiene formulario habilitado recibe `requires_profile_completion`. Despues de definir su contrasena, el portal abre `/portal-asociado/completar-perfil`, crea o reutiliza un borrador `profile_completion`, precarga la identidad cifrada y bloquea cargas documentales y libranzas. Las rutas privadas verifican sesion, rol de asociado y cambio obligatorio de contrasena antes de renderizar el formulario; este flujo usa una clave de sesion separada y nunca crea una afiliacion publica como alternativa.
 - Los enlaces relativos de documentos se resuelven contra `VITE_BACKEND_BASE_URL`. CORS permite el token temporal de borrador y las cabeceras de rango necesarias para previsualizar PDF desde el frontend autorizado.
 
+## Correcciones de recuperacion y exportacion del 15-16 de octubre de 2026
+
+- Recuperacion: el vencimiento se compara con una fecha absoluta, segun
+  auth.passwords.users.expire (60 minutos). En el instante del vencimiento el
+  token ya no vale; tambien se rechaza una fecha de creacion futura. La fila
+  del token se bloquea en transaccion antes de consumirla para un solo uso.
+- Se revocan las sesiones de la cuenta y se rota remember_token en la misma
+  operacion de recuperacion. Produccion utiliza SESSION_DRIVER=database;
+  la tabla/conexion de sesiones debe corresponder a su configuracion Laravel.
+  El navegador que recupera su propia cuenta tambien pierde esa sesion y
+  renueva CSRF. Una sesion de otra cuenta no se cierra por recuperar esta.
+- Las sesiones se vinculan a la contrasena desde el login mediante el HMAC
+  del guard Laravel. AuthenticateSession vuelve a comprobarlo en web, incluso
+  si una peticion en vuelo hubiera reescrito una sesion despues de revocarla.
+  No se persiste la contrasena ni su hash bcrypt sin proteger en la sesion.
+- POST /password/reset limita a 5 peticiones/minuto por cuenta y 10 por IP,
+  independientemente. Rotar uno no reinicia el otro. Las claves del limitador
+  usan HMAC; el control cubre tambien solicitudes con datos invalidos y devuelve
+  429 con Retry-After. El endpoint forgot conserva su limite separado.
+- La exportacion administrativa de fichas usa el modo de texto literal del
+  generador XLSX en valores, nombres de campos y categorias. No interpreta
+  etiquetas de formula, enlaces, comentarios ni estilos aportadas en datos.
+  Conserva los numeros, booleanos y proteccion previa de prefijos de formula.
+
+Las regresiones estan en PasswordRecoverySecurityTest,
+AssociateProfileSpreadsheetSecurityTest y AssociateProfileAdminHttpTest.
+El navegador del otrosi agrega recuperacion valida/vencida y revocacion de
+dos sesiones independientes, con control de otra cuenta y nuevo ingreso.
+Estas verificaciones no sustituyen la revision de cookies, TLS y permisos del
+entorno productivo ni son una certificacion general de seguridad.
+
+## Dependencias: cierre local del 15 de octubre de 2026
+
+`symfony/http-foundation` y `symfony/yaml` quedan en 7.4.21 y
+`source-map-js` en 1.2.2 mediante actualizaciones acotadas del lockfile.
+El gate PHP consulta tambien dependencias de desarrollo, sin excepciones
+para las alertas corregidas.
+
+Las siete entradas transitivas de Tailwind 3 se eliminan mediante una
+migracion deliberada a Tailwind 4.3.3 y su plugin Vite. La auditoria completa
+de npm, incluidas herramientas de desarrollo, queda sin vulnerabilidades
+reportadas. No se usan excepciones, overrides incompatibles ni audit fix
+--force. CI bloquea desde severidad low y dos regresiones impiden excluir
+las dependencias de desarrollo de npm/Composer. Ver ADR-008 y la evidencia
+local: la compatibilidad visual se verifica separadamente del build.
+Mantener igualmente el servidor de desarrollo en loopback y no procesar
+configuraciones ni fuentes no confiables. Cero avisos conocidos no es una
+certificacion de seguridad total.
+
 ## Datos sensibles
 
 - Contraseñas: exclusivamente hashes administrados por Laravel.
@@ -41,6 +94,10 @@ Este documento define controles minimos de implementacion. No sustituye la aprob
 - Los mensajes de error no revelan detalles de autorizacion, estructura de base de datos ni secretos.
 
 ## Documentos
+
+La libranza empresarial de afiliacion se recibe exclusivamente como PDF hasta
+5 MB. El selector, Form Request y caso de uso mantienen el mismo contrato;
+una imagen con extension PDF no obtiene autorizacion por su nombre.
 
 1. Permitir solo tipos, firma real y tamano previamente aprobados.
 2. Generar el nombre y `storage_key` en servidor.

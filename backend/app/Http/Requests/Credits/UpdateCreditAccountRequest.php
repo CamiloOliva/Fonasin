@@ -18,11 +18,12 @@ class UpdateCreditAccountRequest extends FormRequest
     {
         return [
             'credit_line' => ['sometimes', 'string', 'max:120'],
-            'initial_balance' => ['sometimes', 'numeric', 'min:0'],
-            'current_balance' => ['sometimes', 'numeric', 'min:0'],
-            'term_months' => ['sometimes', 'integer', 'min:1'],
-            'interest_rate' => ['sometimes', 'numeric', 'min:0'],
-            'installment_amount' => ['sometimes', 'numeric', 'min:0'],
+            'initial_balance' => ['sometimes', 'numeric', 'between:0,999999999999.99'],
+            'current_balance' => ['sometimes', 'numeric', 'between:0,999999999999.99'],
+            'term_months' => ['sometimes', 'integer', 'between:1,60'],
+            'interest_rate' => ['sometimes', 'numeric', 'between:0,100'],
+            'interest_rate_nominal_annual' => ['sometimes', 'nullable', 'numeric', 'between:0,100'],
+            'installment_amount' => ['sometimes', 'numeric', 'between:0,999999999999.99'],
             'status' => ['sometimes', 'in:active,settled,archived'],
         ];
     }

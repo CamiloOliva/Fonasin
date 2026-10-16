@@ -89,7 +89,7 @@ export default function ConvenioGrupoManejar() {
     <div className="min-h-screen bg-[#070b12] text-slate-100 font-sans pb-20 relative selection:bg-amber-400 selection:text-slate-950 overflow-x-hidden">
 
       {/* Glow ambiental dorado/ámbar automotriz */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[450px] bg-gradient-to-b from-amber-600/15 via-blue-600/10 to-transparent blur-[140px] pointer-events-none z-0" />
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[450px] legacy-bg-gradient-to-b from-amber-600/15 via-blue-600/10 to-transparent blur-[140px] pointer-events-none z-0" />
 
       {/* HEADER FLOTANTE HIGH-TECH */}
       <header className="sticky top-4 z-50 max-w-5xl mx-auto px-4">
@@ -98,17 +98,17 @@ export default function ConvenioGrupoManejar() {
           {/* BOTÓN DE REGRESAR PREMIUM (CON GLOW Y SHINE EFFECT) */}
           <Link
             to="/convenios"
-            className="relative group overflow-hidden inline-flex items-center space-x-2.5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-slate-200 hover:text-white px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 border border-slate-700/80 hover:border-amber-400 shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_25px_rgba(245,158,11,0.35)] active:scale-95"
+            className="relative group overflow-hidden inline-flex items-center legacy-space-x-2.5 legacy-bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-slate-200 hover:text-white px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 border border-slate-700/80 hover:border-amber-400 shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_25px_rgba(245,158,11,0.35)] active:scale-95"
           >
             {/* Destello de luz desvaneciente */}
-            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-amber-400/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none" />
+            <span className="absolute inset-0 w-full h-full legacy-bg-gradient-to-r from-transparent via-amber-400/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none" />
             
             <ArrowLeft className="w-4 h-4 text-amber-400 group-hover:-translate-x-1.5 transition-transform duration-300" />
             <span className="relative z-10 font-bold">Volver a Convenios</span>
           </Link>
 
           {/* BADGE INSTITUCIONAL CON PULSO */}
-          <div className="hidden sm:flex items-center space-x-2 bg-slate-950/90 border border-amber-500/30 text-amber-400 px-4 py-2 rounded-full text-xs font-extrabold shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+          <div className="hidden sm:flex items-center legacy-space-x-2 bg-slate-950/90 border border-amber-500/30 text-amber-400 px-4 py-2 rounded-full text-xs font-extrabold shadow-[0_0_15px_rgba(245,158,11,0.15)]">
             <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
@@ -119,17 +119,17 @@ export default function ConvenioGrupoManejar() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 space-y-12 relative z-10">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 legacy-space-y-12 relative z-10">
 
         {/* HERO BANNER - BENTO GRID AUTOMOTRIZ & LEGAL */}
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
           
-          <div className="lg:col-span-8 bg-gradient-to-br from-slate-900/95 via-slate-900/80 to-slate-950 border border-slate-800/80 rounded-3xl p-8 shadow-2xl flex flex-col justify-between relative overflow-hidden group">
+          <div className="lg:col-span-8 legacy-bg-gradient-to-br from-slate-900/95 via-slate-900/80 to-slate-950 border border-slate-800/80 rounded-3xl p-8 shadow-2xl flex flex-col justify-between relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-amber-500/20 transition-all duration-700" />
             
-            <div className="space-y-6">
+            <div className="legacy-space-y-6">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center space-x-2 text-xs font-bold text-amber-300 bg-amber-950/80 border border-amber-500/30 px-3.5 py-1.5 rounded-xl backdrop-blur-md shadow-[0_0_10px_rgba(245,158,11,0.1)]">
+                <span className="inline-flex items-center legacy-space-x-2 text-xs font-bold text-amber-300 bg-amber-950/80 border border-amber-500/30 px-3.5 py-1.5 rounded-xl backdrop-blur-md shadow-[0_0_10px_rgba(245,158,11,0.1)]">
                   <Sparkles className="w-4 h-4 text-amber-400" />
                   <span>Asesores Integrales de Servicios</span>
                 </span>
@@ -140,7 +140,7 @@ export default function ConvenioGrupoManejar() {
 
               <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
                 Protección Vial, Seguros y <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-300 to-yellow-200">
+                <span className="text-transparent bg-clip-text legacy-bg-gradient-to-r from-amber-400 via-orange-300 to-yellow-200">
                   Soluciones Jurídicas.
                 </span>
               </h1>
@@ -167,8 +167,8 @@ export default function ConvenioGrupoManejar() {
           </div>
 
           {/* CARD DE BENEFICIOS LEGALES GRATUITOS (BENTO DERECHO) */}
-          <div className="lg:col-span-4 bg-gradient-to-b from-amber-950/30 via-slate-900 to-slate-950 border border-amber-500/30 rounded-3xl p-6 sm:p-7 shadow-[0_0_40px_rgba(245,158,11,0.1)] flex flex-col justify-between space-y-5">
-            <div className="flex items-center space-x-2.5 pb-3 border-b border-slate-800">
+          <div className="lg:col-span-4 legacy-bg-gradient-to-b from-amber-950/30 via-slate-900 to-slate-950 border border-amber-500/30 rounded-3xl p-6 sm:p-7 shadow-[0_0_40px_rgba(245,158,11,0.1)] flex flex-col justify-between legacy-space-y-5">
+            <div className="flex items-center legacy-space-x-2.5 pb-3 border-b border-slate-800">
               <div className="p-2.5 bg-amber-500/10 text-amber-400 rounded-2xl border border-amber-500/20">
                 <Scale className="w-5 h-5" />
               </div>
@@ -178,9 +178,9 @@ export default function ConvenioGrupoManejar() {
               </div>
             </div>
 
-            <div className="space-y-3.5">
-              <div className="bg-slate-950/90 p-4 rounded-2xl border border-slate-800/90 space-y-1.5">
-                <div className="flex items-center space-x-2 text-amber-400">
+            <div className="legacy-space-y-3.5">
+              <div className="bg-slate-950/90 p-4 rounded-2xl border border-slate-800/90 legacy-space-y-1.5">
+                <div className="flex items-center legacy-space-x-2 text-amber-400">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
                   <p className="text-xs font-black text-white">3 Asesorías Jurídicas Gratis</p>
                 </div>
@@ -189,8 +189,8 @@ export default function ConvenioGrupoManejar() {
                 </p>
               </div>
 
-              <div className="bg-slate-950/90 p-4 rounded-2xl border border-slate-800/90 space-y-1.5">
-                <div className="flex items-center space-x-2 text-amber-400">
+              <div className="bg-slate-950/90 p-4 rounded-2xl border border-slate-800/90 legacy-space-y-1.5">
+                <div className="flex items-center legacy-space-x-2 text-amber-400">
                   <Home className="w-4 h-4 shrink-0" />
                   <p className="text-xs font-black text-white">Servicios Inmobiliarios</p>
                 </div>
@@ -210,9 +210,9 @@ export default function ConvenioGrupoManejar() {
         </section>
 
         {/* SECCIÓN 1: SERVICIOS DEL CONVENIO GRID */}
-        <section className="space-y-5">
+        <section className="legacy-space-y-5">
           <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center legacy-space-x-3">
               <div className="w-7 h-7 rounded-xl bg-amber-500 text-slate-950 font-black flex items-center justify-center text-xs">
                 1
               </div>
@@ -224,7 +224,7 @@ export default function ConvenioGrupoManejar() {
             {serviciosPrincipales.map((srv, idx) => {
               const IconComp = srv.icon;
               return (
-                <div key={idx} className="bg-slate-900/70 border border-slate-800/80 p-4 rounded-2xl flex flex-col justify-between space-y-3 hover:border-amber-500/40 hover:bg-slate-900 transition-all duration-300 group hover:-translate-y-1 shadow-md">
+                <div key={idx} className="bg-slate-900/70 border border-slate-800/80 p-4 rounded-2xl flex flex-col justify-between legacy-space-y-3 hover:border-amber-500/40 hover:bg-slate-900 transition-all duration-300 group hover:-translate-y-1 shadow-md">
                   <div className="p-2.5 bg-slate-950 text-amber-400 rounded-xl border border-slate-800 w-max group-hover:scale-110 group-hover:border-amber-500/30 transition-transform">
                     <IconComp className="w-5 h-5" />
                   </div>
@@ -239,8 +239,8 @@ export default function ConvenioGrupoManejar() {
         </section>
 
         {/* SECCIÓN 2: BENEFICIOS DESTACADOS & ASISPOL */}
-        <section className="space-y-5">
-          <div className="flex items-center space-x-3 pb-2 border-b border-slate-800">
+        <section className="legacy-space-y-5">
+          <div className="flex items-center legacy-space-x-3 pb-2 border-b border-slate-800">
             <div className="w-7 h-7 rounded-xl bg-amber-500 text-slate-950 font-black flex items-center justify-center text-xs">
               2
             </div>
@@ -250,15 +250,15 @@ export default function ConvenioGrupoManejar() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
             {/* Beneficios SOAT, Trámites y Pólizas */}
-            <div className="lg:col-span-7 space-y-3">
+            <div className="lg:col-span-7 legacy-space-y-3">
               {beneficiosSOAT.map((ben, idx) => {
                 const IconComp = ben.icon;
                 return (
-                  <div key={idx} className="bg-slate-900/80 border border-slate-800/80 p-4 rounded-2xl flex items-start space-x-4 hover:border-amber-500/30 transition-all group">
+                  <div key={idx} className="bg-slate-900/80 border border-slate-800/80 p-4 rounded-2xl flex items-start legacy-space-x-4 hover:border-amber-500/30 transition-all group">
                     <div className="p-3 bg-slate-950 text-amber-400 rounded-xl border border-slate-800 shrink-0 group-hover:scale-105 transition-transform">
                       <IconComp className="w-5 h-5" />
                     </div>
-                    <div className="space-y-1 flex-1">
+                    <div className="legacy-space-y-1 flex-1">
                       <div className="flex justify-between items-center">
                         <h3 className="text-xs font-extrabold text-white group-hover:text-amber-300 transition-colors">{ben.title}</h3>
                         <span className="text-[9px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md">
@@ -273,9 +273,9 @@ export default function ConvenioGrupoManejar() {
             </div>
 
             {/* Cobertura Póliza ASISPOL */}
-            <div className="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between space-y-4 backdrop-blur-md">
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2.5 pb-2 border-b border-slate-800">
+            <div className="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between legacy-space-y-4 backdrop-blur-md">
+              <div className="legacy-space-y-3">
+                <div className="flex items-center legacy-space-x-2.5 pb-2 border-b border-slate-800">
                   <ShieldCheck className="w-5 h-5 text-amber-400" />
                   <h3 className="text-xs font-black uppercase text-white tracking-wider">ASISPOL — Póliza para Conductores</h3>
                 </div>
@@ -283,9 +283,9 @@ export default function ConvenioGrupoManejar() {
                   Asistencia integral en carretera con amplio respaldo legal e indemnizatorio:
                 </p>
 
-                <div className="space-y-2 pt-1">
+                <div className="legacy-space-y-2 pt-1">
                   {coberturasAsispol.map((item, idx) => (
-                    <div key={idx} className="flex items-start space-x-2 text-[11px] text-slate-300">
+                    <div key={idx} className="flex items-start legacy-space-x-2 text-[11px] text-slate-300">
                       <ChevronRight className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
                       <span>{item}</span>
                     </div>
@@ -304,8 +304,8 @@ export default function ConvenioGrupoManejar() {
         </section>
 
         {/* SECCIÓN 3: OTRAS SOLUCIONES Y SERVICIOS GRID */}
-        <section className="space-y-5">
-          <div className="flex items-center space-x-3 pb-2 border-b border-slate-800">
+        <section className="legacy-space-y-5">
+          <div className="flex items-center legacy-space-x-3 pb-2 border-b border-slate-800">
             <div className="w-7 h-7 rounded-xl bg-amber-500 text-slate-950 font-black flex items-center justify-center text-xs">
               3
             </div>
@@ -316,7 +316,7 @@ export default function ConvenioGrupoManejar() {
             {otrasSoluciones.map((item, idx) => {
               const IconComp = item.icon;
               return (
-                <div key={idx} className="bg-slate-950/80 border border-slate-800/80 p-3.5 rounded-2xl text-center space-y-2 hover:border-amber-500/40 transition-all group">
+                <div key={idx} className="bg-slate-950/80 border border-slate-800/80 p-3.5 rounded-2xl text-center legacy-space-y-2 hover:border-amber-500/40 transition-all group">
                   <div className="p-2 bg-slate-900 text-amber-400 rounded-xl border border-slate-800 w-max mx-auto group-hover:scale-110 transition-transform">
                     <IconComp className="w-4 h-4" />
                   </div>
@@ -331,8 +331,8 @@ export default function ConvenioGrupoManejar() {
         </section>
 
         {/* FOOTER INFORMACIÓN DE CONTACTO */}
-        <footer className="bg-gradient-to-r from-slate-900 via-amber-950/20 to-slate-900 border border-slate-800/90 rounded-3xl p-6 flex flex-col sm:flex-row justify-between items-center gap-5 shadow-xl">
-          <div className="flex items-center space-x-3.5">
+        <footer className="legacy-bg-gradient-to-r from-slate-900 via-amber-950/20 to-slate-900 border border-slate-800/90 rounded-3xl p-6 flex flex-col sm:flex-row justify-between items-center gap-5 shadow-xl">
+          <div className="flex items-center legacy-space-x-3.5">
             <div className="p-3 bg-amber-500/10 rounded-2xl border border-amber-500/20 text-amber-400">
               <Shield className="w-6 h-6" />
             </div>
@@ -343,7 +343,7 @@ export default function ConvenioGrupoManejar() {
           </div>
 
           <div className="flex flex-wrap gap-3 w-full sm:w-auto">
-            <div className="flex-1 sm:flex-initial inline-flex items-center justify-center space-x-2 bg-slate-950 border border-amber-500/30 px-4 py-2.5 rounded-xl text-xs font-extrabold text-amber-300">
+            <div className="flex-1 sm:flex-initial inline-flex items-center justify-center legacy-space-x-2 bg-slate-950 border border-amber-500/30 px-4 py-2.5 rounded-xl text-xs font-extrabold text-amber-300">
               <span>Bucaramanga & Área Metropolitana</span>
             </div>
           </div>

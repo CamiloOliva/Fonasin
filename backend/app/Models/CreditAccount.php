@@ -19,6 +19,8 @@ class CreditAccount extends Model
         'current_balance',
         'term_months',
         'interest_rate',
+        'interest_rate_basis',
+        'interest_rate_nominal_annual',
         'installment_amount',
         'last_payment_date',
         'status',
@@ -37,6 +39,7 @@ class CreditAccount extends Model
             'current_balance' => 'decimal:2',
             'term_months' => 'integer',
             'interest_rate' => 'decimal:4',
+            'interest_rate_nominal_annual' => 'decimal:4',
             'installment_amount' => 'decimal:2',
             'last_payment_date' => 'date',
         ];

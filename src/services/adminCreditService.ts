@@ -6,6 +6,7 @@ export type AdminCredit = {
   current_balance: string;
   term_months: number | null;
   interest_rate: string | null;
+  interest_rate_nominal_annual: string | null;
   installment_amount: string;
   last_payment_date?: string | null;
   status: string;
@@ -58,6 +59,7 @@ export type CreateCreditPayload = {
   current_balance: string;
   term_months: number;
   interest_rate: string;
+  interest_rate_nominal_annual?: string | null;
   installment_amount: string;
   status?: string;
 };

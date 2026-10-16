@@ -30,11 +30,12 @@ class StoreCreditAccountRequest extends FormRequest
                 'LIBRE INVERSION',
                 'APORTES',
             ])],
-            'initial_balance' => ['required', 'numeric', 'min:0'],
-            'current_balance' => ['required', 'numeric', 'min:0'],
-            'term_months' => ['required', 'integer', 'min:1'],
-            'interest_rate' => ['required', 'numeric', 'min:0'],
-            'installment_amount' => ['required', 'numeric', 'min:0'],
+            'initial_balance' => ['required', 'numeric', 'between:0,999999999999.99'],
+            'current_balance' => ['required', 'numeric', 'between:0,999999999999.99'],
+            'term_months' => ['required', 'integer', 'between:1,60'],
+            'interest_rate' => ['required', 'numeric', 'between:0,100'],
+            'interest_rate_nominal_annual' => ['nullable', 'numeric', 'between:0,100'],
+            'installment_amount' => ['required', 'numeric', 'between:0,999999999999.99'],
             'status' => ['sometimes', 'in:active,settled,archived'],
         ];
     }

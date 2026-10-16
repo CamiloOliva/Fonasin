@@ -144,8 +144,8 @@ class ImportBatchController extends Controller
     public function creditTemplate(): Response
     {
         return $this->templateResponse('plantilla-cartera.xlsx', [
-            ['documento', 'nombre_completo', 'linea_credito', 'numero_pagare', 'valor_inicial', 'valor_cuota', 'saldo_actual', 'fecha_ultimo_pago'],
-            ['123456789', 'Asociado de ejemplo', 'FONALIBRE', 'PAG-001', '1000000.00', '50000.00', '800000.00', '2026-09-30'],
+            ['documento', 'nombre_completo', 'linea_credito', 'numero_pagare', 'valor_inicial', 'valor_cuota', 'saldo_actual', 'fecha_ultimo_pago', 'Plazo', 'Tasa Int NA', 'Tasa Int mv'],
+            ['123456789', 'Asociado de ejemplo', 'FONALIBRE', 'PAG-001', '1000000.00', '50000.00', '800000.00', '2026-09-30', '24', '18,00 %', '1,5 %'],
         ]);
     }
 

@@ -55,7 +55,7 @@ class SimpleXlsxAssociateProfileExporter implements ExportsAssociateProfiles
                 continue;
             }
 
-            $rows[] = [$category, $field, $this->safeCell($value)];
+            $rows[] = [$this->safeCell($category), $this->safeCell($field), $this->safeCell($value)];
         }
     }
 
@@ -71,6 +71,10 @@ class SimpleXlsxAssociateProfileExporter implements ExportsAssociateProfiles
 
         $text = $value === null ? '' : (string) $value;
 
-        return preg_match('/^[=+\-@]/', ltrim($text)) === 1 ? "'".$text : $text;
+        $text = preg_match('/^[=+\-@]/', ltrim($text)) === 1 ? "'".$text : $text;
+
+        // SimpleXLSXGen's raw-string prefix bypasses formulas, HTML-like
+        // formatting and hyperlink detection. It is removed by the writer.
+        return "\0".$text;
     }
 }

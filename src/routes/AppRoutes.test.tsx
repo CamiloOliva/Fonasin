@@ -25,6 +25,7 @@ vi.mock('../components/sections/StatutesBookViewer', () => ({
 
 vi.mock('../services/portalService', async (importOriginal) => ({
   PortalServiceError: (await importOriginal<typeof import('../services/portalService')>()).PortalServiceError,
+  monthlyCreditRateLabel: (await importOriginal<typeof import('../services/portalService')>()).monthlyCreditRateLabel,
   changeOwnPassword: vi.fn(),
   currentPortalUser: vi.fn().mockRejectedValue(new Error('guest')),
   fetchPortalAffiliation: vi.fn().mockResolvedValue(null),

@@ -6,7 +6,7 @@ import {
 } from '../../services/publicContentService';
 
 const empty: PublicContentInput = {
-  kind: 'news', title: '', summary: '', category: null, link_url: null, sort_order: 0, published: false,
+  kind: 'news', title: '', summary: '', conditions: null, category: null, link_url: null, sort_order: 0, published: false,
 };
 
 const labels = { news: 'Noticia o comunicado', social_balance: 'Balance social', agreement: 'Convenio', banner: 'Banner de inicio' };
@@ -34,7 +34,7 @@ export default function ContentPanel({ canManage }: { canManage: boolean }) {
   function choose(item: PublicContentItem | null) {
     setSelected(item?.id ?? null);
     setForm(item ? {
-      kind: item.kind, title: item.title, summary: item.summary,
+      kind: item.kind, title: item.title, summary: item.summary, conditions: item.conditions ?? null,
       category: item.category, link_url: item.link_url,
       sort_order: item.sort_order, published: item.published,
     } : empty);
@@ -91,17 +91,17 @@ export default function ContentPanel({ canManage }: { canManage: boolean }) {
         {canManage && <button type="button" onClick={() => choose(null)} className="rounded-xl bg-emerald-600 px-3 py-2 text-sm font-bold text-white">Nueva</button>}
       </div>
       <p className="mt-2 text-sm text-slate-600">Borrador no se muestra al público. Publica únicamente contenido aprobado por FONASIN.</p>
-      <div className="mt-4 space-y-2">
+      <div className="mt-4 legacy-space-y-2">
         {items.map((item) => <button type="button" key={item.id} onClick={() => choose(item)} className={`w-full rounded-xl border p-3 text-left text-sm ${selected === item.id ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200'}`}>
           <span className="block font-bold text-slate-900">{item.title}</span>
           <span className="text-slate-600">{labels[item.kind]} · {item.published ? 'Publicado' : 'Borrador'}</span>
         </button>)}
       </div>
     </section>
-    <div className="space-y-5">
+    <div className="legacy-space-y-5">
       {message && <p role="status" className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{message}</p>}
       {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-      {canManage && <form onSubmit={save} className="space-y-4 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+      {canManage && <form onSubmit={save} className="legacy-space-y-4 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-xl font-black text-slate-950">{selected ? 'Editar publicación' : 'Nueva publicación'}</h2>
         <label className="block text-sm font-bold text-slate-700">Tipo
           <select className={inputClass} value={form.kind} disabled={Boolean(selected)} onChange={(event) => setForm({ ...form, kind: event.target.value as PublicContentInput['kind'], category: null })}>
@@ -119,6 +119,10 @@ export default function ContentPanel({ canManage }: { canManage: boolean }) {
             <option value="">Seleccionar</option>{categories.map((category) => <option key={category}>{category}</option>)}
           </select>
         </label>}
+        {form.kind === 'agreement' && <label className="block text-sm font-bold text-slate-700">Condiciones completas aprobadas por FONASIN
+          <textarea className={inputClass} maxLength={12000} rows={9} value={form.conditions ?? ''} onChange={(event) => setForm({ ...form, conditions: event.target.value || null })} />
+          <span className="mt-1 block text-xs font-normal text-slate-600">Obligatorias antes de publicar una edición. No sustituyas las condiciones originales por un resumen.</span>
+        </label>}
         <label className="block text-sm font-bold text-slate-700">Enlace externo HTTPS (opcional)
           <input className={inputClass} type="url" pattern="https://.*" value={form.link_url ?? ''} onChange={(event) => setForm({ ...form, link_url: event.target.value || null })} />
         </label>
@@ -133,14 +137,14 @@ export default function ContentPanel({ canManage }: { canManage: boolean }) {
           <label className="text-sm font-bold text-slate-700">Imagen (JPG/PNG/WebP)
             <input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload('image', file); }} className="mt-2 block w-full text-xs" />
           </label>
-          <label className="text-sm font-bold text-slate-700">Documento (PDF)
+          {(form.kind === 'news' || form.kind === 'social_balance') && <label className="text-sm font-bold text-slate-700">Documento (PDF)
             <input type="file" accept="application/pdf" disabled={busy} onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload('document', file); }} className="mt-2 block w-full text-xs" />
-          </label>
+          </label>}
           {selectedItem?.image_url && <a href={adminContentMediaUrl(selectedItem, selectedItem.image_url) ?? undefined} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-emerald-700 underline">Ver imagen {selectedItem.published ? 'publicada' : 'en borrador'}</a>}
           {selectedItem?.document_url && <a href={adminContentMediaUrl(selectedItem, selectedItem.document_url) ?? undefined} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-emerald-700 underline">Ver PDF {selectedItem.published ? 'publicado' : 'en borrador'}</a>}
         </div>}
       </form>}
-      {settings && <form onSubmit={saveSettings} className="space-y-3 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+      {settings && <form onSubmit={saveSettings} className="legacy-space-y-3 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-xl font-black text-slate-950">Contacto y redes</h2>
         {(['contact_email', 'facebook_url', 'instagram_url', 'youtube_url'] as const).map((field) => <label key={field} className="block text-sm font-bold text-slate-700">
           {{ contact_email: 'Correo oficial', facebook_url: 'Facebook', instagram_url: 'Instagram', youtube_url: 'YouTube' }[field]}

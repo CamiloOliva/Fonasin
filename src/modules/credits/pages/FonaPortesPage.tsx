@@ -48,7 +48,7 @@ function ComingSoon({ title }: { title: string }) {
           <div className="mt-8">
             <Link
               to="/creditos"
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-200 via-yellow-200 to-amber-300 px-5 py-3 font-bold text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110 focus-ring"
+              className="inline-flex items-center gap-2 rounded-xl legacy-bg-gradient-to-r from-amber-200 via-yellow-200 to-amber-300 px-5 py-3 font-bold text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110 focus-ring"
             >
               <CalendarRange size={18} aria-hidden="true" />
               Volver a créditos

@@ -213,6 +213,7 @@ class AssociateImportOnboardingHttpTest extends TestCase
             'application_id' => $application->id,
             'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
         ]);
+        $this->postJson('/logout')->assertOk();
         $this->actingAs($user)
             ->getJson('/auth/user')
             ->assertJsonPath('data.requires_profile_completion', false);
@@ -257,6 +258,7 @@ class AssociateImportOnboardingHttpTest extends TestCase
 
         $this->actingAs($admin)->postJson("/admin/affiliation-applications/{$application->id}/enable")
             ->assertOk();
+        $this->postJson('/logout')->assertOk();
         $this->actingAs($user)->getJson('/auth/user')
             ->assertJsonPath('data.requires_profile_completion', false);
         $this->actingAs($user)->postJson('/portal/voluntary-savings-requests', [
@@ -286,6 +288,8 @@ class AssociateImportOnboardingHttpTest extends TestCase
             'file' => UploadedFile::fake()->create('cedula.pdf', 64, 'application/pdf'),
         ], ['Accept' => 'application/json'])->assertOk();
         $this->actingAs($admin)->postJson("/admin/associates/{$associate->id}/activate")->assertOk();
+        // A different actor must use a different session, just as in a browser.
+        $this->postJson('/logout')->assertOk();
 
         return $associate->fresh('user');
     }

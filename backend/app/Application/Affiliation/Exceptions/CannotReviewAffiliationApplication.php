@@ -11,7 +11,7 @@ class CannotReviewAffiliationApplication extends DomainException
         AffiliationApplicationStatus $status,
         AffiliationApplicationStatus $targetStatus,
     ): self {
-        return new self("Applications in [{$status->value}] status cannot transition to [{$targetStatus->value}].");
+        return new self('La solicitud cambio de estado. Actualiza el listado antes de intentar otra accion.');
     }
 
     public static function missingRejectionReason(): self

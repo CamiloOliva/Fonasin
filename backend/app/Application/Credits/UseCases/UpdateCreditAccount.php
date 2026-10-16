@@ -43,10 +43,14 @@ class UpdateCreditAccount
                 'current_balance',
                 'term_months',
                 'interest_rate',
+                'interest_rate_nominal_annual',
                 'installment_amount',
                 'status',
             ];
             $updates = array_intersect_key($data, array_flip($allowed));
+            if (array_key_exists('interest_rate', $updates)) {
+                $updates['interest_rate_basis'] = 'monthly';
+            }
 
             if (isset($updates['status'])) {
                 $this->ensureStatusTransitionIsAllowed(

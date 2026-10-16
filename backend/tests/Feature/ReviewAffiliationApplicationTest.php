@@ -8,6 +8,7 @@ use App\Application\Affiliation\UseCases\CreateAffiliationDraft;
 use App\Application\Affiliation\UseCases\RejectAffiliationApplication;
 use App\Application\Affiliation\UseCases\RequestAffiliationCorrection;
 use App\Application\Affiliation\UseCases\StartAffiliationReview;
+use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
 use App\Domain\Audit\Enums\AuditModule;
@@ -57,6 +58,11 @@ class ReviewAffiliationApplicationTest extends TestCase
     {
         $application = $this->applicationWithStatus(AffiliationApplicationStatus::UnderReview);
         $reviewer = User::factory()->create();
+        $application->sections()->forceCreate([
+            'section' => 'personal', 'schema_version' => 1,
+            'data_encrypted' => app(EncryptsSensitiveData::class)
+                ->encryptArray(['email' => 'synthetic@example.test']),
+        ]);
 
         $correction = app(RequestAffiliationCorrection::class)(
             application: $application,

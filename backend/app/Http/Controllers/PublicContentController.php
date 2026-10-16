@@ -137,10 +137,10 @@ class PublicContentController extends Controller
     {
         return [
             'id' => $item->id, 'kind' => $item->kind, 'title' => $item->title,
-            'summary' => $item->summary, 'category' => $item->category,
+            'summary' => $item->summary, 'conditions' => $item->conditions, 'category' => $item->category,
             'link_url' => $item->link_url, 'sort_order' => $item->sort_order,
             'published' => $item->published, 'published_at' => $item->published_at?->toISOString(),
-            'legacy_detail_slug' => self::LEGACY_AGREEMENT_SLUGS[$item->static_image_path] ?? null,
+            'legacy_detail_slug' => $item->legacy_detail_slug ?? self::LEGACY_AGREEMENT_SLUGS[$item->static_image_path] ?? null,
             'legacy_detail_modified' => $item->updated_by_user_id !== null,
             'image_url' => $item->image_storage_key ? "/public/content/{$item->id}/image" : $item->static_image_path,
             'document_url' => $item->document_storage_key ? "/public/content/{$item->id}/document" : null,

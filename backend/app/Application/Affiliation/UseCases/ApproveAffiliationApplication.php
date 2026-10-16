@@ -30,7 +30,7 @@ class ApproveAffiliationApplication
         ?Carbon $reviewedAt = null,
     ): AffiliationApplication {
         return DB::transaction(function () use ($application, $actor, $correlationId, $ipHash, $reviewedAt) {
-            $application->refresh();
+            $application = AffiliationApplication::query()->lockForUpdate()->findOrFail($application->id);
             $fromStatus = AffiliationApplicationStatus::from($application->status);
             $toStatus = AffiliationApplicationStatus::Approved;
 

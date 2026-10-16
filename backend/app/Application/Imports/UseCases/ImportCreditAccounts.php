@@ -37,6 +37,9 @@ class ImportCreditAccounts
         'valor_cuota',
         'saldo_actual',
         'fecha_ultimo_pago',
+        'plazo',
+        'tasa_int_na',
+        'tasa_int_mv',
     ];
 
     private const CREDIT_LINES = [
@@ -172,8 +175,10 @@ class ImportCreditAccounts
                         ]),
                         'initial_balance' => $validated['initial_balance'],
                         'current_balance' => $validated['current_balance'],
-                        'term_months' => $credit?->term_months,
-                        'interest_rate' => $credit?->interest_rate,
+                        'term_months' => $validated['term_months'],
+                        'interest_rate' => $validated['interest_rate_monthly'],
+                        'interest_rate_basis' => 'monthly',
+                        'interest_rate_nominal_annual' => $validated['interest_rate_nominal_annual'],
                         'installment_amount' => $validated['installment_amount'],
                         'last_payment_date' => $validated['last_payment_date'],
                         'status' => $credit?->status ?? CreditAccountStatus::Active->value,
@@ -218,9 +223,12 @@ class ImportCreditAccounts
 
                 return $batch->refresh();
             });
-        } catch (CannotImportSpreadsheet $exception) {
+        } catch (\Throwable $exception) {
             return DB::transaction(function () use ($batch, $exception, $actor, $ipHash, $correlationId): ImportBatch {
-                $this->failBatch($batch, $exception->getMessage());
+                $message = $exception instanceof CannotImportSpreadsheet
+                    ? $exception->getMessage()
+                    : 'No fue posible completar la carga. No se aplicaron cambios; revisa el lote y contacta al administrador.';
+                $this->failBatch($batch, $message);
                 $this->auditCompleted($batch->refresh(), $actor, $ipHash, $correlationId);
 
                 return $batch->refresh();
@@ -296,12 +304,23 @@ class ImportCreditAccounts
         ];
 
         foreach ($numbers as $field => $value) {
-            if ($value === null || (float) $value < 0) {
-                return ['error' => $this->rowError($rowNumber, 'Los valores numericos deben ser validos y no negativos.')];
+            if ($value === null || (float) $value < 0 || (float) $value > 999999999999.99) {
+                return ['error' => $this->rowError($rowNumber, 'Los valores numericos deben estar entre 0 y 999999999999.99.')];
             }
         }
 
         $lastPaymentDate = $this->parseDate($row['fecha_ultimo_pago'] ?? '');
+
+        $term = trim($row['plazo'] ?? '');
+        if (! preg_match('/^[1-9]\d?$/', $term) || (int) $term > 60) {
+            return ['error' => $this->rowError($rowNumber, 'El plazo debe ser un numero entero de 1 a 60 meses.')];
+        }
+
+        $annualRate = $this->parsePercentage($row['tasa_int_na'] ?? '');
+        $monthlyRate = $this->parsePercentage($row['tasa_int_mv'] ?? '');
+        if ($annualRate === null || $monthlyRate === null) {
+            return ['error' => $this->rowError($rowNumber, 'Tasa Int NA y Tasa Int mv deben ser porcentajes validos entre 0 y 100.')];
+        }
 
         if (! $lastPaymentDate) {
             return ['error' => $this->rowError($rowNumber, 'La fecha del ultimo pago debe tener formato YYYY-MM-DD.')];
@@ -316,8 +335,22 @@ class ImportCreditAccounts
             'initial_balance' => $numbers['initial_balance'],
             'current_balance' => $numbers['current_balance'],
             'installment_amount' => $numbers['installment_amount'],
+            'term_months' => (int) $term,
+            'interest_rate_nominal_annual' => $annualRate,
+            'interest_rate_monthly' => $monthlyRate,
             'last_payment_date' => $lastPaymentDate->toDateString(),
         ];
+    }
+
+    private function parsePercentage(string $value): ?string
+    {
+        $normalized = trim($value);
+        if (str_ends_with($normalized, '%')) {
+            $normalized = trim(substr($normalized, 0, -1));
+        }
+        $rate = $this->numberParser->parse($normalized, 4);
+
+        return $rate !== null && (float) $rate >= 0 && (float) $rate <= 100 ? $rate : null;
     }
 
     private function normalizedName(string $name): string

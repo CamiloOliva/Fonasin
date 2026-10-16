@@ -6,7 +6,7 @@ type CreditLoadingOverlayProps = {
 function PiggyVideo() {
   return (
     <div className="relative mx-auto flex h-44 w-full max-w-[15rem] items-center justify-center">
-      <div className="credit-loader-coin absolute left-1/2 top-2 h-6 w-6 -translate-x-1/2 rounded-full border-2 border-[#b7791f] bg-gradient-to-br from-[#fef3c7] via-[#f5cc72] to-[#d99e2f] shadow-[0_0_0_6px_rgba(247,201,94,0.12)] motion-reduce:animate-none" />
+      <div className="credit-loader-coin absolute left-1/2 top-2 h-6 w-6 -translate-x-1/2 rounded-full border-2 border-[#b7791f] legacy-bg-gradient-to-br from-[#fef3c7] via-[#f5cc72] to-[#d99e2f] shadow-[0_0_0_6px_rgba(247,201,94,0.12)] motion-reduce:animate-none" />
 
       <div className="relative h-40 w-40 overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 shadow-[0_18px_28px_rgba(0,0,0,0.18)]">
         <video

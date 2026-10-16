@@ -12,6 +12,7 @@ enum AffiliationAuditAction: string
     case ApplicationRejected = 'application.rejected';
     case ApplicationViewed = 'application.viewed';
     case ApplicationUpdateDraftCreated = 'application.update_draft_created';
+    case ApplicationUpdateDraftResumed = 'application.update_draft_resumed';
     case DocumentUploaded = 'document.uploaded';
     case DocumentGenerated = 'document.generated';
     case DocumentViewed = 'document.viewed';

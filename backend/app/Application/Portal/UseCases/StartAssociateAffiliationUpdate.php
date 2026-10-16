@@ -51,10 +51,28 @@ class StartAssociateAffiliationUpdate
                 : AffiliationApplicationPurpose::ProfileCompletion;
 
             $draft = $associate->affiliationApplications()
-                ->where('status', AffiliationApplicationStatus::Draft->value)
+                ->lockForUpdate()
+                ->whereIn('status', [AffiliationApplicationStatus::Draft->value, AffiliationApplicationStatus::PendingCorrection->value])
                 ->where('purpose', $purpose->value)
                 ->latest('updated_at')
                 ->first();
+
+            if ($draft) {
+                if ($draft->status === AffiliationApplicationStatus::PendingCorrection->value) {
+                    $draft->corrections()->whereNull('completed_at')->whereNull('revoked_at')
+                        ->update(['expires_at' => now()->addHours(24)]);
+                }
+                ($this->recordAuditEvent)(
+                    module: AuditModule::Portal,
+                    action: AffiliationAuditAction::ApplicationUpdateDraftResumed->value,
+                    subjectType: 'affiliation_application', subjectId: $draft->id,
+                    actor: $actor, actorType: AuditActorType::User,
+                    correlationId: $correlationId ?? (string) Str::uuid(), ipHash: $ipHash,
+                    metadata: ['associate_id' => $associate->id, 'purpose' => $purpose->value, 'status' => $draft->status],
+                );
+
+                return $draft->load('sections', 'documents', 'consentRecords');
+            }
 
             if (! $draft) {
                 $draft = AffiliationApplication::query()->create([

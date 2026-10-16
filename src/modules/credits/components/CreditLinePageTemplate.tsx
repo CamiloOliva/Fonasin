@@ -235,7 +235,7 @@ export default function CreditLinePageTemplate({
           <aside className={`${theme.darkCard} h-full`}>
             <div className="flex h-full flex-col">
               <p className="text-sm font-black uppercase tracking-[.18em] text-current/75">{overview.sideEyebrow}</p>
-              <div className="mt-5 space-y-3">
+              <div className="mt-5 legacy-space-y-3">
               {overview.sideCards.map((card) => (
                 <div key={card.label} className="rounded-2xl border border-current/15 bg-white/10 p-4 backdrop-blur-sm">
                   <p className="text-xs font-black uppercase tracking-[.16em] text-current/65">{card.label}</p>

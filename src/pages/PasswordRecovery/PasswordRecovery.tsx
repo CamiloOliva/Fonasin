@@ -113,7 +113,7 @@ export default function PasswordRecovery() {
               {isResetMode ? 'Cambiar contrasena' : 'Solicitar enlace'}
             </h2>
 
-            <div className="mt-6 space-y-4">
+            <div className="mt-6 legacy-space-y-4">
               <label className="block">
                 <span className="text-sm font-bold text-slate-800">Correo electronico</span>
                 <input

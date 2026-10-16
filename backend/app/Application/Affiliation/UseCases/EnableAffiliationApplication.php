@@ -42,7 +42,7 @@ class EnableAffiliationApplication
         ?Carbon $enabledAt = null,
     ): array {
         return DB::transaction(function () use ($application, $actor, $correlationId, $ipHash, $enabledAt): array {
-            $application->refresh();
+            $application = AffiliationApplication::query()->lockForUpdate()->findOrFail($application->id);
             $fromStatus = AffiliationApplicationStatus::from($application->status);
             $toStatus = AffiliationApplicationStatus::Enabled;
 

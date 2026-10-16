@@ -9,6 +9,7 @@ use App\Domain\Contributions\Enums\ContributionMovementStatus;
 use App\Domain\Imports\Enums\ImportAuditAction;
 use App\Models\Associate;
 use App\Models\ContributionMovement;
+use App\Models\CreditAccount;
 use App\Models\ImportBatch;
 use App\Models\Role;
 use App\Models\User;
@@ -46,6 +47,9 @@ class SpreadsheetImportHttpTest extends TestCase
             'initial_balance' => '1250000.50',
             'installment_amount' => '52000.75',
             'current_balance' => '1000000.25',
+            'term_months' => 24,
+            'interest_rate_nominal_annual' => '18.0000',
+            'interest_rate' => '1.5000',
             'last_payment_date' => '2026-09-30 00:00:00',
         ]);
         $this->assertDatabaseHas('audit_events', [
@@ -75,6 +79,86 @@ class SpreadsheetImportHttpTest extends TestCase
         $this->assertDatabaseHas('credit_accounts', [
             'credit_line' => 'CONVENIOS',
         ]);
+    }
+
+    public function test_credit_import_rejects_out_of_range_term_and_rates_without_creating_credit(): void
+    {
+        Storage::fake('local');
+        $admin = $this->userWithRole('admin');
+        $this->createAssociate('123456789');
+
+        foreach ([
+            ['plazo' => '0'], ['plazo' => '61'],
+            ['tasa_int_na' => '101 %'], ['tasa_int_mv' => '-1 %'],
+        ] as $index => $override) {
+            $this->actingAs($admin)->postJson('/admin/import-batches/credits', [
+                'file' => $this->xlsx("credito-invalido-{$index}.xlsx", [
+                    $this->creditHeaders(), $this->creditRow($override),
+                ]),
+            ])->assertCreated()->assertJsonPath('data.rows_rejected', 1);
+        }
+
+        $this->assertDatabaseCount('credit_accounts', 0);
+    }
+
+    public function test_real_excel_percentage_cells_keep_their_units(): void
+    {
+        Storage::fake('local');
+        $admin = $this->userWithRole('admin');
+        $this->createAssociate('123456789');
+        $this->actingAs($admin)->postJson('/admin/import-batches/credits', [
+            'file' => $this->xlsx('tasas-porcentaje-real.xlsx', [
+                $this->creditHeaders(),
+                $this->creditRow(['tasa_int_na' => '18%', 'tasa_int_mv' => '1.5%']),
+            ]),
+        ])->assertCreated()->assertJsonPath('data.rows_created', 1);
+        $this->assertDatabaseHas('credit_accounts', [
+            'interest_rate_nominal_annual' => '18.0000', 'interest_rate' => '1.5000',
+            'interest_rate_basis' => 'monthly',
+        ]);
+    }
+
+    public function test_credit_import_validates_decimal_capacity_before_persistence(): void
+    {
+        Storage::fake('local');
+        $admin = $this->userWithRole('admin');
+        $this->createAssociate('123456789');
+        foreach (['valor_inicial', 'valor_cuota', 'saldo_actual'] as $field) {
+            $this->actingAs($admin)->postJson('/admin/import-batches/credits', [
+                'file' => $this->xlsx('desborde-'.$field.'.xlsx', [
+                    $this->creditHeaders(), $this->creditRow([$field => '1000000000000.00']),
+                ]),
+            ])->assertCreated()->assertJsonPath('data.rows_rejected', 1);
+        }
+        $this->assertDatabaseCount('credit_accounts', 0);
+        $this->actingAs($admin)->postJson('/admin/import-batches/credits', [
+            'file' => $this->xlsx('maximo-decimal.xlsx', [
+                $this->creditHeaders(), $this->creditRow(['valor_inicial' => '999999999999.99']),
+            ]),
+        ])->assertCreated()->assertJsonPath('data.rows_created', 1);
+        $this->assertDatabaseHas('credit_accounts', ['initial_balance' => '999999999999.99']);
+        $this->assertDatabaseMissing('import_batches', ['status' => 'processing']);
+    }
+
+    public function test_unexpected_credit_storage_error_finishes_failed_batch_without_leaking_details(): void
+    {
+        Storage::fake('local');
+        $admin = $this->userWithRole('admin');
+        $this->createAssociate('123456789');
+        CreditAccount::creating(function (): void {
+            throw new \RuntimeException('SQL simulated secret value');
+        });
+        try {
+            $response = $this->actingAs($admin)->postJson('/admin/import-batches/credits', [
+                'file' => $this->xlsx('fallo-tecnico.xlsx', [$this->creditHeaders(), $this->creditRow()]),
+            ]);
+            $response->assertCreated()->assertJsonPath('data.status', 'failed');
+            $this->assertStringNotContainsString('SQL simulated secret value', $response->getContent());
+            $this->assertDatabaseMissing('import_batches', ['status' => 'processing']);
+            $this->assertDatabaseCount('credit_accounts', 0);
+        } finally {
+            CreditAccount::flushEventListeners();
+        }
     }
 
     public function test_imports_reject_dates_with_trailing_text_without_changing_financial_data(): void
@@ -265,7 +349,11 @@ class SpreadsheetImportHttpTest extends TestCase
 
         config(['imports.max_rows' => 5000, 'imports.max_processing_seconds' => 1]);
         $this->createAssociate('123456789');
-        $row = array_combine($this->creditHeaders(), $this->creditRow());
+        $row = array_combine([
+            'documento', 'nombre_completo', 'linea_credito', 'numero_pagare',
+            'valor_inicial', 'valor_cuota', 'saldo_actual', 'fecha_ultimo_pago',
+            'plazo', 'tasa_int_na', 'tasa_int_mv',
+        ], $this->creditRow());
         $row['__row'] = '2';
         $this->app->instance(ReadsSpreadsheetRows::class, new class($row) implements ReadsSpreadsheetRows
         {
@@ -378,7 +466,7 @@ class SpreadsheetImportHttpTest extends TestCase
     /** @return list<string> */
     private function creditHeaders(): array
     {
-        return ['documento', 'nombre_completo', 'linea_credito', 'numero_pagare', 'valor_inicial', 'valor_cuota', 'saldo_actual', 'fecha_ultimo_pago'];
+        return ['documento', 'nombre_completo', 'linea_credito', 'numero_pagare', 'valor_inicial', 'valor_cuota', 'saldo_actual', 'fecha_ultimo_pago', 'Plazo', 'Tasa Int NA', 'Tasa Int mv'];
     }
 
     /** @param array<string, string> $overrides
@@ -395,6 +483,9 @@ class SpreadsheetImportHttpTest extends TestCase
             'valor_cuota' => '52.000,75',
             'saldo_actual' => '1.000.000,25',
             'fecha_ultimo_pago' => '2026-09-30',
+            'plazo' => '24',
+            'tasa_int_na' => '18,00 %',
+            'tasa_int_mv' => '1,5 %',
             ...$overrides,
         ]);
     }

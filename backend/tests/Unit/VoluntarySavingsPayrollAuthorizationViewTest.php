@@ -28,6 +28,8 @@ class VoluntarySavingsPayrollAuthorizationViewTest extends TestCase
         ];
 
         $html = view('pdf.contributions.voluntary-savings-payroll-authorization', $data)->render();
+        $this->assertStringNotContainsString('Inicio de descuentos', $html);
+        $this->assertStringNotContainsString('Mes y a&ntilde;o por definir con el pagador', $html);
         $plainText = html_entity_decode(strip_tags($html));
 
         $this->assertStringContainsString('Ahorro voluntario', $plainText);

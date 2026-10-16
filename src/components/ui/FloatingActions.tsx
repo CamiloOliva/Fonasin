@@ -51,7 +51,7 @@ function ActionList({ open, transactionsOpen, onToggleTransactions }: ActionList
             } ${
               isTransactions
                 ? 'border border-fonasin-lime/30 bg-white/95 text-fonasin-deep shadow-[0_18px_40px_rgba(13,71,56,0.16)] backdrop-blur hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(13,71,56,0.22)]'
-                : 'bg-gradient-to-r from-fonasin-green to-fonasin-deep text-white shadow-lg shadow-fonasin-deep/25 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-fonasin-deep/30'
+                : 'legacy-bg-gradient-to-r from-fonasin-green to-fonasin-deep text-white shadow-lg shadow-fonasin-deep/25 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-fonasin-deep/30'
             } ${to || isTransactions ? 'cursor-pointer' : 'cursor-default'} [clip-path:polygon(0_50%,14%_0,100%_0,100%_100%,14%_100%)]`}
           >
             <span

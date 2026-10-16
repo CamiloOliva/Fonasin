@@ -23,8 +23,7 @@ class RegisterSignedPayrollAuthorizationRequest extends FormRequest
                 'required',
                 Rule::in([ApplicationDocumentType::SignedPayrollAuthorization->value]),
             ],
-            'file' => ['required', 'file', 'max:5120', 'mimetypes:application/pdf,image/jpeg,image/png'],
+            'file' => ['required', 'file', 'max:5120', 'mimetypes:application/pdf'],
         ];
     }
 }
-

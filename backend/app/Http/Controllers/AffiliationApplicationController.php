@@ -54,11 +54,11 @@ class AffiliationApplicationController extends Controller
 
     private const DOCUMENT_CONTEXT_PUBLIC = 'public';
 
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, EncryptsSensitiveData $cipher): JsonResponse
     {
         $perPage = max(1, min(100, (int) $request->integer('per_page', 50)));
         $applications = AffiliationApplication::query()
-            ->with(['reviewer'])
+            ->with(['reviewer', 'sections' => fn ($query) => $query->where('section', 'personal')])
             ->where('status', '!=', AffiliationApplicationStatus::Draft->value)
             ->withCount([
                 'sections',
@@ -70,7 +70,7 @@ class AffiliationApplicationController extends Controller
 
         return response()->json([
             'data' => $applications->getCollection()
-                ->map(fn (AffiliationApplication $application): array => $this->adminApplicationListPayload($application))
+                ->map(fn (AffiliationApplication $application): array => $this->adminApplicationListPayload($application, $cipher))
                 ->all(),
             'meta' => [
                 'current_page' => $applications->currentPage(),
@@ -117,7 +117,7 @@ class AffiliationApplicationController extends Controller
     ): JsonResponse {
         $this->ensureDraftAccess($request, $application);
 
-        if ($application->status !== AffiliationApplicationStatus::Draft->value) {
+        if (! in_array($application->status, [AffiliationApplicationStatus::Draft->value, AffiliationApplicationStatus::PendingCorrection->value], true)) {
             return response()->json([
                 'message' => 'La solicitud ya fue enviada o cerrada.',
             ], 409);
@@ -138,6 +138,7 @@ class AffiliationApplicationController extends Controller
         return response()->json([
             'data' => [
                 ...$this->applicationPayload($application),
+                'correction' => $this->correctionPayload($application, $cipher),
                 'sections' => $application->sections
                     ->map(fn (ApplicationSection $section): array => $this->adminSectionPayload($section, $cipher))
                     ->values()
@@ -519,10 +520,22 @@ class AffiliationApplicationController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function adminApplicationListPayload(AffiliationApplication $application): array
+    private function adminApplicationListPayload(AffiliationApplication $application, ?EncryptsSensitiveData $cipher = null): array
     {
+        $personal = $application->relationLoaded('sections') ? $application->sections->firstWhere('section', 'personal') : null;
+        $personalData = $cipher && is_string($personal?->getAttribute('data_encrypted'))
+            ? $cipher->decryptArray($personal->getAttribute('data_encrypted'))
+            : [];
+        $applicantName = trim(implode(' ', array_filter([
+            $personalData['firstName'] ?? '',
+            $personalData['middleName'] ?? '',
+            $personalData['lastName'] ?? '',
+            $personalData['secondLastName'] ?? '',
+        ], fn (mixed $part): bool => is_string($part) && trim($part) !== '')));
+
         return [
             'id' => $application->id,
+            'applicant_name' => $applicantName !== '' ? $applicantName : null,
             'purpose' => $application->purpose,
             'source_application_id' => $application->source_application_id,
             'status' => $application->status,
@@ -549,8 +562,9 @@ class AffiliationApplicationController extends Controller
         EncryptsSensitiveData $cipher,
     ): array {
         return [
-            ...$this->adminApplicationListPayload($application),
+            ...$this->adminApplicationListPayload($application, $cipher),
             'rejection_reason' => $application->rejection_reason,
+            'correction' => $this->correctionPayload($application, $cipher),
             'sections' => $application->sections
                 ->map(fn (ApplicationSection $section): array => $this->adminSectionPayload($section, $cipher))
                 ->values()
@@ -774,7 +788,16 @@ class AffiliationApplicationController extends Controller
 
     private function ensureDraftAccess(Request $request, AffiliationApplication $application): void
     {
-        abort_if($application->status !== AffiliationApplicationStatus::Draft->value, 409, 'La solicitud ya fue enviada o cerrada.');
+        abort_unless(in_array($application->status, [AffiliationApplicationStatus::Draft->value, AffiliationApplicationStatus::PendingCorrection->value], true), 409, 'La solicitud ya fue enviada o cerrada.');
+        if ($application->status === AffiliationApplicationStatus::PendingCorrection->value) {
+            abort_unless($application->corrections()->whereNull('completed_at')->whereNull('revoked_at')->where('expires_at', '>', now())->exists(), 403, 'El enlace de correccion vencio. Solicita uno nuevo a FONASIN.');
+            if ($application->isFormOnly()) {
+                $user = $request->user();
+                abort_unless($user && $user->status === 'active' && ! $user->must_change_password
+                    && $user->associate?->status === 'active'
+                    && $user->associate->id === $application->associate_id, 403);
+            }
+        }
 
         $expectedHash = $application->access_token_hash;
         $token = $request->header('X-Affiliation-Draft-Token');
@@ -786,5 +809,20 @@ class AffiliationApplicationController extends Controller
             && hash_equals($expectedHash, hash('sha256', $token)),
             403,
         );
+    }
+
+    private function correctionPayload(AffiliationApplication $application, EncryptsSensitiveData $cipher): ?array
+    {
+        $correction = $application->corrections()->whereNull('revoked_at')->latest('created_at')->first();
+        if (! $correction) {
+            return null;
+        }
+
+        return [
+            'id' => $correction->id,
+            'reason' => $cipher->decryptArray($correction->getAttribute('reason_encrypted'))['reason'] ?? '',
+            'requested_at' => $correction->created_at?->toISOString(),
+            'completed_at' => $correction->completed_at?->toISOString(),
+        ];
     }
 }

@@ -55,6 +55,11 @@ class RegisterApplicationDocument
         }
 
         return DB::transaction(function () use ($application, $documentType, $originalFilename, $mimeType, $byteSize, $actor, $correlationId, $ipHash, $uploadedAt, $fileContents, $auditAction) {
+            $application = AffiliationApplication::query()->lockForUpdate()->findOrFail($application->id);
+            if ($documentType === ApplicationDocumentType::SignedPayrollAuthorization
+                && ($application->status !== 'approved' || $application->isFormOnly())) {
+                throw new \DomainException('La libranza empresarial solo puede cargarse despues de aprobar la revision de la afiliacion vigente.');
+            }
             $uploadedAt ??= now();
             $correlationId ??= (string) Str::uuid();
 
@@ -62,6 +67,11 @@ class RegisterApplicationDocument
                 ->where('document_type', $documentType->value)
                 ->where('status', '!=', ApplicationDocumentStatus::Archived->value)
                 ->update(['status' => ApplicationDocumentStatus::Archived->value]);
+            $archivedSigned = $documentType === ApplicationDocumentType::PayrollAuthorization
+                ? $application->documents()->where('document_type', ApplicationDocumentType::SignedPayrollAuthorization->value)
+                    ->where('status', '!=', ApplicationDocumentStatus::Archived->value)
+                    ->update(['status' => ApplicationDocumentStatus::Archived->value])
+                : 0;
 
             $document = ApplicationDocument::query()->forceCreate([
                 'application_id' => $application->id,
@@ -93,6 +103,7 @@ class RegisterApplicationDocument
                     'mime_type' => $mimeType,
                     'byte_size' => $byteSize,
                     'archived_previous_documents' => $archivedCount,
+                    'archived_signed_authorizations' => $archivedSigned,
                 ],
                 occurredAt: $uploadedAt,
             );

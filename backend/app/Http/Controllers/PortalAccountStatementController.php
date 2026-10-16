@@ -72,6 +72,8 @@ class PortalAccountStatementController extends Controller
             'current_balance' => $credit->current_balance,
             'term_months' => $credit->term_months,
             'interest_rate' => $credit->interest_rate,
+            'interest_rate_basis' => $credit->interest_rate_basis,
+            'interest_rate_nominal_annual' => $credit->interest_rate_nominal_annual,
             'installment_amount' => $credit->installment_amount,
             'last_payment_date' => $credit->last_payment_date?->toDateString(),
             'status' => $credit->status,

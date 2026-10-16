@@ -10,6 +10,7 @@ use App\Models\ApplicationDocument;
 use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 
 class PortalAffiliationController extends Controller
@@ -36,34 +37,36 @@ class PortalAffiliationController extends Controller
 
     public function storeUpdateDraft(Request $request, StartAssociateAffiliationUpdate $startAssociateAffiliationUpdate): JsonResponse
     {
-        try {
-            $draft = $startAssociateAffiliationUpdate(
-                actor: $request->user(),
-                ipHash: $this->ipHash($request),
-            );
-        } catch (DomainException $exception) {
-            return $this->domainError($exception);
-        }
+        return DB::transaction(function () use ($request, $startAssociateAffiliationUpdate): JsonResponse {
+            try {
+                $draft = $startAssociateAffiliationUpdate(
+                    actor: $request->user(),
+                    ipHash: $this->ipHash($request),
+                );
+            } catch (DomainException $exception) {
+                return $this->domainError($exception);
+            }
 
-        $accessToken = $this->refreshDraftAccessToken($draft);
+            $accessToken = $this->refreshDraftAccessToken($draft);
 
-        return response()->json([
-            'data' => [
-                'id' => $draft->id,
-                'status' => $draft->status,
-                'purpose' => $draft->purpose,
-                'source_application_id' => $draft->source_application_id,
-                'draft_access_token' => $accessToken,
-                'links' => [
-                    'read' => URL::temporarySignedRoute(
-                        'affiliation-applications.read',
-                        now()->addHours(self::DRAFT_LINK_TTL_HOURS),
-                        ['application' => $draft],
-                        false,
-                    ),
+            return response()->json([
+                'data' => [
+                    'id' => $draft->id,
+                    'status' => $draft->status,
+                    'purpose' => $draft->purpose,
+                    'source_application_id' => $draft->source_application_id,
+                    'draft_access_token' => $accessToken,
+                    'links' => [
+                        'read' => URL::temporarySignedRoute(
+                            'affiliation-applications.read',
+                            now()->addHours(self::DRAFT_LINK_TTL_HOURS),
+                            ['application' => $draft],
+                            false,
+                        ),
+                    ],
                 ],
-            ],
-        ], 201);
+            ], 201);
+        });
     }
 
     /**

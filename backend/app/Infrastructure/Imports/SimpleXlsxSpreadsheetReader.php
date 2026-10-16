@@ -29,7 +29,24 @@ class SimpleXlsxSpreadsheetReader implements ReadsSpreadsheetRows
             throw CannotImportSpreadsheet::invalidFile('No fue posible leer la estructura interna del archivo XLSX.');
         }
 
-        $rows = $xlsx->rows();
+        // Numeric Excel percentages store fractions (18% = 0.18). Preserve the
+        // unit from the cell format instead of guessing from the numeric value.
+        $rows = [];
+        foreach ($xlsx->readRowsEx() as $cells) {
+            $this->ensureRuntimeLimits($startedAt, $initialMemory);
+            $rows[] = array_map(function (array $cell): string {
+                $value = $cell['value'] ?? '';
+                $format = preg_replace('/"[^"]*"|\\\\./', '', (string) ($cell['format'] ?? ''));
+                if (in_array($cell['type'] ?? '', ['', 'n'], true) && is_numeric($value) && str_contains($format ?? '', '%')) {
+                    return rtrim(rtrim(number_format((float) $value * 100, 8, '.', ''), '0'), '.').'%';
+                }
+
+                return (string) $value;
+            }, $cells);
+            if (count($rows) > max(1, (int) config('imports.max_rows', 5000)) + 1) {
+                throw CannotImportSpreadsheet::invalidFile('El archivo supera el limite de '.max(1, (int) config('imports.max_rows', 5000)).' filas.');
+            }
+        }
         $this->ensureResourceLimits($rows, $startedAt, $initialMemory);
 
         if (count($rows) < 2) {

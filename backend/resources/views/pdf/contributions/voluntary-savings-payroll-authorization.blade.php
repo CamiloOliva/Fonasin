@@ -28,8 +28,8 @@
         .signature-box { border: 1px solid #64b87c; margin-top: 10px; page-break-inside: avoid; }
         .signature-title { background: #2f9b57; color: #fff; font-weight: 900; padding: 5px 8px; text-align: center; text-transform: uppercase; }
         .verified { background: #f1f8ef; color: #004d26; font-weight: 900; padding: 6px; text-align: center; }
-        .signatures { margin-top: 16px; }
-        .signatures td { padding-top: 14px; text-align: center; }
+        .signatures { margin-top: 30px; page-break-inside: avoid; }
+        .signatures td { padding-top: 24px; text-align: center; }
         .line { border-top: 1px solid #4b5563; margin: 0 auto 9px; width: 62%; }
         .footer { border-top: 1px solid #008039; color: #6b7280; font-size: 8px; margin-top: 8px; padding-top: 5px; text-align: center; }
     </style>
@@ -72,7 +72,7 @@
 
 <div class="section">
     <div class="section-title">3. Valores autorizados</div>
-    <table class="summary"><tr><td><span class="label">Salario mensual reportado</span><span class="value">{{ $monthlySalary > 0 ? $money($monthlySalary) : 'No registra' }}</span></td><td><span class="label">Inicio de descuentos</span><span class="value">Mes y a&ntilde;o por definir con el pagador</span></td></tr></table>
+    <table class="summary"><tr><td><span class="label">Salario mensual reportado</span><span class="value">{{ $monthlySalary > 0 ? $money($monthlySalary) : 'No registra' }}</span></td></tr></table>
     <table class="concepts">
         <thead><tr><th>Concepto</th><th>Base</th><th>Valor autorizado</th><th>Periodicidad</th></tr></thead>
         <tbody>

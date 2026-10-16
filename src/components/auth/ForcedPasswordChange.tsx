@@ -83,7 +83,7 @@ export default function ForcedPasswordChange({
             Despues de guardar, podras continuar normalmente.
           </p>
 
-          <div className="mt-5 space-y-4">
+          <div className="mt-5 legacy-space-y-4">
             <label className="block">
               <span className="text-sm font-bold text-slate-800">Contrasena temporal</span>
               <input

@@ -30,9 +30,14 @@ class StartAffiliationReview
         ?Carbon $reviewedAt = null,
     ): AffiliationApplication {
         return DB::transaction(function () use ($application, $actor, $correlationId, $ipHash, $reviewedAt) {
-            $application->refresh();
+            $application = AffiliationApplication::query()->lockForUpdate()->findOrFail($application->id);
             $fromStatus = AffiliationApplicationStatus::from($application->status);
             $toStatus = AffiliationApplicationStatus::UnderReview;
+
+            // A repeated click by the same reviewer is the same decision, not a second transition.
+            if ($fromStatus === $toStatus && $application->reviewed_by_user_id === $actor->id) {
+                return $application;
+            }
 
             if (! $this->stateMachine->canTransition($fromStatus, $toStatus)) {
                 throw CannotReviewAffiliationApplication::invalidStatus($fromStatus, $toStatus);

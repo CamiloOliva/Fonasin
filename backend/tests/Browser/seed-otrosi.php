@@ -1,17 +1,32 @@
 <?php
 
 // Synthetic local fixtures only. Never point this script at a hosted database.
+use App\Application\Affiliation\UseCases\AcceptApplicationConsent;
+use App\Application\Affiliation\UseCases\CreateAffiliationDraft;
+use App\Application\Affiliation\UseCases\RegisterApplicationDocument;
+use App\Application\Affiliation\UseCases\RequestAffiliationCorrection;
+use App\Application\Affiliation\UseCases\SaveApplicationSection;
+use App\Application\Affiliation\UseCases\StartAffiliationReview;
+use App\Application\Affiliation\UseCases\SubmitAffiliationApplication;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationPurpose;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
+use App\Domain\Affiliation\Enums\ApplicationDocumentType;
+use App\Domain\Affiliation\Enums\ConsentType;
+use App\Mail\AffiliationCorrectionMail;
 use App\Models\AffiliationApplication;
 use App\Models\ApplicationSection;
 use App\Models\Associate;
 use App\Models\Role;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Shuchkin\SimpleXLSXGen;
+use Tests\Support\AffiliationSectionPayloads;
 
 require __DIR__.'/../../vendor/autoload.php';
 $app = require __DIR__.'/../../bootstrap/app.php';
@@ -77,6 +92,64 @@ foreach (['contributions' => 400000, 'permanent-savings' => 300000, 'voluntary-s
         ['documento', 'nombre_completo', 'valor_mensual', 'saldo', 'fecha_ultimo_pago'],
         [$fixture['document'], 'Synthetic E2E associate', 10000, $balance, '2026-09-30'],
     ])->saveAs("{$directory}/{$type}.xlsx");
+}
+file_put_contents("{$directory}/fixture.json", json_encode($fixture, JSON_THROW_ON_ERROR));
+
+SimpleXLSXGen::fromArray([
+    ['documento', 'nombre_completo', 'linea_credito', 'numero_pagare', 'valor_inicial', 'valor_cuota', 'saldo_actual', 'fecha_ultimo_pago', 'Plazo', 'Tasa Int NA', 'Tasa Int mv'],
+    [$fixture['document'], 'Synthetic E2E associate', 'FONALIBRE', 'E2E-'.$run, 1000000, 50000, 800000, '2026-09-30', 24, '18%', '1.5%'],
+])->saveAs("{$directory}/credits.xlsx");
+file_put_contents("{$directory}/logo.png", base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9l8AAAAASUVORK5CYII='));
+file_put_contents("{$directory}/public-report.pdf", Pdf::loadHTML('<h1>Informe sintetico de prueba</h1>')->output());
+
+// A real returned initial application, with the email captured locally only.
+Mail::fake();
+$payloads = new class
+{
+    use AffiliationSectionPayloads;
+
+    public function payload(AffiliationApplicationStep $step): array
+    {
+        $data = $this->validSectionPayload($step);
+
+        return match ($step) {
+            AffiliationApplicationStep::Personal => [...$data, 'maritalStatus' => 'Soltero/a', 'department' => 'Santander', 'city' => 'Bucaramanga'],
+            AffiliationApplicationStep::Employment => [...$data, 'workCity' => 'Bucaramanga - Santander'],
+            AffiliationApplicationStep::Financial => [...$data, 'incomeBand' => '$2 a $5 millones'],
+            AffiliationApplicationStep::Beneficiaries => [...$data, 'beneficiaries' => [[...$data['beneficiaries'][0], 'relationship' => 'Hermano/a']]],
+            AffiliationApplicationStep::Sarlaft => [...$data, 'economicActivity' => '0010', 'resourceOrigin' => ['Salario']],
+            default => $data,
+        };
+    }
+};
+$correctionApplication = app(CreateAffiliationDraft::class)();
+foreach (AffiliationApplicationStep::formSections() as $step) {
+    app(SaveApplicationSection::class)($correctionApplication, $step, 1, $payloads->payload($step), now());
+}
+foreach (ApplicationDocumentType::requiredForSubmission() as $type) {
+    app(RegisterApplicationDocument::class)(
+        $correctionApplication, $type, $type->value.'.pdf', 'application/pdf', 20,
+        fileContents: '%PDF-1.4 synthetic',
+    );
+}
+foreach (ConsentType::requiredForSubmission() as $type) {
+    app(AcceptApplicationConsent::class)($correctionApplication, $type, 'e2e-v1');
+}
+app(SubmitAffiliationApplication::class)($correctionApplication, 'e2e-v1');
+$adminActor = User::query()->where('email', $fixture['admin'])->firstOrFail();
+app(StartAffiliationReview::class)($correctionApplication, $adminActor);
+app(RequestAffiliationCorrection::class)($correctionApplication, $adminActor, 'Revisa la direccion de residencia antes de reenviar.');
+$fixture['correction_url'] = Mail::sent(AffiliationCorrectionMail::class)->last()->correctionUrl;
+$fixture['correction_application'] = $correctionApplication->id;
+foreach (['recovery' => 0, 'expired_recovery' => 1440] as $name => $ageMinutes) {
+    $email = "{$name}-{$run}@example.test";
+    $user = User::query()->create(['email' => $email, 'password' => $password, 'status' => 'active', 'must_change_password' => false]);
+    $user->roles()->attach(Role::query()->firstOrCreate(['name' => 'admin']));
+    $token = bin2hex(random_bytes(32));
+    DB::table('password_reset_tokens')->insert([
+        'email' => $email, 'token' => Hash::make($token), 'created_at' => now()->subMinutes($ageMinutes),
+    ]);
+    $fixture[$name] = ['email' => $email, 'token' => $token];
 }
 file_put_contents("{$directory}/fixture.json", json_encode($fixture, JSON_THROW_ON_ERROR));
 echo "Synthetic local fixtures ready; credentials stay in ignored .e2e-artifacts.\n";

@@ -13,6 +13,7 @@ class SavePublicContentRequest extends FormRequest
             'kind' => [Rule::requiredIf($this->isMethod('post')), Rule::in(['news', 'social_balance', 'agreement', 'banner'])],
             'title' => [Rule::requiredIf($this->isMethod('post')), 'sometimes', 'string', 'max:255'],
             'summary' => ['nullable', 'string', 'max:3000'],
+            'conditions' => ['nullable', 'string', 'max:12000'],
             'category' => [Rule::requiredIf($this->input('kind') === 'agreement'), 'nullable', Rule::in(['Salud y bienestar', 'Funerarios', 'Turismo', 'Servicios vehiculares'])],
             'link_url' => ['nullable', 'url', 'regex:/^https:\/\//i', 'max:500'],
             'sort_order' => ['sometimes', 'integer', 'min:0', 'max:100000'],

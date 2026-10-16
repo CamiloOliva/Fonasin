@@ -49,7 +49,7 @@ export default function ConvenioSanitas() {
     <div className="min-h-screen bg-[#121e36] text-slate-100 relative overflow-hidden font-sans pb-20 selection:bg-sky-500 selection:text-white">
 
       {/* Luces de Fondo Dinámicas */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-gradient-to-tr from-sky-600/20 via-blue-500/10 to-transparent blur-[120px] pointer-events-none rounded-full animate-pulse" style={{ animationDuration: '6s' }} />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] legacy-bg-gradient-to-tr from-sky-600/20 via-blue-500/10 to-transparent blur-[120px] pointer-events-none rounded-full animate-pulse" style={{ animationDuration: '6s' }} />
       <div className="absolute top-1/3 -right-20 w-[600px] h-[600px] bg-sky-400/10 blur-[150px] pointer-events-none rounded-full" />
 
       {/* Header Limpio con Botón de Regreso */}
@@ -57,9 +57,9 @@ export default function ConvenioSanitas() {
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           <Link
             to="/convenios"
-            className="group relative inline-flex items-center space-x-3 bg-[#1e3052] hover:bg-sky-500 text-white px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ease-out shadow-lg hover:shadow-sky-500/30 border border-[#324d7d] hover:border-sky-300 active:scale-95 overflow-hidden"
+            className="group relative inline-flex items-center legacy-space-x-3 bg-[#1e3052] hover:bg-sky-500 text-white px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ease-out shadow-lg hover:shadow-sky-500/30 border border-[#324d7d] hover:border-sky-300 active:scale-95 overflow-hidden"
           >
-            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
+            <span className="absolute inset-0 w-full h-full legacy-bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
             <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform duration-300 ease-out text-sky-400 group-hover:text-white" />
             <span className="tracking-wide">Volver a Convenios</span>
           </Link>
@@ -67,26 +67,26 @@ export default function ConvenioSanitas() {
       </header>
 
       {/* Cuerpo Principal */}
-      <main className="max-w-6xl mx-auto px-6 pt-10 relative z-10 space-y-12">
+      <main className="max-w-6xl mx-auto px-6 pt-10 relative z-10 legacy-space-y-12">
 
         {/* HERO BANNER */}
-        <section className="relative rounded-3xl bg-gradient-to-br from-[#172542] via-[#1a2948] to-[#121e36] p-6 sm:p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-[#263b63] overflow-hidden group">
+        <section className="relative rounded-3xl legacy-bg-gradient-to-br from-[#172542] via-[#1a2948] to-[#121e36] p-6 sm:p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-[#263b63] overflow-hidden group">
           
           <div className="absolute -top-20 -right-20 w-80 h-80 bg-sky-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-sky-500/20 transition-all duration-700" />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center relative z-10">
             
             {/* Mensaje Principal */}
-            <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
+            <div className="lg:col-span-7 legacy-space-y-6 text-center lg:text-left">
               
-              <div className="space-y-3">
-                <div className="inline-flex items-center space-x-2 bg-[#1e3052] border border-[#324d7d] rounded-full px-4 py-2 text-xs font-black text-sky-300 shadow-lg">
+              <div className="legacy-space-y-3">
+                <div className="inline-flex items-center legacy-space-x-2 bg-[#1e3052] border border-[#324d7d] rounded-full px-4 py-2 text-xs font-black text-sky-300 shadow-lg">
                   <Sparkles className="w-4 h-4 text-sky-400 animate-spin" style={{ animationDuration: '8s' }} />
                   <span className="tracking-widest uppercase">Alianza Médica Exclusiva</span>
                 </div>
 
                 <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight text-white">
-                  ¡Bienvenidos <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-blue-300 to-sky-200 animate-pulse">Sanitas</span> Plan Premium y FONASIN!
+                  ¡Bienvenidos <span className="text-transparent bg-clip-text legacy-bg-gradient-to-r from-sky-400 via-blue-300 to-sky-200 animate-pulse">Sanitas</span> Plan Premium y FONASIN!
                 </h1>
               </div>
 
@@ -109,14 +109,14 @@ export default function ConvenioSanitas() {
 
               {/* Pills de Beneficios */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                <div className="bg-[#1e3052]/70 hover:bg-[#21355c] border border-[#2e4775] hover:border-sky-400/50 rounded-2xl p-4 flex items-center space-x-3.5 shadow-md transition-all duration-300 transform hover:-translate-y-1">
+                <div className="bg-[#1e3052]/70 hover:bg-[#21355c] border border-[#2e4775] hover:border-sky-400/50 rounded-2xl p-4 flex items-center legacy-space-x-3.5 shadow-md transition-all duration-300 transform hover:-translate-y-1">
                   <div className="bg-sky-500/20 p-2.5 rounded-xl text-sky-400 flex-shrink-0 border border-sky-500/30">
                     <Heart className="w-5 h-5 animate-pulse" style={{ animationDuration: '2s' }} />
                   </div>
                   <span className="text-slate-200 text-sm font-semibold leading-snug">Atención Integral Premium</span>
                 </div>
 
-                <div className="bg-[#1e3052]/70 hover:bg-[#21355c] border border-[#2e4775] hover:border-sky-400/50 rounded-2xl p-4 flex items-center space-x-3.5 shadow-md transition-all duration-300 transform hover:-translate-y-1">
+                <div className="bg-[#1e3052]/70 hover:bg-[#21355c] border border-[#2e4775] hover:border-sky-400/50 rounded-2xl p-4 flex items-center legacy-space-x-3.5 shadow-md transition-all duration-300 transform hover:-translate-y-1">
                   <div className="bg-sky-500/20 p-2.5 rounded-xl text-sky-400 flex-shrink-0 border border-sky-500/30">
                     <CheckCircle2 className="w-5 h-5" />
                   </div>
@@ -131,13 +131,13 @@ export default function ConvenioSanitas() {
                 
                 {/* Badge Superior Centrado */}
                 <div className="w-full flex justify-center">
-                  <span className="bg-gradient-to-r from-sky-500 to-blue-600 text-white border border-sky-300/30 text-[11px] font-black uppercase px-4 py-1.5 rounded-full tracking-wider shadow-lg shadow-sky-500/20 inline-block">
+                  <span className="legacy-bg-gradient-to-r from-sky-500 to-blue-600 text-white border border-sky-300/30 text-[11px] font-black uppercase px-4 py-1.5 rounded-full tracking-wider shadow-lg shadow-sky-500/20 inline-block">
                     ★ Beneficio Destacado
                   </span>
                 </div>
 
                 {/* Ícono + Encabezados con Spacing Limpio */}
-                <div className="w-full flex flex-col items-center space-y-2">
+                <div className="w-full flex flex-col items-center legacy-space-y-2">
                   <Hospital className="w-14 h-14 text-sky-400 my-1 drop-shadow-[0_0_12px_rgba(56,189,248,0.5)] transform group-hover/card:scale-105 transition-transform duration-300 flex-shrink-0" />
                   <p className="text-xs font-black uppercase text-sky-300 tracking-widest">
                     HOSPITALIZACIÓN EN
@@ -148,7 +148,7 @@ export default function ConvenioSanitas() {
                 </div>
 
                 {/* Bloque Informativo con Flex Normalizado para Evitar Solapamientos */}
-                <div className="w-full border border-[#3a5a96] bg-gradient-to-br from-[#142038] via-[#172542] to-[#0d1627] p-4 rounded-2xl shadow-inner box-border">
+                <div className="w-full border border-[#3a5a96] legacy-bg-gradient-to-br from-[#142038] via-[#172542] to-[#0d1627] p-4 rounded-2xl shadow-inner box-border">
                   <div className="flex items-start gap-3">
                     <div className="bg-sky-500/20 p-2 rounded-xl text-sky-400 border border-sky-400/40 flex-shrink-0 mt-0.5 shadow-md">
                       <Clock className="w-4 h-4" />
@@ -169,7 +169,7 @@ export default function ConvenioSanitas() {
                 </div>
 
                 {/* Pie Inferior Centrado */}
-                <div className="flex items-center justify-center space-x-2 text-sky-400 font-bold text-xs tracking-wide pt-1">
+                <div className="flex items-center justify-center legacy-space-x-2 text-sky-400 font-bold text-xs tracking-wide pt-1">
                   <ShieldCheck className="w-4 h-4 text-sky-400 flex-shrink-0" />
                   <span>Confort total garantizado</span>
                 </div>
@@ -181,7 +181,7 @@ export default function ConvenioSanitas() {
         </section>
 
         {/* CONTENEDOR BLANCO TIPO CARTA */}
-        <section className="bg-white text-slate-800 rounded-3xl p-8 md:p-12 shadow-2xl space-y-8 relative overflow-hidden">
+        <section className="bg-white text-slate-800 rounded-3xl p-8 md:p-12 shadow-2xl legacy-space-y-8 relative overflow-hidden">
           
           <div className="border-b border-slate-200 pb-5 flex items-center justify-between">
             <div>
@@ -195,11 +195,11 @@ export default function ConvenioSanitas() {
             {beneficios.map((beneficio, index) => (
               <div 
                 key={index} 
-                className="group relative bg-slate-50 border border-slate-200/80 hover:border-sky-500/80 p-6 rounded-2xl shadow-sm hover:shadow-xl hover:shadow-sky-500/10 transition-all duration-300 flex flex-col justify-between space-y-4 transform hover:-translate-y-2 overflow-hidden"
+                className="group relative bg-slate-50 border border-slate-200/80 hover:border-sky-500/80 p-6 rounded-2xl shadow-sm hover:shadow-xl hover:shadow-sky-500/10 transition-all duration-300 flex flex-col justify-between legacy-space-y-4 transform hover:-translate-y-2 overflow-hidden"
               >
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-400 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute top-0 left-0 w-full h-1 legacy-bg-gradient-to-r from-sky-400 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                <div className="space-y-4">
+                <div className="legacy-space-y-4">
                   <div className="flex justify-between items-center">
                     <div className="bg-sky-100 group-hover:bg-sky-500 group-hover:text-white p-3 rounded-xl text-sky-700 transition-colors duration-300 shadow-sm">
                       <beneficio.icon className="w-6 h-6 transform group-hover:scale-110 transition-transform duration-300" />
@@ -209,7 +209,7 @@ export default function ConvenioSanitas() {
                     </span>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="legacy-space-y-2">
                     <h3 className="text-base font-black text-slate-900 group-hover:text-sky-600 transition-colors leading-snug">
                       {beneficio.title}
                     </h3>
@@ -226,15 +226,15 @@ export default function ConvenioSanitas() {
         </section>
 
         {/* CALL TO ACTION - ASESOR */}
-        <section className="bg-gradient-to-r from-[#172542] via-[#1a2948] to-[#172542] rounded-3xl p-8 md:p-10 text-white shadow-2xl border border-[#263b63] relative overflow-hidden group">
+        <section className="legacy-bg-gradient-to-r from-[#172542] via-[#1a2948] to-[#172542] rounded-3xl p-8 md:p-10 text-white shadow-2xl border border-[#263b63] relative overflow-hidden group">
           
           <div className="flex flex-col lg:flex-row items-center justify-between gap-8 relative z-10">
             
-            <div className="flex items-center space-x-5 text-center lg:text-left">
+            <div className="flex items-center legacy-space-x-5 text-center lg:text-left">
               <div className="bg-sky-500/20 p-4 rounded-2xl text-sky-400 flex-shrink-0 border border-sky-500/30 hidden sm:block shadow-lg transform group-hover:scale-105 transition-transform">
                 <Award className="w-8 h-8" />
               </div>
-              <div className="space-y-1">
+              <div className="legacy-space-y-1">
                 <span className="bg-[#21355c] text-sky-300 text-xs font-black px-3.5 py-1 rounded-full uppercase tracking-wider inline-block mb-2 border border-[#3b5b99]">
                   Asesor Especializado Sanitas
                 </span>
@@ -248,7 +248,7 @@ export default function ConvenioSanitas() {
                 href={`https://wa.me/57${CONTACTO_ASESOR.telefono}?text=Hola%20Edwar,%20soy%20asociado%20a%20FONASIN%20y%20quiero%20afiliarme%20a%20Sanitas`}
                 target="_blank"
                 rel="noreferrer"
-                className="relative group/btn bg-emerald-600 hover:bg-emerald-500 text-white font-black px-7 py-4 rounded-2xl flex items-center justify-center space-x-2.5 transition-all duration-300 shadow-lg hover:shadow-emerald-500/30 text-sm active:scale-95 overflow-hidden"
+                className="relative group/btn bg-emerald-600 hover:bg-emerald-500 text-white font-black px-7 py-4 rounded-2xl flex items-center justify-center legacy-space-x-2.5 transition-all duration-300 shadow-lg hover:shadow-emerald-500/30 text-sm active:scale-95 overflow-hidden"
               >
                 <span className="absolute inset-0 w-full h-full bg-white/20 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
                 <MessageCircle className="w-5 h-5 fill-white" />
@@ -257,7 +257,7 @@ export default function ConvenioSanitas() {
 
               <a
                 href={`tel:${CONTACTO_ASESOR.telefono}`}
-                className="bg-[#21355c] hover:bg-sky-600 text-white font-bold px-6 py-4 rounded-2xl flex items-center justify-center space-x-2.5 transition-all duration-300 text-sm border border-[#3b5b99] hover:border-sky-400 shadow-md active:scale-95"
+                className="bg-[#21355c] hover:bg-sky-600 text-white font-bold px-6 py-4 rounded-2xl flex items-center justify-center legacy-space-x-2.5 transition-all duration-300 text-sm border border-[#3b5b99] hover:border-sky-400 shadow-md active:scale-95"
               >
                 <Phone className="w-4 h-4 text-sky-400 group-hover:text-white" />
                 <span>{CONTACTO_ASESOR.telefonoFormato}</span>
@@ -268,7 +268,7 @@ export default function ConvenioSanitas() {
         </section>
 
         {/* Pie de Página */}
-        <footer className="text-center text-xs text-slate-400 space-y-2 pt-4">
+        <footer className="text-center text-xs text-slate-400 legacy-space-y-2 pt-4">
           <p className="font-semibold text-slate-300">FONASIN - Fondo de Empleados del Sector Mineroenergético</p>
           <p>Alianza exclusiva con Sanitas Plan Premium. Todos los derechos reservados.</p>
         </footer>

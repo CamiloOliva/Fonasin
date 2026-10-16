@@ -43,7 +43,7 @@ class SubmitAffiliationApplication
         ?string $signatureDate = null,
     ): AffiliationApplication {
         return DB::transaction(function () use ($application, $policyVersion, $actor, $correlationId, $ipHash, $submittedAt, $signatureCity, $signatureDate) {
-            $application->refresh();
+            $application = AffiliationApplication::query()->lockForUpdate()->findOrFail($application->id);
             $fromStatus = AffiliationApplicationStatus::from($application->status);
             $toStatus = AffiliationApplicationStatus::Submitted;
 
@@ -92,6 +92,9 @@ class SubmitAffiliationApplication
                 'submitted_at' => $submittedAt,
                 'access_token_hash' => null,
             ])->save();
+            if ($fromStatus === AffiliationApplicationStatus::PendingCorrection) {
+                $application->corrections()->whereNull('completed_at')->whereNull('revoked_at')->update(['completed_at' => now()]);
+            }
 
             ($this->recordAuditEvent)(
                 module: AuditModule::Affiliation,

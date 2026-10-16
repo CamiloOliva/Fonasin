@@ -13,6 +13,7 @@ use App\Http\Controllers\PortalAccountStatementController;
 use App\Http\Controllers\PortalAffiliationController;
 use App\Http\Controllers\PublicContentController;
 use App\Http\Controllers\VoluntarySavingsRequestController;
+use App\Http\Middleware\SerializeAffiliationDraft;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -55,9 +56,10 @@ Route::post('/password/forgot', [PasswordResetController::class, 'store'])
     ->name('password.forgot');
 
 Route::post('/password/reset', [PasswordResetController::class, 'update'])
+    ->middleware('throttle:password-reset-submit')
     ->name('password.reset');
 
-Route::prefix('affiliation-applications')->group(function (): void {
+Route::prefix('affiliation-applications')->middleware(SerializeAffiliationDraft::class)->group(function (): void {
     Route::post('/', [AffiliationApplicationController::class, 'store'])
         ->middleware('throttle:affiliation-draft-create')
         ->name('affiliation-applications.store');

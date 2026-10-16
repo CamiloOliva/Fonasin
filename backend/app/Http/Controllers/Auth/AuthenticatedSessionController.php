@@ -94,6 +94,8 @@ class AuthenticatedSessionController extends Controller
 
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
+        // Bind from the login response, not only the next protected request.
+        $request->session()->put('password_hash_web', Auth::guard('web')->hashPasswordForCookie($user->getAuthPassword()));
         RateLimiter::clear($throttleKey);
 
         $user->forceFill([

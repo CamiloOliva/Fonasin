@@ -65,17 +65,17 @@ export default function CreditsPage() {
               </div>
 
               <div className="relative grid gap-3 lg:pt-2">
-                <div className="flex items-start gap-3 rounded-2xl border border-white/20 bg-black/12 px-4 py-3 shadow-lg shadow-black/10 backdrop-blur-[2px]">
+                <div className="flex items-start gap-3 rounded-2xl border border-white/20  px-4 py-3 shadow-lg shadow-black/10 backdrop-blur-[2px]">
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fonasin-green text-white">
                     <CircleDollarSign size={20} aria-hidden="true" />
                   </span>
                   <span>
                     <span className="block text-[0.65rem] font-black uppercase tracking-[.22em] text-white/65">Línea destacada</span>
                     <strong className="mt-0.5 block text-lg font-black leading-tight">5 líneas de crédito</strong>
-                    <span className="mt-0.5 block text-xs leading-5 text-white/72">Para diferentes necesidades</span>
+                    <span className="mt-0.5 block text-xs leading-5 ">Para diferentes necesidades</span>
                   </span>
                 </div>
-                <div className="rounded-2xl border border-white/20 bg-black/12 px-4 py-3 text-sm font-semibold leading-6 text-white/92 shadow-lg shadow-black/10 backdrop-blur-[2px]">
+                <div className="rounded-2xl border border-white/20  px-4 py-3 text-sm font-semibold leading-6  shadow-lg shadow-black/10 backdrop-blur-[2px]">
                   Conoce la que mejor se adapta a ti
                 </div>
               </div>
@@ -98,7 +98,7 @@ export default function CreditsPage() {
                   key={name}
                   className={`group relative flex min-h-[250px] flex-col overflow-hidden rounded-3xl border border-white/20 bg-[linear-gradient(145deg,#003d22_0%,#08783f_100%)] p-5 shadow-[0_16px_32px_-14px_rgba(0,61,34,0.42)] transition duration-500 hover:-translate-y-1.5 hover:border-[#f7c95e] hover:shadow-[0_0_0_3px_rgba(247,201,94,0.58),0_0_34px_rgba(238,183,51,0.72),0_26px_42px_-18px_rgba(0,61,34,0.5)] sm:min-h-[270px] sm:p-6 lg:p-7 ${layout}`}
                 >
-                  <div className={`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${gradient}`} />
+                  <div className={`absolute inset-x-0 top-0 h-1.5 legacy-bg-gradient-to-r ${gradient}`} />
                   <div className="absolute right-2 -top-4 select-none text-6xl font-black tracking-tighter text-[#f7d77f]/15 sm:text-7xl xl:text-8xl" aria-hidden="true">
                     {number}
                   </div>

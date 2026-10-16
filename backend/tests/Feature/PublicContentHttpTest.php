@@ -152,9 +152,17 @@ class PublicContentHttpTest extends TestCase
 
         $admin = $this->actor('admin');
         $this->actingAs($admin)->patchJson("/admin/content/{$agreement->id}", [
+            'title' => 'Nuevo nombre Sanitas', 'summary' => 'Resumen sin condiciones',
+        ])->assertUnprocessable();
+        $this->getJson('/public/content')->assertJsonFragment([
+            'id' => $agreement->id, 'legacy_detail_modified' => false,
+        ]);
+        $this->actingAs($admin)->patchJson("/admin/content/{$agreement->id}", [
             'title' => 'Nuevo nombre Sanitas', 'summary' => 'Condiciones vigentes',
+            'conditions' => 'Cobertura y requisitos aprobados por FONASIN.',
         ])->assertOk()->assertJsonPath('data.legacy_detail_slug', 'sanitas')
-            ->assertJsonPath('data.legacy_detail_modified', true);
+            ->assertJsonPath('data.legacy_detail_modified', true)
+            ->assertJsonPath('data.conditions', 'Cobertura y requisitos aprobados por FONASIN.');
         $this->getJson('/public/content')->assertJsonFragment([
             'id' => $agreement->id, 'title' => 'Nuevo nombre Sanitas',
             'legacy_detail_slug' => 'sanitas', 'legacy_detail_modified' => true,
@@ -164,5 +172,28 @@ class PublicContentHttpTest extends TestCase
             'published' => false,
         ])->assertOk();
         $this->getJson('/public/content')->assertJsonMissing(['id' => $agreement->id]);
+    }
+
+    public function test_replacing_agreement_logo_preserves_its_historical_route(): void
+    {
+        Storage::fake('local');
+        $admin = $this->actor('admin');
+        $agreement = PublicContentItem::query()->firstOrCreate(['legacy_detail_slug' => 'sanitas'], [
+            'kind' => 'agreement', 'title' => 'Sanitas', 'category' => 'Salud y bienestar',
+            'static_image_path' => '/images/convenios/sanitas.png', 'published' => true,
+        ]);
+        $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9l8AAAAASUVORK5CYII=');
+        $this->actingAs($admin)->post('/admin/content/'.$agreement->id.'/media', [
+            'kind' => 'image', 'file' => UploadedFile::fake()->createWithContent('logo.png', $png),
+        ], ['Accept' => 'application/json'])->assertOk()
+            ->assertJsonPath('data.legacy_detail_slug', 'sanitas')
+            ->assertJsonPath('data.published', false);
+        $this->actingAs($admin)->patchJson('/admin/content/'.$agreement->id, [
+            'conditions' => 'Condiciones aprobadas conservadas despues del cambio de logo.', 'published' => true,
+        ])->assertOk();
+        $this->getJson('/public/content')->assertJsonFragment([
+            'id' => $agreement->id, 'legacy_detail_slug' => 'sanitas',
+        ]);
+        $this->assertNull($agreement->fresh()->static_image_path);
     }
 }

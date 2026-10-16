@@ -35,6 +35,15 @@ class StorePublicContentMedia
                 throw new DomainException('La imagen debe ser JPG, PNG o WebP.');
             }
             $key = 'private/content/'.$locked->id.'/'.Str::uuid().'.'.$extension;
+            // Keep the seeded route independent of future image replacements.
+            if ($locked->kind === 'agreement' && ! $locked->legacy_detail_slug && $locked->static_image_path) {
+                $slug = match (basename($locked->static_image_path)) {
+                    'caribbean-sol-mar-logo.jpg' => 'caribbean-sol-y-mar',
+                    'luz-marina-vargas-logo.jpg' => 'luz-marina-vargas',
+                    default => pathinfo($locked->static_image_path, PATHINFO_FILENAME),
+                };
+                $locked->legacy_detail_slug = $slug;
+            }
             $this->files->put($key, $contents);
             $locked->forceFill([
                 ...($kind === 'image'

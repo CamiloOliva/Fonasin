@@ -40,7 +40,7 @@ Solo FONASIN puede mover contenido funcional a `Aceptado`. Una PR puede proponer
 | FE-WEB-011 | Transacciones y QR | Pendiente | Acceso marcado `Proximamente` | Publicar QR, destino, concepto, instrucciones, advertencia y descarga. |
 | FE-WEB-012 | Analitica opcional | Pendiente | No integrada | Requiere aprobacion de finalidad, identificador y consentimiento. |
 
-El carrusel y los convenios consultan los registros publicados del modulo Content. Los archivos estaticos vigentes se migran como registros editables; no se inventan noticias ni balances. La administracion limitada fue aprobada por FONASIN el 5 de octubre de 2026; ver ADR-005. Los banners provisionales permanecen `En curso` hasta reemplazo/aprobacion de piezas. Los convenios historicos conservan su ruta y ficha detallada original solo mientras su registro no haya sido editado; tras la primera edicion administrativa, la ficha muestra exclusivamente titulo, categoria, resumen, imagen y enlace del registro vigente. Los convenios nuevos sin URL externa obtienen una ficha con ruta basada en su ID estable. Despublicar cualquier registro retira tambien la ficha de su URL directa. Es una transicion deliberada: el panel no edita las condiciones extensas de las fichas originales, por lo que no se deben seguir presentando como vigentes tras editar el registro. La aceptacion visual de esas fichas nuevas sigue pendiente con FONASIN.
+El carrusel y los convenios consultan los registros publicados del modulo Content. Los archivos estaticos vigentes se migran como registros editables; no se inventan noticias ni balances. La administracion limitada fue aprobada por FONASIN el 5 de octubre de 2026; ver ADR-005. Los banners provisionales permanecen `En curso` hasta reemplazo/aprobacion de piezas. Los convenios historicos conservan su ruta y ficha detallada original solo mientras su registro no haya sido editado. Para editar uno publicado se exige registrar las condiciones completas aprobadas por FONASIN; despues, la ficha usa titulo, categoria, resumen, condiciones, imagen y enlace del registro vigente. Si falta ese texto, se rechaza la edicion y no se pierde la ficha original. Los convenios nuevos sin URL externa obtienen una ficha con ruta basada en su ID estable. Despublicar cualquier registro retira tambien la ficha de su URL directa. La aceptacion visual de las fichas editadas sigue pendiente con FONASIN. El PDF de convenios no se ofrece en el panel hasta que se defina su necesidad y fuente.
 
 ## Afiliacion
 
@@ -62,13 +62,21 @@ El carrusel y los convenios consultan los registros publicados del modulo Conten
 
 La ruta `/afiliacion` contiene el flujo publico utilizable. Permanece pendiente la aprobacion formal de todos los textos, consentimientos y criterios documentales.
 
+La devolucion para correccion conserva solicitud, motivo cifrado e historial.
+El solicitante recibe un enlace privado de 24 horas; el formulario repuebla sus
+datos y soportes y permite corregir y reenviar la misma solicitud. Los formularios
+de asociados exigen tambien sesion del propietario. Un enlace vencido puede
+reemitirse desde administracion; el asociado puede reanudar su propia correccion
+desde el portal. Se revocan tokens anteriores y se exige nueva libranza empresarial
+cuando se regenera la autorizacion inicial. Ver ADR-007 y pruebas del flujo.
+
 ## Administracion
 
 | ID | Requisito | Estado | Bloqueador o siguiente paso |
 |---|---|---|---|
 | FE-ADM-001 a FE-ADM-009 | Gestion de afiliaciones y asociados | En curso | `/admin-fonasin`, endpoints paginados `GET /admin/affiliation-applications` y `GET /admin/associates`, acciones de revision, carga de libranza externa, habilitacion de asociado, deteccion de conflictos de identidad, alta manual, desactivacion logica e invalidacion de sesiones. `reviewer` conserva consulta, inicio de revision y solicitud de correccion; frontend oculta sus decisiones finales y controles de mutacion. Estas acciones son exclusivas de `admin` y estan cubiertas por pruebas HTTP y de presentacion. El detalle administrativo muestra las secciones descifradas de solicitudes pendientes y carga los PDF protegidos mediante sesion sin debilitar las cabeceras anti-iframe. Incluye ficha administrativa consolidada, busqueda HMAC por cedula en cuerpo POST, formulario vigente, cartera, aportes/ahorros y exportacion XLSX privada solo para admin. Falta validacion visual final con FONASIN. |
 | FE-ADM-009A | Gestion manual de creditos | En curso | `/admin-fonasin`, endpoints `GET/POST/PATCH /admin/credits`, listado paginado, lineas cerradas de credito, solo asociados activos, transiciones basicas de estado y archivado logico. `reviewer` accede al listado en modo consulta; frontend oculta crear, editar, archivar e importar, acciones exclusivas de `admin` cubiertas por pruebas de permisos. Falta validacion visual final con FONASIN. |
-| FE-ADM-010 | Importar cartera XLSX | En curso | Frontend y Backend usan la estructura operativa de ocho columnas: documento, nombre, linea, pagare, saldos, cuota y ultimo pago. El pagare se cifra y se identifica por HMAC; la carga valida identidad, formatos colombianos, duplicados y audita cambios. Falta aprobacion institucional final de la plantilla. |
+| FE-ADM-010 | Importar cartera XLSX | Implementado / pendiente aceptacion | Plantilla de once columnas: documento, nombre_completo, linea_credito, numero_pagare, valor_inicial, valor_cuota, saldo_actual, fecha_ultimo_pago, Plazo, Tasa Int NA y Tasa Int mv. Plazo de 1 a 60 meses; tasas con unidades separadas, incluyendo celdas porcentuales numericas reales de Excel; importes limitados a DECIMAL(14,2). El pagare se cifra y se identifica por HMAC; se validan identidad y duplicados, se auditan cambios y un error tecnico termina el lote como fallido sin cambios parciales. |
 | FE-ADM-010A | Importar aportes y ahorros XLSX | En curso | La pestana administrativa `Importaciones` muestra las plantillas aprobadas de Aporte Mensual, Ahorro Voluntario y Ahorro Permanente, cada una con documento, nombre, valor mensual, saldo y ultimo pago, seguidas por su historial operativo. Backend conserva historial, revierte correcciones y reconstruye los tres saldos sin depender del orden del archivo. Falta aceptacion operativa con datos de FONASIN y regla definitiva de conciliacion. |
 | FE-ADM-010B | Consultar cuentas y movimientos de aportes | Implementado | `/admin-fonasin` incluye cuentas, saldos y libro de movimientos con filtros por asociado, estado, tipo y periodo; Backend expone consultas paginadas solo para admin/reviewer, valida filtros y audita accesos sin exponer hashes privados. |
 | FE-ADM-010C | Preparar asociados desde XLSX | En curso / decision pendiente | Alta manual y XLSX dejan al asociado antiguo inactivo; hoy el codigo exige copia privada de cedula y aprobacion individual `admin` antes de activar/enviar acceso. Carlos transmitio el 7 de octubre que FONASIN no validara documentos fisicos de antiguos y que aprobara la actualizacion de datos posterior. Antes de retirar la barrera actual debe definirse la verificacion de identidad/correo para el primer acceso. `profile_completion` ya funciona sin nueva afiliacion ni libranza; una prueba HTTP demuestra que, habilitado el perfil, el asociado puede solicitar ahorro voluntario. Ver ADR-006. |
@@ -103,6 +111,33 @@ La pagina publica `/creditos` solo cubre informacion general de `FE-WEB-004`; no
 
 ## Calidad y evidencia obligatoria
 
+### Regresiones de cierre del 15 de octubre de 2026
+
+- FE-ADM-001 a FE-ADM-009: libranza empresarial exclusivamente PDF, hasta 5 MB,
+  tanto en el selector como en la validacion HTTP y el caso de uso. JPG/PNG,
+  imagen renombrada a PDF y PDF sobredimensionado se rechazan sin registro ni
+  archivo; la carga valida mantiene su prueba positiva.
+- FE-ADM-009A: el listado permite marcar pagado solo un credito activo y
+  archivar uno activo o pagado. No ofrece reactivar un credito pagado; el
+  servidor conserva su prohibicion de `settled -> active`.
+- FE-OBQ-001 / FE-OBQ-004: una cuenta inactiva pierde tambien una sesion
+  existente. Se comprueban admin (lectura y escritura), reviewer, asociado,
+  consulta de sesion y cambio de contrasena. El servidor invalida la sesion
+  y registra su cierre; los usuarios activos y visitantes publicos no cambian.
+- La dependencia HTTP productiva se actualiza de forma acotada a
+  symfony/http-foundation 7.4.21. Hay regresiones de Cache-Control y separacion
+  por espacios, ademas del control `composer audit` completo en CI.
+
+Estas verificaciones tecnicas no sustituyen la aceptacion de FONASIN ni una
+prueba del transporte SMTP y la configuracion de produccion.
+
+La actualizacion de seguridad del tooling CSS (ADR-008) conserva los estilos
+existentes mediante tokens y utilidades de compatibilidad. Vitest comprueba
+su inventario y `test:theme` verifica colores, espacios y controles en navegador
+a 1440/390px. CI audita npm completo desde low, no solo produccion. Este control
+responsive acotado no equivale a una auditoria integral de accesibilidad ni a
+aceptacion visual institucional.
+
 | Control | Estado | Evidencia requerida para `Validado` |
 |---|---|---|
 | Compilacion TypeScript/Vite | Implementado | `npm run build` local y workflow `.github/workflows/quality-gates.yml` en cada push y pull request con cambios de codigo. |
@@ -113,6 +148,15 @@ La pagina publica `/creditos` solo cubre informacion general de `FE-WEB-004`; no
 | Accesibilidad | Pendiente | Teclado, foco, labels, contraste, semantica y auditoria. |
 | Permisos | En curso | Casos HTTP positivos y negativos por rol, propietario y estado; completar la matriz de aceptacion institucional. |
 | Regresion | Implementado | `quality-gates.yml` cubre backend SQLite, MariaDB, frontend y Browser del otrosi; el deploy de cPanel solo publica frontend. |
+
+## Seguridad de recuperacion y exportacion
+
+Seguridad de cierre: la recuperacion vence a los 60 minutos, es de un solo
+uso, revoca sesiones de la cuenta y limita intentos por cuenta/IP. El recorrido
+de navegador prueba dos dispositivos y el nuevo ingreso sin firmar
+automaticamente al navegador de recuperacion. La exportacion XLSX del panel
+conserva texto literal frente a etiquetas de formulas y enlaces. Son controles
+tecnicos del alcance existente, no nuevas funciones ni aceptacion contractual.
 
 ## Regla para cada PR
 

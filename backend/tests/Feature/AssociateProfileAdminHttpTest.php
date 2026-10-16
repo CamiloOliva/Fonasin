@@ -107,6 +107,17 @@ class AssociateProfileAdminHttpTest extends TestCase
         ]);
     }
 
+    public function test_export_does_not_turn_form_text_into_an_executable_formula(): void
+    {
+        $admin = $this->userWithRole('admin', 'admin@example.test');
+        $associate = $this->associateWithProfile($admin, '<f>1+1</f>');
+        $response = $this->actingAs($admin)->get("/admin/associates/{$associate->id}/profile/export")->assertOk();
+        $spreadsheet = SimpleXLSX::parseData($response->getContent());
+        $this->assertNotFalse($spreadsheet);
+        $this->assertStringContainsString('<f>1+1</f>', json_encode($spreadsheet->rows(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
+        $this->assertDoesNotMatchRegularExpression('/<f(?:\s|>)/', $spreadsheet->getEntryData('xl/worksheets/sheet1.xml'));
+    }
+
     public function test_unknown_document_returns_not_found_without_leaking_other_profiles(): void
     {
         $admin = $this->userWithRole('admin');

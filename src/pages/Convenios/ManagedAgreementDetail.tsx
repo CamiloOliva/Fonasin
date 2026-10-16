@@ -48,6 +48,7 @@ export default function ManagedAgreementDetail() {
           <p className="text-xs font-bold uppercase tracking-widest text-fonasin-green">{agreement.category}</p>
           <h1 className="mt-2 font-heading text-3xl font-black text-fonasin-deep">{agreement.title}</h1>
           {agreement.summary ? <p className="mt-5 whitespace-pre-line leading-7 text-slate-700">{agreement.summary}</p> : null}
+          {agreement.conditions ? <section className="mt-5"><h2 className="font-bold text-fonasin-deep">Condiciones del convenio</h2><p className="mt-2 whitespace-pre-line leading-7 text-slate-700">{agreement.conditions}</p></section> : null}
           {agreement.link_url ? <a href={agreement.link_url} target="_blank" rel="noopener noreferrer" className="mt-6 inline-block rounded-xl bg-fonasin-green px-5 py-3 font-bold text-white focus-ring">Consultar con el aliado</a> : null}
         </div>
       </article>

@@ -81,21 +81,21 @@ export default function Convenios() {
               <article
                 className={`group relative h-full min-w-0 overflow-hidden rounded-2xl border bg-white p-6 shadow-sm transition duration-200 ${
                   isEmi
-                    ? 'border-emerald-200 bg-gradient-to-br from-white via-white to-emerald-50/70 hover:-translate-y-1 hover:border-emerald-400 hover:shadow-xl hover:shadow-emerald-900/10'
+                    ? 'border-emerald-200 legacy-bg-gradient-to-br from-white via-white to-emerald-50/70 hover:-translate-y-1 hover:border-emerald-400 hover:shadow-xl hover:shadow-emerald-900/10'
                     : isLosOlivos
-                      ? 'border-[#d4dbbe] bg-gradient-to-br from-white via-white to-[#f7f8f0] hover:-translate-y-1 hover:border-[#859f48] hover:shadow-xl hover:shadow-[#556b2f]/10'
+                      ? 'border-[#d4dbbe] legacy-bg-gradient-to-br from-white via-white to-[#f7f8f0] hover:-translate-y-1 hover:border-[#859f48] hover:shadow-xl hover:shadow-[#556b2f]/10'
                       : isSanitas
-                        ? 'border-sky-200 bg-gradient-to-br from-white via-white to-sky-50 hover:-translate-y-1 hover:border-sky-400 hover:shadow-xl hover:shadow-sky-900/10'
+                        ? 'border-sky-200 legacy-bg-gradient-to-br from-white via-white to-sky-50 hover:-translate-y-1 hover:border-sky-400 hover:shadow-xl hover:shadow-sky-900/10'
                         : isEmermedica
-                          ? 'border-blue-200 bg-gradient-to-br from-white via-white to-blue-50 hover:-translate-y-1 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-900/10'
+                          ? 'border-blue-200 legacy-bg-gradient-to-br from-white via-white to-blue-50 hover:-translate-y-1 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-900/10'
                           : isPracticar
-                            ? 'border-red-200 bg-gradient-to-br from-white via-white to-red-50 hover:-translate-y-1 hover:border-red-400 hover:shadow-xl hover:shadow-red-900/10'
+                            ? 'border-red-200 legacy-bg-gradient-to-br from-white via-white to-red-50 hover:-translate-y-1 hover:border-red-400 hover:shadow-xl hover:shadow-red-900/10'
                             : isManejar
-                          ? 'border-amber-200 bg-gradient-to-br from-white via-white to-amber-50 hover:-translate-y-1 hover:border-amber-400 hover:shadow-xl hover:shadow-amber-900/10'
+                          ? 'border-amber-200 legacy-bg-gradient-to-br from-white via-white to-amber-50 hover:-translate-y-1 hover:border-amber-400 hover:shadow-xl hover:shadow-amber-900/10'
                           : isCoorserpark
-                          ? 'border-emerald-200 bg-gradient-to-br from-white via-white to-teal-50 hover:-translate-y-1 hover:border-emerald-400 hover:shadow-xl hover:shadow-emerald-900/10'
+                          ? 'border-emerald-200 legacy-bg-gradient-to-br from-white via-white to-teal-50 hover:-translate-y-1 hover:border-emerald-400 hover:shadow-xl hover:shadow-emerald-900/10'
                           : isTourism
-                          ? 'border-sky-200 bg-gradient-to-br from-white via-white to-cyan-50 hover:-translate-y-1 hover:border-sky-400 hover:shadow-xl hover:shadow-sky-900/10'
+                          ? 'border-sky-200 legacy-bg-gradient-to-br from-white via-white to-cyan-50 hover:-translate-y-1 hover:border-sky-400 hover:shadow-xl hover:shadow-sky-900/10'
                           : 'hover:border-fonasin-green/30 hover:shadow-md'
                 }`}
               >

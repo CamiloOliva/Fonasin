@@ -5,6 +5,7 @@ export type PublicContentItem = {
   kind: PublicContentKind;
   title: string;
   summary: string | null;
+  conditions?: string | null;
   category: string | null;
   link_url: string | null;
   sort_order: number;
@@ -24,7 +25,7 @@ export type PublicSiteSettings = {
 };
 
 export type PublicContentResponse = { data: PublicContentItem[]; settings: PublicSiteSettings };
-export type PublicContentInput = Pick<PublicContentItem, 'kind' | 'title' | 'summary' | 'category' | 'link_url' | 'sort_order' | 'published'>;
+export type PublicContentInput = Pick<PublicContentItem, 'kind' | 'title' | 'summary' | 'category' | 'link_url' | 'sort_order' | 'published'> & { conditions: string | null };
 
 const backendBaseUrl = import.meta.env.VITE_BACKEND_BASE_URL?.trim().replace(/\/$/, '') ?? '';
 let csrf = '';

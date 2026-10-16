@@ -1,5 +1,5 @@
 import { ChevronRight, FileText, Globe, Home, Instagram, MessageCircle, Users, Youtube } from 'lucide-react';
-import type { ComponentType } from 'react';
+import { useState, type ComponentType } from 'react';
 import { Link } from 'react-router-dom';
 import { navigation } from '../../data/navigation';
 import { CONTACT_EMAIL, OFFICIAL_SOCIAL_URLS, WHATSAPP_URL } from '../../data/siteConfig';
@@ -37,6 +37,7 @@ function IconPill({
 }
 
 export default function Footer() {
+  const [showEmail, setShowEmail] = useState(false);
   const { content } = usePublicContent();
   const currentYear = new Date().getFullYear();
   const contactEmail = content?.settings.contact_email || CONTACT_EMAIL;
@@ -57,14 +58,14 @@ export default function Footer() {
           <div className="grid gap-3 lg:grid-cols-[auto_1fr] lg:items-center">
             <div className="flex items-center justify-center lg:justify-start">
               <div className="rounded-[1.5rem] border border-white/30 bg-white p-2.5 shadow-[0_14px_36px_rgba(0,0,0,0.14)] backdrop-blur-sm">
-                <img src="/logotipo.png" alt="Logotipo de FONASIN" className="h-20 w-20 object-contain sm:h-22 sm:w-22" />
+                <img src="/logotipo.png" alt="Logotipo de FONASIN" className="h-20 w-20 object-contain  " />
               </div>
             </div>
 
-            <div className="space-y-2.5 text-center lg:text-left lg:pl-1">
+            <div className="legacy-space-y-2.5 text-center lg:text-left lg:pl-1">
               <div className="max-w-4xl mx-auto lg:mx-0">
                 <p className="text-2xl font-black leading-tight tracking-[0.03em] text-white sm:text-3xl lg:text-4xl">FONASIN</p>
-                <p className="mt-2 max-w-3xl text-sm font-semibold leading-tight text-white/92 sm:text-base sm:leading-tight">
+                <p className="mt-2 max-w-3xl text-sm font-semibold leading-tight  sm:text-base sm:leading-tight">
                   Fondo de Empleados del Sector Mineroenergético y Empleados Sintraelecol
                 </p>
                 <p className="mt-2.5 text-xs italic text-white/80 sm:text-sm">
@@ -73,7 +74,7 @@ export default function Footer() {
               </div>
 
               <div className="flex flex-col items-center gap-2.5 sm:flex-row sm:justify-center lg:justify-start lg:pl-0">
-                <div className="rounded-[1.35rem] border border-white/15 bg-black/12 px-4 py-2.5 shadow-[0_10px_24px_rgba(0,0,0,0.14)] backdrop-blur-sm">
+                <div className="rounded-[1.35rem] border border-white/15  px-4 py-2.5 shadow-[0_10px_24px_rgba(0,0,0,0.14)] backdrop-blur-sm">
                   <p className="text-lg font-light italic leading-tight text-white sm:text-xl">Juntos construimos</p>
                   <p className="text-xl font-black italic leading-tight text-[#d9d500] sm:text-2xl">mas bienestar!</p>
                 </div>
@@ -86,10 +87,10 @@ export default function Footer() {
               href={WHATSAPP_URL}
               target="_blank"
               rel="noreferrer"
-              className="group inline-flex items-center justify-between gap-4 rounded-full bg-gradient-to-r from-[#13b84c] to-[#0b7f39] px-4 py-2.5 text-sm font-bold text-white shadow-[0_12px_26px_rgba(13,122,58,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(13,122,58,0.34)] focus-ring"
+              className="group inline-flex items-center justify-between gap-4 rounded-full legacy-bg-gradient-to-r from-[#13b84c] to-[#0b7f39] px-4 py-2.5 text-sm font-bold text-white shadow-[0_12px_26px_rgba(13,122,58,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(13,122,58,0.34)] focus-ring"
             >
               <span className="flex items-center gap-3">
-                <span className="grid h-10 w-10 place-items-center rounded-full bg-white/12 ring-1 ring-white/20">
+                <span className="grid h-10 w-10 place-items-center rounded-full  ring-1 ring-white/20">
                   <MessageCircle className="h-5 w-5" />
                 </span>
                 Atencion por WhatsApp
@@ -112,20 +113,20 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="my-4 h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+        <div className="my-4 h-px w-full legacy-bg-gradient-to-r from-transparent via-white/25 to-transparent" />
 
         <div className="grid gap-3 xl:grid-cols-4">
-          <section className="rounded-[1.35rem] border border-white/12 bg-black/10 p-3.5 backdrop-blur-sm">
+          <section className="rounded-[1.35rem] border  bg-black/10 p-3.5 backdrop-blur-sm">
             <div className="mb-2.5 inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-[#d9d500]/15 text-[#d9d500] ring-1 ring-[#d9d500]/20">
               <Home className="h-5 w-5" />
             </div>
             <h2 className="text-base font-black leading-tight text-[#d9d500]">Navegacion</h2>
-            <div className="mt-2.5 space-y-1.5 leading-tight">
+            <div className="mt-2.5 legacy-space-y-1.5 leading-tight">
               {navigation.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
-                  className="group flex items-center gap-3 text-sm font-medium text-white/82 transition hover:text-white"
+                  className="group flex items-center gap-3 text-sm font-medium  transition hover:text-white"
                 >
                   <ChevronRight className="h-4 w-4 text-[#d9d500] transition group-hover:translate-x-1" />
                   <span>{item.label}</span>
@@ -134,15 +135,15 @@ export default function Footer() {
             </div>
           </section>
 
-          <section className="rounded-[1.35rem] border border-white/12 bg-black/10 p-3.5 backdrop-blur-sm">
+          <section className="rounded-[1.35rem] border  bg-black/10 p-3.5 backdrop-blur-sm">
             <div className="mb-2.5 inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-[#d9d500]/15 text-[#d9d500] ring-1 ring-[#d9d500]/20">
               <MessageCircle className="h-5 w-5" />
             </div>
             <h2 className="text-base font-black leading-tight text-[#d9d500]">Atencion al asociado</h2>
-            <div className="mt-2.5 space-y-1.5 leading-tight">
+            <div className="mt-2.5 legacy-space-y-1.5 leading-tight">
               <Link
                 to="/portal-asociado"
-                className="flex items-center gap-3 text-sm font-medium text-white/82 transition hover:text-white"
+                className="flex items-center gap-3 text-sm font-medium  transition hover:text-white"
               >
                 <ChevronRight className="h-4 w-4 text-[#d9d500]" />
                 Portal asociado
@@ -151,19 +152,20 @@ export default function Footer() {
                 href={WHATSAPP_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-3 text-sm font-medium text-white/82 transition hover:text-white"
+                className="flex items-center gap-3 text-sm font-medium  transition hover:text-white"
               >
                 <ChevronRight className="h-4 w-4 text-[#d9d500]" />
                 WhatsApp
               </a>
-              <a
-                href={`mailto:${contactEmail}`}
-                className="group flex items-center gap-3 text-sm font-medium text-white/82 transition hover:text-white"
-              >
-                <ChevronRight className="h-4 w-4 text-[#d9d500] transition group-hover:translate-x-1" />
-                Correo
-              </a>
-              <div className="flex items-start gap-3 text-sm font-medium text-white/82">
+              <div>
+                <button type="button" aria-expanded={showEmail} onClick={() => setShowEmail((value) => !value)}
+                  className="group flex items-center gap-3 text-sm font-medium  transition hover:text-white">
+                  <ChevronRight className="h-4 w-4 text-[#d9d500] transition group-hover:translate-x-1" />
+                  Correo
+                </button>
+                {showEmail && <p className="ml-7 mt-1 break-all text-sm text-white">{contactEmail}</p>}
+              </div>
+              <div className="flex items-start gap-3 text-sm font-medium ">
                 <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-[#d9d500]" />
                 <span>Lunes a viernes, 9:00 a. m. - 1:00 p. m.</span>
               </div>
@@ -171,7 +173,7 @@ export default function Footer() {
                 href="https://www.google.com/maps/@7.1297229,-73.1261016,976a,75y,280.5h,85.21t/data=!3m7!1e1!3m5!1sW3PTyLJZ4c20uLXzQjIiuQ!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D4.790603214045703%26panoid%3DW3PTyLJZ4c20uLXzQjIiuQ%26yaw%3D280.5047369856187!7i16384!8i8192?entry=ttu&g_ep=EgoyMDI2MDkwMS4wIKXMDSoASAFQAw%3D%3D"
                 target="_blank"
                 rel="noreferrer"
-                className="group flex items-center gap-3 text-sm font-medium text-white/82 transition hover:text-white"
+                className="group flex items-center gap-3 text-sm font-medium  transition hover:text-white"
               >
                 <ChevronRight className="h-4 w-4 text-[#d9d500] transition group-hover:translate-x-1" />
                 Nuestra ubicacion
@@ -179,17 +181,17 @@ export default function Footer() {
             </div>
           </section>
 
-          <section className="rounded-[1.35rem] border border-white/12 bg-black/10 p-3.5 backdrop-blur-sm">
+          <section className="rounded-[1.35rem] border  bg-black/10 p-3.5 backdrop-blur-sm">
             <div className="mb-2.5 inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-[#d9d500]/15 text-[#d9d500] ring-1 ring-[#d9d500]/20">
               <FileText className="h-5 w-5" />
             </div>
             <h2 className="text-base font-black leading-tight text-[#d9d500]">Legales</h2>
-            <div className="mt-2.5 space-y-1.5 leading-tight">
+            <div className="mt-2.5 legacy-space-y-1.5 leading-tight">
               {legalLinks.map((item) => (
                 <Link
                   key={item.label}
                   to={item.to}
-                  className="group flex items-center gap-3 text-sm font-medium text-white/82 transition hover:text-white"
+                  className="group flex items-center gap-3 text-sm font-medium  transition hover:text-white"
                 >
                   <ChevronRight className="h-4 w-4 text-[#d9d500] transition group-hover:translate-x-1" />
                   <span>{item.label}</span>
@@ -198,7 +200,7 @@ export default function Footer() {
             </div>
           </section>
 
-          <section className="rounded-[1.35rem] border border-white/12 bg-black/10 p-3.5 backdrop-blur-sm">
+          <section className="rounded-[1.35rem] border  bg-black/10 p-3.5 backdrop-blur-sm">
             <div className="mb-2.5 inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-[#d9d500]/15 text-[#d9d500] ring-1 ring-[#d9d500]/20">
               <Users className="h-5 w-5" />
             </div>
@@ -210,7 +212,7 @@ export default function Footer() {
                 ))}
               </div>
             ) : (
-              <p className="mt-4 max-w-xs text-sm leading-6 text-white/78">FONASIN aún no ha confirmado enlaces oficiales de redes sociales.</p>
+              <p className="mt-4 max-w-xs text-sm leading-6 ">FONASIN aún no ha confirmado enlaces oficiales de redes sociales.</p>
             )}
           </section>
         </div>
@@ -224,7 +226,7 @@ export default function Footer() {
               Comprometidos con el desarrollo y bienestar de nuestra familia <strong className="text-white">FONASIN</strong>.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3 text-white/72">
+          <div className="flex flex-wrap items-center gap-3 ">
             <span className="h-3.5 w-px bg-white/20" />
             <span>© {currentYear} FONASIN</span>
             <span className="h-3.5 w-px bg-white/20" />

@@ -28,9 +28,11 @@ class ResetPassword
         $email = Str::lower(trim($email));
 
         return DB::transaction(function () use ($email, $token, $password, $ipHash, $userAgentHash): User {
-            $record = DB::table('password_reset_tokens')->where('email', $email)->first();
+            $record = DB::table('password_reset_tokens')->where('email', $email)->lockForUpdate()->first();
 
-            if (! $record || ! Hash::check($token, $record->token) || now()->diffInMinutes(Carbon::parse($record->created_at)) > 60) {
+            $createdAt = $record ? Carbon::parse($record->created_at) : null;
+            $expiresAt = $createdAt?->copy()->addMinutes((int) config('auth.passwords.users.expire', 60));
+            if (! $record || ! $createdAt || $createdAt->isFuture() || $expiresAt->lte(now()) || ! Hash::check($token, $record->token)) {
                 throw ValidationException::withMessages([
                     'token' => ['El enlace de recuperacion no es valido o ya expiro.'],
                 ]);
@@ -40,6 +42,7 @@ class ResetPassword
             $user = User::query()
                 ->where('email', $email)
                 ->where('status', 'active')
+                ->lockForUpdate()
                 ->first();
 
             if (! $user) {
@@ -51,9 +54,12 @@ class ResetPassword
             $user->forceFill([
                 'password' => $password,
                 'must_change_password' => false,
+                'remember_token' => Str::random(60),
             ])->save();
 
             DB::table('password_reset_tokens')->where('email', $email)->delete();
+            DB::connection(config('session.connection'))->table(config('session.table', 'sessions'))
+                ->where('user_id', $user->id)->delete();
 
             ($this->recordAuthEvent)(
                 eventType: AuthEventType::PasswordResetCompleted,
@@ -61,7 +67,7 @@ class ResetPassword
                 emailHash: $this->hasher->email($email),
                 ipHash: $ipHash,
                 userAgentHash: $userAgentHash,
-                metadata: ['method' => 'email_token'],
+                metadata: ['method' => 'email_token', 'sessions_revoked' => true],
             );
 
             return $user->refresh();

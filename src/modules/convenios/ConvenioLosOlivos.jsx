@@ -43,7 +43,7 @@ export default function ConvenioLosOlivos() {
   const costoAnualTotal = costoMensualTotal * 12;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#fefce8] via-[#f7f8f0] to-[#556b2f] text-slate-800 font-sans pb-24 relative selection:bg-[#556b2f] selection:text-white">
+    <div className="min-h-screen legacy-bg-gradient-to-b from-[#fefce8] via-[#f7f8f0] to-[#556b2f] text-slate-800 font-sans pb-24 relative selection:bg-[#556b2f] selection:text-white">
 
       {/* Header Dinámico */}
       <header className="sticky top-0 z-50 bg-[#fefce8]/90 backdrop-blur-md border-b border-[#d4dbbe] shadow-sm transition-all duration-300">
@@ -51,9 +51,9 @@ export default function ConvenioLosOlivos() {
           
           <Link
             to="/convenios"
-            className="group relative inline-flex items-center space-x-2.5 bg-[#2d381c] hover:bg-[#556b2f] text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ease-out shadow-md hover:shadow-lg hover:shadow-[#556b2f]/30 active:scale-95 border border-[#1e2613] hover:border-[#859f48] overflow-hidden"
+            className="group relative inline-flex items-center legacy-space-x-2.5 bg-[#2d381c] hover:bg-[#556b2f] text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ease-out shadow-md hover:shadow-lg hover:shadow-[#556b2f]/30 active:scale-95 border border-[#1e2613] hover:border-[#859f48] overflow-hidden"
           >
-            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none" />
+            <span className="absolute inset-0 w-full h-full legacy-bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none" />
 
             <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1.5 transition-transform duration-300 ease-out text-[#eab308] group-hover:text-white" />
             
@@ -67,15 +67,15 @@ export default function ConvenioLosOlivos() {
       <main className="max-w-5xl mx-auto px-4 pt-8 relative z-10">
 
         {/* HERO FLYER PRINCIPAL - PALETA LOS OLIVOS */}
-        <section className="relative rounded-3xl bg-gradient-to-br from-[#556b2f] via-[#3d4d22] to-[#242e14] p-6 md:p-12 shadow-2xl shadow-[#19200e]/30 overflow-hidden border border-[#859f48]/40 mb-8">
+        <section className="relative rounded-3xl legacy-bg-gradient-to-br from-[#556b2f] via-[#3d4d22] to-[#242e14] p-6 md:p-12 shadow-2xl shadow-[#19200e]/30 overflow-hidden border border-[#859f48]/40 mb-8">
           
           <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 bg-[#fefce8]/10 rounded-full blur-3xl pointer-events-none" />
           
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
             {/* Mensaje Promocional */}
-            <div className="lg:col-span-7 space-y-5 text-center lg:text-left">
-              <div className="inline-flex items-center space-x-2 bg-[#19200e]/70 backdrop-blur-md border border-[#fefce8]/20 rounded-full px-4 py-1.5 text-xs font-black text-[#facc15] shadow-sm">
+            <div className="lg:col-span-7 legacy-space-y-5 text-center lg:text-left">
+              <div className="inline-flex items-center legacy-space-x-2 bg-[#19200e]/70 backdrop-blur-md border border-[#fefce8]/20 rounded-full px-4 py-1.5 text-xs font-black text-[#facc15] shadow-sm">
                 <Sparkles className="w-4 h-4 text-[#facc15] animate-spin" style={{ animationDuration: '6s' }} />
                 <span>Convenio de Previsión Exequial</span>
               </div>
@@ -90,19 +90,19 @@ export default function ConvenioLosOlivos() {
 
               {/* Badges de Beneficios */}
               <div className="grid grid-cols-2 gap-3 pt-2 text-xs font-bold text-[#19200e]">
-                <div className="bg-[#fefce8]/95 backdrop-blur-md rounded-2xl p-3 flex items-center space-x-2.5 shadow-md border border-[#fefce8] transform hover:-translate-y-0.5 transition-transform">
+                <div className="bg-[#fefce8]/95 backdrop-blur-md rounded-2xl p-3 flex items-center legacy-space-x-2.5 shadow-md border border-[#fefce8] transform hover:-translate-y-0.5 transition-transform">
                   <Users className="w-4 h-4 text-[#556b2f] flex-shrink-0" />
                   <span>Ti + 7 Beneficiarios</span>
                 </div>
-                <div className="bg-[#fefce8]/95 backdrop-blur-md rounded-2xl p-3 flex items-center space-x-2.5 shadow-md border border-[#fefce8] transform hover:-translate-y-0.5 transition-transform">
+                <div className="bg-[#fefce8]/95 backdrop-blur-md rounded-2xl p-3 flex items-center legacy-space-x-2.5 shadow-md border border-[#fefce8] transform hover:-translate-y-0.5 transition-transform">
                   <Plane className="w-4 h-4 text-[#556b2f] flex-shrink-0" />
                   <span>Asistencia Repatriación</span>
                 </div>
-                <div className="bg-[#fefce8]/95 backdrop-blur-md rounded-2xl p-3 flex items-center space-x-2.5 shadow-md border border-[#fefce8] transform hover:-translate-y-0.5 transition-transform">
+                <div className="bg-[#fefce8]/95 backdrop-blur-md rounded-2xl p-3 flex items-center legacy-space-x-2.5 shadow-md border border-[#fefce8] transform hover:-translate-y-0.5 transition-transform">
                   <Heart className="w-4 h-4 text-[#556b2f] flex-shrink-0" />
                   <span>Seguro Soliaccidentes</span>
                 </div>
-                <div className="bg-[#fefce8]/95 backdrop-blur-md rounded-2xl p-3 flex items-center space-x-2.5 shadow-md border border-[#fefce8] transform hover:-translate-y-0.5 transition-transform">
+                <div className="bg-[#fefce8]/95 backdrop-blur-md rounded-2xl p-3 flex items-center legacy-space-x-2.5 shadow-md border border-[#fefce8] transform hover:-translate-y-0.5 transition-transform">
                   <ShieldCheck className="w-4 h-4 text-[#556b2f] flex-shrink-0" />
                   <span>Plan Milenium Integral</span>
                 </div>
@@ -125,7 +125,7 @@ export default function ConvenioLosOlivos() {
 
                 <p className="text-xs font-extrabold text-[#facc15] uppercase tracking-wide">Mensuales por grupo familiar</p>
 
-                <div className="mt-5 pt-4 border-t border-[#3d4d22] text-[11px] text-[#fefce8]/80 font-medium flex items-center justify-center space-x-1.5">
+                <div className="mt-5 pt-4 border-t border-[#3d4d22] text-[11px] text-[#fefce8]/80 font-medium flex items-center justify-center legacy-space-x-1.5">
                   <Building2 className="w-4 h-4 text-[#859f48]" />
                   <span>Descuento directo por FONASIN</span>
                 </div>
@@ -187,7 +187,7 @@ export default function ConvenioLosOlivos() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
             
             {/* Control Cantidad de Planes */}
-            <div className="lg:col-span-4 bg-[#f7f8f0] p-5 rounded-2xl border border-[#d4dbbe] flex flex-col justify-center space-y-3">
+            <div className="lg:col-span-4 bg-[#f7f8f0] p-5 rounded-2xl border border-[#d4dbbe] flex flex-col justify-center legacy-space-y-3">
               <div>
                 <label className="block text-xs font-black text-slate-800 uppercase tracking-wider mb-0.5">
                   Número de Planes (Titulares)
@@ -197,7 +197,7 @@ export default function ConvenioLosOlivos() {
                 </p>
               </div>
 
-              <div className="flex items-center space-x-3 pt-1">
+              <div className="flex items-center legacy-space-x-3 pt-1">
                 <div className="relative flex-1">
                   <input
                     type="number"
@@ -244,7 +244,7 @@ export default function ConvenioLosOlivos() {
               </div>
 
               {/* Inversión Anual Total */}
-              <div className="bg-gradient-to-br from-[#556b2f] via-[#3d4d22] to-[#19200e] text-white p-5 rounded-2xl text-center flex flex-col justify-center shadow-lg shadow-[#19200e]/20 transform hover:scale-[1.02] transition-transform border border-[#859f48]/50">
+              <div className="legacy-bg-gradient-to-br from-[#556b2f] via-[#3d4d22] to-[#19200e] text-white p-5 rounded-2xl text-center flex flex-col justify-center shadow-lg shadow-[#19200e]/20 transform hover:scale-[1.02] transition-transform border border-[#859f48]/50">
                 <span className="text-[10px] font-black text-[#facc15] uppercase tracking-wider block mb-1">
                   Inversión Anual Total
                 </span>
@@ -264,7 +264,7 @@ export default function ConvenioLosOlivos() {
         <section className="bg-[#19200e] rounded-3xl p-6 md:p-8 text-white shadow-2xl border border-[#859f48]/40 relative overflow-hidden">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center legacy-space-x-4">
               <div className="bg-[#fefce8] p-4 rounded-2xl text-[#556b2f] flex-shrink-0 shadow-lg">
                 <UserCheck className="w-8 h-8" />
               </div>
@@ -285,7 +285,7 @@ export default function ConvenioLosOlivos() {
                 href={`https://wa.me/57${CONTACTO_ASESORA.telefono}?text=Hola%20Sandra,%20soy%20asociado%20a%20FONASIN%20y%20quiero%20afiliarme%20al%20Plan%20de%20Los%20Olivos`}
                 target="_blank"
                 rel="noreferrer"
-                className="bg-[#25d366] hover:bg-[#1ebd59] text-slate-950 font-black px-6 py-3.5 rounded-2xl flex items-center justify-center space-x-2 transition-all shadow-xl text-sm transform hover:-translate-y-0.5"
+                className="bg-[#25d366] hover:bg-[#1ebd59] text-slate-950 font-black px-6 py-3.5 rounded-2xl flex items-center justify-center legacy-space-x-2 transition-all shadow-xl text-sm transform hover:-translate-y-0.5"
               >
                 <MessageCircle className="w-5 h-5 fill-slate-950" />
                 <span>Hablar por WhatsApp</span>
@@ -293,7 +293,7 @@ export default function ConvenioLosOlivos() {
 
               <a
                 href={`tel:${CONTACTO_ASESORA.telefono}`}
-                className="bg-[#fefce8] hover:bg-white text-[#19200e] font-bold px-5 py-3.5 rounded-2xl flex items-center justify-center space-x-2 transition-all text-sm shadow-md"
+                className="bg-[#fefce8] hover:bg-white text-[#19200e] font-bold px-5 py-3.5 rounded-2xl flex items-center justify-center legacy-space-x-2 transition-all text-sm shadow-md"
               >
                 <Phone className="w-4 h-4 text-[#556b2f]" />
                 <span>{CONTACTO_ASESORA.telefonoFormato}</span>
@@ -304,7 +304,7 @@ export default function ConvenioLosOlivos() {
         </section>
 
         {/* Footer Comercial */}
-        <footer className="mt-12 text-center text-[11px] text-white font-bold space-y-1">
+        <footer className="mt-12 text-center text-[11px] text-white font-bold legacy-space-y-1">
           <p>FONASIN - Fondo de Empleados del Sector Mineroenergético</p>
           <p className="text-[#fefce8]/80">Alianza exclusiva con Los Olivos - Un homenaje al amor. Todos los derechos reservados.</p>
         </footer>

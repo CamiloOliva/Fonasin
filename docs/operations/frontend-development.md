@@ -24,16 +24,32 @@ Codigo fuente en src/
 
 ## Comandos locales
 
+Usar una version de Node compatible con `engines` de package.json
+(22.22.2+, 24.15+ o 26+ dentro de las ramas indicadas). La validacion del
+15 de octubre usa Node 24.19.0. Tailwind 4 se integra directamente con Vite;
+no restaurar las configuraciones antiguas de PostCSS/Tailwind 3.
+La compatibilidad de estilos existente vive en src/styles/tailwind-compat.css;
+antes de agregar una utilidad legacy, definirla y comprobarla con las pruebas.
+Ver ADR-008 para compatibilidad minima de navegadores y decisiones visuales.
+
 ```bash
 npm ci
 npm run dev
 npm run build
 npm run test
+npm audit --audit-level=low
+npm run test:theme
 npm run test:watch
 npm run preview
 ```
 
 Usar `npm run preview` para revisar el bundle creado, no solo el servidor de desarrollo. Una pagina que funciona con `npm run dev` puede fallar en produccion por rutas, variables de entorno o recursos ausentes.
+
+`test:theme` requiere Vite local en E2E_URL (por defecto puerto 5187) y
+Chromium instalado por Playwright o E2E_BROWSER apuntando al navegador local.
+No usa datos reales ni modifica la base. CI ejecuta este control antes del
+recorrido del otrosi. La comparacion de migracion de 14 capturas es una
+herramienta local separada: tests/Browser/styles.mjs; no sustituye aceptacion.
 
 ## Conexion local con Laravel
 

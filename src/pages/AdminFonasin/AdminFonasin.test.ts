@@ -1,5 +1,5 @@
 import { createElement } from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { AdminAffiliationDetail } from '../../services/adminAffiliationService';
 import {
@@ -13,6 +13,7 @@ import {
 const application: AdminAffiliationDetail = {
   id: 'application-1',
   purpose: 'initial_affiliation',
+  applicant_name: null,
   source_application_id: null,
   status: 'under_review',
   current_step: 'summary',
@@ -102,6 +103,39 @@ describe('AdminFonasin permissions and imports', () => {
     expect(screen.getByRole('button', { name: 'Habilitar asociado' })).toBeInTheDocument();
   });
 
+  it('offers only PDF for the signed payroll authorization', () => {
+    renderApplicationDetail(true);
+    expect(screen.getByLabelText(/Archivo firmado/)).toHaveAttribute('accept', 'application/pdf,.pdf');
+    expect(screen.getByText('PDF hasta 5MB.')).toBeInTheDocument();
+    expect(screen.queryByText(/PDF, JPG o PNG/)).not.toBeInTheDocument();
+  });
+
+  it('never offers reactivation of settled credits and keeps valid actions', () => {
+    const callback = vi.fn();
+    render(createElement(CreditsPanel, {
+      credits: ['active', 'settled', 'archived'].map((status) => ({
+        id: `credit-${status}`, associate_id: 'associate-1', credit_line: 'FONALIBRE',
+        initial_balance: '100.00', current_balance: '0.00', installment_amount: '10.00',
+        term_months: 12, interest_rate: '1.0000', interest_rate_nominal_annual: null,
+        status, registered_by_user_id: 'admin-1',
+        associate: { id: 'associate-1', full_name: `Asociado ${status}`, document_type: 'CC', status: 'active' },
+      })),
+      associates: [], dataState: 'ready',
+      form: { associate_id: '', credit_line: 'FONALIBRE', initial_balance: '', current_balance: '',
+        term_months: '24', interest_rate: '1.2500', interest_rate_nominal_annual: '', installment_amount: '', status: 'active' },
+      onFormChange: vi.fn(), onCreate: vi.fn(), onStatusChange: callback, canManage: true,
+    }));
+    expect(screen.queryByRole('button', { name: 'Reactivar' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar pagado' }));
+    expect(callback).toHaveBeenCalledWith('credit-active', 'settled');
+    const settled = within(screen.getByRole('row', { name: /Asociado settled/ }));
+    expect(settled.queryByRole('button', { name: 'Marcar pagado' })).not.toBeInTheDocument();
+    fireEvent.click(settled.getByRole('button', { name: 'Archivar' }));
+    expect(callback).toHaveBeenCalledWith('credit-settled', 'archived');
+    expect(within(screen.getByRole('row', { name: /Asociado archived/ })).getByRole('button', { name: 'Archivar' })).toBeDisabled();
+    expect(callback).toHaveBeenCalledTimes(2);
+  });
+
   it('shows decrypted application fields to administrators', () => {
     const callback = vi.fn();
 
@@ -173,6 +207,7 @@ describe('AdminFonasin permissions and imports', () => {
         current_balance: '',
         term_months: '24',
         interest_rate: '1.2500',
+        interest_rate_nominal_annual: '',
         installment_amount: '',
         status: 'active',
       },

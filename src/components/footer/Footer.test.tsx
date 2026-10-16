@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import Footer from './Footer';
@@ -23,7 +23,12 @@ describe('Footer', () => {
     expect(within(legal as HTMLElement).getByRole('link', { name: /manual de líneas de crédito/i })).toHaveAttribute('href', '/estatutos?document=credit-manual');
     expect(within(legal as HTMLElement).getByRole('link', { name: /reglamento de crédito y cartera/i })).toHaveAttribute('href', '/estatutos?document=credit-regulation');
     expect(within(legal as HTMLElement).getByRole('link', { name: /política de tratamiento de datos/i })).toHaveAttribute('href', '/estatutos?document=data-policy');
-    expect(screen.getByRole('link', { name: 'Correo' })).toHaveAttribute('href', 'mailto:fonasin.bucaramanga@fonasin.com');
+    const emailToggle = screen.getByRole('button', { name: 'Correo' });
+    expect(emailToggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('fonasin.bucaramanga@fonasin.com')).not.toBeInTheDocument();
+    fireEvent.click(emailToggle);
+    expect(emailToggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('fonasin.bucaramanga@fonasin.com')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Facebook' })).not.toBeInTheDocument();
   });
 });

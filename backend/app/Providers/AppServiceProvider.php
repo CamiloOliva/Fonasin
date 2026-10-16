@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Application\Affiliation\Contracts\DeliversAffiliationCorrections;
 use App\Application\Affiliation\Contracts\RendersAffiliationSubmissionDocuments;
 use App\Application\Contributions\Contracts\RendersVoluntarySavingsPayrollAuthorization;
 use App\Application\Fpqrs\Contracts\DeliversFpqrsSubmissions;
@@ -12,6 +13,7 @@ use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Application\Storage\Contracts\GeneratesPrivateStorageKeys;
 use App\Application\Storage\Contracts\ReadsPrivateFiles;
 use App\Application\Storage\Contracts\StoresPrivateFiles;
+use App\Infrastructure\Affiliation\LaravelAffiliationCorrectionMailer;
 use App\Infrastructure\Affiliation\LaravelDompdfAffiliationSubmissionRenderer;
 use App\Infrastructure\Contributions\LaravelDompdfVoluntarySavingsPayrollAuthorizationRenderer;
 use App\Infrastructure\Imports\SimpleXlsxSpreadsheetReader;
@@ -49,6 +51,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(DeliversAffiliationCorrections::class, LaravelAffiliationCorrectionMailer::class);
         $this->app->bind(EncryptsSensitiveData::class, LaravelSensitiveDataCipher::class);
         $this->app->bind(HashesSensitiveData::class, LaravelSensitiveDataHasher::class);
         $this->app->bind(ReadsSpreadsheetRows::class, SimpleXlsxSpreadsheetReader::class);
@@ -73,6 +76,16 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ImportBatch::class, ImportBatchPolicy::class);
         Gate::policy(PublicContentItem::class, PublicContentItemPolicy::class);
         Gate::policy(VoluntarySavingsRequest::class, VoluntarySavingsRequestPolicy::class);
+
+        RateLimiter::for('password-reset-submit', function (Request $request): array {
+            $hasher = app(HashesSensitiveData::class);
+            $email = $request->input('email');
+
+            return [
+                Limit::perMinute(10)->by('password-reset-submit-ip|'.$hasher->ip((string) $request->ip())),
+                Limit::perMinute(5)->by('password-reset-submit-account|'.$hasher->email(is_string($email) ? $email : '')),
+            ];
+        });
 
         RateLimiter::for('affiliation-draft-create', function (Request $request): Limit {
             return Limit::perMinute(30)->by('affiliation-draft-create|'.$request->ip());

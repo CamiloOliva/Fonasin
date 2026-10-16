@@ -24,10 +24,10 @@ export default function FPQRS() {
           <h1 className="mt-12 max-w-md font-heading text-6xl font-black leading-[0.92] tracking-[-0.05em] text-fonasin-deep sm:text-7xl">Tu voz<span className="block text-fonasin-green">nos impulsa</span></h1>
           <div className="mt-5 h-2 w-48 rotate-[-3deg] rounded-[50%] border-t-4 border-fonasin-green sm:w-64" />
           <p className="mt-8 max-w-md text-lg leading-8 text-slate-700 sm:text-xl">Utiliza este formulario para preparar una <strong className="text-fonasin-green">peticion, queja, reclamo</strong> o <strong className="text-fonasin-green">sugerencia.</strong></p>
-          <div className="mt-12 space-y-7">
+          <div className="mt-12 legacy-space-y-7">
             {highlights.map(({ icon: Icon, title, description }) => (
               <div key={title} className="flex items-center gap-4">
-                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-gradient-to-br from-fonasin-green to-fonasin-deep text-white shadow-lg shadow-fonasin-deep/20 ring-4 ring-white/70"><Icon size={27} strokeWidth={2.2} aria-hidden="true" /></div>
+                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full legacy-bg-gradient-to-br from-fonasin-green to-fonasin-deep text-white shadow-lg shadow-fonasin-deep/20 ring-4 ring-white/70"><Icon size={27} strokeWidth={2.2} aria-hidden="true" /></div>
                 <div className="border-l-2 border-fonasin-green/70 pl-4"><h2 className="font-heading text-lg font-black text-fonasin-deep">{title}</h2><p className="text-sm leading-5 text-slate-600">{description}</p></div>
               </div>
             ))}

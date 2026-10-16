@@ -87,15 +87,15 @@ export default function ConvenioPractiCar() {
           
           <Link
             to="/convenios"
-            className="relative group overflow-hidden inline-flex items-center space-x-2.5 bg-slate-900 hover:bg-red-600 text-slate-200 hover:text-white px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all duration-500 border border-slate-800 hover:border-red-500 shadow-md hover:shadow-red-600/30 active:scale-95"
+            className="relative group overflow-hidden inline-flex items-center legacy-space-x-2.5 bg-slate-900 hover:bg-red-600 text-slate-200 hover:text-white px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all duration-500 border border-slate-800 hover:border-red-500 shadow-md hover:shadow-red-600/30 active:scale-95"
           >
             {/* Effect Glow hover */}
-            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none" />
+            <span className="absolute inset-0 w-full h-full legacy-bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none" />
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1.5 transition-transform duration-300" />
             <span>Volver a Convenios</span>
           </Link>
 
-          <div className="flex items-center space-x-2.5 bg-slate-900/90 border border-red-500/30 text-red-400 px-4 py-1.5 rounded-xl text-xs font-bold shadow-[0_0_15px_rgba(239,68,68,0.15)]">
+          <div className="flex items-center legacy-space-x-2.5 bg-slate-900/90 border border-red-500/30 text-red-400 px-4 py-1.5 rounded-xl text-xs font-bold shadow-[0_0_15px_rgba(239,68,68,0.15)]">
             <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
@@ -107,7 +107,7 @@ export default function ConvenioPractiCar() {
       </header>
 
       {/* Cuerpos de la Vista */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 space-y-8 relative z-10">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 legacy-space-y-8 relative z-10">
 
         {/* HERO BANNER - Cyberpunk/Sleek Theme */}
         <section className="relative rounded-3xl bg-slate-900 border border-slate-800/80 p-6 sm:p-10 shadow-2xl overflow-hidden group">
@@ -121,15 +121,15 @@ export default function ConvenioPractiCar() {
 
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
-            <div className="lg:col-span-8 space-y-5">
-              <div className="inline-flex items-center space-x-2 bg-slate-950/80 border border-slate-800 text-slate-300 px-4 py-1.5 rounded-full text-xs font-bold backdrop-blur-md">
+            <div className="lg:col-span-8 legacy-space-y-5">
+              <div className="inline-flex items-center legacy-space-x-2 bg-slate-950/80 border border-slate-800 text-slate-300 px-4 py-1.5 rounded-full text-xs font-bold backdrop-blur-md">
                 <Sparkles className="w-4 h-4 text-amber-400 animate-spin" style={{ animationDuration: '8s' }} />
                 <span className="tracking-wide">Instituto Practi-Car | Grupo Empresarial Practicar</span>
               </div>
 
               <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight text-white">
                 APRENDE Y RENUEVA CON <br className="hidden sm:inline" />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-400 to-amber-300 animate-gradient">
+                <span className="text-transparent bg-clip-text legacy-bg-gradient-to-r from-red-500 via-rose-400 to-amber-300 animate-gradient">
                   DESCUENTO EXCLUSIVO
                 </span>
               </h1>
@@ -145,7 +145,7 @@ export default function ConvenioPractiCar() {
                   { icon: Zap, text: 'Trámites Ágiles', color: 'text-amber-400' },
                   { icon: ShieldCheck, text: 'Certificado ISO', color: 'text-emerald-400' }
                 ].map((badge, idx) => (
-                  <div key={idx} className="bg-slate-950/90 border border-slate-800/80 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl flex items-center space-x-2 shadow-md hover:border-red-500/40 hover:scale-105 transition-all duration-300 cursor-default">
+                  <div key={idx} className="bg-slate-950/90 border border-slate-800/80 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl flex items-center legacy-space-x-2 shadow-md hover:border-red-500/40 hover:scale-105 transition-all duration-300 cursor-default">
                     <badge.icon className={`w-4 h-4 ${badge.color}`} />
                     <span>{badge.text}</span>
                   </div>
@@ -156,11 +156,11 @@ export default function ConvenioPractiCar() {
             {/* Tarjeta de Destacado con Efecto Glow Resplandeciente */}
             <div className="lg:col-span-4">
               <div className="relative group/card">
-                <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-amber-500 rounded-3xl blur opacity-30 group-hover/card:opacity-75 transition duration-500"></div>
-                <div className="relative bg-gradient-to-b from-slate-900 via-red-950/80 to-slate-950 text-white rounded-3xl p-6 border border-red-500/40 text-center shadow-2xl overflow-hidden">
+                <div className="absolute -inset-1 legacy-bg-gradient-to-r from-red-600 to-amber-500 rounded-3xl blur opacity-30 group-hover/card:opacity-75 transition duration-500"></div>
+                <div className="relative legacy-bg-gradient-to-b from-slate-900 via-red-950/80 to-slate-950 text-white rounded-3xl p-6 border border-red-500/40 text-center shadow-2xl overflow-hidden">
                   
                   {/* Luz Deslizante */}
-                  <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/card:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none" />
+                  <span className="absolute inset-0 w-full h-full legacy-bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/card:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none" />
 
                   <span className="bg-red-600/30 text-red-300 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-red-500/40 inline-block mb-3">
                     🔥 Recomendado
@@ -182,7 +182,7 @@ export default function ConvenioPractiCar() {
             { icon: Award, title: 'Certificación ISO 9001', sub: 'Gestión de Calidad', color: 'text-amber-400', bg: 'hover:border-amber-500/50' },
             { icon: Award, title: 'Certificación ISO 39001', sub: 'Seguridad Vial Internacional', color: 'text-amber-400', bg: 'hover:border-amber-500/50' }
           ].map((cert, idx) => (
-            <div key={idx} className={`bg-slate-900/60 border border-slate-800/80 p-4 rounded-2xl flex items-center space-x-3.5 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 ${cert.bg} hover:shadow-lg`}>
+            <div key={idx} className={`bg-slate-900/60 border border-slate-800/80 p-4 rounded-2xl flex items-center legacy-space-x-3.5 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 ${cert.bg} hover:shadow-lg`}>
               <div className={`bg-slate-950 p-2.5 rounded-xl border border-slate-800 ${cert.color}`}>
                 <cert.icon className="w-5 h-5" />
               </div>
@@ -198,16 +198,16 @@ export default function ConvenioPractiCar() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           {/* Servicios Empresariales */}
-          <section className="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4 backdrop-blur-md">
-            <div className="flex items-center space-x-3 pb-3 border-b border-slate-800">
+          <section className="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-xl legacy-space-y-4 backdrop-blur-md">
+            <div className="flex items-center legacy-space-x-3 pb-3 border-b border-slate-800">
               <div className="p-2 bg-red-600/10 text-red-500 rounded-xl border border-red-500/20">
                 <GraduationCap className="w-5 h-5" />
               </div>
               <h2 className="text-xs font-black text-white uppercase tracking-wider">Servicios Empresariales</h2>
             </div>
-            <ul className="space-y-2">
+            <ul className="legacy-space-y-2">
               {serviciosEmpresariales.map((item, idx) => (
-                <li key={idx} className="flex items-start space-x-3 text-xs text-slate-300 p-3 bg-slate-950/60 rounded-xl border border-slate-800/60 hover:border-slate-700 hover:text-white transition-all duration-200">
+                <li key={idx} className="flex items-start legacy-space-x-3 text-xs text-slate-300 p-3 bg-slate-950/60 rounded-xl border border-slate-800/60 hover:border-slate-700 hover:text-white transition-all duration-200">
                   <CheckCircle2 className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                   <span className="font-semibold">{item}</span>
                 </li>
@@ -216,8 +216,8 @@ export default function ConvenioPractiCar() {
           </section>
 
           {/* Capacitaciones Especializadas */}
-          <section className="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4 backdrop-blur-md">
-            <div className="flex items-center space-x-3 pb-3 border-b border-slate-800">
+          <section className="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-xl legacy-space-y-4 backdrop-blur-md">
+            <div className="flex items-center legacy-space-x-3 pb-3 border-b border-slate-800">
               <div className="p-2 bg-red-600/10 text-red-500 rounded-xl border border-red-500/20">
                 <FileCheck className="w-5 h-5" />
               </div>
@@ -225,7 +225,7 @@ export default function ConvenioPractiCar() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {capacitacionesServicios.map((item, idx) => (
-                <div key={idx} className="flex items-center space-x-2.5 text-[11px] text-slate-300 p-2.5 bg-slate-950/40 rounded-xl border border-slate-800/50 hover:border-red-500/40 hover:bg-slate-950 hover:text-white transition-all duration-200 group">
+                <div key={idx} className="flex items-center legacy-space-x-2.5 text-[11px] text-slate-300 p-2.5 bg-slate-950/40 rounded-xl border border-slate-800/50 hover:border-red-500/40 hover:bg-slate-950 hover:text-white transition-all duration-200 group">
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0 group-hover:scale-150 transition-transform"></span>
                   <span className="font-medium truncate">{item}</span>
                 </div>
@@ -236,10 +236,10 @@ export default function ConvenioPractiCar() {
         </div>
 
         {/* TARIFAS DE CONVENIO CON HOVER GLOW & INTERACCIÓN */}
-        <section className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6 backdrop-blur-md">
+        <section className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl legacy-space-y-6 backdrop-blur-md">
           <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 pb-4 border-b border-slate-800">
             <div>
-              <h2 className="text-xl font-black text-white tracking-tight flex items-center space-x-2">
+              <h2 className="text-xl font-black text-white tracking-tight flex items-center legacy-space-x-2">
                 <span>Tarifas del Convenio 2026</span>
               </h2>
               <p className="text-xs text-slate-400">Precios especiales vigentes para el grupo familiar</p>
@@ -256,14 +256,14 @@ export default function ConvenioPractiCar() {
               return (
                 <div 
                   key={idx} 
-                  className={`relative p-5 rounded-2xl border transition-all duration-300 flex flex-col justify-between space-y-4 group hover:-translate-y-1.5 ${
+                  className={`relative p-5 rounded-2xl border transition-all duration-300 flex flex-col justify-between legacy-space-y-4 group hover:-translate-y-1.5 ${
                     item.destacado 
                       ? 'bg-slate-950/90 border-red-500/80 hover:shadow-[0_0_25px_rgba(239,68,68,0.25)]' 
                       : 'bg-slate-950/50 border-slate-800/80 hover:border-slate-700 hover:shadow-lg'
                   }`}
                 >
                   {item.destacado && (
-                    <span className="absolute -top-2.5 right-4 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-md">
+                    <span className="absolute -top-2.5 right-4 legacy-bg-gradient-to-r from-red-600 to-rose-600 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-md">
                       Popular
                     </span>
                   )}
@@ -293,15 +293,15 @@ export default function ConvenioPractiCar() {
         </section>
 
         {/* UBICACIONES Y CONTACTO CON TARJETAS GLOW */}
-        <section className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6 backdrop-blur-md">
-          <div className="flex items-center space-x-2">
+        <section className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl legacy-space-y-6 backdrop-blur-md">
+          <div className="flex items-center legacy-space-x-2">
             <MapPin className="w-5 h-5 text-red-500" />
             <h2 className="text-base font-black text-white uppercase tracking-wider">Sedes Principales</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {sedes.map((sede, idx) => (
-              <div key={idx} className="p-4 bg-slate-950 rounded-2xl border border-slate-800/80 space-y-1 hover:border-red-500/40 hover:bg-slate-950/80 transition-all duration-300">
+              <div key={idx} className="p-4 bg-slate-950 rounded-2xl border border-slate-800/80 legacy-space-y-1 hover:border-red-500/40 hover:bg-slate-950/80 transition-all duration-300">
                 <p className="text-xs font-extrabold text-red-400 uppercase tracking-wider">{sede.nombre}</p>
                 <p className="text-xs text-slate-200 font-medium">{sede.direccion}</p>
                 <p className="text-[11px] text-slate-500 font-semibold">{sede.ciudad}</p>
@@ -311,15 +311,15 @@ export default function ConvenioPractiCar() {
 
           {/* Barra de Contacto Interactiva */}
           <div className="pt-4 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs font-semibold">
-            <a href="tel:6076916141" className="flex items-center space-x-2.5 text-slate-300 p-3.5 bg-slate-950 hover:bg-slate-800 rounded-2xl border border-slate-800 hover:border-slate-700 transition-all duration-300 hover:scale-[1.02]">
+            <a href="tel:6076916141" className="flex items-center legacy-space-x-2.5 text-slate-300 p-3.5 bg-slate-950 hover:bg-slate-800 rounded-2xl border border-slate-800 hover:border-slate-700 transition-all duration-300 hover:scale-[1.02]">
               <Phone className="w-4 h-4 text-red-500 shrink-0" />
               <span>607 6916141</span>
             </a>
-            <a href="https://wa.me/573012478048" target="_blank" rel="noreferrer" className="flex items-center space-x-2.5 text-slate-300 p-3.5 bg-slate-950 hover:bg-slate-800 rounded-2xl border border-slate-800 hover:border-emerald-500/40 transition-all duration-300 hover:scale-[1.02]">
+            <a href="https://wa.me/573012478048" target="_blank" rel="noreferrer" className="flex items-center legacy-space-x-2.5 text-slate-300 p-3.5 bg-slate-950 hover:bg-slate-800 rounded-2xl border border-slate-800 hover:border-emerald-500/40 transition-all duration-300 hover:scale-[1.02]">
               <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>301 2478048</span>
             </a>
-            <a href="mailto:academico@ceapracticar.com" className="flex items-center space-x-2.5 text-slate-300 p-3.5 bg-slate-950 hover:bg-slate-800 rounded-2xl border border-slate-800 hover:border-slate-700 transition-all duration-300 truncate hover:scale-[1.02]">
+            <a href="mailto:academico@ceapracticar.com" className="flex items-center legacy-space-x-2.5 text-slate-300 p-3.5 bg-slate-950 hover:bg-slate-800 rounded-2xl border border-slate-800 hover:border-slate-700 transition-all duration-300 truncate hover:scale-[1.02]">
               <Mail className="w-4 h-4 text-red-500 shrink-0" />
               <span className="truncate">academico@ceapracticar.com</span>
             </a>
@@ -331,7 +331,7 @@ export default function ConvenioPractiCar() {
         </section>
 
         {/* Footer Comercial */}
-        <footer className="mt-8 text-center text-xs text-slate-500 font-medium space-y-1">
+        <footer className="mt-8 text-center text-xs text-slate-500 font-medium legacy-space-y-1">
           <p>FONASIN - Fondo de Empleados del Sector Mineroenergético</p>
           <p className="text-slate-600">Alianza con Instituto Practi-Car / Grupo Empresarial Practicar.</p>
         </footer>

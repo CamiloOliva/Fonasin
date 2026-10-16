@@ -81,7 +81,7 @@ export default function DocumentsSection({ variant = 'home' }: DocumentsSectionP
                     alt="Libro institucional de FONASIN"
                     className="h-full w-full object-cover object-center"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-fonasin-deep/20 via-transparent to-transparent" />
+                  <div className="absolute inset-0 legacy-bg-gradient-to-r from-fonasin-deep/20 via-transparent to-transparent" />
                 </div>
                 <div className="relative z-10 max-w-full lg:max-w-[52%]">
                   <p className="text-[11px] font-black uppercase tracking-[0.24em] text-fonasin-green">Centro documental</p>
@@ -174,7 +174,7 @@ export default function DocumentsSection({ variant = 'home' }: DocumentsSectionP
                     el contenido sin salir de la pagina.
                   </p>
 
-                  <div className="mt-6 space-y-4 rounded-[1.5rem] border border-amber-200/80 bg-white/70 p-4 sm:mt-8 sm:p-5">
+                  <div className="mt-6 legacy-space-y-4 rounded-[1.5rem] border border-amber-200/80 bg-white/70 p-4 sm:mt-8 sm:p-5">
                     <div>
                       <div className="text-[11px] font-black uppercase tracking-[.18em] text-amber-900/60">
                         Documento

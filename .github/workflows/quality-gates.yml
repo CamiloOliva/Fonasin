@@ -50,8 +50,8 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
-      - name: Audit production PHP dependencies
-        run: composer audit --no-dev --format=summary
+      - name: Audit PHP dependencies including development tools
+        run: composer audit --format=summary
 
       - name: Configure test environment
         run: |
@@ -130,8 +130,8 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Audit production frontend dependencies
-        run: npm audit --omit=dev --audit-level=moderate
+      - name: Audit frontend dependencies including development tools
+        run: npm audit --audit-level=low
 
       - name: Run Vitest
         run: npm run test -- --reporter=dot
@@ -237,6 +237,9 @@ jobs:
           done
           cat backend-e2e.log frontend-e2e.log
           exit 1
+
+      - name: Verify visual tokens and responsive spacing in browser
+        run: npm run test:theme
 
       - name: Exercise all three modules in browser
         run: npm run test:e2e

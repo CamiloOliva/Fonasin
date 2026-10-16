@@ -36,7 +36,7 @@ export default function FlyerCarousel() {
             className="relative z-10 block h-full w-full object-contain object-center drop-shadow-[0_10px_22px_rgba(0,0,0,0.2)]"
           />
         </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-fonasin-deep/25 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 legacy-bg-gradient-to-t from-fonasin-deep/25 to-transparent" />
         {(flyer.title || flyer.summary) && <div className="absolute bottom-12 left-1/2 z-20 w-[min(90%,40rem)] -translate-x-1/2 rounded-2xl bg-fonasin-deep/80 px-5 py-3 text-center text-white shadow-lg backdrop-blur-sm">
           <p className="text-base font-black sm:text-xl">{flyer.title}</p>
           {flyer.summary && <p className="mt-1 hidden text-sm sm:block">{flyer.summary}</p>}

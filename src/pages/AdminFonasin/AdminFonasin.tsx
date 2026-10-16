@@ -189,6 +189,8 @@ export default function AdminFonasin() {
   const [contentRefreshToken, setContentRefreshToken] = useState(0);
   const [user, setUser] = useState<PortalUser | null>(null);
   const [applications, setApplications] = useState<AdminAffiliationApplication[]>([]);
+  const applicationActionInFlight = useRef(false);
+  const [applicationActionBusy, setApplicationActionBusy] = useState(false);
   const [associates, setAssociates] = useState<AdminAssociate[]>([]);
   const [associateProfile, setAssociateProfile] = useState<AdminAssociateProfile | null>(null);
   const [associateProfileState, setAssociateProfileState] = useState<DataState>('idle');
@@ -236,6 +238,7 @@ export default function AdminFonasin() {
     current_balance: '',
     term_months: '24',
     interest_rate: '1.2500',
+    interest_rate_nominal_annual: '',
     installment_amount: '',
     status: 'active',
   });
@@ -557,6 +560,9 @@ export default function AdminFonasin() {
   }
 
   async function runAction(action: () => Promise<AdminAffiliationDetail>, successMessage: string) {
+    if (applicationActionInFlight.current) return;
+    applicationActionInFlight.current = true;
+    setApplicationActionBusy(true);
     setError(null);
     setMessage(null);
 
@@ -569,6 +575,9 @@ export default function AdminFonasin() {
       setMessage(successMessage);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible completar la accion.');
+    } finally {
+      applicationActionInFlight.current = false;
+      setApplicationActionBusy(false);
     }
   }
 
@@ -726,6 +735,7 @@ export default function AdminFonasin() {
         current_balance: creditForm.current_balance || creditForm.initial_balance,
         term_months: Number(creditForm.term_months),
         interest_rate: creditForm.interest_rate,
+        interest_rate_nominal_annual: creditForm.interest_rate_nominal_annual || null,
         installment_amount: creditForm.installment_amount,
         status: creditForm.status,
       });
@@ -742,7 +752,7 @@ export default function AdminFonasin() {
     }
   }
 
-  async function handleCreditStatus(id: string, status: 'active' | 'settled' | 'archived') {
+  async function handleCreditStatus(id: string, status: 'settled' | 'archived') {
     if (!isAdmin) return;
     setError(null);
     setMessage(null);
@@ -889,7 +899,7 @@ export default function AdminFonasin() {
             <h2 className="mt-4 text-2xl font-black text-slate-950">Iniciar sesion administrativa</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">Usa una cuenta con rol admin o reviewer.</p>
 
-            <div className="mt-5 space-y-4">
+            <div className="mt-5 legacy-space-y-4">
               <label className="block">
                 <span className="text-sm font-bold text-slate-800">Correo electronico</span>
                 <input
@@ -957,7 +967,7 @@ export default function AdminFonasin() {
 
   return (
     <section className="bg-slate-50 py-8">
-      <div className="container-page space-y-5">
+      <div className="container-page legacy-space-y-5">
         <header className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -1094,7 +1104,7 @@ export default function AdminFonasin() {
               <ClipboardCheck className="text-emerald-700" size={28} />
             </div>
 
-            <div className="mt-4 space-y-2">
+            <div className="mt-4 legacy-space-y-2">
               {applications.length === 0 && dataState !== 'loading' ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">
                   No hay solicitudes para mostrar.
@@ -1114,7 +1124,8 @@ export default function AdminFonasin() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm font-black text-slate-950">Solicitud {application.id.slice(0, 8)}</p>
+                      <p className="text-sm font-black text-slate-950">{application.applicant_name ?? 'Nombre pendiente de completar'}</p>
+                      <p className="mt-1 text-xs font-semibold text-slate-600">Referencia {application.purpose === 'initial_affiliation' ? 'AFI' : application.purpose === 'profile_completion' ? 'PER' : 'ACT'}-{application.submitted_at?.slice(0, 10).replaceAll('-', '') ?? 'SINFECHA'}-{application.id.slice(0, 8).toUpperCase()}</p>
                       <p className="mt-1 text-[11px] font-black uppercase tracking-[0.12em] text-emerald-700">
                         {application.purpose === 'profile_completion'
                           ? 'Completar perfil'
@@ -1147,6 +1158,7 @@ export default function AdminFonasin() {
             {detail ? (
               <ApplicationDetail
                 application={detail}
+                busy={applicationActionBusy}
                 canManage={isAdmin}
                 reason={reason}
                 signedPayrollFile={signedPayrollFile}
@@ -1320,7 +1332,7 @@ export function AssociatesPanel({
   return (
     <div className={`grid gap-5 ${canManage ? 'xl:grid-cols-[380px_1fr]' : ''}`}>
       {canManage ? (
-        <div className="space-y-5">
+        <div className="legacy-space-y-5">
       <form onSubmit={onCreate} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-100 text-emerald-700">
@@ -1332,7 +1344,7 @@ export function AssociatesPanel({
           </div>
         </div>
 
-        <div className="mt-5 space-y-4">
+        <div className="mt-5 legacy-space-y-4">
           <label className="block">
             <span className="text-sm font-bold text-slate-800">Tipo de documento</span>
             <select
@@ -1631,7 +1643,7 @@ function AssociateProfileForm({ profile }: { profile: AdminAssociateProfile }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="legacy-space-y-6">
       {profile.form.application.sections.map((section) => (
         <section key={section.section}>
           <h4 className="border-b border-emerald-200 pb-2 text-sm font-black uppercase text-emerald-800">
@@ -1676,7 +1688,7 @@ function AssociateProfileContributions({ profile }: { profile: AdminAssociatePro
   if (!account) return <EmptyProfileState text="No hay aportes ni ahorros registrados para este asociado." />;
 
   return (
-    <div className="space-y-5">
+    <div className="legacy-space-y-5">
       <dl className="grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 sm:grid-cols-2 lg:grid-cols-4">
         {[
           ['Saldo aportes', account.contribution_balance],
@@ -1733,6 +1745,7 @@ type CreditFormState = {
   current_balance: string;
   term_months: string;
   interest_rate: string;
+  interest_rate_nominal_annual: string;
   installment_amount: string;
   status: string;
 };
@@ -1765,7 +1778,7 @@ export function CreditsPanel({
   form: CreditFormState;
   onFormChange: (form: CreditFormState) => void;
   onCreate: (event: FormEvent<HTMLFormElement>) => void;
-  onStatusChange: (id: string, status: 'active' | 'settled' | 'archived') => void;
+  onStatusChange: (id: string, status: 'settled' | 'archived') => void;
   canManage: boolean;
 }) {
   const activeAssociates = associates.filter((associate) => associate.status === 'active');
@@ -1773,7 +1786,7 @@ export function CreditsPanel({
   return (
     <div className={`grid gap-5 ${canManage ? 'xl:grid-cols-[380px_1fr]' : ''}`}>
       {canManage ? (
-        <div className="space-y-5">
+        <div className="legacy-space-y-5">
         <form onSubmit={onCreate} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-100 text-emerald-700">
@@ -1785,7 +1798,7 @@ export function CreditsPanel({
             </div>
           </div>
 
-          <div className="mt-5 space-y-4">
+          <div className="mt-5 legacy-space-y-4">
             <label className="block">
               <span className="text-sm font-bold text-slate-800">Asociado</span>
               <select
@@ -1845,6 +1858,7 @@ export function CreditsPanel({
                 <input
                   type="number"
                   min={1}
+                  max={60}
                   value={form.term_months}
                   onChange={(event) => onFormChange({ ...form, term_months: event.target.value })}
                   required
@@ -1852,16 +1866,24 @@ export function CreditsPanel({
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-bold text-slate-800">Tasa</span>
+                <span className="text-sm font-bold text-slate-800">Tasa Int mv (%)</span>
                 <input
                   type="number"
                   min={0}
+                  max={100}
                   step="0.0001"
                   value={form.interest_rate}
                   onChange={(event) => onFormChange({ ...form, interest_rate: event.target.value })}
                   required
                   className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
                 />
+              </label>
+              <label className="block">
+                <span className="text-sm font-bold text-slate-800">Tasa Int NA (%)</span>
+                <input type="number" min={0} max={100} step="0.0001"
+                  value={form.interest_rate_nominal_annual}
+                  onChange={(event) => onFormChange({ ...form, interest_rate_nominal_annual: event.target.value })}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100" />
               </label>
               <label className="block">
                 <span className="text-sm font-bold text-slate-800">Cuota</span>
@@ -1938,14 +1960,13 @@ export function CreditsPanel({
                   {canManage ? (
                     <td className="py-4 text-right">
                     <div className="flex justify-end gap-2">
-                      <button
+                      {credit.status === 'active' ? <button
                         type="button"
-                        onClick={() => onStatusChange(credit.id, credit.status === 'settled' ? 'active' : 'settled')}
-                        disabled={credit.status === 'archived'}
+                        onClick={() => onStatusChange(credit.id, 'settled')}
                         className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
                       >
-                        {credit.status === 'settled' ? 'Reactivar' : 'Marcar pagado'}
-                      </button>
+                        Marcar pagado
+                      </button> : null}
                       <button
                         type="button"
                         onClick={() => onStatusChange(credit.id, 'archived')}
@@ -2024,7 +2045,7 @@ function ContributionsPanel({
   const selectedAccount = accounts.find((account) => account.id === selectedAccountId) ?? null;
 
   return (
-    <div className="space-y-5">
+    <div className="legacy-space-y-5">
       <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -2150,7 +2171,7 @@ function ContributionsPanel({
           <PiggyBank className="text-emerald-700" size={28} />
         </div>
 
-        <div className="mt-5 space-y-3 border-y border-slate-100 py-4">
+        <div className="mt-5 legacy-space-y-3 border-y border-slate-100 py-4">
           <label className="block">
             <span className="text-sm font-bold text-slate-800">Asociado</span>
             <select
@@ -2196,7 +2217,7 @@ function ContributionsPanel({
           </div>
         ) : null}
 
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 legacy-space-y-2">
           {accounts.map((account) => (
             <button
               key={account.id}
@@ -2508,7 +2529,7 @@ function ImportHistoryPanel({
   const canGoNext = meta.current_page < meta.last_page && dataState !== 'loading';
 
   return (
-    <div className="space-y-5">
+    <div className="legacy-space-y-5">
       {canManage ? (
         <section className="rounded-[1.5rem] border border-emerald-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
@@ -2519,7 +2540,7 @@ function ImportHistoryPanel({
             </div>
           </div>
           <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <ImportForm title="Cartera" description="Columnas: documento, nombre_completo, linea_credito, numero_pagare, valor_inicial, valor_cuota, saldo_actual, fecha_ultimo_pago." disabled={importState === 'loading'} onSubmit={(event) => onImport('credits', event)} onDownloadTemplate={() => onDownloadTemplate('credits')} />
+            <ImportForm title="Cartera" description="Columnas: documento, nombre_completo, linea_credito, numero_pagare, valor_inicial, valor_cuota, saldo_actual, fecha_ultimo_pago, Plazo (meses), Tasa Int NA (%) y Tasa Int mv (%). Ambas tasas se importan como valores informados, sin conversión." disabled={importState === 'loading'} onSubmit={(event) => onImport('credits', event)} onDownloadTemplate={() => onDownloadTemplate('credits')} />
             <ImportForm title="Aporte Mensual" description="Columnas: documento, nombre_completo, valor_mensual, saldo, fecha_ultimo_pago." disabled={importState === 'loading'} onSubmit={(event) => onImport('contributions', event)} onDownloadTemplate={() => onDownloadTemplate('contributions')} />
             <ImportForm title="Ahorro voluntario" description="Columnas: documento, nombre_completo, valor_mensual, saldo, fecha_ultimo_pago." disabled={importState === 'loading'} onSubmit={(event) => onImport('voluntary_savings', event)} onDownloadTemplate={() => onDownloadTemplate('voluntary_savings')} />
             <ImportForm title="Ahorro permanente" description="Columnas: documento, nombre_completo, valor_mensual, saldo, fecha_ultimo_pago." disabled={importState === 'loading'} onSubmit={(event) => onImport('permanent_savings', event)} onDownloadTemplate={() => onDownloadTemplate('permanent_savings')} />
@@ -2594,7 +2615,7 @@ function ImportHistoryPanel({
                 <td className="py-4 pr-4 text-slate-700">
                   <p>{batch.rows_created} creadas / {batch.rows_updated} actualizadas / {batch.rows_rejected} rechazadas</p>
                   {batch.errors?.length ? (
-                    <ul className="mt-2 space-y-1 text-xs text-amber-700">
+                    <ul className="mt-2 legacy-space-y-1 text-xs text-amber-700">
                       {batch.errors.slice(0, 3).map((item, index) => (
                         <li key={`${batch.id}-${item.row ?? 'archivo'}-${index}`}>
                           Fila {item.row ?? 'archivo'}: {item.message}
@@ -2687,6 +2708,7 @@ function formatBytes(value: number): string {
 
 type ApplicationDetailProps = {
   application: AdminAffiliationDetail;
+  busy?: boolean;
   canManage: boolean;
   reason: string;
   signedPayrollFile: File | null;
@@ -2703,6 +2725,7 @@ type ApplicationDetailProps = {
 
 export function ApplicationDetail({
   application,
+  busy = false,
   canManage,
   reason,
   signedPayrollFile,
@@ -2730,7 +2753,7 @@ export function ApplicationDetail({
   const canEnable = application.status === 'approved' && (isFormOnly || signedPayrollDocuments.length > 0);
 
   return (
-    <div className="space-y-5">
+    <div className="legacy-space-y-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Detalle</p>
@@ -2745,7 +2768,7 @@ export function ApplicationDetail({
           <button
             type="button"
             onClick={onStartReview}
-            disabled={application.status !== 'submitted'}
+            disabled={busy || application.status !== 'submitted'}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             <ClipboardCheck size={16} />
@@ -2797,7 +2820,7 @@ export function ApplicationDetail({
             Esta solicitud no tiene secciones guardadas.
           </p>
         ) : (
-          <div className="mt-4 space-y-6">
+          <div className="mt-4 legacy-space-y-6">
             {application.sections.map((section) => (
               <div key={section.id}>
                 <h4 className="border-b border-emerald-200 pb-2 text-sm font-black uppercase text-emerald-800">
@@ -2858,10 +2881,10 @@ export function ApplicationDetail({
           <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
           <label className="block rounded-2xl border border-dashed border-amber-300 bg-white px-4 py-4">
             <span className="text-sm font-black text-slate-950">Archivo firmado</span>
-            <span className="mt-1 block text-xs font-semibold text-slate-500">PDF, JPG o PNG hasta 5MB.</span>
+            <span className="mt-1 block text-xs font-semibold text-slate-500">PDF hasta 5MB.</span>
             <input
               type="file"
-              accept="application/pdf,image/jpeg,image/png"
+              accept="application/pdf,.pdf"
               disabled={!canUploadSignedPayroll}
               onChange={(event) => onSignedPayrollFileChange(event.target.files?.[0] ?? null)}
               className="mt-3 block w-full text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-emerald-50 file:px-4 file:py-2 file:text-sm file:font-black file:text-emerald-700 disabled:cursor-not-allowed"
@@ -2927,10 +2950,10 @@ export function ApplicationDetail({
           <button
             type="button"
             onClick={onRequestCorrection}
-            disabled={application.status !== 'under_review'}
+            disabled={busy || !reason.trim() || !['under_review', 'approved', 'pending_correction'].includes(application.status)}
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-black text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
           >
-            Solicitar correccion
+            {application.status === 'pending_correction' ? 'Reenviar correccion' : 'Solicitar correccion'}
           </button>
           {canManage ? (
             <button

@@ -21,7 +21,7 @@ export default function HistorySection() {
         />
 
         <div className="mx-auto mt-12 grid max-w-6xl gap-6 lg:grid-cols-[1.7fr_1fr] lg:items-start">
-          <article className="group relative overflow-hidden rounded-3xl border border-fonasin-green/10 bg-gradient-to-br from-white via-white to-fonasin-surface/70 p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg sm:p-8">
+          <article className="group relative overflow-hidden rounded-3xl border border-fonasin-green/10 legacy-bg-gradient-to-br from-white via-white to-fonasin-surface/70 p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg sm:p-8">
             <div className="absolute right-0 top-0 h-36 w-36 rounded-bl-full bg-fonasin-lime/10" />
             <div className="relative">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -50,14 +50,14 @@ export default function HistorySection() {
                 })}
               </div>
 
-              <div className="mt-8 space-y-4 border-t border-slate-100 pt-6 text-justify text-[0.98rem] leading-7 text-slate-600">
+              <div className="mt-8 legacy-space-y-4 border-t border-slate-100 pt-6 text-justify text-[0.98rem] leading-7 text-slate-600">
                 {origin.paragraphs?.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
               </div>
               <p className="mt-6 rounded-2xl bg-fonasin-deep px-5 py-4 text-base font-bold leading-7 text-white">{origin.closing}</p>
             </div>
           </article>
 
-          <article className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-fonasin-green/10 bg-gradient-to-br from-white via-white to-fonasin-surface/70 p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg sm:p-8">
+          <article className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-fonasin-green/10 legacy-bg-gradient-to-br from-white via-white to-fonasin-surface/70 p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg sm:p-8">
             <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-fonasin-lime/15" />
             <div className="relative flex h-full flex-col">
               <div className="flex items-center justify-between gap-3">
@@ -67,12 +67,12 @@ export default function HistorySection() {
               <h3 className="mt-3 border-l-4 border-fonasin-lime pl-4 text-2xl font-black text-fonasin-deep">{current.title}</h3>
               <p className="mt-2 text-lg font-bold leading-7 text-fonasin-green">{current.intro}</p>
 
-              <div className="relative mt-7 overflow-hidden rounded-2xl bg-gradient-to-br from-fonasin-deep to-fonasin-green px-5 py-4 text-white shadow-sm">
+              <div className="relative mt-7 overflow-hidden rounded-2xl legacy-bg-gradient-to-br from-fonasin-deep to-fonasin-green px-5 py-4 text-white shadow-sm">
                 <div className="text-3xl font-black text-fonasin-lime">{current.stat}</div>
                 <div className="mt-1 text-sm font-medium text-white/75">Una comunidad que crece unida</div>
               </div>
 
-              <div className="mt-7 space-y-4 text-justify text-[0.98rem] leading-7 text-slate-600">
+              <div className="mt-7 legacy-space-y-4 text-justify text-[0.98rem] leading-7 text-slate-600">
                 {current.paragraphs?.slice(1).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
               </div>
               <div className="mt-7 overflow-hidden rounded-2xl border border-fonasin-green/10 bg-fonasin-surface shadow-sm">

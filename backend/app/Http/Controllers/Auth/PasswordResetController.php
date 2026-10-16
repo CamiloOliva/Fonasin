@@ -10,6 +10,7 @@ use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
@@ -19,8 +20,7 @@ class PasswordResetController extends Controller
         ForgotPasswordRequest $request,
         RequestPasswordReset $requestPasswordReset,
         HashesSensitiveData $hasher,
-    ): JsonResponse
-    {
+    ): JsonResponse {
         $email = Str::lower($request->string('email')->toString());
         $throttleKey = 'password-reset|'.$email.'|'.$request->ip();
 
@@ -48,8 +48,7 @@ class PasswordResetController extends Controller
         ResetPasswordRequest $request,
         ResetPassword $resetPassword,
         HashesSensitiveData $hasher,
-    ): JsonResponse
-    {
+    ): JsonResponse {
         $resetPassword(
             email: $request->string('email')->toString(),
             token: $request->string('token')->toString(),
@@ -57,6 +56,14 @@ class PasswordResetController extends Controller
             ipHash: $this->ipHash($request, $hasher),
             userAgentHash: $this->userAgentHash($request, $hasher),
         );
+
+        // Do not let StartSession persist this authenticated session again
+        // after the recovery use case revoked all of the account's sessions.
+        if (Str::lower((string) $request->user()?->email) === Str::lower($request->string('email')->toString())) {
+            Auth::guard('web')->logoutCurrentDevice();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
 
         return response()->json([
             'message' => 'Contrasena actualizada correctamente.',

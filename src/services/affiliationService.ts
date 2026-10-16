@@ -33,6 +33,7 @@ export type AffiliationDraft = {
   submitted_at: string | null;
   reviewed_by_user_id: string | null;
   reviewed_at: string | null;
+  correction?: { id: string; reason: string; requested_at: string | null; completed_at: string | null } | null;
   draft_access_token?: string;
   generated_documents?: GeneratedAffiliationDocument[];
   sections?: Array<{
@@ -94,6 +95,32 @@ const DRAFT_STORAGE_KEYS = [
   'fonasin.portal.affiliation.draft.v1',
   'fonasin.affiliation.draft.v1',
 ] as const;
+
+// Only technical access data is stored; remove the fragment before any request.
+export function consumeAffiliationCorrectionInvitation(): AffiliationPurpose | null {
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  if (!params.has('correction')) {
+    const savedPurpose = window.history.state?.fonasinCorrectionPurpose;
+    return ['initial_affiliation', 'data_update', 'profile_completion'].includes(savedPurpose) ? savedPurpose as AffiliationPurpose : null;
+  }
+  const id = params.get('correction') ?? '';
+  const token = params.get('token') ?? '';
+  const read = params.get('read') ?? '';
+  const purpose = params.get('purpose');
+  window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
+  if (!/^[0-9a-f-]{36}$/i.test(id) || !/^[a-zA-Z0-9]{64}$/.test(token)
+    || !read.startsWith(`/affiliation-applications/${id}?`)
+    || !['initial_affiliation', 'data_update', 'profile_completion'].includes(purpose ?? '')) {
+    throw new Error('El enlace de correccion no es valido. Solicita uno nuevo a FONASIN.');
+  }
+  const storageKey = purpose === 'initial_affiliation' ? DRAFT_STORAGE_KEYS[1] : DRAFT_STORAGE_KEYS[0];
+  window.sessionStorage.setItem(storageKey, JSON.stringify({
+    savedAt: Date.now(), id, readUrl: read, draftAccessToken: token,
+    status: 'pending_correction', purpose,
+  }));
+  window.history.replaceState({ ...window.history.state, fonasinCorrectionPurpose: purpose }, '', window.location.pathname + window.location.search);
+  return purpose as AffiliationPurpose;
+}
 
 function buildUrl(path: string): string {
   if (path.startsWith('http://') || path.startsWith('https://')) {

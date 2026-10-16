@@ -1,5 +1,5 @@
 export const fonalibreStyles = {
-  page: 'relative overflow-hidden bg-gradient-to-b from-[#003d22] via-[#002718] to-[#00140d] py-6 sm:py-10',
+  page: 'relative overflow-hidden legacy-bg-gradient-to-b from-[#003d22] via-[#002718] to-[#00140d] py-6 sm:py-10',
   ambient:
     'pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,244,210,0.18),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(183,121,31,0.20),transparent_45%)]',
   ambientGlowTop:
@@ -29,7 +29,7 @@ export const fonalibreStyles = {
 };
 
 export const fonapenStyles = {
-  page: 'relative overflow-hidden bg-gradient-to-b from-slate-100 via-slate-50 to-slate-200/80 py-6 sm:py-10',
+  page: 'relative overflow-hidden legacy-bg-gradient-to-b from-slate-100 via-slate-50 to-slate-200/80 py-6 sm:py-10',
   ambient:
     'pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(226,232,240,0.92),transparent_40%),radial-gradient(circle_at_bottom_right,rgba(148,163,184,0.22),transparent_48%)]',
   ambientGlowTop:
@@ -39,7 +39,7 @@ export const fonapenStyles = {
   ambientGlowRight:
     'pointer-events-none absolute inset-y-0 right-0 w-[20rem] bg-[linear-gradient(180deg,transparent,rgba(245,158,11,0.06)_22%,rgba(251,191,36,0.1)_50%,rgba(245,158,11,0.06)_78%,transparent)] blur-2xl',
   hero:
-    'relative overflow-hidden rounded-[2rem] border border-slate-300/80 bg-gradient-to-r from-slate-800 via-slate-700 to-zinc-800 text-white shadow-2xl shadow-slate-900/10',
+    'relative overflow-hidden rounded-[2rem] border border-slate-300/80 legacy-bg-gradient-to-r from-slate-800 via-slate-700 to-zinc-800 text-white shadow-2xl shadow-slate-900/10',
   heroImage: 'absolute inset-0 opacity-100',
   heroOverlay:
     'absolute inset-0 bg-[linear-gradient(90deg,rgba(15,23,42,0.94)_0%,rgba(15,23,42,0.78)_22%,rgba(15,23,42,0.46)_46%,rgba(15,23,42,0.16)_68%,rgba(15,23,42,0)_100%)]',
@@ -52,15 +52,15 @@ export const fonapenStyles = {
   heroStatIcon: 'grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-900 shadow-sm',
   softCard: 'rounded-[1.75rem] border border-slate-300/80 bg-white p-6 shadow-xl shadow-slate-900/5 sm:p-7',
   darkCard:
-    'rounded-[1.75rem] border border-slate-400/40 bg-gradient-to-br from-slate-700 via-slate-800 to-zinc-800 p-6 text-white shadow-xl shadow-slate-900/10 sm:p-7',
+    'rounded-[1.75rem] border border-slate-400/40 legacy-bg-gradient-to-br from-slate-700 via-slate-800 to-zinc-800 p-6 text-white shadow-xl shadow-slate-900/10 sm:p-7',
   cta:
-    'mt-7 overflow-hidden rounded-[2rem] border border-slate-300/80 bg-gradient-to-r from-slate-800 via-slate-700 to-zinc-800 text-white shadow-xl shadow-slate-900/10',
+    'mt-7 overflow-hidden rounded-[2rem] border border-slate-300/80 legacy-bg-gradient-to-r from-slate-800 via-slate-700 to-zinc-800 text-white shadow-xl shadow-slate-900/10',
   sectionGrid: 'mt-7 grid gap-5 lg:grid-cols-[minmax(0,1.9fr)_minmax(280px,0.8fr)]',
   tableCard: 'rounded-[1.75rem] border border-slate-300/80 bg-white p-6 shadow-xl shadow-slate-900/5 sm:p-7',
 };
 
 export const fonaprimaStyles = {
-  page: 'relative overflow-hidden bg-gradient-to-b from-[#f2e9d7] via-[#faf4e7] to-[#e5d7bf] py-6 sm:py-10',
+  page: 'relative overflow-hidden legacy-bg-gradient-to-b from-[#f2e9d7] via-[#faf4e7] to-[#e5d7bf] py-6 sm:py-10',
   ambient:
     'pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.68),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(194,153,63,0.16),transparent_52%)]',
   ambientGlowTop:
@@ -70,24 +70,24 @@ export const fonaprimaStyles = {
   ambientGlowRight:
     'pointer-events-none absolute inset-y-0 right-0 w-[20rem] bg-[linear-gradient(180deg,transparent,rgba(214,158,36,0.04)_22%,rgba(245,199,71,0.08)_50%,rgba(214,158,36,0.04)_78%,transparent)] blur-2xl',
   hero:
-    'relative overflow-hidden rounded-[2rem] border border-yellow-300/55 bg-gradient-to-r from-[#cc941f] via-[#dfb34a] to-[#f2da8a] text-white shadow-2xl shadow-yellow-500/10',
+    'relative overflow-hidden rounded-[2rem] border border-yellow-300/55 legacy-bg-gradient-to-r from-[#cc941f] via-[#dfb34a] to-[#f2da8a] text-white shadow-2xl shadow-yellow-500/10',
   heroImage: 'absolute inset-0 opacity-100',
   heroOverlay:
     'absolute inset-0 bg-[linear-gradient(90deg,rgba(110,60,18,0.82)_0%,rgba(180,123,32,0.68)_22%,rgba(180,123,32,0.42)_46%,rgba(180,123,32,0.14)_68%,rgba(180,123,32,0)_100%)]',
-  heroGlow: 'absolute -right-10 -top-10 h-72 w-72 rounded-full bg-yellow-200/22 blur-3xl',
+  heroGlow: 'absolute -right-10 -top-10 h-72 w-72 rounded-full  blur-3xl',
   heroBackLink:
     'inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/15 px-4 py-2 text-sm font-bold text-white transition hover:bg-black/25 focus-ring',
   heroBadge:
     'inline-flex items-center gap-2 rounded-full border border-white/30 bg-black/15 px-3.5 py-1.5 text-xs font-black uppercase tracking-[.18em] text-yellow-100 shadow-sm',
   heroStatCard: 'rounded-2xl border border-white/25 bg-black/20 p-4 shadow-sm backdrop-blur-md',
   heroStatIcon: 'grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white text-amber-950 shadow-sm',
-  softCard: 'rounded-[1.75rem] border border-amber-200/80 bg-[#fffaf0]/92 p-6 shadow-xl shadow-amber-950/5 sm:p-7',
+  softCard: 'rounded-[1.75rem] border border-amber-200/80  p-6 shadow-xl shadow-amber-950/5 sm:p-7',
   darkCard:
-    'rounded-[1.75rem] border border-amber-300/50 bg-gradient-to-br from-[#c97f06] via-[#e09b16] to-[#d78a0d] p-6 text-white shadow-xl shadow-amber-900/10 sm:p-7',
+    'rounded-[1.75rem] border border-amber-300/50 legacy-bg-gradient-to-br from-[#c97f06] via-[#e09b16] to-[#d78a0d] p-6 text-white shadow-xl shadow-amber-900/10 sm:p-7',
   cta:
-    'mt-7 overflow-hidden rounded-[2rem] border border-yellow-300/80 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-300 text-amber-950 shadow-xl shadow-yellow-500/10',
+    'mt-7 overflow-hidden rounded-[2rem] border border-yellow-300/80 legacy-bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-300 text-amber-950 shadow-xl shadow-yellow-500/10',
   sectionGrid: 'mt-7 grid gap-5 lg:grid-cols-[minmax(0,1.9fr)_minmax(280px,0.8fr)]',
-  tableCard: 'rounded-[1.75rem] border border-amber-200/80 bg-[#fffaf0]/92 p-6 shadow-xl shadow-amber-950/5 sm:p-7',
+  tableCard: 'rounded-[1.75rem] border border-amber-200/80  p-6 shadow-xl shadow-amber-950/5 sm:p-7',
 };
 
 export const fonarotativoStyles = {
@@ -101,7 +101,7 @@ export const fonarotativoStyles = {
   ambientGlowRight:
     'pointer-events-none absolute inset-y-0 right-0 w-[20rem] bg-[linear-gradient(180deg,transparent,rgba(56,189,248,0.06)_22%,rgba(125,211,252,0.1)_50%,rgba(56,189,248,0.06)_78%,transparent)] blur-2xl',
   hero:
-    'relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/8 text-white shadow-2xl shadow-black/20 backdrop-blur-md',
+    'relative overflow-hidden rounded-[2rem] border border-white/10  text-white shadow-2xl shadow-black/20 backdrop-blur-md',
   heroImage: 'absolute inset-0 opacity-100',
   heroOverlay:
     'absolute inset-0 bg-[linear-gradient(90deg,rgba(6,18,54,0.94)_0%,rgba(12,41,100,0.78)_22%,rgba(12,41,100,0.46)_46%,rgba(32,67,124,0.16)_68%,rgba(32,67,124,0)_100%)]',
@@ -136,13 +136,13 @@ export const fonaportesStyles = {
   heroImage: 'absolute inset-0 opacity-100',
   heroOverlay:
     'absolute inset-0 bg-[linear-gradient(90deg,rgba(22,17,4,0.94)_0%,rgba(80,66,30,0.78)_22%,rgba(80,66,30,0.46)_46%,rgba(146,127,70,0.16)_68%,rgba(146,127,70,0)_100%)]',
-  heroGlow: 'absolute -right-10 -top-10 h-72 w-72 rounded-full bg-yellow-200/14 blur-3xl',
+  heroGlow: 'absolute -right-10 -top-10 h-72 w-72 rounded-full  blur-3xl',
   heroBackLink:
     'inline-flex items-center gap-2 rounded-full border border-amber-200/40 bg-amber-200/10 px-4 py-2 text-sm font-bold text-yellow-100 transition hover:bg-amber-200/25 hover:text-white focus-ring',
   heroBadge:
-    'inline-flex items-center gap-2 rounded-full border border-amber-200/40 bg-gradient-to-r from-amber-300/20 to-yellow-200/20 px-3.5 py-1.5 text-xs font-black uppercase tracking-[.18em] text-yellow-200 shadow-sm',
+    'inline-flex items-center gap-2 rounded-full border border-amber-200/40 legacy-bg-gradient-to-r from-amber-300/20 to-yellow-200/20 px-3.5 py-1.5 text-xs font-black uppercase tracking-[.18em] text-yellow-200 shadow-sm',
   heroStatCard: 'rounded-2xl border border-amber-200/30 bg-black/40 p-4 shadow-lg shadow-black/20 backdrop-blur-sm',
-  heroStatIcon: 'grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-amber-100 to-yellow-300 text-slate-950 font-bold shadow-md',
+  heroStatIcon: 'grid h-11 w-11 shrink-0 place-items-center rounded-xl legacy-bg-gradient-to-br from-amber-100 to-yellow-300 text-slate-950 font-bold shadow-md',
   softCard: 'rounded-[1.75rem] border border-amber-200/60 bg-white/95 p-6 shadow-xl shadow-black/5 sm:p-7',
   darkCard:
     'rounded-[1.75rem] border border-amber-200/30 bg-[linear-gradient(180deg,#241e0a,#140f03)] p-6 text-white shadow-xl shadow-black/20 sm:p-7',

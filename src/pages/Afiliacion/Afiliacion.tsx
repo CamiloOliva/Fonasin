@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import AffiliationForm from '../../components/forms/AffiliationForm';
 import { currentPortalUser } from '../../services/portalService';
+import { consumeAffiliationCorrectionInvitation } from '../../services/affiliationService';
 
 export type AffiliationFlow = 'initial_affiliation' | 'data_update' | 'profile_completion';
 
@@ -32,8 +33,13 @@ const flowContent: Record<AffiliationFlow, { eyebrow: string; title: string; des
 };
 
 export default function Afiliacion({ flow = 'initial_affiliation' }: AfiliacionProps) {
-  const content = flowContent[flow];
-  const isPortalFlow = flow !== 'initial_affiliation';
+  const [invitation] = useState(() => {
+    try { return { purpose: consumeAffiliationCorrectionInvitation(), error: '' }; }
+    catch (cause) { return { purpose: null, error: cause instanceof Error ? cause.message : 'No fue posible abrir la correccion.' }; }
+  });
+  const effectiveFlow = invitation.purpose ?? flow;
+  const content = flowContent[effectiveFlow];
+  const isPortalFlow = effectiveFlow !== 'initial_affiliation';
   const [privateFlowAccess, setPrivateFlowAccess] = useState<PrivateFlowAccess>(
     isPortalFlow ? 'checking' : 'allowed',
   );
@@ -61,6 +67,8 @@ export default function Afiliacion({ flow = 'initial_affiliation' }: AfiliacionP
     };
   }, [isPortalFlow]);
 
+  if (invitation.error) return <main className="container-page py-16"><p role="alert">{invitation.error}</p></main>;
+
   if (isPortalFlow && privateFlowAccess === 'checking') {
     return (
       <main className="container-page py-16" aria-busy="true">
@@ -70,12 +78,12 @@ export default function Afiliacion({ flow = 'initial_affiliation' }: AfiliacionP
   }
 
   if (isPortalFlow && privateFlowAccess === 'denied') {
-    return <Navigate to="/portal-asociado" replace />;
+    return <Navigate to="/portal-asociado?intent=actualizar-datos" replace />;
   }
 
   return (
     <div className="bg-[#f6f7f2] py-12 sm:py-16">
-      <div className="container-page space-y-8">
+      <div className="container-page legacy-space-y-8">
         <div className="flex flex-col gap-4 rounded-[2rem] border border-slate-200 bg-white px-6 py-6 shadow-sm sm:px-8">
           <Link
             to={isPortalFlow ? '/portal-asociado' : '/'}
@@ -97,7 +105,7 @@ export default function Afiliacion({ flow = 'initial_affiliation' }: AfiliacionP
           </div>
         </div>
 
-        <AffiliationForm flow={flow} />
+        <AffiliationForm flow={effectiveFlow} />
       </div>
     </div>
   );

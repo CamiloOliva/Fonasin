@@ -72,6 +72,11 @@ class AffiliationApplication extends Model
         return $this->hasMany(ApplicationSection::class, 'application_id');
     }
 
+    public function corrections(): HasMany
+    {
+        return $this->hasMany(ApplicationCorrection::class, 'application_id');
+    }
+
     public function documents(): HasMany
     {
         return $this->hasMany(ApplicationDocument::class, 'application_id');
