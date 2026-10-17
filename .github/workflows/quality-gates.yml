@@ -186,6 +186,8 @@ jobs:
           --health-retries 10
     env:
       APP_ENV: local
+      APP_URL: http://127.0.0.1:8017
+      FRONTEND_URL: http://127.0.0.1:5187
       DB_CONNECTION: mariadb
       DB_HOST: 127.0.0.1
       DB_PORT: 3306

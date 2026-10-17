@@ -9,6 +9,8 @@ const url = new URL(baseURL);
 assert.ok(['127.0.0.1', 'localhost'].includes(url.hostname), 'E2E only runs locally');
 const artifacts = path.resolve('.e2e-artifacts');
 const fixture = JSON.parse(await readFile(path.join(artifacts, 'fixture.json'), 'utf8'));
+assert.equal(new URL(fixture.correction_url).origin, url.origin,
+  'The captured correction email must target E2E_URL; configure FRONTEND_URL for both the seed and Laravel');
 
 test('security: password recovery expires links and revokes both browser sessions', { timeout: 180000 }, async () => {
   const browser = await chromium.launch(process.env.E2E_BROWSER ? { executablePath: process.env.E2E_BROWSER } : {});
