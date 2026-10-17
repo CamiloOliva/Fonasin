@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Application\Fpqrs\UseCases\SubmitFpqrsSubmission;
 use App\Application\Security\Contracts\HashesSensitiveData;
+use App\Domain\Fpqrs\Enums\FpqrsDeliveryStatus;
 use App\Domain\Fpqrs\Enums\FpqrsSubmissionType;
 use App\Http\Requests\Fpqrs\StoreFpqrsSubmissionRequest;
 use App\Models\FpqrsSubmission;
@@ -32,6 +33,13 @@ class FpqrsSubmissionController extends Controller
             ],
             ipHash: $this->ipHash($request, $hasher),
         );
+
+        if ($submission->delivery_status !== FpqrsDeliveryStatus::Sent->value) {
+            return response()->json([
+                'message' => 'La solicitud fue registrada, pero no se confirmo el envio del correo a FONASIN. Contacta a FONASIN antes de reenviar para evitar duplicados.',
+                'data' => $this->submissionPayload($submission),
+            ], 502);
+        }
 
         return response()->json([
             'data' => $this->submissionPayload($submission),

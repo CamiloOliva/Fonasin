@@ -13,5 +13,5 @@
 <p>{{ $submission->message }}</p>
 
 @if ($submission->attachment_storage_key)
-    <p>El adjunto fue almacenado en el storage privado. No se adjunta al correo para evitar copias no controladas.</p>
+    <p>El archivo se incluye adjunto a este correo. Se conserva tambien una copia privada en el sistema.</p>
 @endif

@@ -110,7 +110,11 @@ una imagen con extension PDF no obtiene autorizacion por su nombre.
 ## FPQRS
 
 - El modulo FPQRS registra la recepcion inicial, adjunto opcional privado y estado interno de entrega por correo institucional.
-- El correo institucional contiene el mensaje recibido y metadatos minimos; los adjuntos quedan en storage privado y no se adjuntan al correo.
+- Por aclaracion expresa de FONASIN, el correo institucional incluye el mensaje y el adjunto opcional PDF/JPG/PNG (maximo 5MB); la copia original permanece en storage privado. No se publica una URL del archivo ni se permite otro destinatario desde el formulario.
+- El adaptador lee el archivo privado completo con limite de tamano y comprueba su longitud antes del envio. Utiliza un nombre MIME generado (`adjunto-fpqrs.pdf/jpg/png`), no el nombre proporcionado por el usuario ni la ruta privada.
+- Archivo ausente, lectura incompleta, fallo de transporte o envio suprimido registran `delivery.failed`, no `delivery.sent`. HTTP responde 502 con un mensaje controlado; la pantalla no confirma el envio y conserva los campos. La solicitud registrada no debe reenviarse automaticamente: se indica contactar a FONASIN para evitar duplicados.
+- `sent` significa aceptacion por el transporte de correo, no confirma recepcion en la bandeja del destinatario. La comprobacion de SMTP y recepcion real sigue siendo parte de la validacion del entorno productivo.
+- En produccion FPQRS rechaza `log` y `array`, tambien dentro de cadenas `failover`/`roundrobin`, para no registrar exito sin entrega ni copiar adjuntos en logs. Resuelve la configuracion efectiva con el parser de Laravel, incluidos `MAIL_URL` y sus parametros, antes de autorizar cada transporte. Los transportes en memoria se permiten en pruebas; no se cambia la configuracion de otros correos.
 - El frontend envia FPQRS al endpoint Laravel `POST /fpqrs-submissions` y conserva la validacion de archivo permitida por servidor.
 - No genera radicado ni seguimiento publico.
 - La auditoria no almacena correo, mensaje completo ni contenido del adjunto.

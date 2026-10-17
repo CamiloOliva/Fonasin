@@ -20,7 +20,12 @@ function buildUrl(path: string): string {
   return `${backendBaseUrl}${path}`;
 }
 
-function translateFpqrsError(message: string, status: number): string {
+const deliveryFailureMessage = 'La solicitud fue registrada, pero no se confirmo el envio del correo a FONASIN. Contacta a FONASIN antes de reenviar para evitar duplicados.';
+const unconfirmedSubmissionMessage = 'No pudimos confirmar el registro ni el envio de la solicitud. Contacta a FONASIN antes de reenviar para evitar duplicados.';
+
+function translateFpqrsError(value: unknown, status: number): string {
+  const message = typeof value === 'string' ? value : '';
+  if (status >= 500) return 'No fue posible completar el envio. Contacta a FONASIN antes de reenviar.';
   if (status === 413) return 'El archivo adjunto supera el tamano permitido.';
   if (status === 422) return 'Revisa los campos del formulario y el archivo adjunto.';
   if (message.includes('Failed to fetch')) return 'No fue posible conectar con Laravel en este momento.';
@@ -50,12 +55,25 @@ export async function submitFPQRS(data: FPQRSForm): Promise<FPQRSSubmission> {
     });
 
     const payload = await response.json().catch(() => null);
+    const submission = payload?.data;
+    const registrationConfirmed = typeof submission?.id === 'string' && submission.id.trim() !== ''
+      && ['sent', 'failed', 'pending'].includes(submission.delivery_status);
 
     if (!response.ok) {
+      if (response.status === 502) {
+        throw new Error(registrationConfirmed ? deliveryFailureMessage : unconfirmedSubmissionMessage);
+      }
       throw new Error(translateFpqrsError(payload?.message, response.status));
     }
 
-    return payload.data as FPQRSSubmission;
+    if (!registrationConfirmed) {
+      throw new Error(unconfirmedSubmissionMessage);
+    }
+    if (submission.delivery_status !== 'sent') {
+      throw new Error(deliveryFailureMessage);
+    }
+
+    return submission as FPQRSSubmission;
   } catch (error) {
     const message = error instanceof Error ? error.message : '';
 

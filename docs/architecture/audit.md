@@ -101,6 +101,13 @@ La ficha consolidada del asociado registra `admin.associate_profile.viewed` y `a
 
 ## Consulta operativa
 
+En FPQRS, `delivery.sent` significa que el transporte acepto el mensaje con su
+adjunto opcional completo; no es acuse de recepcion de la bandeja de entrada.
+La ausencia o lectura incompleta del archivo privado y los envios fallidos o
+suprimidos generan `delivery.failed`, con la clase tecnica del error y sin
+contenido del archivo, rutas privadas ni mensajes de excepcion. Si falla el
+almacenamiento inicial, no se confirma la recepcion ni se intenta enviar correo.
+
 Las vistas administrativas deben filtrar eventos por modulo, recurso, actor, accion y rango de fechas. El detalle se trata como evidencia operativa y es de solo lectura.
 
 ## Retencion
