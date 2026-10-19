@@ -80,3 +80,53 @@ resultado anterior; ninguna evidencia local acredita SMTP real o produccion.
 Este cierre se limita a las dos brechas reproducidas y sus regresiones locales.
 No certifica ausencia universal de vulnerabilidades, recepcion SMTP real, CI
 remoto ni aceptacion de FONASIN. No hubo migracion ni modificacion de datos reales.
+
+## Segunda reauditoria: precision JSON y borradores heredados
+
+Se reprodujeron dos casos adicionales en `964c45a`: un numero JSON grande con
+precision excedente podia redondearse al convertir un float a texto, y el envio
+solo comprobaba `completed_at` y consistencia salarial, sin revalidar el resto
+del contenido guardado. La presencia de un borrador heredado invalido en pruebas
+no demuestra que exista en produccion. Los nuevos casos fallaron antes del arreglo.
+
+- En escrituras de formulario los decimales deben llegar como cadenas, como ya
+  hace React. Se conservan enteros JSON exactos; se rechazan floats JSON, incluso
+  `100.0`, para no depender de digitos que el parser pudo perder. Las pruebas
+  usan cuerpos JSON literales, no solo numeros decodificados y recodificados.
+- Para consumidores internos del decimal compartido (incluido XLSX), un float
+  solo se acepta si representar dos decimales y reconvertirlo produce exactamente
+  el mismo valor. No se cambia `precision`/`serialize_precision` global ni se
+  autoriza redondeo silencioso. Hay pruebas con ambas configuraciones alteradas.
+- El envio bloquea el registro y las secciones, descifra y revalida las cinco
+  secciones con el proposito correspondiente antes de generar documentos. Tambien
+  verifica los totales y la consistencia salarial. No confia en `completed_at`
+  como sustituto de la validacion de contenido.
+- Ante un dato invalido devuelve 422, conserva estado, token, contenido cifrado,
+  documentos y correccion pendiente; no genera documentos ni confirma un evento
+  de envio. Corregir la seccion por el flujo normal permite enviar la misma
+  solicitud. No hay migracion ni reparacion silenciosa de datos historicos.
+- Las regresiones de borradores cubren afiliacion inicial, completar perfil y
+  actualizar datos, tanto en borrador como en correccion. Incluyen errores en cada
+  seccion y un total incoherente, ademas de su posterior correccion y envio real.
+
+### Resultado local de la segunda correccion
+
+- La medicion previa al arreglo encontro 42 fallos y 29 pruebas aprobadas en el
+  subconjunto nuevo/inicial: los casos originales no estaban cubiertos por el
+  verde previo. Se ampliaron despues los cuerpos JSON literales y sus controles.
+- Suite completa final SQLite: 512 aprobadas, 26 saltadas, 3210 aserciones.
+- Suite completa final MariaDB: 538 aprobadas, sin saltos, 3283 aserciones.
+  Una primera corrida se descarto por errores PDO durante el arranque de MariaDB;
+  se verificaron disponibilidad y conexion antes de repetir toda la suite, sin
+  cambios de codigo entre ambas corridas.
+- Frontend: 130 pruebas aprobadas, compilacion TypeScript/Vite correcta; sigue
+  el aviso de tamano de chunks. npm/Composer no reportaron vulnerabilidades
+  conocidas en la consulta ejecutada. Pint y `git diff --check` correctos.
+- Navegador: cinco recorridos completos aprobados y dos comprobaciones de tema
+  responsive aprobadas. El primer intento del tema de escritorio tuvo timeout
+  al cargar Vite; se repitio la bateria sin cambiar aserciones ni tiempos. Los
+  recorridos funcionales aun no habian empezado en aquel intento.
+
+La evidencia corresponde a desarrollo local con datos sinteticos; no acredita
+CI remoto, SMTP real ni produccion. No se ejecutaron migraciones de produccion,
+no se modificaron datos reales ni se publicaron estos cambios.

@@ -150,6 +150,15 @@ canonicos se conservan como texto literal protegido, sin convertir formulas ni
 reescribir registros o documentos emitidos. Esta politica no cambia el parser
 localizado independiente de las importaciones XLSX.
 
+La segunda reauditoria exige cadenas para decimales monetarios en escrituras de
+formulario, conservando enteros JSON exactos y rechazando floats. No se confia en
+la conversion `(string)` de un float para validar precision. Los consumidores
+internos del decimal compartido verifican igualdad exacta tras representar dos
+decimales, sin depender de la precision de impresion configurada en PHP.
+El envio revalida todas las secciones persistidas dentro de la transaccion y
+antes de emitir documentos: un borrador heredado marcado completo no elude las
+reglas actuales. Un rechazo no reescribe el dato historico ni consume el token.
+
 - [ ] La ruta tiene autenticacion y policy cuando corresponde.
 - [ ] La validacion ocurre en servidor.
 - [ ] Los datos sensibles no aparecen en logs ni auditoria.

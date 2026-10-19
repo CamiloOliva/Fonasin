@@ -7,7 +7,18 @@ final class DecimalMoney
 {
     public static function canonical(mixed $value): ?string
     {
-        if (is_int($value) || (is_float($value) && is_finite($value))) {
+        if (is_float($value)) {
+            if (! is_finite($value) || abs($value) >= 1000000000000) {
+                return null;
+            }
+            // F is locale-independent and does not use PHP's precision setting.
+            // Formatting is not permission to round: require an exact round trip.
+            $decimal = sprintf('%.2F', $value);
+            if ((float) $decimal !== $value) {
+                return null;
+            }
+            $value = $decimal;
+        } elseif (is_int($value)) {
             $value = (string) $value;
         }
         if (! is_string($value) || preg_match('/\A-?\d{1,12}(?:\.\d{1,2})?\z/', $value) !== 1) {

@@ -29,6 +29,11 @@ class AffiliationSectionPayloadValidator
             if (! array_key_exists($field, $data) || $data[$field] === null || $data[$field] === '') {
                 continue;
             }
+            // JSON floats may already have lost digits before this method runs.
+            // React sends decimal strings; exact JSON integers remain supported.
+            if (is_float($data[$field])) {
+                throw CannotSaveApplicationSection::invalidField($section->value, $field, 'envia los importes decimales como texto para conservar su precision');
+            }
             $canonical = DecimalMoney::canonical($data[$field]);
             if ($canonical === null) {
                 throw CannotSaveApplicationSection::invalidField($section->value, $field, 'debe ser un importe decimal sin separadores de miles y con maximo dos decimales');

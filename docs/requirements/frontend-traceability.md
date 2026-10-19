@@ -15,6 +15,11 @@ decimal canonico y calcula sumatorias en centavos enteros. Los PDF y XLSX no
 multiplican ni eliminan centavos. Ver regresiones de autorizacion y contrato
 monetario y la seccion de reauditoria en ADR-009; no implica aceptacion productiva.
 
+En la segunda reauditoria el servidor exige texto para decimales de formulario
+(el payload actual de React ya cumple), y vuelve a validar el contenido guardado
+al enviar. Un error de un borrador heredado debe corregirse en la seccion antes
+de reenviar; no se debe presentar el rechazo como envio confirmado.
+
 ## Estados permitidos
 
 | Estado | Significado |

@@ -9,6 +9,7 @@ use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
 use App\Domain\Affiliation\Support\AffiliationApplicationStateMachine;
+use App\Domain\Affiliation\Support\AffiliationFinancialData;
 use App\Domain\Affiliation\Support\AffiliationSectionPayloadValidator;
 use App\Domain\Audit\Enums\AuditActorType;
 use App\Domain\Audit\Enums\AuditModule;
@@ -57,7 +58,7 @@ class SubmitAffiliationApplication
                 throw CannotSubmitAffiliationApplication::missingSections($missingSections);
             }
 
-            $this->validateIncomeConsistency($application);
+            $this->validatePersistedSections($application);
 
             $missingDocuments = $application->isFormOnly()
                 ? []
@@ -121,28 +122,31 @@ class SubmitAffiliationApplication
         });
     }
 
-    private function validateIncomeConsistency(AffiliationApplication $application): void
+    private function validatePersistedSections(AffiliationApplication $application): void
     {
         $sections = $application->sections()
-            ->whereIn('section', [
-                AffiliationApplicationStep::Employment->value,
-                AffiliationApplicationStep::Financial->value,
-            ])
+            ->whereIn('section', array_map(fn (AffiliationApplicationStep $step): string => $step->value, AffiliationApplicationStep::formSections()))
+            ->lockForUpdate()
             ->get()
             ->keyBy('section');
-
-        /** @var ApplicationSection|null $employment */
-        $employment = $sections->get(AffiliationApplicationStep::Employment->value);
-        /** @var ApplicationSection|null $financial */
-        $financial = $sections->get(AffiliationApplicationStep::Financial->value);
-
-        if (! $employment || ! $financial) {
-            return;
+        $payloads = [];
+        foreach (AffiliationApplicationStep::formSections() as $step) {
+            /** @var ApplicationSection|null $section */
+            $section = $sections->get($step->value);
+            if (! $section || $section->completed_at === null) {
+                throw CannotSubmitAffiliationApplication::missingSections([$step]);
+            }
+            $data = $this->cipher->decryptArray((string) $section->getAttribute('data_encrypted'));
+            if ($step === AffiliationApplicationStep::Financial) {
+                $data = AffiliationFinancialData::forForm($data, $application->isFormOnly());
+            }
+            // Validate the persisted snapshot, without rewriting historical data.
+            $this->sectionValidator->validateCompleted($step, $data, $application->isFormOnly());
+            $payloads[$step->value] = $data;
         }
-
         $this->sectionValidator->validateIncomeConsistency(
-            $this->cipher->decryptArray((string) $employment->getAttribute('data_encrypted')),
-            $this->cipher->decryptArray((string) $financial->getAttribute('data_encrypted')),
+            $payloads[AffiliationApplicationStep::Employment->value],
+            $payloads[AffiliationApplicationStep::Financial->value],
         );
     }
 }

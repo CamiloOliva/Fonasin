@@ -78,6 +78,47 @@ class AffiliationMoneyContractTest extends TestCase
         return array_map(fn ($field) => [$field], ['principalIncome', 'otherIncome', 'totalIncome', 'monthlyExpenses', 'financialObligations', 'totalExpenses', 'assetsValue', 'liabilitiesValue', 'equityValue', 'voluntarySavingsValue']);
     }
 
+    public static function numericPrecisionCases(): array
+    {
+        return [
+            ['10000000000.0001', 'employment', 'monthlySalary'],
+            ['20000000000.0001', 'financial', 'totalIncome'],
+            ['9999999999.9999', 'financial', 'otherIncome'],
+            ['10000000000.00000000000001', 'employment', 'monthlySalary'],
+        ];
+    }
+
+    #[DataProvider('numericPrecisionCases')]
+    public function test_raw_json_number_and_string_with_excess_precision_are_both_rejected(string $literal, string $section, string $field): void
+    {
+        $draft = AffiliationApplication::query()->create(['purpose' => 'initial_affiliation', 'status' => 'draft', 'access_token_hash' => hash('sha256', 'synthetic-money-token')]);
+        $url = URL::temporarySignedRoute('affiliation-applications.sections.store', now()->addHour(), ['application' => $draft, 'section' => $section], false);
+        $data = $this->validSectionPayload(AffiliationApplicationStep::from($section));
+        foreach ([false, true] as $completed) {
+            foreach ([json_encode($literal, JSON_THROW_ON_ERROR), $literal] as $rawValue) {
+                $body = json_encode(['schema_version' => 1, 'completed' => $completed, 'data' => [...$data, $field => '__RAW_AMOUNT__']], JSON_THROW_ON_ERROR);
+                $body = str_replace('"__RAW_AMOUNT__"', $rawValue, $body);
+                $this->call('POST', $url, [], [], [], ['HTTP_ACCEPT' => 'application/json', 'CONTENT_TYPE' => 'application/json', 'HTTP_X_AFFILIATION_DRAFT_TOKEN' => 'synthetic-money-token'], $body)->assertUnprocessable();
+            }
+        }
+        $this->assertDatabaseCount('application_sections', 0);
+    }
+
+    public function test_json_decimal_lexemes_require_text_but_exact_integer_numbers_remain_supported(): void
+    {
+        $draft = AffiliationApplication::query()->create(['purpose' => 'initial_affiliation', 'status' => 'draft', 'access_token_hash' => hash('sha256', 'synthetic-money-token')]);
+        $url = URL::temporarySignedRoute('affiliation-applications.sections.store', now()->addHour(), ['application' => $draft, 'section' => 'financial'], false);
+        foreach (['12.5', '100.0', '1e3', '12.0000000000000000001'] as $literal) {
+            $body = '{"schema_version":1,"completed":false,"data":{"otherIncome":'.$literal.'}}';
+            $this->call('POST', $url, [], [], [], ['HTTP_ACCEPT' => 'application/json', 'CONTENT_TYPE' => 'application/json', 'HTTP_X_AFFILIATION_DRAFT_TOKEN' => 'synthetic-money-token'], $body)->assertUnprocessable();
+        }
+        foreach ([12, '12.50'] as $value) {
+            $this->postJson($url, ['schema_version' => 1, 'completed' => false, 'data' => ['otherIncome' => $value]], ['X-Affiliation-Draft-Token' => 'synthetic-money-token'])->assertOk();
+        }
+        $stored = app(EncryptsSensitiveData::class)->decryptArray($draft->sections()->firstOrFail()->getAttribute('data_encrypted'));
+        $this->assertSame('12.5', $stored['otherIncome']);
+    }
+
     #[DataProvider('moneyFields')]
     public function test_every_declared_financial_money_field_rejects_malformed_partial_and_completed_input(string $field): void
     {
