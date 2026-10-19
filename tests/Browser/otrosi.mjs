@@ -129,8 +129,8 @@ test('otrosi: real browser, sessions, XLSX, MariaDB, decisions and private PDF',
     }
     const owner = await actor('associate', '/portal-asociado');
     await owner.page.getByText('24 meses', { exact: true }).waitFor();
-    await owner.page.getByText('18.0000%', { exact: true }).waitFor();
-    await owner.page.getByText('1.5000%', { exact: true }).waitFor();
+    await owner.page.getByText('18%', { exact: true }).waitFor();
+    await owner.page.getByText('1,5%', { exact: true }).waitFor();
     const contributions = await json(owner.context, '/portal/contributions');
     assert.deepEqual([
       contributions.data.account.contribution_balance, contributions.data.account.permanent_savings_balance,
@@ -222,6 +222,9 @@ test('affiliation: returned applicant follows private email link, corrects and r
     assert.equal(new URL(page.url()).hash, '');
     await page.getByLabel('Direccion de residencia', { exact: false }).fill('Direccion sintetica corregida en navegador');
     for (const section of ['personal', 'employment', 'financial', 'beneficiaries', 'sarlaft']) {
+      if (section === 'financial') {
+        assert.equal(await page.getByLabel('Desea abrir un ahorro voluntario', { exact: false }).count(), 1);
+      }
       const saved = page.waitForResponse(response => response.url().includes(`/sections/${section}?`) && response.request().method() === 'POST');
       await page.getByRole('button', { name: 'Guardar y continuar', exact: true }).click();
       const response = await saved;
@@ -253,3 +256,62 @@ test('affiliation: returned applicant follows private email link, corrects and r
     await browser.close();
   }
 });
+
+for (const purpose of ['profile_completion', 'data_update']) {
+  test(`profile: ${purpose} submits 20 billion totals without savings instructions`, { timeout: 180000 }, async () => {
+    const browser = await chromium.launch(process.env.E2E_BROWSER ? { executablePath: process.env.E2E_BROWSER } : {});
+    const context = await browser.newContext({ baseURL, viewport: { width: 1440, height: 1000 } });
+    const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    try {
+      await page.goto('/portal-asociado', { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await page.getByLabel('Correo electronico', { exact: true }).fill(fixture[purpose].email);
+      await page.getByLabel('Contrasena', { exact: true }).fill(fixture.password);
+      await page.getByRole('button', { name: /entrar al portal/i }).click();
+      const route = purpose === 'profile_completion' ? '/portal-asociado/completar-perfil' : '/portal-asociado/actualizar-datos';
+      if (purpose === 'profile_completion') {
+        await page.waitForURL(`**${route}`, { timeout: 60000 });
+      } else {
+        await page.getByRole('button', { name: /cerrar sesion/i }).waitFor();
+        await page.goto(route, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      }
+      await page.waitForFunction(email => [...document.querySelectorAll('input')].some(input => input.value === email), fixture[purpose].email);
+      for (const section of ['personal', 'employment', 'financial', 'beneficiaries', 'sarlaft']) {
+        if (section === 'financial') {
+          assert.equal(await page.getByLabel('Desea abrir un ahorro voluntario', { exact: false }).count(), 0);
+          assert.equal(await page.getByLabel('Valor mensual del ahorro voluntario', { exact: false }).count(), 0);
+          assert.equal(await page.getByLabel('Total ingresos mensuales', { exact: false }).inputValue(), '20.000.000.000');
+          assert.equal(await page.getByLabel('Total egresos mensuales', { exact: false }).inputValue(), '20.000.000.000');
+        }
+        const saved = page.waitForResponse(response => response.url().includes(`/sections/${section}?`) && response.request().method() === 'POST');
+        await page.getByRole('button', { name: 'Guardar y continuar', exact: true }).click();
+        const response = await saved;
+        assert.equal(response.status(), 200, await response.text());
+        if (section === 'financial') {
+          const body = response.request().postDataJSON().data;
+          assert.equal('voluntarySavings' in body, false);
+          assert.equal('voluntarySavingsValue' in body, false);
+          assert.equal(body.totalIncome, '20000000000');
+        }
+      }
+      await page.getByLabel('Ciudad', { exact: false }).fill('Bucaramanga');
+      for (const checkbox of await page.getByRole('checkbox').all()) await checkbox.check();
+      await page.getByRole('button', { name: 'Ir a revision', exact: true }).click();
+      const form = page.locator('form');
+      assert.equal(await form.getByText('Ahorro voluntario', { exact: true }).count(), 0);
+      const submitted = page.waitForResponse(response => response.url().includes('/submit?') && response.request().method() === 'POST');
+      await page.getByRole('button', { name: 'Enviar solicitud', exact: true }).click();
+      const response = await submitted;
+      assert.equal(response.status(), 200, await response.text());
+      const result = (await response.json()).data;
+      assert.equal(result.id, fixture[purpose].application);
+      assert.equal(result.generated_documents.length, 1);
+      assert.equal(result.generated_documents[0].document_type, 'affiliation_summary');
+      assert.deepEqual(errors, []);
+    } finally {
+      await context.close();
+      await browser.close();
+    }
+  });
+}

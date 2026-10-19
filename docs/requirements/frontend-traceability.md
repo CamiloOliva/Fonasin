@@ -6,7 +6,7 @@ Esta matriz conecta la especificacion funcional con el codigo, las pruebas y la 
 
 Fuente funcional: `02_GUIA_EQUIPO_FRONTEND_WEB_AFILIACION_PORTAL_V2.docx`, version 2.0 del 15 de agosto de 2026.
 
-Ultima actualizacion: 17 de octubre de 2026, correcciones FPQRS y aclaracion del alta de asociados antiguos (ADR-006). Las reglas funcionales base constan en ADR-005. Aun pendiente validacion visual y aceptacion final.
+Ultima actualizacion: 19 de octubre de 2026, ajustes de sumatorias, tasas, ficha XLSX, ahorro separado de formularios de perfil y copia de correo (ADR-009). Las reglas funcionales base constan en ADR-005. Aun pendiente validacion visual y aceptacion final.
 
 ## Estados permitidos
 
@@ -33,7 +33,7 @@ Solo FONASIN puede mover contenido funcional a `Aceptado`. Una PR puede proponer
 | FE-WEB-005A | Visor PDF | Implementado | Visor embebido y descarga disponible para cada documento institucional | Validar rendimiento del estado financiero escaneado en el hosting productivo. |
 | FE-WEB-005B | Balance social | En curso | Ruta `/balance-social` consulta solo informes publicados desde `public_content_items`; panel permite PDF privado y borrador | FONASIN debe suministrar y aprobar el primer informe. |
 | FE-WEB-006 | Noticias | En curso | Ruta `/noticias` consulta solo comunicados publicados desde Backend; panel permite redactar y retirar | FONASIN debe suministrar y aprobar las primeras publicaciones. |
-| FE-WEB-007 | Contacto | En curso | Correo institucional oficial y redes administrables en panel, con validacion de hosts HTTPS; redes vacias no se muestran | FONASIN debe entregar enlaces oficiales. |
+| FE-WEB-007 | Contacto | En curso | Correo institucional visible y seleccionable; Copiar correo confirma solo al copiar y ofrece copia manual ante fallo/ausencia de portapapeles, sin mailto ni otra ventana. Redes administrables en panel con validacion de hosts HTTPS; redes vacias no se muestran. | FONASIN debe entregar enlaces oficiales. |
 | FE-WEB-008 | FPQRS | Implementado | Formulario conectado a `POST /fpqrs-submissions`; PDF/JPG/PNG hasta 5MB incluido en el correo y conservado privadamente. Archivo rechazado bloquea el envio hasta reemplazarlo o retirarlo explicitamente. Confirmacion solo con identificador y `delivery_status=sent`; ante fallo de adjunto/transporte, HTTP 502 y alerta sin exito ni reenvio automatico. Una respuesta ilegible/desconocida no afirma registro ni envio. Pruebas locales de MIME/bytes, PDF/imagenes/sin archivo, fallos, MAIL_URL y pantalla. | Validar envio real con SMTP de produccion y aprobar politica de retencion. |
 | FE-WEB-009 | WhatsApp | En curso | Enlace configurable con `VITE_WHATSAPP_URL` | Confirmar numero, mensaje y comportamiento oficial. |
 | FE-WEB-010 | SEO y accesibilidad | En curso | HTML en español, description, semantica y foco parcial | Ejecutar auditoria sin errores criticos y agregar pruebas. |
@@ -50,7 +50,7 @@ El carrusel y los convenios consultan los registros publicados del modulo Conten
 | FE-AFI-002 | Inicio o recuperacion de borrador | Implementado | La vista reutiliza por 24 horas el borrador de sesion del mismo navegador, consulta el borrador firmado en Backend y repuebla secciones/documentos ya guardados; no persiste datos personales en storage del frontend, requiere token tecnico de borrador y el Backend invalida el token al enviar. |
 | FE-AFI-003 | Datos personales | Bloqueado | Esquema de campos aprobado. |
 | FE-AFI-004 | Informacion laboral | Bloqueado | Campos y reglas aprobados. |
-| FE-AFI-005 | Informacion financiera | En curso | Los montos editables admiten correccion normal; ingresos, egresos y patrimonio se calculan automaticamente y Backend rechaza totales incoherentes. Falta aprobacion institucional final de campos y reglas. |
+| FE-AFI-005 | Informacion financiera | Implementado / pendiente aceptacion | Componentes hasta COP 10.000.000.000 y totales mensuales de ingresos/egresos hasta COP 20.000.000.000, calculados y validados en pantalla y servidor. Patrimonio conserva signo. Solo afiliacion inicial captura ahorro voluntario; completar/actualizar perfil excluye esos campos de pantalla, payload, validacion, persistencia y nuevos resumenes/PDF. Documentos anteriores se conservan. Ver ADR-009. |
 | FE-AFI-006 | Beneficiarios | Bloqueado | Campos condicionales aprobados. |
 | FE-AFI-006A | SARLAFT | Bloqueado | Declaraciones, campos y tratamiento aprobados. |
 | FE-AFI-007 | Documentos | Implementado | Formulario exige PDF de identidad por ambos lados y certificado laboral; Backend valida PDF privado de hasta 5MB por documento. Falta validacion visual final con FONASIN. |
@@ -71,6 +71,8 @@ desde el portal. Se revocan tokens anteriores y se exige nueva libranza empresar
 cuando se regenera la autorizacion inicial. Ver ADR-007 y pruebas del flujo.
 
 ## Administracion
+
+ADR-009: la cartera del administrador y del asociado muestra ambas tasas sin ceros finales innecesarios, con coma decimal y sin convertir sus unidades. La ficha XLSX privada usa etiquetas en espanol para el catalogo de campos vigente y celdas numericas en importes conocidos; documentos, pagares, telefonos y referencias permanecen texto. Se mantiene proteccion contra formulas y control de acceso exclusivo para administrador.
 
 | ID | Requisito | Estado | Bloqueador o siguiente paso |
 |---|---|---|---|

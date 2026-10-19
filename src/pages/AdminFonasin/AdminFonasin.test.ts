@@ -160,6 +160,27 @@ describe('AdminFonasin permissions and imports', () => {
     expect(screen.getByText('Direccion sintetica')).toBeInTheDocument();
   });
 
+  it('shows both rates in credit rows without insignificant zeros or guessing a historic unit', () => {
+    const credits = [
+      { id: 'known', interest_rate: '1.5000', interest_rate_basis: 'monthly' as const, interest_rate_nominal_annual: '18.0000' },
+      { id: 'historic', interest_rate: '18.0000', interest_rate_basis: null, interest_rate_nominal_annual: null },
+    ].map((rate) => ({ ...rate, associate_id: 'associate-1', credit_line: rate.id,
+      initial_balance: '100.00', current_balance: '50.00', installment_amount: '10.00', term_months: 12,
+      status: 'active', registered_by_user_id: 'admin-1', associate: null }));
+    render(createElement(CreditsPanel, {
+      credits, associates: [], dataState: 'ready',
+      form: { associate_id: '', credit_line: 'FONALIBRE', initial_balance: '', current_balance: '',
+        term_months: '24', interest_rate: '1.2500', interest_rate_nominal_annual: '', installment_amount: '', status: 'active' },
+      onFormChange: vi.fn(), onCreate: vi.fn(), onStatusChange: vi.fn(), canManage: false,
+    }));
+    expect(screen.getByRole('columnheader', { name: 'Tasa Int NA' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Tasa Int mv' })).toBeInTheDocument();
+    const known = within(screen.getByRole('row', { name: /known/ }));
+    expect(known.getByText('18%')).toBeInTheDocument();
+    expect(known.getByText('1,5%')).toBeInTheDocument();
+    expect(within(screen.getByRole('row', { name: /historic/ })).getAllByText('No informada')).toHaveLength(2);
+  });
+
   it('renders associate and credit lists without mutation controls in read-only mode', () => {
     const callback = vi.fn();
     const associatesView = render(createElement(AssociatesPanel, {

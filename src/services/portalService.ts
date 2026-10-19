@@ -1,3 +1,5 @@
+import { creditRateLabel } from './creditRate';
+
 export type PortalUser = {
   id: string;
   email: string;
@@ -35,7 +37,7 @@ export type PortalCredit = {
 
 export function monthlyCreditRateLabel(credit: Pick<PortalCredit, 'interest_rate' | 'interest_rate_basis'>): string {
   return credit.interest_rate != null && credit.interest_rate_basis === 'monthly'
-    ? `${credit.interest_rate}%` : 'No informada';
+    ? creditRateLabel(credit.interest_rate) : 'No informada';
 }
 
 export type PortalContributionAccount = {

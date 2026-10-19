@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { creditRateLabel } from '../../services/creditRate';
+import { monthlyCreditRateLabel } from '../../services/portalService';
 import {
   CheckCircle2,
   ClipboardCheck,
@@ -1939,6 +1941,8 @@ export function CreditsPanel({
                 <th className="py-3 pr-4">Saldo actual</th>
                 <th className="py-3 pr-4">Cuota</th>
                 <th className="py-3 pr-4">Plazo</th>
+                <th className="py-3 pr-4">Tasa Int NA</th>
+                <th className="py-3 pr-4">Tasa Int mv</th>
                 <th className="py-3 pr-4">Estado</th>
                 {canManage ? <th className="py-3 text-right">Acciones</th> : null}
               </tr>
@@ -1952,6 +1956,8 @@ export function CreditsPanel({
                   <td className="py-4 pr-4 font-black text-slate-950">{formatCurrency(credit.current_balance)}</td>
                   <td className="py-4 pr-4 text-slate-700">{formatCurrency(credit.installment_amount)}</td>
                   <td className="py-4 pr-4 text-slate-700">{credit.term_months ? `${credit.term_months} meses` : 'No informado'}</td>
+                  <td className="py-4 pr-4 text-slate-700">{creditRateLabel(credit.interest_rate_nominal_annual)}</td>
+                  <td className="py-4 pr-4 text-slate-700">{monthlyCreditRateLabel(credit)}</td>
                   <td className="py-4 pr-4">
                     <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-700">
                       {statusLabel(credit.status)}

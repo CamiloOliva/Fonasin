@@ -1,3 +1,15 @@
+export const MAX_COMPONENT_AMOUNT = 10_000_000_000;
+export const MAX_MONTHLY_TOTAL = 2 * MAX_COMPONENT_AMOUNT;
+
+export function financialPayload<T extends Record<string, unknown>>(values: T, formOnly: boolean): Record<string, unknown> {
+  const payload = { ...values };
+  if (formOnly) {
+    delete payload.voluntarySavings;
+    delete payload.voluntarySavingsValue;
+  }
+  return payload;
+}
+
 export type FinancialAmounts = {
   principalIncome: string;
   otherIncome: string;

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { ArrowRight, CreditCard, FileText, Loader2, LogOut, PiggyBank, RefreshCw, ShieldCheck, UserRound } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ForcedPasswordChange from '../../components/auth/ForcedPasswordChange';
+import { creditRateLabel } from '../../services/creditRate';
 import { formatAccountingPeriod, formatCalendarDate } from '../../utils/calendarDate';
 import {
   changeOwnPassword,
@@ -762,7 +763,7 @@ export default function PortalAsociado() {
                           <td className="py-4 pr-4 text-slate-700">{formatMoney(credit.installment_amount)}</td>
                           <td className="py-4 pr-4 text-slate-700">{credit.last_payment_date ? formatCalendarDate(credit.last_payment_date) : 'No informada'}</td>
                           <td className="py-4 pr-4 text-slate-700">{credit.term_months ? `${credit.term_months} meses` : 'No informado'}</td>
-                          <td className="py-4 pr-4 text-slate-700">{credit.interest_rate_nominal_annual != null ? `${credit.interest_rate_nominal_annual}%` : 'No informada'}</td>
+                          <td className="py-4 pr-4 text-slate-700">{creditRateLabel(credit.interest_rate_nominal_annual)}</td>
                           <td className="py-4 pr-4 text-slate-700">{monthlyCreditRateLabel(credit)}</td>
                           <td className="py-4">
                             <span className="rounded-full bg-fonasin-surface px-3 py-1 text-xs font-bold text-fonasin-green">

@@ -98,6 +98,17 @@ class AssociateProfileAdminHttpTest extends TestCase
         $this->assertStringContainsString('Ficha consolidada del asociado', $contents);
         $this->assertStringContainsString("'=FORMULA", $contents);
         $this->assertStringContainsString('PAG-001', $contents);
+        $fields = [];
+        foreach (array_slice($spreadsheet->rows(), 2) as $row) {
+            $fields[$row[1]] = $row[2];
+        }
+        $this->assertSame('1099001122', $fields['Numero de documento']);
+        $this->assertSame('PAG-001', $fields['Numero de pagare']);
+        $this->assertEquals(1000000, $fields['Saldo inicial']);
+        $this->assertFalse(is_string($fields['Saldo inicial']));
+        $this->assertEquals(400000, $fields['Saldo total']);
+        $this->assertFalse(is_string($fields['Saldo total']));
+        $this->assertStringNotContainsString('contribution_balance', $contents);
 
         $this->assertDatabaseHas('audit_events', [
             'module' => AuditModule::Portal->value,

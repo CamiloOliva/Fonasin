@@ -54,4 +54,32 @@ class AssociateProfileSpreadsheetSecurityTest extends TestCase
         $this->assertSame("'=1+1", $rows[6][2]);
         $this->assertSame("'  +1", $rows[7][2]);
     }
+
+    public function test_spanish_labels_numeric_money_and_text_identifiers_are_preserved_in_actual_xlsx(): void
+    {
+        $xlsx = SimpleXLSX::parseData((new SimpleXlsxAssociateProfileExporter)->spreadsheet([
+            'associate' => ['document_number' => '0012345678', 'full_name' => 'Persona Sintetica', 'mobile' => '03001234567'],
+            'form' => ['application' => ['sections' => [['section' => 'financial', 'data' => ['totalIncome' => '20000000000', 'equityValue' => '-500.25']]]]],
+            'credits' => ['items' => [['initial_balance' => '1000000.25', 'promissory_note_number' => '000123']]],
+            'contributions' => ['account' => ['total_balance' => '123456.78'], 'movements' => [['amount' => '=1+1']]],
+        ]));
+        $this->assertNotFalse($xlsx);
+        $values = [];
+        foreach (array_slice($xlsx->rows(), 2) as $row) {
+            $values[$row[1]] = $row[2];
+        }
+        $this->assertSame('0012345678', $values['Numero de documento']);
+        $this->assertSame('03001234567', $values['Celular']);
+        $this->assertSame('000123', $values['Numero de pagare']);
+        $this->assertEquals(20000000000, $values['Total ingresos mensuales']);
+        $this->assertIsNumeric($values['Total ingresos mensuales']);
+        $this->assertFalse(is_string($values['Total ingresos mensuales']));
+        $this->assertEquals(-500.25, $values['Patrimonio']);
+        $this->assertFalse(is_string($values['Saldo inicial']));
+        $this->assertEquals(123456.78, $values['Saldo total']);
+        $this->assertSame("'=1+1", $values['Valor mensual']);
+        $sheet = $xlsx->getEntryData('xl/worksheets/sheet1.xml');
+        $this->assertDoesNotMatchRegularExpression('/<f(?:\s|>)/', $sheet);
+        $this->assertStringNotContainsString('totalIncome', json_encode($xlsx->rows()));
+    }
 }

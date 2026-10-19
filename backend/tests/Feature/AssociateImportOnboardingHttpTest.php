@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Application\Affiliation\UseCases\GenerateAffiliationSubmissionDocuments;
+use App\Application\Affiliation\UseCases\RegisterApplicationDocument;
 use App\Application\Contributions\Contracts\RendersVoluntarySavingsPayrollAuthorization;
+use App\Application\Portal\UseCases\StartAssociateAffiliationUpdate;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationPurpose;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
@@ -270,6 +273,42 @@ class AssociateImportOnboardingHttpTest extends TestCase
             'application_id' => $application->id,
             'document_type' => ApplicationDocumentType::SignedPayrollAuthorization->value,
         ]);
+    }
+
+    public function test_profile_update_draft_does_not_copy_savings_and_preserves_historic_records_and_files(): void
+    {
+        $associate = $this->importedAssociate();
+        $cipher = app(EncryptsSensitiveData::class);
+        $source = $associate->affiliationApplications()->create([
+            'purpose' => 'initial_affiliation', 'status' => 'enabled', 'current_step' => 'summary',
+        ]);
+        $financial = ['totalIncome' => '2500000', 'voluntarySavings' => 'Si', 'voluntarySavingsValue' => '100000'];
+        $original = ApplicationSection::query()->forceCreate([
+            'application_id' => $source->id, 'section' => 'financial', 'schema_version' => 1,
+            'data_encrypted' => $cipher->encryptArray($financial), 'completed_at' => now(),
+        ]);
+        $contents = '%PDF-1.4 synthetic historical summary';
+        $document = app(RegisterApplicationDocument::class)(
+            application: $source, documentType: ApplicationDocumentType::AffiliationSummary,
+            originalFilename: 'previous.pdf', mimeType: 'application/pdf', byteSize: strlen($contents), fileContents: $contents,
+        );
+        $key = $document->getAttribute('storage_key');
+        $start = app(StartAssociateAffiliationUpdate::class);
+        $draft = $start($associate->user);
+        $this->assertSame('data_update', $draft->purpose);
+        $draftSection = $draft->sections()->where('section', 'financial')->firstOrFail();
+        $copied = $cipher->decryptArray($draftSection->getAttribute('data_encrypted'));
+        $this->assertSame(['totalIncome' => '2500000'], $copied);
+        // A draft left by a previous client is cleaned when resumed, not its source.
+        $draftSection->forceFill(['data_encrypted' => $cipher->encryptArray($financial)])->save();
+        $this->assertSame($draft->id, $start($associate->user)->id);
+        $this->assertSame(['totalIncome' => '2500000'], $cipher->decryptArray($draftSection->refresh()->getAttribute('data_encrypted')));
+        app(GenerateAffiliationSubmissionDocuments::class)($draft);
+        $this->assertSame($financial, $cipher->decryptArray($original->refresh()->getAttribute('data_encrypted')));
+        $this->assertSame($contents, Storage::disk('local')->get($key));
+        $this->assertNotSame('archived', $document->refresh()->status);
+        $this->assertDatabaseMissing('application_documents', ['application_id' => $draft->id, 'document_type' => ApplicationDocumentType::PayrollAuthorization->value]);
+        $this->assertDatabaseCount('voluntary_savings_requests', 0);
     }
 
     private function importedAssociate(): Associate

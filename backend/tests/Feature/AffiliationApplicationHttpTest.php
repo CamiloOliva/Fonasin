@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Application\Affiliation\Contracts\RendersAffiliationSubmissionDocuments;
 use App\Application\Affiliation\UseCases\AcceptApplicationConsent;
 use App\Application\Affiliation\UseCases\RegisterApplicationDocument;
 use App\Application\Affiliation\UseCases\SaveApplicationSection;
+use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationPurpose;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
@@ -661,6 +663,72 @@ class AffiliationApplicationHttpTest extends TestCase
         $this->postJson('/affiliation-applications')->assertStatus(429);
 
         RateLimiter::clear($throttleKey);
+    }
+
+    public function test_financial_totals_allow_twenty_billion_but_components_keep_their_limit(): void
+    {
+        $application = AffiliationApplication::query()->forceCreate(['status' => 'draft', 'current_step' => 'financial']);
+        $headers = $this->protectDraft($application);
+        $url = $this->signedSectionUrl($application, AffiliationApplicationStep::Financial);
+        $data = $this->validSectionPayload(AffiliationApplicationStep::Financial);
+        foreach (['principalIncome', 'otherIncome', 'monthlyExpenses', 'financialObligations'] as $field) {
+            $data[$field] = '10000000000';
+        }
+        $data['totalIncome'] = $data['totalExpenses'] = '20000000000';
+        $this->postJson($url, ['schema_version' => 1, 'data' => $data], $headers)->assertOk();
+        foreach (['totalIncome', 'totalExpenses', 'principalIncome', 'otherIncome', 'monthlyExpenses', 'financialObligations'] as $field) {
+            $invalid = $data;
+            $invalid[$field] = in_array($field, ['totalIncome', 'totalExpenses'], true) ? '20000000001' : '10000000001';
+            $this->postJson($url, ['schema_version' => 1, 'data' => $invalid], $headers)->assertUnprocessable();
+        }
+        $invalid = $data;
+        $invalid['totalIncome'] = '19999999999';
+        $this->postJson($url, ['schema_version' => 1, 'data' => $invalid], $headers)->assertUnprocessable();
+    }
+
+    public function test_profile_only_saves_ignore_new_savings_instructions_in_completed_and_draft_sections(): void
+    {
+        foreach ([AffiliationApplicationPurpose::DataUpdate, AffiliationApplicationPurpose::ProfileCompletion] as $purpose) {
+            $application = AffiliationApplication::query()->forceCreate([
+                'purpose' => $purpose->value, 'status' => 'draft', 'current_step' => 'financial',
+            ]);
+            $headers = $this->protectDraft($application);
+            $url = $this->signedSectionUrl($application, AffiliationApplicationStep::Financial);
+            $data = $this->validSectionPayload(AffiliationApplicationStep::Financial);
+            unset($data['voluntarySavings'], $data['voluntarySavingsValue']);
+            $this->postJson($url, ['schema_version' => 1, 'data' => $data], $headers)->assertOk();
+            foreach ([true, false] as $completed) {
+                $injected = [...$data, 'voluntarySavings' => 'Si', 'voluntarySavingsValue' => '100000'];
+                $response = $this->postJson($url, ['schema_version' => 1, 'data' => $injected, 'completed' => $completed], $headers);
+                $response->assertOk()->assertJsonMissingPath('data.data.voluntarySavings')->assertJsonMissingPath('data.data.voluntarySavingsValue');
+                $section = $application->sections()->where('section', 'financial')->firstOrFail();
+                $stored = app(EncryptsSensitiveData::class)->decryptArray($section->getAttribute('data_encrypted'));
+                $this->assertArrayNotHasKey('voluntarySavings', $stored);
+                $this->assertArrayNotHasKey('voluntarySavingsValue', $stored);
+            }
+        }
+        $this->assertDatabaseCount('voluntary_savings_requests', 0);
+    }
+
+    public function test_new_profile_pdfs_omit_savings_while_initial_pdf_and_previous_documents_are_preserved(): void
+    {
+        Storage::fake('local');
+        $previous = '%PDF-1.4 synthetic historical document';
+        Storage::disk('local')->put('historical/summary.pdf', $previous);
+        foreach ([AffiliationApplicationPurpose::InitialAffiliation, AffiliationApplicationPurpose::DataUpdate, AffiliationApplicationPurpose::ProfileCompletion] as $purpose) {
+            $application = new AffiliationApplication(['purpose' => $purpose->value]);
+            $sections = ['financial' => [...$this->validSectionPayload(AffiliationApplicationStep::Financial), 'equityValue' => '-500']];
+            $html = view('pdf.affiliation.summary', ['application' => $application, 'sections' => $sections, 'signature' => [], 'logoDataUri' => null])->render();
+            if ($purpose === AffiliationApplicationPurpose::InitialAffiliation) {
+                $this->assertStringContainsString('Ahorro voluntario', $html);
+            } else {
+                $this->assertStringNotContainsString('Ahorro voluntario', $html);
+            }
+            $this->assertStringContainsString('$ -500', $html);
+            $pdf = app(RendersAffiliationSubmissionDocuments::class)->affiliationSummary($application, $sections, []);
+            $this->assertStringStartsWith('%PDF-', $pdf);
+        }
+        $this->assertSame($previous, Storage::disk('local')->get('historical/summary.pdf'));
     }
 
     private function completeSections(AffiliationApplication $application): void

@@ -16,7 +16,7 @@ import {
   Users,
 } from 'lucide-react';
 import StatutesBookViewer from '../sections/StatutesBookViewer';
-import { calculateFinancialAmounts, synchronizePrincipalIncome } from './financialCalculations';
+import { calculateFinancialAmounts, synchronizePrincipalIncome, financialPayload, MAX_COMPONENT_AMOUNT, MAX_MONTHLY_TOTAL } from './financialCalculations';
 import {
   acceptAffiliationConsent,
   affiliationDownloadUrl,
@@ -219,7 +219,7 @@ const POLICY_VERSION = 'afiliacion-v1';
 const NAME_MAX_LENGTH = 35;
 const TEXT_MAX_LENGTH = 120;
 const MIN_MONTHLY_SALARY = 1750905;
-const MONEY_MAX_VALUE = 10000000000;
+const MONEY_MAX_VALUE = MAX_COMPONENT_AMOUNT;
 const MONEY_MAX_DIGITS = String(MONEY_MAX_VALUE).length;
 const MONEY_MAX_DISPLAY_LENGTH = '10.000.000.000'.length;
 const MAX_DOCUMENT_BYTES = 5 * 1024 * 1024;
@@ -613,7 +613,7 @@ function createBeneficiary(): BeneficiaryData {
   };
 }
 
-function createInitialState(): SectionState {
+export function createInitialState(): SectionState {
   return {
     personal: {
       documentType: 'CC',
@@ -719,7 +719,7 @@ function createInitialState(): SectionState {
   };
 }
 
-function validateCurrentStep(
+export function validateCurrentStep(
   step: number,
   state: SectionState,
   uploadedDocumentTypes = new Set<RequiredDocumentType>(),
@@ -765,18 +765,25 @@ function validateCurrentStep(
   }
 
   if (step === 2) {
-    const missing = missingFields(state.financial as unknown as Record<string, unknown>, requiredBySection.financial);
+    const missing = missingFields(state.financial as unknown as Record<string, unknown>,
+      requiredBySection.financial.filter((field) => !isFormOnly || field !== 'voluntarySavings'));
     if (missing.length > 0) {
       return `Faltan campos obligatorios: ${friendlyList(missing.map((key) => requiredLabels[key] ?? key))}.`;
     }
-    if (state.financial.voluntarySavings === 'Si' && isBlank(state.financial.voluntarySavingsValue)) {
+    for (const field of ['principalIncome', 'otherIncome', 'monthlyExpenses', 'financialObligations', 'assetsValue', 'liabilitiesValue'] as const) {
+      const value = Number(state.financial[field] || '0');
+      if (!Number.isFinite(value) || value < 0 || value > MONEY_MAX_VALUE) {
+        return `Cada componente debe estar entre cero y ${moneyLabel(MONEY_MAX_VALUE)}.`;
+      }
+    }
+    if (!isFormOnly && state.financial.voluntarySavings === 'Si' && isBlank(state.financial.voluntarySavingsValue)) {
       return 'Indica el valor mensual del ahorro voluntario.';
     }
-    if (Number(state.financial.totalIncome) > MONEY_MAX_VALUE) {
-      return `El total de ingresos mensuales no puede superar ${moneyLabel(MONEY_MAX_VALUE)}. Ajusta sus componentes.`;
+    if (Number(state.financial.totalIncome) > MAX_MONTHLY_TOTAL) {
+      return `El total de ingresos mensuales no puede superar ${moneyLabel(MAX_MONTHLY_TOTAL)}. Ajusta sus componentes.`;
     }
-    if (Number(state.financial.totalExpenses) > MONEY_MAX_VALUE) {
-      return `El total de egresos mensuales no puede superar ${moneyLabel(MONEY_MAX_VALUE)}. Ajusta sus componentes.`;
+    if (Number(state.financial.totalExpenses) > MAX_MONTHLY_TOTAL) {
+      return `El total de egresos mensuales no puede superar ${moneyLabel(MAX_MONTHLY_TOTAL)}. Ajusta sus componentes.`;
     }
   }
 
@@ -1499,7 +1506,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
         await syncSection('employment', state.employment);
         setMessage('Informacion laboral guardada.');
       } else if (step === 2) {
-        await syncSection('financial', state.financial);
+        await syncSection('financial', financialPayload(state.financial, isFormOnly));
         setMessage('Informacion economica guardada.');
       } else if (step === 3) {
         await syncSection('beneficiaries', {
@@ -1734,9 +1741,9 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
           icon={<Banknote size={22} />}
           eyebrow="Bloque 3"
           title="Informacion economica y productos del Fondo"
-          description="Ingresos, egresos, patrimonio y ahorro voluntario."
+          description={isFormOnly ? 'Ingresos, egresos y patrimonio. El ahorro voluntario se solicita desde el portal.' : 'Ingresos, egresos, patrimonio y ahorro voluntario.'}
         />
-        {renderFields(financialFields, state.financial, (next) =>
+        {renderFields(financialFields.filter((field) => !isFormOnly || field.key !== 'voluntarySavings'), state.financial, (next) =>
           setState((current) => {
             const editableValues = {
               ...current.financial,
@@ -1756,7 +1763,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
         'financial', {
           disabledKeys: calculatedFinancialFieldKeys,
         })}
-        {state.financial.voluntarySavings === 'Si' ? (
+        {!isFormOnly && (state.financial.voluntarySavings === 'Si' ? (
           <Field label="Valor mensual del ahorro voluntario" required>
             <TextInput
               inputMode="numeric"
@@ -1777,7 +1784,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-500">
             Si no desea ahorro voluntario, puede continuar.
           </div>
-        )}
+        ))}
       </div>
     );
   }
@@ -2541,7 +2548,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
           ['Activos', moneyLabel(Number(state.financial.assetsValue || '0'))],
           ['Pasivos', moneyLabel(Number(state.financial.liabilitiesValue || '0'))],
           ['Patrimonio', moneyLabel(Number(state.financial.equityValue || '0'))],
-          ['Ahorro voluntario', state.financial.voluntarySavings === 'Si' ? moneyLabel(Number(state.financial.voluntarySavingsValue || '0')) : 'No'],
+          ...(!isFormOnly ? [['Ahorro voluntario', state.financial.voluntarySavings === 'Si' ? moneyLabel(Number(state.financial.voluntarySavingsValue || '0')) : 'No']] as Array<[string, string]> : []),
         ])}
 
         <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
@@ -3002,7 +3009,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
                 const active = index === step;
                 const done = index < step;
                 const title = isFormOnly && item.key === 'final' ? 'Autorizaciones y cierre' : item.title;
-                const description = isFormOnly && item.key === 'final'
+                const description = isFormOnly && item.key === 'financial' ? 'Ingresos, egresos y patrimonio.' : isFormOnly && item.key === 'final'
                   ? 'Declaraciones, autorizaciones y firma.'
                   : item.description;
 

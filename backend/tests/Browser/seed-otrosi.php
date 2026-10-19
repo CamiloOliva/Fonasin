@@ -8,6 +8,7 @@ use App\Application\Affiliation\UseCases\RequestAffiliationCorrection;
 use App\Application\Affiliation\UseCases\SaveApplicationSection;
 use App\Application\Affiliation\UseCases\StartAffiliationReview;
 use App\Application\Affiliation\UseCases\SubmitAffiliationApplication;
+use App\Application\Portal\UseCases\StartAssociateAffiliationUpdate;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationPurpose;
@@ -122,6 +123,39 @@ $payloads = new class
         };
     }
 };
+// Separate synthetic accounts exercise both profile-only purposes without
+// replacing a real affiliation or creating operational savings requests.
+foreach (['profile_completion', 'data_update'] as $purpose) {
+    $email = "{$purpose}-{$run}@example.test";
+    $user = User::query()->create(['email' => $email, 'password' => $password, 'status' => 'active', 'must_change_password' => false]);
+    $user->roles()->attach(Role::query()->firstOrCreate(['name' => 'associate']));
+    $document = '901'.random_int(1000000, 9999999);
+    $associate = Associate::query()->create([
+        'user_id' => $user->id, 'document_type' => 'CC',
+        'document_number_hash' => app(HashesSensitiveData::class)->documentNumber($document),
+        'document_number_encrypted' => app(EncryptsSensitiveData::class)->encryptArray(['document_number' => $document]),
+        'full_name' => 'Synthetic profile '.$purpose, 'status' => 'active',
+    ]);
+    if ($purpose === 'data_update') {
+        $associate->affiliationApplications()->create(['purpose' => 'initial_affiliation', 'status' => 'enabled', 'current_step' => 'summary']);
+    }
+    $profileDraft = app(StartAssociateAffiliationUpdate::class)($user);
+    foreach (AffiliationApplicationStep::formSections() as $step) {
+        $data = $payloads->payload($step);
+        if ($step === AffiliationApplicationStep::Personal) {
+            $data = [...$data, 'documentNumber' => $document, 'email' => $email];
+        } elseif ($step === AffiliationApplicationStep::Employment) {
+            $data['monthlySalary'] = '10000000000';
+        } elseif ($step === AffiliationApplicationStep::Financial) {
+            foreach (['principalIncome', 'otherIncome', 'monthlyExpenses', 'financialObligations'] as $field) {
+                $data[$field] = '10000000000';
+            }
+            $data['totalIncome'] = $data['totalExpenses'] = '20000000000';
+        }
+        app(SaveApplicationSection::class)($profileDraft, $step, 1, $data, now());
+    }
+    $fixture[$purpose] = ['email' => $email, 'application' => $profileDraft->id];
+}
 $correctionApplication = app(CreateAffiliationDraft::class)();
 foreach (AffiliationApplicationStep::formSections() as $step) {
     app(SaveApplicationSection::class)($correctionApplication, $step, 1, $payloads->payload($step), now());

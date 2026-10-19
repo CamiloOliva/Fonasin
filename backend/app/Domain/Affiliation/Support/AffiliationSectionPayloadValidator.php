@@ -14,15 +14,17 @@ class AffiliationSectionPayloadValidator
 
     private const MAX_MONEY_VALUE = 10000000000;
 
+    private const MAX_MONTHLY_TOTAL = 20000000000;
+
     /**
      * @param  array<string, mixed>  $data
      */
-    public function validateCompleted(AffiliationApplicationStep $section, array $data): void
+    public function validateCompleted(AffiliationApplicationStep $section, array $data, bool $formOnly = false): void
     {
         match ($section) {
             AffiliationApplicationStep::Personal => $this->validatePersonal($section, $data),
             AffiliationApplicationStep::Employment => $this->validateEmployment($section, $data),
-            AffiliationApplicationStep::Financial => $this->validateFinancial($section, $data),
+            AffiliationApplicationStep::Financial => $this->validateFinancial($section, $data, $formOnly),
             AffiliationApplicationStep::Beneficiaries => $this->validateBeneficiaries($section, $data),
             AffiliationApplicationStep::Sarlaft => $this->validateSarlaft($section, $data),
             default => null,
@@ -144,7 +146,7 @@ class AffiliationSectionPayloadValidator
     /**
      * @param  array<string, mixed>  $data
      */
-    private function validateFinancial(AffiliationApplicationStep $section, array $data): void
+    private function validateFinancial(AffiliationApplicationStep $section, array $data, bool $formOnly): void
     {
         $this->requireFields($section, $data, [
             'principalIncome',
@@ -155,7 +157,7 @@ class AffiliationSectionPayloadValidator
             'liabilitiesValue',
             'equityValue',
             'incomeBand',
-            'voluntarySavings',
+            ...($formOnly ? [] : ['voluntarySavings']),
         ]);
 
         foreach ([
@@ -173,7 +175,8 @@ class AffiliationSectionPayloadValidator
             }
 
             $this->requireNonNegativeNumber($section, $data, $field);
-            $this->requireMoneyLimit($section, $data, $field);
+            $this->requireMoneyLimit($section, $data, $field,
+                in_array($field, ['totalIncome', 'totalExpenses'], true) ? self::MAX_MONTHLY_TOTAL : self::MAX_MONEY_VALUE);
         }
 
         $this->requireSignedMoneyLimit($section, $data, 'equityValue');
@@ -181,11 +184,11 @@ class AffiliationSectionPayloadValidator
         $this->requireCalculatedMoney($section, $data, 'totalExpenses', ['monthlyExpenses', 'financialObligations']);
         $this->requireCalculatedMoney($section, $data, 'equityValue', ['assetsValue', 'liabilitiesValue'], true);
 
-        if ($this->isYes($data['voluntarySavings']) && $this->isBlank($data['voluntarySavingsValue'] ?? null)) {
+        if (! $formOnly && $this->isYes($data['voluntarySavings'] ?? null) && $this->isBlank($data['voluntarySavingsValue'] ?? null)) {
             throw CannotSaveApplicationSection::missingRequiredFields($section->value, ['voluntarySavingsValue']);
         }
 
-        if (! $this->isBlank($data['voluntarySavingsValue'] ?? null)) {
+        if (! $formOnly && ! $this->isBlank($data['voluntarySavingsValue'] ?? null)) {
             $this->requireNonNegativeNumber($section, $data, 'voluntarySavingsValue');
             $this->requireMoneyLimit($section, $data, 'voluntarySavingsValue');
         }
@@ -410,11 +413,11 @@ class AffiliationSectionPayloadValidator
     /**
      * @param  array<string, mixed>  $data
      */
-    private function requireMoneyLimit(AffiliationApplicationStep $section, array $data, string $field): void
+    private function requireMoneyLimit(AffiliationApplicationStep $section, array $data, string $field, int $maximum = self::MAX_MONEY_VALUE): void
     {
         $value = $this->numberValue($data[$field] ?? null);
 
-        if ($value === null || $value > self::MAX_MONEY_VALUE) {
+        if ($value === null || $value > $maximum) {
             throw CannotSaveApplicationSection::invalidField($section->value, $field, 'supera el limite de monto permitido');
         }
     }

@@ -37,10 +37,19 @@ function IconPill({
 }
 
 export default function Footer() {
-  const [showEmail, setShowEmail] = useState(false);
+  const [emailCopyStatus, setEmailCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
   const { content } = usePublicContent();
   const currentYear = new Date().getFullYear();
   const contactEmail = content?.settings.contact_email || CONTACT_EMAIL;
+  async function copyEmail() {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(contactEmail);
+      setEmailCopyStatus('copied');
+    } catch {
+      setEmailCopyStatus('failed');
+    }
+  }
   const socialLinks = [
     { label: 'Facebook', icon: Globe, href: content ? officialSocialUrl(content.settings.facebook_url ?? undefined, ['facebook.com']) : OFFICIAL_SOCIAL_URLS.facebook },
     { label: 'Instagram', icon: Instagram, href: content ? officialSocialUrl(content.settings.instagram_url ?? undefined, ['instagram.com']) : OFFICIAL_SOCIAL_URLS.instagram },
@@ -158,12 +167,13 @@ export default function Footer() {
                 WhatsApp
               </a>
               <div>
-                <button type="button" aria-expanded={showEmail} onClick={() => setShowEmail((value) => !value)}
+                <p className="ml-7 mt-1 select-text break-all text-sm text-white">{contactEmail}</p>
+                <button type="button" onClick={copyEmail}
                   className="group flex items-center gap-3 text-sm font-medium  transition hover:text-white">
                   <ChevronRight className="h-4 w-4 text-[#d9d500] transition group-hover:translate-x-1" />
-                  Correo
+                  Copiar correo
                 </button>
-                {showEmail && <p className="ml-7 mt-1 break-all text-sm text-white">{contactEmail}</p>}
+                <p role="status" className="ml-7 mt-1 text-sm text-white">{emailCopyStatus === 'copied' ? 'Correo copiado' : emailCopyStatus === 'failed' ? 'No fue posible copiar automaticamente. Selecciona la direccion visible y copiala manualmente.' : ''}</p>
               </div>
               <div className="flex items-start gap-3 text-sm font-medium ">
                 <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-[#d9d500]" />

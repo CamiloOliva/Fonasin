@@ -5,6 +5,7 @@ namespace App\Application\Affiliation\UseCases;
 use App\Application\Affiliation\Exceptions\CannotSaveApplicationSection;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
+use App\Domain\Affiliation\Support\AffiliationFinancialData;
 use App\Domain\Affiliation\Support\AffiliationSectionPayloadValidator;
 use App\Models\AffiliationApplication;
 use App\Models\ApplicationSection;
@@ -32,8 +33,11 @@ class SaveApplicationSection
             throw CannotSaveApplicationSection::unsupportedSection($section->value);
         }
 
+        if ($section === AffiliationApplicationStep::Financial) {
+            $data = AffiliationFinancialData::forForm($data, $application->isFormOnly());
+        }
         if ($completedAt !== null) {
-            $this->validator->validateCompleted($section, $data);
+            $this->validator->validateCompleted($section, $data, $application->isFormOnly());
         }
 
         return DB::transaction(function () use ($application, $section, $schemaVersion, $data, $completedAt) {

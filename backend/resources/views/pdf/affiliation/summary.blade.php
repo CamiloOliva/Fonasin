@@ -45,7 +45,7 @@
     $money = static function (array $payload, string $key): string {
         $raw = $payload[$key] ?? null;
         if ($raw === null || $raw === '') return 'No registra';
-        return '$ '.number_format((float) preg_replace('/[^\d.]/', '', (string) $raw), 0, ',', '.');
+        return '$ '.number_format((float) preg_replace('/[^\d.-]/', '', (string) $raw), 0, ',', '.');
     };
     $list = static function (mixed $items): string {
         if (! is_array($items)) return filled($items) ? (string) $items : 'No registra';
@@ -153,8 +153,10 @@
         <tr>
             <td><span class="label">Gastos mensuales</span><span class="value">{{ $money($financial, 'monthlyExpenses') }}</span></td>
             <td><span class="label">Obligaciones financieras</span><span class="value">{{ $money($financial, 'financialObligations') }}</span></td>
-            <td><span class="label">Total egresos mensuales</span><span class="value">{{ $money($financial, 'totalExpenses') }}</span></td>
+            <td colspan="{{ $application->isFormOnly() ? 2 : 1 }}"><span class="label">Total egresos mensuales</span><span class="value">{{ $money($financial, 'totalExpenses') }}</span></td>
+            @if (! $application->isFormOnly())
             <td><span class="label">Ahorro voluntario</span><span class="value">{{ $value($financial, 'voluntarySavings') }} @if (($financial['voluntarySavings'] ?? null) === 'Si') - {{ $money($financial, 'voluntarySavingsValue') }} @endif</span></td>
+            @endif
         </tr>
         <tr>
             <td><span class="label">Activos</span><span class="value">{{ $money($financial, 'assetsValue') }}</span></td>

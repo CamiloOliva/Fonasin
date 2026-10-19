@@ -7,6 +7,7 @@ use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
 use App\Domain\Affiliation\Enums\ApplicationDocumentType;
+use App\Domain\Affiliation\Support\AffiliationFinancialData;
 use App\Models\AffiliationApplication;
 use App\Models\ApplicationDocument;
 use App\Models\User;
@@ -33,6 +34,7 @@ class GenerateAffiliationSubmissionDocuments
         ?string $signatureDate = null,
     ): array {
         $sections = $this->decryptedSections($application);
+        $sections['financial'] = AffiliationFinancialData::forForm($sections['financial'] ?? [], $application->isFormOnly());
         $generatedAt ??= now();
         $signature = $this->signatureContext($application, $sections, $generatedAt, $ipHash, $signatureCity, $signatureDate);
         $summaryPdf = $this->renderer->affiliationSummary($application, $sections, $signature);

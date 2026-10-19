@@ -9,6 +9,7 @@ use App\Domain\Affiliation\Enums\AffiliationApplicationPurpose;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStatus;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\AffiliationAuditAction;
+use App\Domain\Affiliation\Support\AffiliationFinancialData;
 use App\Domain\Audit\Enums\AuditActorType;
 use App\Domain\Audit\Enums\AuditModule;
 use App\Models\AffiliationApplication;
@@ -58,6 +59,14 @@ class StartAssociateAffiliationUpdate
                 ->first();
 
             if ($draft) {
+                $financial = $draft->sections()->where('section', AffiliationApplicationStep::Financial->value)->first();
+                if ($financial) {
+                    $payload = $this->cipher->decryptArray($financial->getAttribute('data_encrypted'));
+                    $cleaned = AffiliationFinancialData::forForm($payload, true);
+                    if ($cleaned !== $payload) {
+                        $financial->forceFill(['data_encrypted' => $this->cipher->encryptArray($cleaned)])->save();
+                    }
+                }
                 if ($draft->status === AffiliationApplicationStatus::PendingCorrection->value) {
                     $draft->corrections()->whereNull('completed_at')->whereNull('revoked_at')
                         ->update(['expires_at' => now()->addHours(24)]);
@@ -93,7 +102,10 @@ class StartAssociateAffiliationUpdate
 
                     $draftSection->forceFill([
                         'schema_version' => $sourceSection->schema_version,
-                        'data_encrypted' => $sourceSection->getAttribute('data_encrypted'),
+                        'data_encrypted' => $sourceSection->section === AffiliationApplicationStep::Financial->value
+                            ? $this->cipher->encryptArray(AffiliationFinancialData::forForm(
+                                $this->cipher->decryptArray($sourceSection->getAttribute('data_encrypted')), true))
+                            : $sourceSection->getAttribute('data_encrypted'),
                         'completed_at' => null,
                     ])->save();
                 }
