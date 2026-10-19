@@ -283,6 +283,9 @@ for (const purpose of ['profile_completion', 'data_update']) {
           assert.equal(await page.getByLabel('Valor mensual del ahorro voluntario', { exact: false }).count(), 0);
           assert.equal(await page.getByLabel('Total ingresos mensuales', { exact: false }).inputValue(), '20.000.000.000');
           assert.equal(await page.getByLabel('Total egresos mensuales', { exact: false }).inputValue(), '20.000.000.000');
+          await page.getByLabel('Valor aproximado de activos', { exact: false }).fill('0,10');
+          await page.getByLabel('Valor aproximado de pasivos', { exact: false }).fill('0,30');
+          assert.equal(await page.getByLabel('Patrimonio aproximado', { exact: false }).inputValue(), '-0,2');
         }
         const saved = page.waitForResponse(response => response.url().includes(`/sections/${section}?`) && response.request().method() === 'POST');
         await page.getByRole('button', { name: 'Guardar y continuar', exact: true }).click();
@@ -293,6 +296,17 @@ for (const purpose of ['profile_completion', 'data_update']) {
           assert.equal('voluntarySavings' in body, false);
           assert.equal('voluntarySavingsValue' in body, false);
           assert.equal(body.totalIncome, '20000000000');
+          assert.equal(body.equityValue, '-0.2');
+          const noSession = await browser.newContext({ baseURL });
+          try {
+            const rejected = await noSession.request.post(response.url(), {
+              data: response.request().postDataJSON(),
+              headers: { Accept: 'application/json', 'X-Affiliation-Draft-Token': response.request().headers()['x-affiliation-draft-token'] },
+            });
+            assert.equal(rejected.status(), 403);
+          } finally {
+            await noSession.close();
+          }
         }
       }
       await page.getByLabel('Ciudad', { exact: false }).fill('Bucaramanga');
@@ -308,6 +322,16 @@ for (const purpose of ['profile_completion', 'data_update']) {
       assert.equal(result.id, fixture[purpose].application);
       assert.equal(result.generated_documents.length, 1);
       assert.equal(result.generated_documents[0].document_type, 'affiliation_summary');
+      const privatePdf = result.generated_documents[0].links.preview;
+      const ownPdf = await context.request.get(privatePdf);
+      assert.equal(ownPdf.status(), 200);
+      assert.ok((await ownPdf.body()).subarray(0, 5).equals(Buffer.from('%PDF-')));
+      const anonymous = await browser.newContext({ baseURL });
+      try {
+        assert.equal((await anonymous.request.get(privatePdf)).status(), 403);
+      } finally {
+        await anonymous.close();
+      }
       assert.deepEqual(errors, []);
     } finally {
       await context.close();

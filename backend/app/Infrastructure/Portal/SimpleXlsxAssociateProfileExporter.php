@@ -3,6 +3,7 @@
 namespace App\Infrastructure\Portal;
 
 use App\Application\Portal\Contracts\ExportsAssociateProfiles;
+use App\Domain\Shared\Support\DecimalMoney;
 use Shuchkin\SimpleXLSXGen;
 
 class SimpleXlsxAssociateProfileExporter implements ExportsAssociateProfiles
@@ -128,10 +129,11 @@ class SimpleXlsxAssociateProfileExporter implements ExportsAssociateProfiles
             return $this->safeCell((string) $value);
         }
         // Convert only known monetary fields. Numeric-looking IDs must remain text.
-        if (in_array($field, self::MONEY_FIELDS, true) && is_string($value)
-            && preg_match('/^-?\d+(?:\.\d{1,2})?$/D', $value) === 1
-            && is_finite((float) $value) && abs((float) $value) <= 999999999999.99) {
-            return (float) $value;
+        if (in_array($field, self::MONEY_FIELDS, true)) {
+            $canonical = DecimalMoney::canonical($value);
+            if ($canonical !== null) {
+                return (float) $canonical;
+            }
         }
 
         return $this->safeCell($value);

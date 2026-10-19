@@ -27,3 +27,56 @@ No se implementan cambios visuales indeterminados de ciudades o convenios. Recep
 - FPQRS ya corregido en la base: la suite completa conserva sus regresiones de adjuntos PDF/PNG/JPEG, sin archivo y fallos de lectura/almacenamiento/envio. Esta evidencia es local; no acredita recepcion SMTP real, CI remoto ni produccion.
 
 No se publicaron estos cambios ni se modificaron `main`, cPanel o datos reales durante esta validacion.
+
+## Reauditoria posterior: dos brechas concretas
+
+La revision posterior encontro dos casos no cubiertos por aquella bateria: un
+borrador privado admitia enlace/token sin sesion, y el parser monetario eliminaba
+caracteres pero guardaba el valor original, que podia terminar como texto en XLSX.
+El verde anterior no acredita esos casos. Se agregaron regresiones que fallaron
+antes de aplicar las correcciones.
+
+- Se exige titular activo en ambos propositos privados y ambos estados editables,
+  para leer, guardar, consentir y enviar. El resumen emitido exige titularidad en
+  preview/descarga, tambien en enlaces firmados sin contexto explicito. Los enlaces
+  de afiliacion inicial siguen siendo publicos y los administrativos conservan policy.
+- Un decimal canonico compartido admite numeros sin separadores de miles, hasta
+  dos decimales, y elimina solo ceros no significativos. No acepta formulas, texto,
+  notacion cientifica textual, booleanos, arrays, no finitos ni exceso de precision.
+  Los campos monetarios conocidos se normalizan antes de cifrar, incluso en
+  guardado parcial; se mantienen los maximos del formulario. No se modifica el
+  parser localizado de importaciones ni se migran datos historicos.
+- La pantalla edita coma decimal y miles agrupados, envia punto decimal y calcula
+  totales mediante centavos enteros. Resumen/libranza y XLSX conservan centavos.
+  Un valor historico no canonico se conserva como texto protegido en XLSX, no se
+  convierte silenciosamente ni se ejecuta como formula.
+- Los envios privados registran el usuario autenticado como actor, no un actor
+  de sistema. La auditoria no contiene importes ni payloads sensibles.
+
+La comprobacion de esta correccion debe distinguir las nuevas regresiones del
+resultado anterior; ninguna evidencia local acredita SMTP real o produccion.
+
+### Evidencia de la correccion posterior
+
+- Antes de corregir: los nuevos casos reprodujeron respuestas 200 donde debian
+  existir 403/422 y persistencia/exportacion no canonica. No se uso ese resultado
+  como aprobacion. Las pruebas antiguas de envio privado se actualizaron para
+  crear y autenticar un titular real, sin quitar sus verificaciones de negocio.
+- Despues de corregir: backend completo en MariaDB, 490 aprobadas y 2737 aserciones,
+  sin saltos; SQLite, 464 aprobadas y 26 saltadas, con 2664 aserciones.
+- Frontend completo: 130 aprobadas en 20 archivos; TypeScript/Vite compilados.
+  Persiste el aviso no bloqueante de chunks mayores de 500 kB.
+- Chrome/Laravel/Vite/MariaDB locales: cinco recorridos completos aprobados y dos
+  comprobaciones de tema responsive aprobadas. Ambos formularios privados guardan
+  los totales maximos, calculan patrimonio con centavos y rechazan POST anonimo
+  aun con firma/token validos; el titular obtiene su PDF y el anonimo recibe 403.
+- Las pruebas HTTP cubren ambos propositos/estados editables y titular ajeno,
+  cuenta/asociado inactivos, contrasena pendiente, token ausente/incorrecto y
+  firma ausente. Tambien verifican los diez campos financieros, guardado parcial
+  y completo, conservacion del dato previo ante 422, cifrado y celdas XLSX reales.
+- Auditorias npm/Composer sin avisos de vulnerabilidades conocidas reportados en
+  esta consulta; Pint y `git diff --check` correctos.
+
+Este cierre se limita a las dos brechas reproducidas y sus regresiones locales.
+No certifica ausencia universal de vulnerabilidades, recepcion SMTP real, CI
+remoto ni aceptacion de FONASIN. No hubo migracion ni modificacion de datos reales.

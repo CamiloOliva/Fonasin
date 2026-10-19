@@ -45,7 +45,8 @@
     $money = static function (array $payload, string $key): string {
         $raw = $payload[$key] ?? null;
         if ($raw === null || $raw === '') return 'No registra';
-        return '$ '.number_format((float) preg_replace('/[^\d.-]/', '', (string) $raw), 0, ',', '.');
+        $canonical = \App\Domain\Shared\Support\DecimalMoney::canonical($raw);
+        return $canonical === null ? 'No registra' : '$ '.rtrim(rtrim(number_format((float) $canonical, 2, ',', '.'), '0'), ',');
     };
     $list = static function (mixed $items): string {
         if (! is_array($items)) return filled($items) ? (string) $items : 'No registra';

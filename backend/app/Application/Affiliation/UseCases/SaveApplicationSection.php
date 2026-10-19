@@ -36,6 +36,7 @@ class SaveApplicationSection
         if ($section === AffiliationApplicationStep::Financial) {
             $data = AffiliationFinancialData::forForm($data, $application->isFormOnly());
         }
+        $data = $this->validator->normalizeMoneyData($section, $data);
         if ($completedAt !== null) {
             $this->validator->validateCompleted($section, $data, $application->isFormOnly());
         }

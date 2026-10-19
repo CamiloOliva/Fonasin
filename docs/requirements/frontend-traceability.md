@@ -8,6 +8,13 @@ Fuente funcional: `02_GUIA_EQUIPO_FRONTEND_WEB_AFILIACION_PORTAL_V2.docx`, versi
 
 Ultima actualizacion: 19 de octubre de 2026, ajustes de sumatorias, tasas, ficha XLSX, ahorro separado de formularios de perfil y copia de correo (ADR-009). Las reglas funcionales base constan en ADR-005. Aun pendiente validacion visual y aceptacion final.
 
+Reauditoria posterior del mismo dia: los formularios privados y sus nuevos PDF
+exigen titular autenticado, ademas de enlace firmado/token donde corresponda.
+El formulario distingue agrupadores de miles y coma decimal al editar; envia
+decimal canonico y calcula sumatorias en centavos enteros. Los PDF y XLSX no
+multiplican ni eliminan centavos. Ver regresiones de autorizacion y contrato
+monetario y la seccion de reauditoria en ADR-009; no implica aceptacion productiva.
+
 ## Estados permitidos
 
 | Estado | Significado |

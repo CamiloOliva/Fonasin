@@ -4,6 +4,7 @@ namespace App\Domain\Affiliation\Support;
 
 use App\Application\Affiliation\Exceptions\CannotSaveApplicationSection;
 use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
+use App\Domain\Shared\Support\DecimalMoney;
 use DateTimeImmutable;
 
 class AffiliationSectionPayloadValidator
@@ -15,6 +16,32 @@ class AffiliationSectionPayloadValidator
     private const MAX_MONEY_VALUE = 10000000000;
 
     private const MAX_MONTHLY_TOTAL = 20000000000;
+
+    /** Normalize only declared monetary fields, also on partial saves. */
+    public function normalizeMoneyData(AffiliationApplicationStep $section, array $data): array
+    {
+        $fields = match ($section) {
+            AffiliationApplicationStep::Employment => ['monthlySalary'],
+            AffiliationApplicationStep::Financial => ['principalIncome', 'otherIncome', 'totalIncome', 'monthlyExpenses', 'financialObligations', 'totalExpenses', 'assetsValue', 'liabilitiesValue', 'equityValue', 'voluntarySavingsValue'],
+            default => [],
+        };
+        foreach ($fields as $field) {
+            if (! array_key_exists($field, $data) || $data[$field] === null || $data[$field] === '') {
+                continue;
+            }
+            $canonical = DecimalMoney::canonical($data[$field]);
+            if ($canonical === null) {
+                throw CannotSaveApplicationSection::invalidField($section->value, $field, 'debe ser un importe decimal sin separadores de miles y con maximo dos decimales');
+            }
+            $maximum = in_array($field, ['totalIncome', 'totalExpenses'], true) ? self::MAX_MONTHLY_TOTAL : self::MAX_MONEY_VALUE;
+            if (abs((float) $canonical) > $maximum || ($field !== 'equityValue' && (float) $canonical < 0)) {
+                throw CannotSaveApplicationSection::invalidField($section->value, $field, 'supera el limite de monto permitido');
+            }
+            $data[$field] = $canonical;
+        }
+
+        return $data;
+    }
 
     /**
      * @param  array<string, mixed>  $data
@@ -704,20 +731,8 @@ class AffiliationSectionPayloadValidator
 
     private function numberValue(mixed $value): ?float
     {
-        if (is_int($value) || is_float($value)) {
-            return (float) $value;
-        }
+        $canonical = DecimalMoney::canonical($value);
 
-        if (! is_string($value)) {
-            return null;
-        }
-
-        $normalized = preg_replace('/[^\d.-]/', '', $value);
-
-        if ($normalized === null || $normalized === '' || ! is_numeric($normalized)) {
-            return null;
-        }
-
-        return (float) $normalized;
+        return $canonical === null ? null : (float) $canonical;
     }
 }

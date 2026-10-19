@@ -40,7 +40,7 @@
 <body>
 @php
     $signature = $payroll['signature'] ?? [];
-    $money = static fn (mixed $value): string => '$ '.number_format((float) $value, 0, ',', '.');
+    $money = static fn (mixed $value): string => '$ '.rtrim(rtrim(number_format((float) $value, 2, ',', '.'), '0'), ',');
 @endphp
 
 <div class="topbar">

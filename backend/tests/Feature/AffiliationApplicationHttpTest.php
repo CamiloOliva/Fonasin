@@ -13,6 +13,8 @@ use App\Domain\Affiliation\Enums\AffiliationApplicationStep;
 use App\Domain\Affiliation\Enums\ApplicationDocumentType;
 use App\Domain\Affiliation\Enums\ConsentType;
 use App\Models\AffiliationApplication;
+use App\Models\Associate;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\RateLimiter;
@@ -261,6 +263,8 @@ class AffiliationApplicationHttpTest extends TestCase
             ->assertJsonPath('data.purpose', AffiliationApplicationPurpose::DataUpdate->value)
             ->assertJsonCount(1, 'data.generated_documents')
             ->assertJsonPath('data.generated_documents.0.document_type', ApplicationDocumentType::AffiliationSummary->value);
+
+        $this->assertDatabaseHas('audit_events', ['subject_id' => $application->id, 'action' => 'application.submitted', 'actor_user_id' => auth()->id()]);
 
         $this->assertDatabaseMissing('application_documents', [
             'application_id' => $application->id,
@@ -784,6 +788,16 @@ class AffiliationApplicationHttpTest extends TestCase
      */
     private function protectDraft(AffiliationApplication $application, string $token = 'test-draft-token'): array
     {
+        if ($application->isFormOnly()) {
+            $owner = User::factory()->create(['status' => 'active', 'must_change_password' => false]);
+            $associate = Associate::query()->create([
+                'user_id' => $owner->id, 'document_type' => 'CC', 'full_name' => 'Synthetic profile owner', 'status' => 'active',
+                'document_number_hash' => hash('sha256', $owner->id),
+                'document_number_encrypted' => app(EncryptsSensitiveData::class)->encryptArray(['document_number' => '9000000001']),
+            ]);
+            $application->forceFill(['associate_id' => $associate->id])->save();
+            $this->actingAs($owner);
+        }
         $application->forceFill([
             'access_token_hash' => hash('sha256', $token),
         ])->save();

@@ -16,7 +16,7 @@ import {
   Users,
 } from 'lucide-react';
 import StatutesBookViewer from '../sections/StatutesBookViewer';
-import { calculateFinancialAmounts, synchronizePrincipalIncome, financialPayload, MAX_COMPONENT_AMOUNT, MAX_MONTHLY_TOTAL } from './financialCalculations';
+import { calculateFinancialAmounts, synchronizePrincipalIncome, financialPayload, formatFinancialMoney, financialMoneyInput, MAX_COMPONENT_AMOUNT, MAX_MONTHLY_TOTAL } from './financialCalculations';
 import {
   acceptAffiliationConsent,
   affiliationDownloadUrl,
@@ -220,8 +220,7 @@ const NAME_MAX_LENGTH = 35;
 const TEXT_MAX_LENGTH = 120;
 const MIN_MONTHLY_SALARY = 1750905;
 const MONEY_MAX_VALUE = MAX_COMPONENT_AMOUNT;
-const MONEY_MAX_DIGITS = String(MONEY_MAX_VALUE).length;
-const MONEY_MAX_DISPLAY_LENGTH = '10.000.000.000'.length;
+const MONEY_MAX_DISPLAY_LENGTH = '10.000.000.000,00'.length;
 const MAX_DOCUMENT_BYTES = 5 * 1024 * 1024;
 const currencyFieldKeys = new Set([
   'monthlySalary',
@@ -897,15 +896,8 @@ export function validateCurrentStep(
   return null;
 }
 
-function currencyOnly(value: string): string {
-  return value.replace(/[^\d]/g, '');
-}
-
 function formatCurrency(value: string): string {
-  const sign = value.trim().startsWith('-') ? '-' : '';
-  const digits = currencyOnly(value);
-
-  return `${sign}${digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
+  return formatFinancialMoney(value);
 }
 
 function moneyLabel(value: number): string {
@@ -923,14 +915,7 @@ function documentUploadError(label: string, caught: unknown): Error {
 }
 
 function limitedCurrency(value: string): string {
-  const digits = currencyOnly(value).slice(0, MONEY_MAX_DIGITS);
-  const amount = Number(digits || '0');
-
-  if (amount > MONEY_MAX_VALUE) {
-    return String(MONEY_MAX_VALUE);
-  }
-
-  return digits;
+  return financialMoneyInput(value);
 }
 
 function isBlank(value: unknown): boolean {
@@ -1503,7 +1488,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
         await syncSection('personal', state.personal);
         setMessage('Datos personales guardados.');
       } else if (step === 1) {
-        await syncSection('employment', state.employment);
+        await syncSection('employment', financialPayload(state.employment, false));
         setMessage('Informacion laboral guardada.');
       } else if (step === 2) {
         await syncSection('financial', financialPayload(state.financial, isFormOnly));
@@ -1698,7 +1683,7 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
         />
         {renderFields(employmentFields, state.employment, (next) =>
           setState((current) => {
-            const nextMonthlySalary = currencyOnly(next.monthlySalary);
+            const nextMonthlySalary = next.monthlySalary;
             return {
               ...current,
               employment: {
@@ -1748,11 +1733,11 @@ export default function AffiliationForm({ flow = 'initial_affiliation' }: Affili
             const editableValues = {
               ...current.financial,
               ...next,
-              otherIncome: currencyOnly(next.otherIncome),
-              monthlyExpenses: currencyOnly(next.monthlyExpenses),
-              financialObligations: currencyOnly(next.financialObligations),
-              assetsValue: currencyOnly(next.assetsValue),
-              liabilitiesValue: currencyOnly(next.liabilitiesValue),
+              otherIncome: next.otherIncome,
+              monthlyExpenses: next.monthlyExpenses,
+              financialObligations: next.financialObligations,
+              assetsValue: next.assetsValue,
+              liabilitiesValue: next.liabilitiesValue,
             };
 
             return {

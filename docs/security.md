@@ -132,6 +132,24 @@ una imagen con extension PDF no obtiene autorizacion por su nombre.
 
 ## Lista de revision de seguridad
 
+### Reauditoria de formularios privados (19 de octubre de 2026)
+
+Los borradores `profile_completion` y `data_update` requieren sesion activa,
+contrasena ya actualizada y asociado titular activo en lectura, guardado,
+consentimientos y envio. Enlace firmado y token no sustituyen la sesion.
+La misma titularidad se exige en vista/descarga del resumen privado, incluso
+si un enlace emitido anteriormente no incluye `context=portal`. Los permisos
+administrativos y la afiliacion inicial publica conservan sus flujos separados.
+
+Los nuevos importes de formulario usan decimal canonico (punto decimal, sin
+agrupadores, maximo dos decimales); no se eliminan letras o simbolos para
+convertirlos silenciosamente. Tambien se comprueban los campos monetarios en
+guardados parciales. Los limites aprobados no cambian. El XLSX mantiene numeros
+para importes validos e identificadores como texto; los valores historicos no
+canonicos se conservan como texto literal protegido, sin convertir formulas ni
+reescribir registros o documentos emitidos. Esta politica no cambia el parser
+localizado independiente de las importaciones XLSX.
+
 - [ ] La ruta tiene autenticacion y policy cuando corresponde.
 - [ ] La validacion ocurre en servidor.
 - [ ] Los datos sensibles no aparecen en logs ni auditoria.

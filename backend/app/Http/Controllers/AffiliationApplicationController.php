@@ -350,6 +350,7 @@ class AffiliationApplicationController extends Controller
             $submitted = $submitApplication(
                 application: $application,
                 policyVersion: $request->string('policy_version')->toString(),
+                actor: $application->isFormOnly() ? $request->user() : null,
                 ipHash: $this->ipHash($request),
                 signatureCity: $request->string('signature_city')->toString(),
                 signatureDate: $request->string('signature_date')->toString(),
@@ -738,6 +739,11 @@ class AffiliationApplicationController extends Controller
         }
 
         abort_unless($context === self::DOCUMENT_CONTEXT_PUBLIC, 403);
+        if ($application->isFormOnly()) {
+            abort_unless($document->document_type === ApplicationDocumentType::AffiliationSummary->value, 403);
+
+            return $this->requireProfileOwner($request, $application);
+        }
         abort_if($document->document_type === ApplicationDocumentType::SignedPayrollAuthorization->value, 404);
         abort_unless(in_array($document->document_type, [
             ApplicationDocumentType::AffiliationSummary->value,
@@ -789,14 +795,11 @@ class AffiliationApplicationController extends Controller
     private function ensureDraftAccess(Request $request, AffiliationApplication $application): void
     {
         abort_unless(in_array($application->status, [AffiliationApplicationStatus::Draft->value, AffiliationApplicationStatus::PendingCorrection->value], true), 409, 'La solicitud ya fue enviada o cerrada.');
+        if ($application->isFormOnly()) {
+            $this->requireProfileOwner($request, $application);
+        }
         if ($application->status === AffiliationApplicationStatus::PendingCorrection->value) {
             abort_unless($application->corrections()->whereNull('completed_at')->whereNull('revoked_at')->where('expires_at', '>', now())->exists(), 403, 'El enlace de correccion vencio. Solicita uno nuevo a FONASIN.');
-            if ($application->isFormOnly()) {
-                $user = $request->user();
-                abort_unless($user && $user->status === 'active' && ! $user->must_change_password
-                    && $user->associate?->status === 'active'
-                    && $user->associate->id === $application->associate_id, 403);
-            }
         }
 
         $expectedHash = $application->access_token_hash;
@@ -809,6 +812,16 @@ class AffiliationApplicationController extends Controller
             && hash_equals($expectedHash, hash('sha256', $token)),
             403,
         );
+    }
+
+    private function requireProfileOwner(Request $request, AffiliationApplication $application): User
+    {
+        $user = $request->user();
+        abort_unless($user instanceof User && $user->status === 'active' && ! $user->must_change_password
+            && $user->associate?->status === 'active'
+            && $user->associate->id === $application->associate_id, 403);
+
+        return $user;
     }
 
     private function correctionPayload(AffiliationApplication $application, EncryptsSensitiveData $cipher): ?array
