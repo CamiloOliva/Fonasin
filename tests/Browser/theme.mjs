@@ -14,6 +14,27 @@ for (const width of [1440, 390]) test(`existing FONASIN theme at ${width}px`, { 
       ? route.continue() : route.abort());
     await page.goto(baseURL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.locator('header').waitFor();
+    const footer = page.locator('footer');
+    const revealEmail = footer.getByRole('button', { name: 'Correo', exact: true });
+    const emailAddress = footer.getByTitle('Copiar correo', { exact: true });
+    assert.equal(await revealEmail.getAttribute('aria-expanded'), 'false');
+    assert.equal(await emailAddress.isVisible(), false);
+    await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: async value => { window.__copiedEmail = value; } },
+    }));
+    await revealEmail.focus();
+    await page.keyboard.press('Enter');
+    await emailAddress.waitFor({ state: 'visible' });
+    assert.equal(await revealEmail.getAttribute('aria-expanded'), 'true');
+    assert.equal(await page.evaluate(() => window.__copiedEmail), undefined);
+    const expectedEmail = (await emailAddress.innerText()).trim();
+    await emailAddress.focus();
+    await page.keyboard.press('Space');
+    await footer.getByRole('status').getByText('Correo copiado', { exact: true }).waitFor();
+    assert.equal(await page.evaluate(() => window.__copiedEmail), expectedEmail);
+    assert.equal(await emailAddress.isVisible(), true);
+    assert.equal(await footer.locator('a[href^="mailto:"]').count(), 0);
     const actual = await page.evaluate(() => {
       const root = document.createElement('section'); root.id = 'theme-contract'; root.className = 'container-page';
       root.innerHTML = `

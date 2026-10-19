@@ -1,5 +1,5 @@
 import { ChevronRight, FileText, Globe, Home, Instagram, MessageCircle, Users, Youtube } from 'lucide-react';
-import { useState, type ComponentType } from 'react';
+import { useId, useState, type ComponentType } from 'react';
 import { Link } from 'react-router-dom';
 import { navigation } from '../../data/navigation';
 import { CONTACT_EMAIL, OFFICIAL_SOCIAL_URLS, WHATSAPP_URL } from '../../data/siteConfig';
@@ -37,6 +37,8 @@ function IconPill({
 }
 
 export default function Footer() {
+  const emailDetailsId = useId();
+  const [emailExpanded, setEmailExpanded] = useState(false);
   const [emailCopyStatus, setEmailCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
   const { content } = usePublicContent();
   const currentYear = new Date().getFullYear();
@@ -167,13 +169,19 @@ export default function Footer() {
                 WhatsApp
               </a>
               <div>
-                <p className="ml-7 mt-1 select-text break-all text-sm text-white">{contactEmail}</p>
-                <button type="button" onClick={copyEmail}
-                  className="group flex items-center gap-3 text-sm font-medium  transition hover:text-white">
+                <button type="button" onClick={() => setEmailExpanded(true)}
+                  aria-expanded={emailExpanded} aria-controls={emailDetailsId}
+                  className="group flex items-center gap-3 text-sm font-medium transition hover:text-white focus-ring">
                   <ChevronRight className="h-4 w-4 text-[#d9d500] transition group-hover:translate-x-1" />
-                  Copiar correo
+                  Correo
                 </button>
-                <p role="status" className="ml-7 mt-1 text-sm text-white">{emailCopyStatus === 'copied' ? 'Correo copiado' : emailCopyStatus === 'failed' ? 'No fue posible copiar automaticamente. Selecciona la direccion visible y copiala manualmente.' : ''}</p>
+                <div id={emailDetailsId} hidden={!emailExpanded} className="ml-7 mt-1">
+                  <button type="button" onClick={copyEmail} title="Copiar correo"
+                    className="select-text break-all text-left text-sm text-white underline underline-offset-4 focus-ring">
+                    {contactEmail}
+                  </button>
+                  <p role="status" className="mt-1 text-sm text-white">{emailCopyStatus === 'copied' ? 'Correo copiado' : emailCopyStatus === 'failed' ? 'No fue posible copiar automaticamente. Selecciona la direccion visible y copiala manualmente.' : ''}</p>
+                </div>
               </div>
               <div className="flex items-start gap-3 text-sm font-medium ">
                 <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-[#d9d500]" />
