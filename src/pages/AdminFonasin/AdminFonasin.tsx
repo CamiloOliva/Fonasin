@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { creditRateLabel } from '../../services/creditRate';
 import { monthlyCreditRateLabel } from '../../services/portalService';
+import { canPasteCreditBalance, formatCreditBalance, readCreditBalanceInput } from '../../modules/credits/manualCreditForm';
 import {
   CheckCircle2,
   ClipboardCheck,
@@ -238,12 +239,15 @@ export default function AdminFonasin() {
     credit_line: 'FONALIBRE',
     initial_balance: '',
     current_balance: '',
+    last_payment_date: '',
     term_months: '24',
     interest_rate: '1.2500',
     interest_rate_nominal_annual: '',
     installment_amount: '',
     status: 'active',
   });
+  const creditCreationLock = useRef(false);
+  const [creditCreationPending, setCreditCreationPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const isAdmin = canManageAdminData(user);
@@ -724,8 +728,10 @@ export default function AdminFonasin() {
   }
 
   async function handleCreateCredit(event: FormEvent<HTMLFormElement>) {
-    if (!isAdmin) return;
     event.preventDefault();
+    if (!isAdmin || creditCreationLock.current) return;
+    creditCreationLock.current = true;
+    setCreditCreationPending(true);
     setError(null);
     setMessage(null);
 
@@ -733,8 +739,9 @@ export default function AdminFonasin() {
       await createAdminCredit({
         associate_id: creditForm.associate_id,
         credit_line: creditForm.credit_line,
-        initial_balance: creditForm.initial_balance,
-        current_balance: creditForm.current_balance || creditForm.initial_balance,
+        initial_balance: creditForm.initial_balance.replace(/\.$/, ''),
+        current_balance: (creditForm.current_balance || creditForm.initial_balance).replace(/\.$/, ''),
+        last_payment_date: creditForm.last_payment_date || null,
         term_months: Number(creditForm.term_months),
         interest_rate: creditForm.interest_rate,
         interest_rate_nominal_annual: creditForm.interest_rate_nominal_annual || null,
@@ -746,11 +753,15 @@ export default function AdminFonasin() {
         initial_balance: '',
         current_balance: '',
         installment_amount: '',
+        last_payment_date: '',
       }));
       await loadCredits();
       setMessage('Credito registrado correctamente.');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible registrar el credito.');
+    } finally {
+      creditCreationLock.current = false;
+      setCreditCreationPending(false);
     }
   }
 
@@ -1214,6 +1225,7 @@ export default function AdminFonasin() {
             form={creditForm}
             onFormChange={setCreditForm}
             onCreate={handleCreateCredit}
+            createPending={creditCreationPending}
             onStatusChange={handleCreditStatus}
             canManage={isAdmin}
           />
@@ -1745,6 +1757,7 @@ type CreditFormState = {
   credit_line: string;
   initial_balance: string;
   current_balance: string;
+  last_payment_date: string;
   term_months: string;
   interest_rate: string;
   interest_rate_nominal_annual: string;
@@ -1773,6 +1786,7 @@ export function CreditsPanel({
   onCreate,
   onStatusChange,
   canManage,
+  createPending = false,
 }: {
   credits: AdminCredit[];
   associates: AdminAssociate[];
@@ -1782,6 +1796,7 @@ export function CreditsPanel({
   onCreate: (event: FormEvent<HTMLFormElement>) => void;
   onStatusChange: (id: string, status: 'settled' | 'archived') => void;
   canManage: boolean;
+  createPending?: boolean;
 }) {
   const activeAssociates = associates.filter((associate) => associate.status === 'active');
 
@@ -1789,7 +1804,7 @@ export function CreditsPanel({
     <div className={`grid gap-5 ${canManage ? 'xl:grid-cols-[380px_1fr]' : ''}`}>
       {canManage ? (
         <div className="legacy-space-y-5">
-        <form onSubmit={onCreate} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <form onSubmit={onCreate} aria-busy={createPending} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-100 text-emerald-700">
               <WalletCards size={22} />
@@ -1800,7 +1815,7 @@ export function CreditsPanel({
             </div>
           </div>
 
-          <div className="mt-5 legacy-space-y-4">
+          <fieldset disabled={createPending} className="mt-5 min-w-0 border-0 p-0 legacy-space-y-4">
             <label className="block">
               <span className="text-sm font-bold text-slate-800">Asociado</span>
               <select
@@ -1832,11 +1847,18 @@ export function CreditsPanel({
               <label className="block">
                 <span className="text-sm font-bold text-slate-800">Saldo inicial</span>
                 <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={form.initial_balance}
-                  onChange={(event) => onFormChange({ ...form, initial_balance: event.target.value })}
+                  type="text"
+                  inputMode="decimal"
+                  value={formatCreditBalance(form.initial_balance)}
+                  autoComplete="off"
+                  onDrop={(event) => event.preventDefault()}
+                  onPaste={(event) => {
+                    if (!canPasteCreditBalance(event.clipboardData.getData('text'))) event.preventDefault();
+                  }}
+                  onChange={(event) => {
+                    const amount = readCreditBalanceInput(event.target.value);
+                    if (amount !== null) onFormChange({ ...form, initial_balance: amount });
+                  }}
                   required
                   className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
                 />
@@ -1844,15 +1866,38 @@ export function CreditsPanel({
               <label className="block">
                 <span className="text-sm font-bold text-slate-800">Saldo actual</span>
                 <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={form.current_balance}
-                  onChange={(event) => onFormChange({ ...form, current_balance: event.target.value })}
+                  type="text"
+                  inputMode="decimal"
+                  value={formatCreditBalance(form.current_balance)}
+                  autoComplete="off"
+                  onDrop={(event) => event.preventDefault()}
+                  onPaste={(event) => {
+                    if (!canPasteCreditBalance(event.clipboardData.getData('text'))) event.preventDefault();
+                  }}
+                  onChange={(event) => {
+                    const amount = readCreditBalanceInput(event.target.value);
+                    if (amount !== null) onFormChange({ ...form, current_balance: amount });
+                  }}
                   placeholder="Igual al inicial"
                   className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
                 />
               </label>
+            </div>
+            <p className="text-xs text-slate-500">Saldos en pesos: puntos para miles y coma para centavos. Ejemplo: 1.250.000,50.</p>
+            <div>
+            <label className="block">
+              <span className="text-sm font-bold text-slate-800">Fecha del último pago</span>
+              <input
+                type="date"
+                min="1000-01-01"
+                max="9999-12-31"
+                aria-describedby="credit-last-payment-help"
+                value={form.last_payment_date}
+                onChange={(event) => onFormChange({ ...form, last_payment_date: event.target.value })}
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+              />
+            </label>
+            <p id="credit-last-payment-help" className="mt-1 text-xs text-slate-500">Opcional si aún no hay pagos registrados.</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
               <label className="block">
@@ -1900,14 +1945,14 @@ export function CreditsPanel({
                 />
               </label>
             </div>
-          </div>
+          </fieldset>
 
           <button
             type="submit"
-            disabled={activeAssociates.length === 0}
+            disabled={createPending || activeAssociates.length === 0}
             className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            Registrar credito
+            {createPending ? 'Registrando credito...' : 'Registrar credito'}
             <WalletCards size={18} />
           </button>
         </form>
@@ -1943,6 +1988,7 @@ export function CreditsPanel({
                 <th className="py-3 pr-4">Plazo</th>
                 <th className="py-3 pr-4">Tasa Int NA</th>
                 <th className="py-3 pr-4">Tasa Int mv</th>
+                <th className="py-3 pr-4">Ultimo pago</th>
                 <th className="py-3 pr-4">Estado</th>
                 {canManage ? <th className="py-3 text-right">Acciones</th> : null}
               </tr>
@@ -1958,6 +2004,7 @@ export function CreditsPanel({
                   <td className="py-4 pr-4 text-slate-700">{credit.term_months ? `${credit.term_months} meses` : 'No informado'}</td>
                   <td className="py-4 pr-4 text-slate-700">{creditRateLabel(credit.interest_rate_nominal_annual)}</td>
                   <td className="py-4 pr-4 text-slate-700">{monthlyCreditRateLabel(credit)}</td>
+                  <td className="py-4 pr-4 text-slate-700">{credit.last_payment_date ?? 'Sin registro'}</td>
                   <td className="py-4 pr-4">
                     <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-700">
                       {statusLabel(credit.status)}

@@ -8,6 +8,7 @@ use App\Domain\Audit\Enums\AuditActorType;
 use App\Domain\Audit\Enums\AuditModule;
 use App\Domain\Credits\Enums\CreditAccountStatus;
 use App\Domain\Credits\Enums\CreditAuditAction;
+use App\Models\Associate;
 use App\Models\CreditAccount;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +21,7 @@ class UpdateCreditAccount
     ) {}
 
     /**
-     * @param  array<string, int|float|string>  $data
+     * @param  array<string, int|float|string|null>  $data
      */
     public function __invoke(
         CreditAccount $credit,
@@ -30,7 +31,8 @@ class UpdateCreditAccount
         ?string $ipHash = null,
     ): CreditAccount {
         return DB::transaction(function () use ($credit, $actor, $data, $correlationId, $ipHash) {
-            $credit->refresh();
+            Associate::query()->lockForUpdate()->findOrFail($credit->associate_id);
+            $credit = CreditAccount::query()->lockForUpdate()->findOrFail($credit->id);
 
             if ($credit->status === CreditAccountStatus::Archived->value) {
                 throw CannotManageCreditAccount::archivedCreditCannotBeUpdated();
@@ -41,6 +43,7 @@ class UpdateCreditAccount
                 'credit_line',
                 'initial_balance',
                 'current_balance',
+                'last_payment_date',
                 'term_months',
                 'interest_rate',
                 'interest_rate_nominal_annual',
@@ -62,7 +65,10 @@ class UpdateCreditAccount
             $changes = [];
 
             foreach ($updates as $field => $value) {
-                if ((string) $credit->getAttribute($field) !== (string) $value) {
+                $previous = $field === 'last_payment_date'
+                    ? $credit->last_payment_date?->toDateString()
+                    : $credit->getAttribute($field);
+                if ((string) $previous !== (string) $value) {
                     $changes[$field] = [
                         'from' => $field === 'status' ? $credit->getAttribute($field) : 'redacted',
                         'to' => $field === 'status' ? $value : 'redacted',

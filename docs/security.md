@@ -132,6 +132,18 @@ una imagen con extension PDF no obtiene autorizacion por su nombre.
 
 ## Lista de revision de seguridad
 
+### Reauditoria de creditos (1 de noviembre de 2026)
+
+El registro manual valida precision antes de cualquier conversion: dinero hasta
+dos decimales, tasas hasta cuatro, solo cadenas canonicas o enteros JSON exactos.
+No se aceptan floats ni exponentes que puedan haber perdido precision. POST,
+PATCH e importacion usan el mismo catalogo de lineas. La fecha opcional respeta
+el rango de DATE de MariaDB y no se publica fuera de las consultas autorizadas.
+Los escritores toman asociado y credito en orden consistente y releen el estado
+bajo bloqueo; auditoria y escritura son atomicas. Las pruebas de concurrencia
+exigen espera real en InnoDB y un marcador positivo de finalizacion, no solo
+un codigo cero del subprocess. Consultar ADR-010 y la evidencia local fechada.
+
 ### Reauditoria de formularios privados (19 de octubre de 2026)
 
 Los borradores `profile_completion` y `data_update` requieren sesion activa,

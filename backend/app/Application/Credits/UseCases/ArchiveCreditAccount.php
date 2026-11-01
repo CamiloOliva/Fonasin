@@ -7,6 +7,7 @@ use App\Domain\Audit\Enums\AuditActorType;
 use App\Domain\Audit\Enums\AuditModule;
 use App\Domain\Credits\Enums\CreditAccountStatus;
 use App\Domain\Credits\Enums\CreditAuditAction;
+use App\Models\Associate;
 use App\Models\CreditAccount;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,8 @@ class ArchiveCreditAccount
         ?string $ipHash = null,
     ): CreditAccount {
         return DB::transaction(function () use ($credit, $actor, $correlationId, $ipHash) {
-            $credit->refresh();
+            Associate::query()->lockForUpdate()->findOrFail($credit->associate_id);
+            $credit = CreditAccount::query()->lockForUpdate()->findOrFail($credit->id);
             $fromStatus = $credit->status;
             $correlationId ??= (string) Str::uuid();
 

@@ -58,6 +58,7 @@ export type CreateCreditPayload = {
   credit_line: string;
   initial_balance: string;
   current_balance: string;
+  last_payment_date?: string | null;
   term_months: number;
   interest_rate: string;
   interest_rate_nominal_annual?: string | null;

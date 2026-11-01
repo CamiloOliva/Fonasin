@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,6 +6,7 @@ import AppRoutes from './AppRoutes';
 import * as adminAffiliationService from '../services/adminAffiliationService';
 import * as adminContributionService from '../services/adminContributionService';
 import * as adminCreditService from '../services/adminCreditService';
+import * as adminAssociateService from '../services/adminAssociateService';
 import * as portalService from '../services/portalService';
 import * as publicContentService from '../services/publicContentService';
 
@@ -124,6 +125,97 @@ describe('AppRoutes', () => {
       data: agreements,
       settings: { contact_email: 'fonasin.bucaramanga@fonasin.com', facebook_url: null, instagram_url: null, youtube_url: null },
     });
+  });
+
+  async function openManualCreditForm() {
+    const user = userEvent.setup();
+    vi.mocked(adminAffiliationService.currentAdminUser).mockResolvedValueOnce({ id: 'admin', email: 'admin@fonasin.test', roles: ['admin'], must_change_password: false });
+    vi.mocked(adminAssociateService.fetchAdminAssociates).mockResolvedValueOnce([{
+      id: 'associate-manual', user_id: null, document_type: 'CC', document_number_masked: '***0001',
+      full_name: 'Asociado sintetico', status: 'active', user: null, legacy_validation_required: false,
+      has_identity_support: false, legacy_validated_at: null, legacy_validated_by_user_id: null,
+      affiliation_applications_count: 0, credit_accounts_count: 0, created_at: null, updated_at: null,
+    }]);
+    vi.mocked(adminCreditService.createAdminCredit).mockResolvedValue({
+      id: 'manual-credit', associate_id: 'associate-manual', credit_line: 'FONALIBRE',
+      initial_balance: '1250000.50', current_balance: '0.00', term_months: 24, interest_rate: '1.2500',
+      interest_rate_nominal_annual: null, installment_amount: '52000.75', status: 'active',
+      registered_by_user_id: 'admin', associate: null, last_payment_date: '2026-10-30',
+    });
+    renderRoute('/admin-fonasin');
+    await user.click(await screen.findByRole('button', { name: /^Creditos$/ }));
+    const initial = await screen.findByLabelText('Saldo inicial');
+    const current = screen.getByLabelText('Saldo actual');
+    const date = screen.getByLabelText('Fecha del último pago');
+    const installment = screen.getByLabelText('Cuota');
+    return { user, initial, current, date, installment };
+  }
+
+  it('submits exact manual balances and payment date and resets a successful form', async () => {
+    const { user, initial, current, date, installment } = await openManualCreditForm();
+    await user.type(initial, '1250000,50');
+    expect(initial).toHaveValue('1.250.000,50');
+    await user.type(current, '0');
+    await user.type(installment, '52000.75');
+    // Date input is a calendar string, not a timezone-bearing Date object.
+    await user.type(date, '2026-10-30');
+    await user.click(screen.getByRole('button', { name: 'Registrar credito' }));
+    await waitFor(() => expect(adminCreditService.createAdminCredit).toHaveBeenCalledWith(expect.objectContaining({
+      initial_balance: '1250000.50', current_balance: '0', last_payment_date: '2026-10-30',
+    })));
+    await screen.findByText('Credito registrado correctamente.');
+    expect(initial).toHaveValue('');
+    expect(date).toHaveValue('');
+  });
+
+  it('sends null for an absent payment date and uses initial balance only when current balance is empty', async () => {
+    const { user, initial, installment } = await openManualCreditForm();
+    await user.type(initial, '2000');
+    await user.type(installment, '100');
+    await user.click(screen.getByRole('button', { name: 'Registrar credito' }));
+    await waitFor(() => expect(adminCreditService.createAdminCredit).toHaveBeenLastCalledWith(expect.objectContaining({
+      initial_balance: '2000', current_balance: '2000', last_payment_date: null,
+    })));
+    await waitFor(() => expect(initial).toHaveValue(''));
+  });
+
+  it('preserves the manual credit amounts and payment date after a server failure', async () => {
+    const { user, initial, date, installment } = await openManualCreditForm();
+    vi.mocked(adminCreditService.createAdminCredit).mockRejectedValueOnce(new Error('Error de prueba del servidor'));
+    await user.type(initial, '3000,25');
+    await user.type(installment, '100');
+    await user.type(date, '2026-10-31');
+    await user.click(screen.getByRole('button', { name: 'Registrar credito' }));
+    await screen.findByText('Error de prueba del servidor');
+    expect(initial).toHaveValue('3.000,25');
+    expect(date).toHaveValue('2026-10-31');
+  });
+
+  it('serializes repeated manual submits, freezes the snapshot and enables explicit retry after failure', async () => {
+    const { user, initial, date, installment } = await openManualCreditForm();
+    let rejectPending!: (reason: Error) => void;
+    vi.mocked(adminCreditService.createAdminCredit).mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectPending = reject; }));
+    fireEvent.change(initial, { target: { value: '1.000,25' } });
+    fireEvent.change(installment, { target: { value: '100' } });
+    fireEvent.change(date, { target: { value: '2026-10-30' } });
+    const form = initial.closest('form')!;
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+    expect(adminCreditService.createAdminCredit).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole('button', { name: 'Registrando credito...' })).toBeDisabled();
+    expect(initial).toBeDisabled();
+    expect(date).toBeDisabled();
+    expect(form).toHaveAttribute('aria-busy', 'true');
+    fireEvent.submit(form);
+    expect(adminCreditService.createAdminCredit).toHaveBeenCalledTimes(1);
+    await act(async () => rejectPending(new Error('Fallo sintetico de registro')));
+    await screen.findByText('Fallo sintetico de registro');
+    expect(initial).not.toBeDisabled();
+    expect(initial).toHaveValue('1.000,25');
+    expect(date).toHaveValue('2026-10-30');
+    await user.click(screen.getByRole('button', { name: 'Registrar credito' }));
+    await waitFor(() => expect(adminCreditService.createAdminCredit).toHaveBeenCalledTimes(2));
+    await screen.findByText('Credito registrado correctamente.');
   });
 
   it('offers the contracted public news and social balance routes without inventing publications', async () => {

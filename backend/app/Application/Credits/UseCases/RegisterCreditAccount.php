@@ -29,6 +29,7 @@ class RegisterCreditAccount
      *     interest_rate: int|float|string,
      *     interest_rate_nominal_annual?: int|float|string|null,
      *     installment_amount: int|float|string,
+     *     last_payment_date?: string|null,
      *     status?: string
      * }  $data
      */
@@ -40,6 +41,7 @@ class RegisterCreditAccount
         ?string $ipHash = null,
     ): CreditAccount {
         return DB::transaction(function () use ($associate, $actor, $data, $correlationId, $ipHash) {
+            $associate = Associate::query()->lockForUpdate()->findOrFail($associate->id);
             $correlationId ??= (string) Str::uuid();
 
             if ($associate->status !== 'active') {
@@ -51,6 +53,7 @@ class RegisterCreditAccount
                 'credit_line' => $data['credit_line'],
                 'initial_balance' => $data['initial_balance'],
                 'current_balance' => $data['current_balance'],
+                'last_payment_date' => $data['last_payment_date'] ?? null,
                 'term_months' => $data['term_months'],
                 'interest_rate' => $data['interest_rate'],
                 'interest_rate_basis' => 'monthly',
