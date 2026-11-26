@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Application\Audit\UseCases\RecordAuditEvent;
+use App\Application\Security\Contracts\EncryptsSensitiveData;
+use App\Application\Security\Contracts\HashesSensitiveData;
 use App\Mail\AssociateActivationMail;
 use App\Models\Associate;
 use App\Models\Role;
@@ -177,5 +179,34 @@ class AssociateCorrectionsHttpTest extends TestCase
         $first = $this->actingAs($admin)->getJson('/admin/associates?page=1')->assertOk()->assertJsonCount(50, 'data')->assertJsonPath('meta.total', 51)->assertJsonPath('meta.last_page', 2)->json('data');
         $last = $this->getJson('/admin/associates?page=2')->assertOk()->assertJsonCount(1, 'data')->json('data');
         $this->assertCount(51, array_unique(array_column([...$first, ...$last], 'id')));
+    }
+
+    public function test_document_search_can_filter_the_list_to_a_record_outside_the_first_page(): void
+    {
+        $admin = $this->actor('admin');
+        $target = $this->associate();
+        $target->forceFill([
+            'created_at' => now()->subYear(),
+            'document_number_hash' => app(HashesSensitiveData::class)->documentNumber('1234567890'),
+            'document_number_encrypted' => app(EncryptsSensitiveData::class)->encryptArray(['document_number' => '1234567890']),
+        ])->save();
+        for ($i = 0; $i < 51; $i++) {
+            Associate::create(['full_name' => 'Otra Persona '.$i, 'document_type' => 'CC', 'document_number_hash' => hash('sha256', (string) $i), 'document_number_encrypted' => 'test', 'status' => 'active']);
+        }
+        $this->actingAs($admin)->getJson('/admin/associates')->assertJsonMissing(['id' => $target->id]);
+        $this->postJson('/admin/associates/profile/search', ['document_number' => '1234567890'])
+            ->assertOk()->assertJsonPath('data.associate.id', $target->id);
+        $this->getJson('/admin/associates?associate_id='.$target->id)
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $target->id)
+            ->assertJsonPath('meta.total', 1)->assertJsonPath('meta.last_page', 1);
+        $this->getJson('/admin/associates')->assertOk()->assertJsonPath('meta.total', 52);
+    }
+
+    public function test_associate_id_filter_rejects_invalid_ids_and_returns_empty_for_unknown_id(): void
+    {
+        $this->actingAs($this->actor('admin'));
+        $this->getJson('/admin/associates?associate_id=invalid')->assertUnprocessable();
+        $this->getJson('/admin/associates?associate_id='.(string) Str::uuid())
+            ->assertOk()->assertJsonCount(0, 'data')->assertJsonPath('meta.total', 0);
     }
 }

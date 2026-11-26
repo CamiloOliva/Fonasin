@@ -84,4 +84,22 @@ describe('Correcciones administrativas de asociados', () => {
     expect(pageChange).toHaveBeenCalledWith(2);
     view.unmount();
   });
+
+  it('offers Ver todos and explains an empty search without claiming the directory is empty', () => {
+    const clear = vi.fn();
+    const noop = vi.fn();
+    render(createElement(AssociatesPanel, {
+      associates: [], meta: { current_page: 1, last_page: 1, per_page: 50, total: 0 },
+      isFiltered: true, onClearSearch: clear, dataState: 'ready', profile: null, profileState: 'error', search: '1234567890',
+      form: { document_type: 'CC', document_number: '', full_name: '', email: '' }, createdAccess: null,
+      onSearchChange: noop, onSearch: noop, onSelectProfile: noop, onDownloadProfile: noop,
+      importState: 'idle', onImport: noop, onDownloadTemplate: noop, onSendActivation: noop,
+      onFormChange: noop, onCreate: noop, onStatusChange: noop, onUploadIdentitySupport: noop,
+      onDownloadIdentitySupport: noop, canManage: true,
+    }));
+    expect(screen.getByText('No hay asociados para esta consulta.')).toBeInTheDocument();
+    expect(screen.queryByText('No hay asociados registrados.')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('Ver todos'));
+    expect(clear).toHaveBeenCalledOnce();
+  });
 });

@@ -24,8 +24,10 @@ class AssociateController extends Controller
 {
     public function index(Request $request, EncryptsSensitiveData $cipher): JsonResponse
     {
+        $filters = $request->validate(['associate_id' => ['sometimes', 'required', 'uuid']]);
         $perPage = max(1, min(100, (int) $request->integer('per_page', 50)));
         $associates = Associate::query()
+            ->when(isset($filters['associate_id']), fn ($query) => $query->whereKey($filters['associate_id']))
             ->with('user:id,email,status,must_change_password')
             ->withCount(['affiliationApplications', 'creditAccounts'])
             ->latest()

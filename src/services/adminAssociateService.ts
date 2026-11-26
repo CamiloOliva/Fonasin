@@ -163,8 +163,9 @@ export type AdminAssociatePage = {
   meta: { current_page: number; last_page: number; per_page: number; total: number };
 };
 
-export async function fetchAdminAssociatePage(page = 1, perPage = 50): Promise<AdminAssociatePage> {
-  return requestJson<AdminAssociatePage>(`/admin/associates?page=${page}&per_page=${perPage}`);
+export async function fetchAdminAssociatePage(page = 1, perPage = 50, associateId?: string): Promise<AdminAssociatePage> {
+  const filter = associateId ? `&associate_id=${encodeURIComponent(associateId)}` : '';
+  return requestJson<AdminAssociatePage>(`/admin/associates?page=${page}&per_page=${perPage}${filter}`);
 }
 
 // Selectors in other administrative modules need the complete collection.

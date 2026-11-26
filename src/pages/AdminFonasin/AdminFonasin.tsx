@@ -98,6 +98,7 @@ import { changeOwnPassword, type PortalUser } from '../../services/portalService
 
 type SessionState = 'checking' | 'guest' | 'authenticated';
 type DataState = 'idle' | 'loading' | 'ready' | 'error';
+type AssociateListFilter = { id: string } | { empty: true } | null;
 type AdminPanelView = 'applications' | 'associates' | 'credits' | 'contributions' | 'imports' | 'content';
 
 const statusLabels: Record<string, string> = {
@@ -202,6 +203,8 @@ export default function AdminFonasin() {
   const [associates, setAssociates] = useState<AdminAssociate[]>([]);
   const [associateMeta, setAssociateMeta] = useState<AdminAssociatePage['meta']>(defaultImportMeta);
   const associateListRequest = useRef(0);
+  const [associateFilter, setAssociateFilter] = useState<AssociateListFilter>(null);
+  const associateSearchRequest = useRef(0);
   const [associateProfile, setAssociateProfile] = useState<AdminAssociateProfile | null>(null);
   const [associateProfileState, setAssociateProfileState] = useState<DataState>('idle');
   const [associateSearch, setAssociateSearch] = useState('');
@@ -305,13 +308,15 @@ export default function AdminFonasin() {
     }
   }
 
-  async function loadAssociates(page = associateMeta.current_page) {
+  async function loadAssociates(page = associateMeta.current_page, filter = associateFilter) {
     const request = ++associateListRequest.current;
     setAssociateDataState('loading');
     setError(null);
 
     try {
-      const result = await fetchAdminAssociatePage(page);
+      const result = filter && 'empty' in filter
+        ? { data: [], meta: defaultImportMeta }
+        : await fetchAdminAssociatePage(page, 50, filter?.id);
       if (request !== associateListRequest.current) return;
       setAssociates(result.data);
       setAssociateMeta(result.meta);
@@ -721,17 +726,40 @@ export default function AdminFonasin() {
 
   async function handleAssociateSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const request = ++associateSearchRequest.current;
+    ++associateListRequest.current;
+    setAssociateFilter({ empty: true });
+    setAssociates([]);
+    setAssociateMeta(defaultImportMeta);
+    setAssociateDataState('loading');
+    setAssociateProfile(null);
     setAssociateProfileState('loading');
     setError(null);
 
     try {
-      setAssociateProfile(await searchAdminAssociateProfile(associateSearch));
+      const profile = await searchAdminAssociateProfile(associateSearch);
+      if (request !== associateSearchRequest.current) return;
+      const filter = { id: profile.associate.id };
+      setAssociateFilter(filter);
+      setAssociateProfile(profile);
       setAssociateProfileState('ready');
+      await loadAssociates(1, filter);
     } catch (caught) {
+      if (request !== associateSearchRequest.current) return;
       setAssociateProfile(null);
       setAssociateProfileState('error');
+      setAssociateDataState('ready');
       setError(caught instanceof Error ? caught.message : 'No fue posible buscar el asociado.');
     }
+  }
+
+  async function clearAssociateSearch() {
+    ++associateSearchRequest.current;
+    setAssociateFilter(null);
+    setAssociateSearch('');
+    setAssociateProfile(null);
+    setAssociateProfileState('idle');
+    await loadAssociates(1, null);
   }
 
   async function handleAssociateProfileDownload() {
@@ -1226,6 +1254,8 @@ export default function AdminFonasin() {
             createdAccess={createdAssociateAccess}
             onSearchChange={setAssociateSearch}
             onSearch={handleAssociateSearch}
+            isFiltered={associateFilter !== null}
+            onClearSearch={clearAssociateSearch}
             onSelectProfile={loadAssociateProfile}
             onDownloadProfile={handleAssociateProfileDownload}
             importState={importState}
@@ -1333,6 +1363,8 @@ export function AssociatesPanel({
   createdAccess,
   onSearchChange,
   onSearch,
+  isFiltered = false,
+  onClearSearch,
   onSelectProfile,
   onDownloadProfile,
   importState,
@@ -1358,6 +1390,8 @@ export function AssociatesPanel({
   createdAccess: { email: string; activationRequired: boolean } | null;
   onSearchChange: (value: string) => void;
   onSearch: (event: FormEvent<HTMLFormElement>) => void;
+  isFiltered?: boolean;
+  onClearSearch?: () => void;
   onSelectProfile: (id: string) => void;
   onDownloadProfile: () => void;
   importState: DataState;
@@ -1371,6 +1405,7 @@ export function AssociatesPanel({
   onDownloadIdentitySupport: (id: string) => void;
   canManage: boolean;
 }) {
+  const associateTotal = meta?.total ?? associates.length;
   return (
     <div className={`grid gap-5 ${canManage ? 'xl:grid-cols-[380px_1fr]' : ''}`}>
       {canManage ? (
@@ -1467,7 +1502,7 @@ export function AssociatesPanel({
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Asociados</p>
-            <h2 className="mt-1 text-2xl font-black text-slate-950">{meta?.total ?? associates.length} registros en total</h2>
+            <h2 className="mt-1 text-2xl font-black text-slate-950">{isFiltered ? `${associateTotal} ${associateTotal === 1 ? 'asociado encontrado' : 'asociados encontrados'}` : `${associateTotal} registros en total`}</h2>
           </div>
           <Users className="text-emerald-700" size={28} />
         </div>
@@ -1494,6 +1529,7 @@ export function AssociatesPanel({
             {profileState === 'loading' ? <Loader2 className="animate-spin" size={18} /> : <Search size={18} />}
             Consultar ficha
           </button>
+          {isFiltered && onClearSearch && <button type="button" onClick={onClearSearch} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-700">Ver todos</button>}
           </form>
         ) : null}
 
@@ -1585,7 +1621,7 @@ export function AssociatesPanel({
           </table>
           {associates.length === 0 && dataState !== 'loading' ? (
             <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">
-              No hay asociados registrados.
+              {isFiltered ? 'No hay asociados para esta consulta.' : 'No hay asociados registrados.'}
             </p>
           ) : null}
         </AssociateTableScroll>

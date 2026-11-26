@@ -20,4 +20,11 @@ describe('Listado de asociados', () => {
     expect(await fetchAdminAssociates()).toEqual([{ id: 'first' }, { id: 'last' }]);
     expect(fetch.mock.calls[1][0]).toContain('page=2&per_page=100');
   });
+
+  it('filters by the resolved internal ID rather than sending the document in a URL', async () => {
+    const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: [], meta: { total: 0 } }) });
+    vi.stubGlobal('fetch', fetch);
+    await fetchAdminAssociatePage(1, 50, 'synthetic-id');
+    expect(fetch.mock.calls[0][0]).toContain('associate_id=synthetic-id');
+  });
 });

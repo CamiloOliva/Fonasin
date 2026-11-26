@@ -38,6 +38,13 @@ y usan la misma configuracion que valida el token; no se cambia el formulario,
 la sesion ni los permisos. Cobertura: PasswordRecoverySecurityTest y las pruebas
 de correo de AuthenticationHttpTest y AssociateCorrectionsHttpTest.
 
+Consulta administrativa del mismo dia: al buscar por cedula, la ficha se mantiene
+debajo y la tabla muestra unicamente al asociado resuelto, incluso si estaba
+fuera de la primera pagina. Ver todos limpia consulta y ficha y vuelve a pagina
+1. Una busqueda fallida deja la tabla sin resultados, sin mezclar registros de
+otra consulta. La cedula permanece en el POST privado existente; el listado se
+filtra por UUID validado, conservando permisos y acciones del registro.
+
 ## Estados permitidos
 
 | Estado | Significado |

@@ -69,6 +69,28 @@ mediante el procedimiento de despliegue existente. No se modifica produccion
 desde esta revision local. Para volver a una hora, coordinar la transicion de
 los pendientes segun la nota de auditoria; no cambiar la fecha de los tokens.
 
+## Consulta por cedula y filtro del listado
+
+Solicitud posterior de Carlos: Consultar ficha tambien filtra la tabla al
+asociado encontrado, sin limitarse a los registros de la pagina visible.
+Se reutiliza el POST autorizado de busqueda por cedula y despues se carga la
+fila por UUID validado; no se coloca la cedula en la URL. Ver todos limpia el
+filtro, la ficha y el campo de busqueda y carga la primera pagina. Las acciones
+de activacion, cedula y correo se conservan sobre la fila filtrada. Las respuestas
+desactualizadas de busquedas/listados se descartan. Si no hay coincidencia, la
+tabla queda vacia con un mensaje de consulta sin resultados, en lugar de mostrar
+los registros anteriores o afirmar que no existen asociados en el sistema.
+
+No cambia configuracion ni esquema. Requiere desplegar backend y frontend del
+mismo commit.
+
+Validacion del filtro: 15 pruebas backend y 125 aserciones correctas en MariaDB
+local fonasin_test (AssociateCorrectionsHttpTest y AssociateProfileAdminHttpTest);
+63 pruebas frontend seleccionadas, compilacion y recorrido visual en Edge con
+API simulada: consulta del registro 51 desde pagina 1, una sola fila y retorno
+a los 50 de la primera pagina con Ver todos. Sin errores JavaScript. No se
+repitieron las suites completas para este cambio acotado.
+
 ## Revision funcional y publicacion
 
 1. Comprobar total y navegacion con mas de 50 asociados, incluyendo el uso de
