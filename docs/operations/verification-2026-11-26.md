@@ -117,6 +117,47 @@ cierre del visor y acceso al mismo enlace firmado desde invitado denegado con
 cuentas o solicitudes. No se repitio la suite backend al no cambiar codigo de
 servidor; el recorrido utiliza las rutas y autorizaciones reales existentes.
 
+## Auditoria de dependencias y correccion del CI
+
+La ejecucion remota 45871183837 del commit 343d47a paso MariaDB, frontend y
+recorridos en navegador, pero fallo en composer audit antes de ejecutar SQLite.
+Se reprodujeron 14 avisos sobre seis paquetes del lock existente. No implica
+que las pruebas funcionales hayan fallado ni demuestra explotacion del sistema.
+
+Actualizacion limitada con Composer --with-all-dependencies --minimal-changes:
+
+| Paquete | Anterior | Corregido |
+|---|---|---|
+| laravel/framework | 12.69.3 | 12.74.0 |
+| symfony/http-foundation | 7.4.21 | 7.4.24 |
+| symfony/http-kernel | 7.4.16 | 7.4.24 |
+| symfony/mailer | 7.4.15 | 7.4.24 |
+| symfony/routing | 7.4.15 | 7.4.24 |
+| symfony/yaml | 7.4.21 | 7.4.24 |
+
+Se conservan restricciones de composer.json, versiones principales, auditorias
+y workflow. No se agregan paquetes ni excepciones a avisos de seguridad.
+Composer audit --locked no encuentra avisos tras actualizar; npm audit reporta
+cero avisos. Composer validate reconoce el manifiesto valido y mantiene el aviso
+preexistente por fijar exactamente laravel-dompdf 3.1.2; no se cambia esa politica
+para silenciar una advertencia que no es la causa del fallo.
+
+Referencias primarias consultadas:
+[Laravel](https://github.com/laravel/framework/security/advisories/GHSA-63hm-g96r-2m2q),
+[Symfony](https://github.com/symfony/symfony/security/advisories/GHSA-xg2q-4rrq-657q).
+El informe completo de Composer se conserva solo como evidencia local.
+
+Validacion con las versiones actualizadas: suite MariaDB completa, 598 pruebas
+y 3839 aserciones correctas; suite SQLite completa, 598 casos (29 omitidos por
+requerir MariaDB), 3718 aserciones y ningun fallo. composer audit instalado y
+--locked terminan sin avisos. Recorrido real de la ficha y PDF privado local
+correcto, con invitado denegado por 403 y sin errores JavaScript. No se cambia
+frontend; su suite y build se ejecutan de nuevo en el CI remoto del nuevo commit.
+
+Para desplegar esta correccion hay que instalar el composer.lock actualizado
+mediante composer install del procedimiento existente; no ejecutar composer
+update en produccion ni copiar solo el frontend. No requiere migraciones nuevas.
+
 ## Revision funcional y publicacion
 
 1. Comprobar total y navegacion con mas de 50 asociados, incluyendo el uso de
