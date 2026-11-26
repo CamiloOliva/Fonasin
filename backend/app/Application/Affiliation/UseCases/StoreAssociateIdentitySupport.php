@@ -24,9 +24,6 @@ class StoreAssociateIdentitySupport
     {
         return DB::transaction(function () use ($associate, $actor, $contents, $mime, $ipHash): Associate {
             $locked = Associate::query()->lockForUpdate()->findOrFail($associate->id);
-            if (! $locked->legacy_validation_required || $locked->status !== 'inactive') {
-                throw new DomainException('El soporte solo puede cargarse para un asociado antiguo pendiente de validacion.');
-            }
             if ($locked->identity_support_storage_key) {
                 throw new DomainException('El asociado ya tiene una copia de cedula registrada.');
             }
@@ -51,6 +48,7 @@ class StoreAssociateIdentitySupport
                 subjectId: $locked->id,
                 actor: $actor,
                 actorType: AuditActorType::User,
+                correlationId: (string) Str::uuid(),
                 ipHash: $ipHash,
                 metadata: ['mime_type' => $mime, 'byte_size' => strlen($contents)],
             );

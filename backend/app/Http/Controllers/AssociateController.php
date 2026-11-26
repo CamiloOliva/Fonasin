@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Application\Affiliation\UseCases\CorrectAssociateEmail;
 use App\Application\Affiliation\UseCases\CreateAssociateManually;
 use App\Application\Affiliation\UseCases\OpenAssociateIdentitySupport;
 use App\Application\Affiliation\UseCases\StoreAssociateIdentitySupport;
@@ -9,6 +10,7 @@ use App\Application\Affiliation\UseCases\UpdateAssociateStatus;
 use App\Application\Identity\UseCases\SendAssociateActivationLink;
 use App\Application\Security\Contracts\EncryptsSensitiveData;
 use App\Application\Security\Contracts\HashesSensitiveData;
+use App\Http\Requests\Associates\CorrectAssociateEmailRequest;
 use App\Http\Requests\Associates\StoreAssociateRequest;
 use App\Http\Requests\Associates\StoreIdentitySupportRequest;
 use App\Models\Associate;
@@ -27,6 +29,7 @@ class AssociateController extends Controller
             ->with('user:id,email,status,must_change_password')
             ->withCount(['affiliationApplications', 'creditAccounts'])
             ->latest()
+            ->orderByDesc('id')
             ->paginate($perPage);
 
         return response()->json([
@@ -66,6 +69,22 @@ class AssociateController extends Controller
                 'activation_required' => $result['activation_required'],
             ],
         ], 201);
+    }
+
+    public function correctEmail(
+        CorrectAssociateEmailRequest $request,
+        Associate $associate,
+        CorrectAssociateEmail $correctEmail,
+        EncryptsSensitiveData $cipher,
+        HashesSensitiveData $hasher,
+    ): JsonResponse {
+        try {
+            $updated = $correctEmail($associate, $request->validated('email'), $request->validated('expected_email'), $request->user(), $this->ipHash($request, $hasher));
+        } catch (DomainException $exception) {
+            return $this->domainError($exception);
+        }
+
+        return response()->json(['data' => $this->associatePayload($updated->load('user')->loadCount(['affiliationApplications', 'creditAccounts']), $cipher)]);
     }
 
     public function activate(

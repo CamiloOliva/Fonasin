@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 import ForcedPasswordChange from '../../components/auth/ForcedPasswordChange';
 import ContentPanel from './ContentPanel';
+import AssociateTableScroll from '../../modules/affiliation/components/AssociateTableScroll';
+import AssociateEmailEditor from '../../modules/affiliation/components/AssociateEmailEditor';
 import {
   adminAffiliationDocumentUrl,
   approveAdminAffiliationApplication,
@@ -51,6 +53,9 @@ import {
   downloadAdminAssociateProfile,
   fetchAdminAssociateProfile,
   fetchAdminAssociates,
+  fetchAdminAssociatePage,
+  correctAdminAssociateEmail,
+  type AdminAssociatePage,
   searchAdminAssociateProfile,
   sendAdminAssociateActivation,
   uploadAdminAssociateIdentitySupport,
@@ -195,6 +200,8 @@ export default function AdminFonasin() {
   const applicationActionInFlight = useRef(false);
   const [applicationActionBusy, setApplicationActionBusy] = useState(false);
   const [associates, setAssociates] = useState<AdminAssociate[]>([]);
+  const [associateMeta, setAssociateMeta] = useState<AdminAssociatePage['meta']>(defaultImportMeta);
+  const associateListRequest = useRef(0);
   const [associateProfile, setAssociateProfile] = useState<AdminAssociateProfile | null>(null);
   const [associateProfileState, setAssociateProfileState] = useState<DataState>('idle');
   const [associateSearch, setAssociateSearch] = useState('');
@@ -298,14 +305,19 @@ export default function AdminFonasin() {
     }
   }
 
-  async function loadAssociates() {
+  async function loadAssociates(page = associateMeta.current_page) {
+    const request = ++associateListRequest.current;
     setAssociateDataState('loading');
     setError(null);
 
     try {
-      setAssociates(await fetchAdminAssociates());
+      const result = await fetchAdminAssociatePage(page);
+      if (request !== associateListRequest.current) return;
+      setAssociates(result.data);
+      setAssociateMeta(result.meta);
       setAssociateDataState('ready');
     } catch (caught) {
+      if (request !== associateListRequest.current) return;
       setAssociateDataState('error');
       setAssociates([]);
       setError(caught instanceof Error ? caught.message : 'No fue posible cargar los asociados.');
@@ -319,7 +331,7 @@ export default function AdminFonasin() {
     try {
       const [nextCredits, nextAssociates] = await Promise.all([
         fetchAdminCredits(),
-        associates.length > 0 ? Promise.resolve(associates) : fetchAdminAssociates(),
+        fetchAdminAssociates(),
       ]);
       setCredits(nextCredits);
       setAssociates(nextAssociates);
@@ -364,7 +376,7 @@ export default function AdminFonasin() {
     try {
       const [response, nextAssociates] = await Promise.all([
         fetchAdminContributionAccounts({ ...filters, page }),
-        associates.length > 0 ? Promise.resolve(associates) : fetchAdminAssociates(),
+        fetchAdminAssociates(),
       ]);
       setContributionAccounts(response.data);
       setContributionMeta(response.meta);
@@ -663,6 +675,13 @@ export default function AdminFonasin() {
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible cambiar el estado del asociado.');
     }
+  }
+
+  async function handleCorrectAssociateEmail(id: string, email: string, confirmation: string, expectedEmail: string) {
+    const updated = await correctAdminAssociateEmail(id, email, confirmation, expectedEmail);
+    setAssociates(items => items.map(item => item.id === updated.id ? updated : item));
+    if (associateProfile?.associate.id === id) setAssociateProfile(null);
+    setMessage('Correo corregido. La cuenta permanece inactiva. Activa el asociado y envia un nuevo acceso al correo correcto.');
   }
 
   async function handleAssociateIdentitySupport(id: string, file: File) {
@@ -1196,6 +1215,9 @@ export default function AdminFonasin() {
         ) : activeView === 'associates' ? (
           <AssociatesPanel
             associates={associates}
+            meta={associateMeta}
+            onPageChange={loadAssociates}
+            onCorrectEmail={handleCorrectAssociateEmail}
             dataState={associateDataState}
             profile={associateProfile}
             profileState={associateProfileState}
@@ -1300,6 +1322,9 @@ type AssociateFormState = {
 
 export function AssociatesPanel({
   associates,
+  meta,
+  onPageChange,
+  onCorrectEmail,
   dataState,
   profile,
   profileState,
@@ -1322,6 +1347,9 @@ export function AssociatesPanel({
   canManage,
 }: {
   associates: AdminAssociate[];
+  meta?: AdminAssociatePage['meta'];
+  onPageChange?: (page: number) => void;
+  onCorrectEmail?: (id: string, email: string, confirmation: string, expectedEmail: string) => Promise<void>;
   dataState: DataState;
   profile: AdminAssociateProfile | null;
   profileState: DataState;
@@ -1439,7 +1467,7 @@ export function AssociatesPanel({
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Asociados</p>
-            <h2 className="mt-1 text-2xl font-black text-slate-950">{associates.length} registros</h2>
+            <h2 className="mt-1 text-2xl font-black text-slate-950">{meta?.total ?? associates.length} registros en total</h2>
           </div>
           <Users className="text-emerald-700" size={28} />
         </div>
@@ -1476,7 +1504,7 @@ export function AssociatesPanel({
           </div>
         ) : null}
 
-        <div className="mt-5 overflow-x-auto">
+        <AssociateTableScroll>
           <table className="w-full min-w-[860px] text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
@@ -1526,7 +1554,7 @@ export function AssociatesPanel({
                           Enviar acceso
                         </button>
                       ) : null}
-                      {associate.legacy_validation_required && !associate.has_identity_support && associate.status !== 'active' ? (
+                      {!associate.has_identity_support ? (
                         <label className="cursor-pointer rounded-xl border border-emerald-200 px-3 py-2 text-xs font-black text-emerald-800 hover:bg-emerald-50">
                           Cargar cedula
                           <input type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" className="sr-only" onChange={(event) => {
@@ -1548,6 +1576,7 @@ export function AssociatesPanel({
                         {associate.status === 'active' ? 'Desactivar' : associate.legacy_validation_required ? 'Aprobar y activar' : 'Activar'}
                       </button>
                     </div>
+                    {onCorrectEmail && <AssociateEmailEditor associate={associate} onSave={onCorrectEmail} />}
                     </td>
                   ) : null}
                 </tr>
@@ -1559,7 +1588,14 @@ export function AssociatesPanel({
               No hay asociados registrados.
             </p>
           ) : null}
-        </div>
+        </AssociateTableScroll>
+        {meta && onPageChange && <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm">Pagina {meta.current_page} de {meta.last_page} · {associates.length} mostrados de {meta.total}</p>
+          <div className="flex gap-2">
+            <button type="button" className="rounded-xl border px-4 py-2 disabled:opacity-40" disabled={dataState === 'loading' || meta.current_page <= 1} onClick={() => onPageChange(meta.current_page - 1)}>Anterior</button>
+            <button type="button" className="rounded-xl border px-4 py-2 disabled:opacity-40" disabled={dataState === 'loading' || meta.current_page >= meta.last_page} onClick={() => onPageChange(meta.current_page + 1)}>Siguiente</button>
+          </div>
+        </div>}
 
         {canManage && profile ? (
           <AssociateProfilePanel profile={profile} onDownload={onDownloadProfile} />

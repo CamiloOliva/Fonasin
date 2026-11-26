@@ -158,9 +158,30 @@ async function requestJson<T>(path: string, options: RequestOptions = {}, retrie
   return payload as T;
 }
 
-export async function fetchAdminAssociates(): Promise<AdminAssociate[]> {
-  const response = await requestJson<{ data: AdminAssociate[] }>('/admin/associates');
+export type AdminAssociatePage = {
+  data: AdminAssociate[];
+  meta: { current_page: number; last_page: number; per_page: number; total: number };
+};
 
+export async function fetchAdminAssociatePage(page = 1, perPage = 50): Promise<AdminAssociatePage> {
+  return requestJson<AdminAssociatePage>(`/admin/associates?page=${page}&per_page=${perPage}`);
+}
+
+// Selectors in other administrative modules need the complete collection.
+export async function fetchAdminAssociates(): Promise<AdminAssociate[]> {
+  const first = await fetchAdminAssociatePage(1, 100);
+  const records = [...first.data];
+  for (let page = 2; page <= first.meta.last_page; page += 1) {
+    records.push(...(await fetchAdminAssociatePage(page, 100)).data);
+  }
+  return records;
+}
+
+export async function correctAdminAssociateEmail(id: string, email: string, confirmation: string, expectedEmail: string): Promise<AdminAssociate> {
+  const response = await requestJson<{ data: AdminAssociate }>(`/admin/associates/${id}/email`, {
+    method: 'POST',
+    body: JSON.stringify({ email, email_confirmation: confirmation, expected_email: expectedEmail }),
+  });
   return response.data;
 }
 

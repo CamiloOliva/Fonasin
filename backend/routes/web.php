@@ -132,6 +132,9 @@ Route::middleware(['auth', 'password.changed'])
         Route::post('/{associate}/activate', [AssociateController::class, 'activate'])
             ->middleware('can:updateStatus,associate')
             ->name('activate');
+        Route::post('/{associate}/email', [AssociateController::class, 'correctEmail'])
+            ->middleware('can:correctEmail,associate')
+            ->name('email.correct');
         Route::post('/{associate}/identity-support', [AssociateController::class, 'storeIdentitySupport'])
             ->middleware('can:manageIdentitySupport,associate')
             ->name('identity-support.store');

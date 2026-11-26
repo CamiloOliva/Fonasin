@@ -110,6 +110,26 @@ almacenamiento inicial, no se confirma la recepcion ni se intenta enviar correo.
 
 Las vistas administrativas deben filtrar eventos por modulo, recurso, actor, accion y rango de fechas. El detalle se trata como evidencia operativa y es de solo lectura.
 
+## Correccion administrativa de correo (26 de noviembre de 2026)
+
+`CorrectAssociateEmail` coordina Affiliation e Identity en una transaccion.
+Solo un administrador puede corregir la cuenta vinculada de un asociado sin
+roles administrativos. Se exige correo confirmado y correo anterior esperado
+para evitar sobrescribir otra correccion desde una pantalla desactualizada.
+Identity registra `user.email_corrected`, rota la contrasena a un valor aleatorio
+no entregado, revoca sesiones, recuerdo y enlaces de recuperacion, borra la
+verificacion del correo y exige establecer una nueva contrasena. Affiliation
+registra `associate.deactivated` con el mismo correlation_id. Ambos registros
+permanecen inactivos hasta la activacion administrativa y envio separado del
+nuevo acceso. No se guardan correos ni contrasenas en metadata. No se reescriben
+formularios ni documentos historicos. Cancelar la edicion no modifica datos.
+
+La carga administrativa de cedula faltante se permite tambien en registros
+activos y exentos de validacion heredada. Reutiliza almacenamiento privado,
+validacion PDF/JPG/PNG (5 MB), permiso exclusivo de administrador y el evento
+existente `associate.identity_support_uploaded`; no cambia el estado ni la
+exencion y no permite reemplazar un soporte existente.
+
 ## Retencion
 
 El periodo de retencion se definira con FONASIN y su asesoria juridica. Hasta contar con esa decision, los agentes no deben implementar eliminacion automatica de auditoria, documentos ni solicitudes.

@@ -20,6 +20,18 @@ En la segunda reauditoria el servidor exige texto para decimales de formulario
 al enviar. Un error de un borrador heredado debe corregirse en la seccion antes
 de reenviar; no se debe presentar el rechazo como envio confirmado.
 
+Actualizacion del 26 de noviembre de 2026 (pendiente de aceptacion funcional):
+el listado administrativo de asociados conserva `meta.total` y navega por paginas
+de 50, con orden estable en el servidor. Los selectores administrativos recorren
+todas las paginas para no omitir asociados posteriores a los primeros 50.
+La tabla permite desplazamiento horizontal sincronizado arriba y abajo.
+Solo el administrador puede corregir correo con doble ingreso, aviso del
+bloqueo de acceso al guardar y controles deshabilitados mientras se procesa.
+Tambien puede agregar la cedula faltante a registros anteriores sin soporte;
+no se cambia su estado ni se reemplazan documentos existentes. Nombre y numero
+de documento no se editan en este ajuste. Cobertura: `AssociateCorrectionsHttpTest`,
+`AssociateAdministration.test.tsx` y `adminAssociateService.test.ts`.
+
 ## Estados permitidos
 
 | Estado | Significado |

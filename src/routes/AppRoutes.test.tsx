@@ -60,6 +60,8 @@ vi.mock('../services/adminAssociateService', () => ({
   createAdminAssociate: vi.fn(),
   deactivateAdminAssociate: vi.fn(),
   fetchAdminAssociates: vi.fn().mockResolvedValue([]),
+  fetchAdminAssociatePage: vi.fn().mockResolvedValue({ data: [], meta: { current_page: 1, last_page: 1, per_page: 50, total: 0 } }),
+  correctAdminAssociateEmail: vi.fn(),
 }));
 
 vi.mock('../services/adminCreditService', () => ({

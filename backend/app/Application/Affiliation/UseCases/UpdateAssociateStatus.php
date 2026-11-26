@@ -27,6 +27,7 @@ class UpdateAssociateStatus
         ?string $ipHash = null,
     ): Associate {
         return DB::transaction(function () use ($associate, $status, $actor, $correlationId, $ipHash): Associate {
+            $associate = Associate::query()->lockForUpdate()->findOrFail($associate->id);
             if (! in_array($status, ['active', 'inactive'], true)) {
                 throw CannotManageAssociate::invalidStatus($status);
             }

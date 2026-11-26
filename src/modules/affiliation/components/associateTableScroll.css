@@ -1,0 +1,19 @@
+.associate-table-scroll {
+  scrollbar-color: #6b8f82 #edf4f0;
+  scrollbar-width: auto;
+}
+
+.associate-table-scroll::-webkit-scrollbar {
+  height: 14px;
+}
+
+.associate-table-scroll::-webkit-scrollbar-track {
+  background: #edf4f0;
+  border-radius: 8px;
+}
+
+.associate-table-scroll::-webkit-scrollbar-thumb {
+  background: #6b8f82;
+  border: 3px solid #edf4f0;
+  border-radius: 8px;
+}

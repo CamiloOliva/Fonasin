@@ -226,7 +226,7 @@ describe('AdminFonasin permissions and imports', () => {
       canManage: false,
     }));
 
-    expect(screen.getByText('0 registros')).toBeInTheDocument();
+    expect(screen.getByText('0 registros en total')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Crear asociado' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Consultar ficha' })).not.toBeInTheDocument();
     associatesView.unmount();
