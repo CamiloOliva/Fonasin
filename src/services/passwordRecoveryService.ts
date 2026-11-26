@@ -52,18 +52,23 @@ async function requestJson(path: string, body: unknown, retried = false): Promis
 
   if (!response.ok) {
     const message = typeof payload?.message === 'string' ? payload.message : 'No fue posible completar la solicitud.';
-    throw new Error(translatePasswordRecoveryError(message, response.status));
+    throw new Error(translatePasswordRecoveryError(message, response.status, payload?.errors, path === '/password/reset'));
   }
 
   return payload as { message: string };
 }
 
-function translatePasswordRecoveryError(message: string, status: number): string {
+function translatePasswordRecoveryError(message: string, status: number, errors: unknown, isReset: boolean): string {
   if (status === 419) return 'La sesion expiro. Recarga la pagina e intenta de nuevo.';
   if (status === 429) return 'Demasiados intentos. Espera unos minutos y vuelve a intentar.';
   if (status === 422) {
-    if (message.includes('password')) return 'La nueva contrasena debe tener minimo 8 caracteres, letras y numeros.';
-    if (message.includes('token')) return 'El enlace no es valido o ya expiro.';
+    const fields = errors && typeof errors === 'object' && !Array.isArray(errors) ? errors as Record<string, unknown> : {};
+    const legacyMessage = Object.keys(fields).length === 0;
+    if ('token' in fields || (legacyMessage && message.toLowerCase().includes('token'))) return 'El enlace no es valido o ya expiro. Solicita un nuevo enlace a FONASIN.';
+    if ('password' in fields || 'password_confirmation' in fields || (legacyMessage && message.toLowerCase().includes('password'))) {
+      return 'La nueva contrasena debe tener entre 8 y 128 caracteres, incluir letras y numeros y coincidir con su confirmacion.';
+    }
+    if (isReset) return 'No fue posible cambiar la contrasena. Pide a FONASIN que revise el acceso y reenvie el enlace.';
 
     return 'Revisa el correo, la cedula y los campos obligatorios.';
   }

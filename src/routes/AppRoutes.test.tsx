@@ -431,9 +431,9 @@ describe('AppRoutes', () => {
 
     renderRoute('/portal-asociado');
 
-    await user.type(await screen.findByLabelText(/contrasena temporal/i), 'Temporal123');
+    await user.type(await screen.findByLabelText(/^contrasena temporal$/i), 'Temporal123');
     await user.type(screen.getByLabelText(/^nueva contrasena$/i), 'NuevaClave123');
-    await user.type(screen.getByLabelText(/confirmar nueva contrasena/i), 'NuevaClave123');
+    await user.type(screen.getByLabelText(/^confirmar nueva contrasena$/i), 'NuevaClave123');
     await user.click(screen.getByRole('button', { name: /guardar contrasena/i }));
 
     expect(await screen.findByRole('heading', { level: 1, name: /completar perfil/i })).toBeInTheDocument();

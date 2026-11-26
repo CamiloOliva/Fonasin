@@ -53,6 +53,15 @@ consulta enlaces temporales nuevos; hay estado de carga, aviso si falta PDF,
 reintento ante error y reinicio del visor al cambiar de formulario. Permisos,
 firmas temporales y auditoria de visualizacion existentes se conservan.
 
+En recuperacion/primer acceso por enlace y cambio obligatorio de contrasena se
+agregan controles independientes para mostrar u ocultar cada campo. Son botones
+type=button, accesibles, sin envio del formulario ni cambio del valor. Los campos
+se limpian y vuelven a ocultarse tras guardar. Se muestran los requisitos vigentes
+de la nueva clave (8 a 128 caracteres, letras y numeros); las reglas de servidor
+no se modifican. La recuperacion interpreta las claves de errors de Laravel para
+distinguir errores de password y token, sin pedir cedula en el formulario de
+restablecimiento ni revelar el estado de una cuenta.
+
 ## Estados permitidos
 
 | Estado | Significado |

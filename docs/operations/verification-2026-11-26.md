@@ -158,6 +158,35 @@ Para desplegar esta correccion hay que instalar el composer.lock actualizado
 mediante composer install del procedimiento existente; no ejecutar composer
 update en produccion ni copiar solo el frontend. No requiere migraciones nuevas.
 
+## Mostrar contrasena y aclarar errores de recuperacion
+
+Solicitud de Carlos ante una captura con un error generico de cambio de clave.
+La captura no permite diagnosticar el estado real del enlace o de la cuenta.
+Se agrega PasswordField compartido con ojo independiente, inicialmente oculto,
+en los dos campos de recuperacion y los tres de cambio obligatorio. El control
+es accesible, no envia el formulario, conserva el valor y se deshabilita mientras
+guarda. Los campos vuelven a ocultarse al limpiarse tras el exito.
+
+La pantalla informa los requisitos existentes: 8 a 128 caracteres con letras y
+numeros, y confirmacion coincidente. No se cambia la politica de contrasenas.
+passwordRecoveryService distingue errores por las claves de validacion, tambien
+con mensajes traducidos: password, password_confirmation y token. El fallo de
+cuenta sigue siendo generico. Solo la pantalla que solicita recuperacion por
+correo y cedula conserva la indicacion de revisar esos dos campos; la pantalla
+que establece la nueva clave no pide un dato inexistente. No se imprimen ni
+persisten claves, tokens o datos reales; no se modifica ninguna cuenta productiva.
+
+Validacion: 182 pruebas frontend completas correctas (27 archivos), compilacion
+y recorrido movil en Edge con respuestas de recuperacion simuladas. Se prueban
+visibilidad independiente, ausencia de envio al pulsar el ojo, conservacion del
+payload y traduccion de errores por campo; exito limpia y oculta. En la primera
+corrida se precisaron dos selectores de campos en la prueba de cambio obligatorio,
+porque tambien coincidían con las etiquetas accesibles de los nuevos botones;
+la repeticion completa paso. No se cambian ni se relajan pruebas de autorizacion.
+La evidencia de navegador usa solo claves, correo y token ficticios; no demuestra
+la causa del error de la cuenta real ni envio de correo productivo. No se repite
+backend local al no modificar servidor ni reglas; CI ejecuta sus controles.
+
 ## Revision funcional y publicacion
 
 1. Comprobar total y navegacion con mas de 50 asociados, incluyendo el uso de
