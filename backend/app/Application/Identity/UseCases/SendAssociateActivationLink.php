@@ -17,8 +17,6 @@ use Illuminate\Support\Str;
 
 class SendAssociateActivationLink
 {
-    private const EXPIRES_IN_MINUTES = 60;
-
     public function __construct(
         private readonly RecordAuditEvent $recordAuditEvent,
     ) {}
@@ -41,6 +39,7 @@ class SendAssociateActivationLink
             }
 
             $token = Str::random(64);
+            $expiresInMinutes = (int) config('auth.passwords.users.expire', 60);
 
             DB::table('password_reset_tokens')->updateOrInsert(
                 ['email' => $user->email],
@@ -49,7 +48,7 @@ class SendAssociateActivationLink
 
             Mail::to($user->email)->send(new AssociateActivationMail(
                 activationUrl: $this->activationUrl($user->email, $token),
-                expiresInMinutes: self::EXPIRES_IN_MINUTES,
+                expiresInMinutes: $expiresInMinutes,
             ));
 
             ($this->recordAuditEvent)(
@@ -60,7 +59,7 @@ class SendAssociateActivationLink
                 actor: $actor,
                 actorType: AuditActorType::User,
                 ipHash: $ipHash,
-                metadata: ['channel' => 'email', 'expires_in_minutes' => self::EXPIRES_IN_MINUTES],
+                metadata: ['channel' => 'email', 'expires_in_minutes' => $expiresInMinutes],
             );
         });
     }

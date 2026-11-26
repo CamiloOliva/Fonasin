@@ -77,7 +77,7 @@ class AssociateCorrectionsHttpTest extends TestCase
         $this->postJson("/admin/associates/{$associate->id}/activation")->assertUnprocessable();
         $this->postJson("/admin/associates/{$associate->id}/activate")->assertOk();
         $this->postJson("/admin/associates/{$associate->id}/activation")->assertOk();
-        Mail::assertSent(AssociateActivationMail::class, fn ($mail) => $mail->hasTo('corregido@example.test'));
+        Mail::assertSent(AssociateActivationMail::class, fn ($mail) => $mail->hasTo('corregido@example.test') && $mail->expiresInMinutes === 1440 && str_contains($mail->render(), '24 horas'));
     }
 
     public function test_guest_reviewer_and_associate_cannot_correct_email(): void

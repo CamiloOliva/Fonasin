@@ -130,6 +130,22 @@ validacion PDF/JPG/PNG (5 MB), permiso exclusivo de administrador y el evento
 existente `associate.identity_support_uploaded`; no cambia el estado ni la
 exencion y no permite reemplazar un soporte existente.
 
+## Ventana temporal de acceso (26 de noviembre de 2026)
+
+Carlos solicito ampliar temporalmente a 24 horas los enlaces mientras se
+registran los asociados, por la atencion de media jornada. Primer acceso y
+recuperacion comparten `auth.passwords.users.expire = 1440` minutos; ambos
+correos y la auditoria del envio leen esa misma configuracion. Se conserva
+consumo unico, invalidacion por reenvio y revocacion por correccion de correo
+o desactivacion. No cambia la duracion de la sesion ni del formulario.
+
+El plazo se cuenta desde `created_at` del token. Al ser una configuracion comun,
+tambien se aplica a tokens existentes no consumidos ni revocados: uno emitido
+hace mas de una hora y menos de 24 puede resultar valido con el nuevo plazo.
+No se restauran tokens borrados. Al regresar a 60 minutos, coordinar el cambio
+despues de agotar la ultima ventana de 24 horas o reenviar acceso si hace falta;
+los pendientes tambien pasan a validarse con el plazo reducido.
+
 ## Retencion
 
 El periodo de retencion se definira con FONASIN y su asesoria juridica. Hasta contar con esa decision, los agentes no deben implementar eliminacion automatica de auditoria, documentos ni solicitudes.

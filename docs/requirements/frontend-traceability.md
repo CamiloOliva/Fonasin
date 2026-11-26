@@ -32,6 +32,12 @@ no se cambia su estado ni se reemplazan documentos existentes. Nombre y numero
 de documento no se editan en este ajuste. Cobertura: `AssociateCorrectionsHttpTest`,
 `AssociateAdministration.test.tsx` y `adminAssociateService.test.ts`.
 
+El mismo dia Carlos solicito una ventana temporal de 24 horas para enlaces de
+primer acceso y recuperacion. Los dos correos muestran el plazo real en horas
+y usan la misma configuracion que valida el token; no se cambia el formulario,
+la sesion ni los permisos. Cobertura: PasswordRecoverySecurityTest y las pruebas
+de correo de AuthenticationHttpTest y AssociateCorrectionsHttpTest.
+
 ## Estados permitidos
 
 | Estado | Significado |

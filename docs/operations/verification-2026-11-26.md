@@ -26,7 +26,8 @@ noviembre de 2026; pendientes de aceptacion funcional y despliegue por Diego.
 
 ## Verificacion local
 
-- Suite backend completa: 591 pruebas, 3806 aserciones, todas correctas en
+- Suite backend completa del ajuste administrativo bf44b8a, anterior al cambio
+  posterior de vigencia: 591 pruebas, 3806 aserciones, todas correctas en
   MariaDB local sobre fonasin_test. Duracion: 9 minutos 53 segundos.
 - 30 pruebas dirigidas backend, 243 aserciones: AssociateCorrectionsHttpTest,
   AssociateAdminHttpTest y AssociateImportOnboardingHttpTest, en MariaDB local,
@@ -43,6 +44,30 @@ La preparacion inicial de las pruebas backend requirio usar las credenciales
 locales existentes y el controlador `mariadb`; el usuario root y el controlador
 `mysql` no corresponden a este entorno. Las pruebas dirigidas anteriores son la
 corrida correcta posterior, no las tentativas de configuracion fallidas.
+
+## Ampliacion temporal de enlaces a 24 horas
+
+Solicitud posterior de Carlos por la jornada de atencion de FONASIN: ampliar
+la configuracion comun `auth.passwords.users.expire` a 1440 minutos. Afecta
+primer acceso y recuperacion, incluidos tokens existentes no consumidos ni
+revocados; no modifica la sesion ni el tiempo para completar formularios.
+Correos y auditoria de activacion usan la misma configuracion del validador.
+Los correos nuevos indican 24 horas. Se mantienen uso unico y revocacion por
+reenvio, correccion o desactivacion. No hay migracion ni cambio de frontend.
+
+Validacion posterior: 50 pruebas, 324 aserciones correctas en MariaDB local
+fonasin_test (PasswordRecoverySecurityTest, AuthenticationHttpTest,
+AssociateCorrectionsHttpTest y AssociateImportOnboardingHttpTest). Incluyen
+validez tras una y doce horas, limite exacto de 24 horas, uso unico, reenvio,
+texto de ambos correos y retorno de la configuracion a una hora. No se repitio
+la suite completa ni frontend para este cambio limitado a vigencia y correo.
+
+Despliegue: publicar tambien las vistas de correo y regenerar la cache de
+configuracion de Laravel (`php artisan config:cache`) desde el directorio real
+del backend productivo. Si hay procesos persistentes de correo, reiniciarlos
+mediante el procedimiento de despliegue existente. No se modifica produccion
+desde esta revision local. Para volver a una hora, coordinar la transicion de
+los pendientes segun la nota de auditoria; no cambiar la fecha de los tokens.
 
 ## Revision funcional y publicacion
 

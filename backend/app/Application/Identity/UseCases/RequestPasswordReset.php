@@ -71,7 +71,7 @@ class RequestPasswordReset
 
         Mail::to($email)->send(new PasswordResetLinkMail(
             resetUrl: $this->resetUrl($email, $token),
-            expiresInMinutes: 60,
+            expiresInMinutes: (int) config('auth.passwords.users.expire', 60),
         ));
     }
 
