@@ -45,6 +45,14 @@ fuera de la primera pagina. Ver todos limpia consulta y ficha y vuelve a pagina
 otra consulta. La cedula permanece en el POST privado existente; el listado se
 filtra por UUID validado, conservando permisos y acciones del registro.
 
+En Ficha > Formulario se agrega Ver formulario PDF. Consulta la solicitud
+habilitada mostrada en esa ficha y abre su ultimo `affiliation_summary` PDF con
+estado uploaded, mediante el visor y las rutas privadas existentes. No genera
+otro documento ni abre una libranza o un PDF de otra solicitud. Cada intento
+consulta enlaces temporales nuevos; hay estado de carga, aviso si falta PDF,
+reintento ante error y reinicio del visor al cambiar de formulario. Permisos,
+firmas temporales y auditoria de visualizacion existentes se conservan.
+
 ## Estados permitidos
 
 | Estado | Significado |

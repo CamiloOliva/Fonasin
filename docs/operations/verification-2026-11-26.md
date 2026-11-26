@@ -91,6 +91,32 @@ API simulada: consulta del registro 51 desde pagina 1, una sola fila y retorno
 a los 50 de la primera pagina con Ver todos. Sin errores JavaScript. No se
 repitieron las suites completas para este cambio acotado.
 
+## PDF del formulario desde la ficha
+
+Se incorpora Ver formulario PDF en Ficha > Formulario, solo cuando hay un
+formulario habilitado en la ficha. La presentacion consulta la solicitud por
+su ID existente, selecciona el PDF `affiliation_summary` uploaded de esa misma
+solicitud y reutiliza el visor DocumentPreview. No crea PDF ni busca documentos
+en otra solicitud. Si falta el PDF muestra un aviso y mantiene los datos.
+Los intentos repetidos consultan enlaces nuevos con su vigencia documental
+existente de diez minutos, contexto admin, firma relativa y autorizacion.
+Cambiar de formulario reinicia el visor para evitar mostrar el documento anterior.
+
+No se modifican rutas, autorizaciones, esquema, almacenamiento ni generacion de
+documentos. La visualizacion sigue registrando el evento existente document.viewed.
+Solo requiere la nueva compilacion frontend; se entrega en develop para despliegue
+desde main mediante el procedimiento existente. Las evidencias locales se excluyen
+de Git y utilizan exclusivamente cuentas ficticias.
+
+Validacion: 174 pruebas frontend completas correctas (24 archivos) y compilacion.
+Recorrido real en Edge contra frontend/backend locales y la base ficticia
+fonasin_e2e: consulta de asociado con formulario habilitado, apertura del PDF
+existente (respuesta 200, MIME application/pdf y cabecera de archivo %PDF-),
+cierre del visor y acceso al mismo enlace firmado desde invitado denegado con
+403. Sin errores JavaScript. No se regeneraron documentos ni se modificaron
+cuentas o solicitudes. No se repitio la suite backend al no cambiar codigo de
+servidor; el recorrido utiliza las rutas y autorizaciones reales existentes.
+
 ## Revision funcional y publicacion
 
 1. Comprobar total y navegacion con mas de 50 asociados, incluyendo el uso de

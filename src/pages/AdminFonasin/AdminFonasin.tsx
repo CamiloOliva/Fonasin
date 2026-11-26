@@ -27,6 +27,7 @@ import ForcedPasswordChange from '../../components/auth/ForcedPasswordChange';
 import ContentPanel from './ContentPanel';
 import AssociateTableScroll from '../../modules/affiliation/components/AssociateTableScroll';
 import AssociateEmailEditor from '../../modules/affiliation/components/AssociateEmailEditor';
+import AssociateFormPdfButton from '../../modules/affiliation/components/AssociateFormPdfButton';
 import {
   adminAffiliationDocumentUrl,
   approveAdminAffiliationApplication,
@@ -1693,7 +1694,7 @@ function AssociateProfilePanel({
 
       <div className="mt-5">
         {view === 'summary' ? <AssociateProfileSummary profile={profile} /> : null}
-        {view === 'form' ? <AssociateProfileForm profile={profile} /> : null}
+        {view === 'form' ? <AssociateProfileForm key={profile.form.application?.id ?? profile.associate.id} profile={profile} /> : null}
         {view === 'credits' ? <AssociateProfileCredits profile={profile} /> : null}
         {view === 'contributions' ? <AssociateProfileContributions profile={profile} /> : null}
       </div>
@@ -1724,12 +1725,15 @@ function AssociateProfileSummary({ profile }: { profile: AdminAssociateProfile }
 }
 
 function AssociateProfileForm({ profile }: { profile: AdminAssociateProfile }) {
+  const [previewDocument, setPreviewDocument] = useState<AdminAffiliationDocument | null>(null);
   if (!profile.form.application) {
     return <EmptyProfileState text="Este asociado no tiene un formulario habilitado." />;
   }
 
   return (
     <div className="legacy-space-y-6">
+      <AssociateFormPdfButton applicationId={profile.form.application.id} onPreview={setPreviewDocument} />
+      <DocumentPreview document={previewDocument} onClose={() => setPreviewDocument(null)} />
       {profile.form.application.sections.map((section) => (
         <section key={section.section}>
           <h4 className="border-b border-emerald-200 pb-2 text-sm font-black uppercase text-emerald-800">
