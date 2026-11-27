@@ -2,6 +2,31 @@
 
 Estas rutas no son API publica externa. Son contratos usados por el frontend React actual contra Laravel con cookie de sesion, CSRF cuando aplica y autorizacion en servidor.
 
+## Registro manual de creditos (revision 2026-11-01)
+
+`POST /admin/credits` y `PATCH /admin/credits/{id}` requieren sesion de admin,
+contrasena actualizada y policy. Reviewer y asociado no pueden escribir.
+Solo se persisten campos validados y permitidos por el caso de uso.
+
+- `initial_balance`, `current_balance`, `installment_amount`: cadenas decimales
+  sin miles, hasta 12 enteros y 2 decimales, entre cero y 999999999999.99.
+- `interest_rate`, `interest_rate_nominal_annual`: cadenas con hasta cuatro
+  decimales, entre cero y cien; la nominal anual es opcional.
+- Tambien se admiten enteros JSON exactos; floats JSON, exponentes y formatos
+  localizados no son el contrato HTTP. XLSX conserva su parser independiente.
+- `credit_line`: catalogo CreditLine compartido con la importacion.
+- `last_payment_date`: opcional/null, YYYY-MM-DD, 1000-01-01 a 9999-12-31.
+  PATCH omitido conserva la fecha; null la limpia. Se devuelve en el listado
+  administrativo y la consulta privada del titular, sin conversion horaria.
+- Crear exige asociado activo. Un credito archivado no admite actualizacion.
+  Los escritores bloquean asociado y credito en ese orden y releen el estado;
+  el evento de auditoria se inserta en la misma transaccion, con valores redactados.
+
+El agrupamiento visual es responsabilidad de la pantalla: `1.250.000,50` se
+envia como `"1250000.50"`. Saldo actual cero no se sustituye por el inicial.
+La pantalla bloquea nuevos envios mientras espera respuesta; no ofrece una
+clave de idempotencia global ni deduplicacion de operaciones entre dispositivos.
+
 ## Estado de cuenta consolidado del asociado
 
 ```text

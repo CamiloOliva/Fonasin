@@ -20,6 +20,54 @@ En la segunda reauditoria el servidor exige texto para decimales de formulario
 al enviar. Un error de un borrador heredado debe corregirse en la seccion antes
 de reenviar; no se debe presentar el rechazo como envio confirmado.
 
+Actualizacion del 26 de noviembre de 2026 (pendiente de aceptacion funcional):
+el listado administrativo de asociados conserva `meta.total` y navega por paginas
+de 50, con orden estable en el servidor. Los selectores administrativos recorren
+todas las paginas para no omitir asociados posteriores a los primeros 50.
+La tabla permite desplazamiento horizontal sincronizado arriba y abajo.
+Solo el administrador puede corregir correo con doble ingreso, aviso del
+bloqueo de acceso al guardar y controles deshabilitados mientras se procesa.
+Tambien puede agregar la cedula faltante a registros anteriores sin soporte;
+no se cambia su estado ni se reemplazan documentos existentes. Nombre y numero
+de documento no se editan en este ajuste. Cobertura: `AssociateCorrectionsHttpTest`,
+`AssociateAdministration.test.tsx` y `adminAssociateService.test.ts`.
+
+El mismo dia Carlos solicito una ventana temporal de 24 horas para enlaces de
+primer acceso y recuperacion. Los dos correos muestran el plazo real en horas
+y usan la misma configuracion que valida el token; no se cambia el formulario,
+la sesion ni los permisos. Cobertura: PasswordRecoverySecurityTest y las pruebas
+de correo de AuthenticationHttpTest y AssociateCorrectionsHttpTest.
+
+Consulta administrativa del mismo dia: al buscar por cedula, la ficha se mantiene
+debajo y la tabla muestra unicamente al asociado resuelto, incluso si estaba
+fuera de la primera pagina. Ver todos limpia consulta y ficha y vuelve a pagina
+1. Una busqueda fallida deja la tabla sin resultados, sin mezclar registros de
+otra consulta. La cedula permanece en el POST privado existente; el listado se
+filtra por UUID validado, conservando permisos y acciones del registro.
+
+En Ficha > Formulario se agrega Ver formulario PDF. Consulta la solicitud
+habilitada mostrada en esa ficha y abre su ultimo `affiliation_summary` PDF con
+estado uploaded, mediante el visor y las rutas privadas existentes. No genera
+otro documento ni abre una libranza o un PDF de otra solicitud. Cada intento
+consulta enlaces temporales nuevos; hay estado de carga, aviso si falta PDF,
+reintento ante error y reinicio del visor al cambiar de formulario. Permisos,
+firmas temporales y auditoria de visualizacion existentes se conservan.
+
+En recuperacion/primer acceso por enlace y cambio obligatorio de contrasena se
+agregan controles independientes para mostrar u ocultar cada campo. Son botones
+type=button, accesibles, sin envio del formulario ni cambio del valor. Los campos
+se limpian y vuelven a ocultarse tras guardar. Se muestran los requisitos vigentes
+de la nueva clave (8 a 128 caracteres, letras y numeros); las reglas de servidor
+no se modifican. La recuperacion interpreta las claves de errors de Laravel para
+distinguir errores de password y token, sin pedir cedula en el formulario de
+restablecimiento ni revelar el estado de una cuenta.
+
+Revision del 27 de noviembre: Ver todos invalida tanto la busqueda por cedula
+como la consulta por fila; respuestas y errores tardios no reabren una ficha
+cerrada. Pruebas de promesas diferidas en AppRoutes.test.tsx. El plazo confirmado
+para mensajes de acceso es de 24 horas para asociados y 2 para administradores
+y revisores, con prioridad del limite interno en roles mixtos. No cambia sesion.
+
 ## Estados permitidos
 
 | Estado | Significado |
@@ -89,7 +137,7 @@ ADR-009: la cartera del administrador y del asociado muestra ambas tasas sin cer
 | ID | Requisito | Estado | Bloqueador o siguiente paso |
 |---|---|---|---|
 | FE-ADM-001 a FE-ADM-009 | Gestion de afiliaciones y asociados | En curso | `/admin-fonasin`, endpoints paginados `GET /admin/affiliation-applications` y `GET /admin/associates`, acciones de revision, carga de libranza externa, habilitacion de asociado, deteccion de conflictos de identidad, alta manual, desactivacion logica e invalidacion de sesiones. `reviewer` conserva consulta, inicio de revision y solicitud de correccion; frontend oculta sus decisiones finales y controles de mutacion. Estas acciones son exclusivas de `admin` y estan cubiertas por pruebas HTTP y de presentacion. El detalle administrativo muestra las secciones descifradas de solicitudes pendientes y carga los PDF protegidos mediante sesion sin debilitar las cabeceras anti-iframe. Incluye ficha administrativa consolidada, busqueda HMAC por cedula en cuerpo POST, formulario vigente, cartera, aportes/ahorros y exportacion XLSX privada solo para admin. Falta validacion visual final con FONASIN. |
-| FE-ADM-009A | Gestion manual de creditos | En curso | `/admin-fonasin`, endpoints `GET/POST/PATCH /admin/credits`, listado paginado, lineas cerradas de credito, solo asociados activos, transiciones basicas de estado y archivado logico. `reviewer` accede al listado en modo consulta; frontend oculta crear, editar, archivar e importar, acciones exclusivas de `admin` cubiertas por pruebas de permisos. Falta validacion visual final con FONASIN. |
+| FE-ADM-009A | Gestion manual de creditos | En curso | `/admin-fonasin`, endpoints `GET/POST/PATCH /admin/credits`, listado paginado, lineas cerradas de credito, solo asociados activos, transiciones basicas de estado y archivado logico. Registro manual muestra puntos de miles y coma de centavos en ambos saldos sin enviar separadores al servidor; incluye fecha opcional del ultimo pago, validada como fecha calendario y persistida en el mismo campo usado por XLSX. Fecha visible en listado administrativo y portal. `reviewer` mantiene consulta sin controles de escritura. Pruebas de formulario, persistencia, permisos e importacion; pendiente aceptar estos dos ajustes con FONASIN. |
 | FE-ADM-010 | Importar cartera XLSX | Implementado / pendiente aceptacion | Plantilla de once columnas: documento, nombre_completo, linea_credito, numero_pagare, valor_inicial, valor_cuota, saldo_actual, fecha_ultimo_pago, Plazo, Tasa Int NA y Tasa Int mv. Plazo de 1 a 60 meses; tasas con unidades separadas, incluyendo celdas porcentuales numericas reales de Excel; importes limitados a DECIMAL(14,2). El pagare se cifra y se identifica por HMAC; se validan identidad y duplicados, se auditan cambios y un error tecnico termina el lote como fallido sin cambios parciales. |
 | FE-ADM-010A | Importar aportes y ahorros XLSX | En curso | La pestana administrativa `Importaciones` muestra las plantillas aprobadas de Aporte Mensual, Ahorro Voluntario y Ahorro Permanente, cada una con documento, nombre, valor mensual, saldo y ultimo pago, seguidas por su historial operativo. Backend conserva historial, revierte correcciones y reconstruye los tres saldos sin depender del orden del archivo. Falta aceptacion operativa con datos de FONASIN y regla definitiva de conciliacion. |
 | FE-ADM-010B | Consultar cuentas y movimientos de aportes | Implementado | `/admin-fonasin` incluye cuentas, saldos y libro de movimientos con filtros por asociado, estado, tipo y periodo; Backend expone consultas paginadas solo para admin/reviewer, valida filtros y audita accesos sin exponer hashes privados. |
@@ -134,6 +182,10 @@ La pagina publica `/creditos` solo cubre informacion general de `FE-WEB-004`; no
 - FE-ADM-009A: el listado permite marcar pagado solo un credito activo y
   archivar uno activo o pagado. No ofrece reactivar un credito pagado; el
   servidor conserva su prohibicion de `settled -> active`.
+  La reauditoria del 1 de noviembre agrega bloqueo de envio pendiente, control
+  de pegado/arrastre ambiguo y recorrido real de registro manual hasta el
+  portal del titular. Precision HTTP, catalogo compartido y concurrencia InnoDB
+  se documentan en ADR-010 y `docs/operations/verification-2026-11-01.md`.
 - FE-OBQ-001 / FE-OBQ-004: una cuenta inactiva pierde tambien una sesion
   existente. Se comprueban admin (lectura y escritura), reviewer, asociado,
   consulta de sesion y cambio de contrasena. El servidor invalida la sesion

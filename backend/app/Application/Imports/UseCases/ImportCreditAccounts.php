@@ -14,6 +14,7 @@ use App\Domain\Audit\Enums\AuditActorType;
 use App\Domain\Audit\Enums\AuditModule;
 use App\Domain\Credits\Enums\CreditAccountStatus;
 use App\Domain\Credits\Enums\CreditAuditAction;
+use App\Domain\Credits\Enums\CreditLine;
 use App\Domain\Imports\Enums\ImportAuditAction;
 use App\Models\Associate;
 use App\Models\CreditAccount;
@@ -40,18 +41,6 @@ class ImportCreditAccounts
         'plazo',
         'tasa_int_na',
         'tasa_int_mv',
-    ];
-
-    private const CREDIT_LINES = [
-        'FONALIBRE',
-        'FONAPEN',
-        'FONAPRIMA',
-        'FONAROTATIVO',
-        'FONAPORTES',
-        'CONVENIOS',
-        'CREDIRAPIDO',
-        'LIBRE INVERSION',
-        'APORTES',
     ];
 
     public function __construct(
@@ -120,6 +109,7 @@ class ImportCreditAccounts
                     $associate = Associate::query()
                         ->where('document_number_hash', $validated['document_hash'])
                         ->where('status', 'active')
+                        ->lockForUpdate()
                         ->first();
 
                     if (! $associate) {
@@ -136,6 +126,7 @@ class ImportCreditAccounts
 
                     $credit = CreditAccount::query()
                         ->where('promissory_note_number_hash', $validated['promissory_note_hash'])
+                        ->lockForUpdate()
                         ->first();
 
                     if ($credit && $credit->associate_id !== $associate->id) {
@@ -155,6 +146,7 @@ class ImportCreditAccounts
                         ->where('credit_line', $validated['credit_line'])
                         ->whereNull('promissory_note_number_hash')
                         ->where('status', '!=', CreditAccountStatus::Archived->value)
+                        ->lockForUpdate()
                         ->limit(2)
                         ->get();
 
@@ -293,7 +285,7 @@ class ImportCreditAccounts
             return ['error' => $this->rowError($rowNumber, 'El numero de pagare es obligatorio y no puede superar 120 caracteres.')];
         }
 
-        if (! in_array($line, self::CREDIT_LINES, true)) {
+        if (CreditLine::tryFrom($line) === null) {
             return ['error' => $this->rowError($rowNumber, 'La linea de credito no es valida.')];
         }
 

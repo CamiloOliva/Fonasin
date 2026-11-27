@@ -5,11 +5,13 @@ namespace Tests\Feature;
 use App\Domain\Credits\Enums\CreditAccountStatus;
 use App\Domain\Credits\Enums\CreditAuditAction;
 use App\Models\Associate;
+use App\Models\AuditEvent;
 use App\Models\CreditAccount;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class CreditAccountHttpTest extends TestCase
@@ -79,6 +81,7 @@ class CreditAccountHttpTest extends TestCase
             ->assertJsonPath('data.credit_line', 'FONALIBRE')
             ->assertJsonPath('data.interest_rate_basis', 'monthly')
             ->assertJsonPath('data.interest_rate_nominal_annual', null)
+            ->assertJsonPath('data.last_payment_date', null)
             ->assertJsonPath('data.status', CreditAccountStatus::Active->value);
 
         $creditId = $response->json('data.id');
@@ -110,6 +113,88 @@ class CreditAccountHttpTest extends TestCase
             'interest_rate' => '1.5000',
             'interest_rate_nominal_annual' => '18.0000',
         ]);
+    }
+
+    public function test_manual_last_payment_date_is_persisted_and_visible_to_admin_and_owner(): void
+    {
+        $admin = $this->userWithRole('admin');
+        $owner = $this->userWithRole('associate');
+        $associate = $this->createAssociate(['user_id' => $owner->id]);
+        $response = $this->actingAs($admin)->postJson('/admin/credits', [
+            'associate_id' => $associate->id,
+            ...$this->creditData(),
+            'last_payment_date' => '2026-10-30',
+        ])->assertCreated()->assertJsonPath('data.last_payment_date', '2026-10-30');
+        $credit = CreditAccount::query()->findOrFail($response->json('data.id'));
+        $this->assertSame('2026-10-30', $credit->last_payment_date->toDateString());
+        $this->getJson('/admin/credits')->assertOk()->assertJsonPath('data.0.last_payment_date', '2026-10-30');
+        $this->actingAs($owner)->getJson('/portal/credits')->assertOk()
+            ->assertJsonPath('data.0.id', $credit->id)
+            ->assertJsonPath('data.0.last_payment_date', '2026-10-30');
+    }
+
+    public function test_manual_last_payment_date_can_be_updated_preserved_and_cleared(): void
+    {
+        $admin = $this->userWithRole('admin');
+        $credit = $this->createCredit($admin);
+        $this->actingAs($admin)->patchJson("/admin/credits/{$credit->id}", ['last_payment_date' => '2026-10-30'])
+            ->assertOk()->assertJsonPath('data.last_payment_date', '2026-10-30');
+        $event = AuditEvent::query()->where('subject_id', $credit->id)
+            ->where('action', CreditAuditAction::CreditUpdated->value)->firstOrFail();
+        $this->assertContains('last_payment_date', $event->metadata['changed_fields']);
+        $this->assertStringNotContainsString('2026-10-30', json_encode($event->metadata));
+        $this->patchJson("/admin/credits/{$credit->id}", ['last_payment_date' => '2026-10-30'])->assertOk();
+        $unchangedEvent = AuditEvent::query()->where('subject_id', $credit->id)
+            ->where('action', CreditAuditAction::CreditUpdated->value)->where('id', '!=', $event->id)->firstOrFail();
+        $this->assertSame([], $unchangedEvent->metadata['changed_fields']);
+        $this->patchJson("/admin/credits/{$credit->id}", ['current_balance' => '0'])
+            ->assertOk()->assertJsonPath('data.last_payment_date', '2026-10-30');
+        $this->patchJson("/admin/credits/{$credit->id}", ['last_payment_date' => null])
+            ->assertOk()->assertJsonPath('data.last_payment_date', null);
+        $this->assertNull($credit->fresh()->last_payment_date);
+    }
+
+    public static function invalidPaymentDates(): array
+    {
+        return [
+            'impossible calendar day' => ['2026-02-30'],
+            'localized date' => ['30/10/2026'],
+            'invalid suffix' => ['2026-10-30GARBAGE'],
+            'timestamp not calendar date' => ['2026-10-30T20:00:00Z'],
+            'array' => [[]],
+            'number' => [20261030],
+        ];
+    }
+
+    #[DataProvider('invalidPaymentDates')]
+    public function test_invalid_manual_last_payment_date_never_creates_or_changes_credit(mixed $date): void
+    {
+        $admin = $this->userWithRole('admin');
+        $associate = $this->createAssociate();
+        $this->actingAs($admin)->postJson('/admin/credits', [
+            'associate_id' => $associate->id, ...$this->creditData(), 'last_payment_date' => $date,
+        ])->assertUnprocessable()->assertJsonValidationErrors('last_payment_date');
+        $this->assertDatabaseCount('credit_accounts', 0);
+        $this->assertDatabaseMissing('audit_events', ['action' => CreditAuditAction::CreditRegistered->value]);
+        $credit = $this->createCredit($admin, $associate);
+        $credit->forceFill(['last_payment_date' => '2026-10-01'])->save();
+        $this->patchJson("/admin/credits/{$credit->id}", ['last_payment_date' => $date])
+            ->assertUnprocessable()->assertJsonValidationErrors('last_payment_date');
+        $this->assertSame('2026-10-01', $credit->fresh()->last_payment_date->toDateString());
+        $this->assertDatabaseMissing('audit_events', ['action' => CreditAuditAction::CreditUpdated->value]);
+    }
+
+    public function test_reviewer_cannot_register_or_change_last_payment_date(): void
+    {
+        $reviewer = $this->userWithRole('reviewer');
+        $associate = $this->createAssociate();
+        $credit = $this->createCredit($reviewer, $associate);
+        $this->actingAs($reviewer)->postJson('/admin/credits', [
+            'associate_id' => $associate->id, ...$this->creditData(), 'last_payment_date' => '2026-10-30',
+        ])->assertForbidden();
+        $this->patchJson("/admin/credits/{$credit->id}", ['last_payment_date' => '2026-10-30'])->assertForbidden();
+        $this->assertDatabaseCount('credit_accounts', 1);
+        $this->assertNull($credit->fresh()->last_payment_date);
     }
 
     public function test_admin_can_register_the_new_credit_lines(): void

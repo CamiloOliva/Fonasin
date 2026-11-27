@@ -6,6 +6,6 @@
     <a href="{{ $resetUrl }}">Cambiar contrasena</a>
 </p>
 
-<p>Este enlace vence en {{ $expiresInMinutes }} minutos.</p>
+<p>Este enlace vence en {{ $expiresInMinutes % 60 === 0 ? ($expiresInMinutes / 60).' hora'.($expiresInMinutes === 60 ? '' : 's') : $expiresInMinutes.' minutos' }}.</p>
 
 <p>Si no solicitaste este cambio, puedes ignorar este mensaje.</p>

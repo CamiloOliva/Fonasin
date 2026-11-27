@@ -16,6 +16,8 @@ class RequestPasswordReset
     public function __construct(
         private readonly RecordAuthEvent $recordAuthEvent,
         private readonly HashesSensitiveData $hasher,
+        private readonly ResolvePasswordLinkLifetime $linkLifetime,
+        private readonly LockPasswordRecoveryUser $lockUser,
     ) {}
 
     public function __invoke(
@@ -28,51 +30,54 @@ class RequestPasswordReset
         $documentHash = $this->hasher->documentNumber($documentNumber);
         $correlationId = (string) Str::uuid();
 
-        /** @var User|null $user */
-        $user = User::query()
-            ->with('associate:id,user_id,document_number_hash,status')
-            ->where('email', $email)
-            ->where('status', 'active')
-            ->first();
+        DB::transaction(function () use ($email, $documentHash, $correlationId, $ipHash, $userAgentHash): void {
 
-        $matchesDocument = $user && (
-            $user->document_number_hash === $documentHash
-            || $user->associate?->document_number_hash === $documentHash
-        );
-        $canResetPassword = (bool) $matchesDocument
-            && (! $user->associate || $user->associate->status === 'active');
+            /** @var User|null $user */
+            $user = ($this->lockUser)($email);
+            if ($user && $user->status !== 'active') {
+                $user = null;
+            }
+            $user?->load('associate:id,user_id,document_number_hash,status');
 
-        ($this->recordAuthEvent)(
-            eventType: AuthEventType::PasswordResetRequested,
-            user: $canResetPassword ? $user : null,
-            emailHash: $this->hasher->email($email),
-            ipHash: $ipHash,
-            userAgentHash: $userAgentHash,
-            correlationId: $correlationId,
-            metadata: [
-                'matched_account' => (bool) $matchesDocument,
-                'eligible_account' => $canResetPassword,
-            ],
-        );
+            $matchesDocument = $user && (
+                $user->document_number_hash === $documentHash
+                || $user->associate?->document_number_hash === $documentHash
+            );
+            $canResetPassword = (bool) $matchesDocument
+                && (! $user->associate || $user->associate->status === 'active');
 
-        if (! $canResetPassword) {
-            return;
-        }
+            ($this->recordAuthEvent)(
+                eventType: AuthEventType::PasswordResetRequested,
+                user: $canResetPassword ? $user : null,
+                emailHash: $this->hasher->email($email),
+                ipHash: $ipHash,
+                userAgentHash: $userAgentHash,
+                correlationId: $correlationId,
+                metadata: [
+                    'matched_account' => (bool) $matchesDocument,
+                    'eligible_account' => $canResetPassword,
+                ],
+            );
 
-        $token = Str::random(64);
+            if (! $canResetPassword) {
+                return;
+            }
 
-        DB::table('password_reset_tokens')->updateOrInsert(
-            ['email' => $email],
-            [
-                'token' => Hash::make($token),
-                'created_at' => now(),
-            ],
-        );
+            $token = Str::random(64);
 
-        Mail::to($email)->send(new PasswordResetLinkMail(
-            resetUrl: $this->resetUrl($email, $token),
-            expiresInMinutes: 60,
-        ));
+            DB::table('password_reset_tokens')->updateOrInsert(
+                ['email' => $email],
+                [
+                    'token' => Hash::make($token),
+                    'created_at' => now(),
+                ],
+            );
+
+            Mail::to($email)->send(new PasswordResetLinkMail(
+                resetUrl: $this->resetUrl($email, $token),
+                expiresInMinutes: ($this->linkLifetime)($user),
+            ));
+        });
     }
 
     private function resetUrl(string $email, string $token): string

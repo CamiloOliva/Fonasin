@@ -37,6 +37,11 @@ class AssociatePolicy
         return $user->hasRole('admin');
     }
 
+    public function correctEmail(User $user, Associate $associate): bool
+    {
+        return $user->hasRole('admin');
+    }
+
     public function sendActivation(User $user, Associate $associate): bool
     {
         return $user->hasRole('admin');

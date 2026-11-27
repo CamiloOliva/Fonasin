@@ -110,6 +110,56 @@ almacenamiento inicial, no se confirma la recepcion ni se intenta enviar correo.
 
 Las vistas administrativas deben filtrar eventos por modulo, recurso, actor, accion y rango de fechas. El detalle se trata como evidencia operativa y es de solo lectura.
 
+## Correccion administrativa de correo (26 de noviembre de 2026)
+
+`CorrectAssociateEmail` coordina Affiliation e Identity en una transaccion.
+Solo un administrador puede corregir la cuenta vinculada de un asociado sin
+roles administrativos. Se exige correo confirmado y correo anterior esperado
+para evitar sobrescribir otra correccion desde una pantalla desactualizada.
+Identity registra `user.email_corrected`, rota la contrasena a un valor aleatorio
+no entregado, revoca sesiones, recuerdo y enlaces de recuperacion, borra la
+verificacion del correo y exige establecer una nueva contrasena. Affiliation
+registra `associate.deactivated` con el mismo correlation_id. Ambos registros
+permanecen inactivos hasta la activacion administrativa y envio separado del
+nuevo acceso. No se guardan correos ni contrasenas en metadata. No se reescriben
+formularios ni documentos historicos. Cancelar la edicion no modifica datos.
+
+La carga administrativa de cedula faltante se permite tambien en registros
+activos y exentos de validacion heredada. Reutiliza almacenamiento privado,
+validacion PDF/JPG/PNG (5 MB), permiso exclusivo de administrador y el evento
+existente `associate.identity_support_uploaded`; no cambia el estado ni la
+exencion y no permite reemplazar un soporte existente.
+
+## Ventana temporal de acceso (26 de noviembre de 2026)
+
+Carlos solicito ampliar temporalmente a 24 horas los enlaces mientras se
+registran los asociados, por la atencion de media jornada. Primer acceso y
+recuperacion comparten `auth.passwords.users.expire = 1440` minutos; ambos
+correos y la auditoria del envio leen esa misma configuracion. Se conserva
+consumo unico, invalidacion por reenvio y revocacion por correccion de correo
+o desactivacion. No cambia la duracion de la sesion ni del formulario.
+
+El plazo se cuenta desde `created_at` del token. Al ser una configuracion comun,
+tambien se aplica a tokens existentes no consumidos ni revocados: uno emitido
+hace mas de una hora y menos de 24 puede resultar valido con el nuevo plazo.
+No se restauran tokens borrados. Al regresar a 60 minutos, coordinar el cambio
+despues de agotar la ultima ventana de 24 horas o reenviar acceso si hace falta;
+los pendientes tambien pasan a validarse con el plazo reducido.
+
+## Correccion y recuperacion concurrentes; plazos por rol (27 de noviembre)
+
+La solicitud y el consumo de enlaces ahora bloquean la fila de usuario por su
+clave primaria antes de los tokens, y revalidan el correo despues de adquirir el
+bloqueo. Esto evita el orden inverso frente a la correccion de correo y la emision
+posterior de un token dirigido al correo anterior. Se conservan eventos existentes
+y el cierre transaccional de cada accion; no se registran credenciales ni tokens.
+
+Por confirmacion de Carlos, el plazo comun de la nota del 26 queda sustituido por
+24 horas para asociados y 2 horas para administradores/revisores, priorizando el
+limite de personal interno en roles mixtos. Emision y validacion usan el mismo
+resolvedor; el correo y la auditoria indican ese plazo. Ver los casos concurrentes
+y el tratamiento de enlaces pendientes en operations/verification-2026-11-27.md.
+
 ## Retencion
 
 El periodo de retencion se definira con FONASIN y su asesoria juridica. Hasta contar con esa decision, los agentes no deben implementar eliminacion automatica de auditoria, documentos ni solicitudes.

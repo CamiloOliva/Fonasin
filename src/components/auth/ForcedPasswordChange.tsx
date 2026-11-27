@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { KeyRound, Loader2, LogOut, ShieldCheck } from 'lucide-react';
+import PasswordField from './PasswordField';
 
 type ForcedPasswordChangeProps = {
   email: string;
@@ -84,41 +85,12 @@ export default function ForcedPasswordChange({
           </p>
 
           <div className="mt-5 legacy-space-y-4">
-            <label className="block">
-              <span className="text-sm font-bold text-slate-800">Contrasena temporal</span>
-              <input
-                type="password"
-                autoComplete="current-password"
-                value={currentPassword}
-                onChange={(event) => setCurrentPassword(event.target.value)}
-                required
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm font-bold text-slate-800">Nueva contrasena</span>
-              <input
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                minLength={8}
-                required
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm font-bold text-slate-800">Confirmar nueva contrasena</span>
-              <input
-                type="password"
-                autoComplete="new-password"
-                value={passwordConfirmation}
-                onChange={(event) => setPasswordConfirmation(event.target.value)}
-                minLength={8}
-                required
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-              />
-            </label>
+            <PasswordField label="Contrasena temporal" autoComplete="current-password" value={currentPassword}
+              onChange={event => setCurrentPassword(event.target.value)} required disabled={state === 'saving'} />
+            <PasswordField label="Nueva contrasena" autoComplete="new-password" value={password}
+              onChange={event => setPassword(event.target.value)} minLength={8} maxLength={128} required disabled={state === 'saving'} />
+            <PasswordField label="Confirmar nueva contrasena" autoComplete="new-password" value={passwordConfirmation}
+              onChange={event => setPasswordConfirmation(event.target.value)} minLength={8} maxLength={128} required disabled={state === 'saving'} />
           </div>
 
           {error ? <p className="mt-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</p> : null}

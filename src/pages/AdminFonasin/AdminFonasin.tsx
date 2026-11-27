@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { creditRateLabel } from '../../services/creditRate';
 import { monthlyCreditRateLabel } from '../../services/portalService';
+import { canPasteCreditBalance, formatCreditBalance, readCreditBalanceInput } from '../../modules/credits/manualCreditForm';
 import {
   CheckCircle2,
   ClipboardCheck,
@@ -24,6 +25,9 @@ import {
 } from 'lucide-react';
 import ForcedPasswordChange from '../../components/auth/ForcedPasswordChange';
 import ContentPanel from './ContentPanel';
+import AssociateTableScroll from '../../modules/affiliation/components/AssociateTableScroll';
+import AssociateEmailEditor from '../../modules/affiliation/components/AssociateEmailEditor';
+import AssociateFormPdfButton from '../../modules/affiliation/components/AssociateFormPdfButton';
 import {
   adminAffiliationDocumentUrl,
   approveAdminAffiliationApplication,
@@ -50,6 +54,9 @@ import {
   downloadAdminAssociateProfile,
   fetchAdminAssociateProfile,
   fetchAdminAssociates,
+  fetchAdminAssociatePage,
+  correctAdminAssociateEmail,
+  type AdminAssociatePage,
   searchAdminAssociateProfile,
   sendAdminAssociateActivation,
   uploadAdminAssociateIdentitySupport,
@@ -92,6 +99,7 @@ import { changeOwnPassword, type PortalUser } from '../../services/portalService
 
 type SessionState = 'checking' | 'guest' | 'authenticated';
 type DataState = 'idle' | 'loading' | 'ready' | 'error';
+type AssociateListFilter = { id: string } | { empty: true } | null;
 type AdminPanelView = 'applications' | 'associates' | 'credits' | 'contributions' | 'imports' | 'content';
 
 const statusLabels: Record<string, string> = {
@@ -194,6 +202,10 @@ export default function AdminFonasin() {
   const applicationActionInFlight = useRef(false);
   const [applicationActionBusy, setApplicationActionBusy] = useState(false);
   const [associates, setAssociates] = useState<AdminAssociate[]>([]);
+  const [associateMeta, setAssociateMeta] = useState<AdminAssociatePage['meta']>(defaultImportMeta);
+  const associateListRequest = useRef(0);
+  const [associateFilter, setAssociateFilter] = useState<AssociateListFilter>(null);
+  const associateProfileRequest = useRef(0);
   const [associateProfile, setAssociateProfile] = useState<AdminAssociateProfile | null>(null);
   const [associateProfileState, setAssociateProfileState] = useState<DataState>('idle');
   const [associateSearch, setAssociateSearch] = useState('');
@@ -238,12 +250,15 @@ export default function AdminFonasin() {
     credit_line: 'FONALIBRE',
     initial_balance: '',
     current_balance: '',
+    last_payment_date: '',
     term_months: '24',
     interest_rate: '1.2500',
     interest_rate_nominal_annual: '',
     installment_amount: '',
     status: 'active',
   });
+  const creditCreationLock = useRef(false);
+  const [creditCreationPending, setCreditCreationPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const isAdmin = canManageAdminData(user);
@@ -294,14 +309,21 @@ export default function AdminFonasin() {
     }
   }
 
-  async function loadAssociates() {
+  async function loadAssociates(page = associateMeta.current_page, filter = associateFilter) {
+    const request = ++associateListRequest.current;
     setAssociateDataState('loading');
     setError(null);
 
     try {
-      setAssociates(await fetchAdminAssociates());
+      const result = filter && 'empty' in filter
+        ? { data: [], meta: defaultImportMeta }
+        : await fetchAdminAssociatePage(page, 50, filter?.id);
+      if (request !== associateListRequest.current) return;
+      setAssociates(result.data);
+      setAssociateMeta(result.meta);
       setAssociateDataState('ready');
     } catch (caught) {
+      if (request !== associateListRequest.current) return;
       setAssociateDataState('error');
       setAssociates([]);
       setError(caught instanceof Error ? caught.message : 'No fue posible cargar los asociados.');
@@ -315,7 +337,7 @@ export default function AdminFonasin() {
     try {
       const [nextCredits, nextAssociates] = await Promise.all([
         fetchAdminCredits(),
-        associates.length > 0 ? Promise.resolve(associates) : fetchAdminAssociates(),
+        fetchAdminAssociates(),
       ]);
       setCredits(nextCredits);
       setAssociates(nextAssociates);
@@ -360,7 +382,7 @@ export default function AdminFonasin() {
     try {
       const [response, nextAssociates] = await Promise.all([
         fetchAdminContributionAccounts({ ...filters, page }),
-        associates.length > 0 ? Promise.resolve(associates) : fetchAdminAssociates(),
+        fetchAdminAssociates(),
       ]);
       setContributionAccounts(response.data);
       setContributionMeta(response.meta);
@@ -533,6 +555,8 @@ export default function AdminFonasin() {
   }
 
   async function handleLogout() {
+    ++associateProfileRequest.current;
+    ++associateListRequest.current;
     try {
       await logoutAdmin();
     } catch {
@@ -542,6 +566,11 @@ export default function AdminFonasin() {
     setUser(null);
     setApplications([]);
     setAssociates([]);
+    setAssociateProfile(null);
+    setAssociateProfileState('idle');
+    setAssociateFilter(null);
+    setAssociateSearch('');
+    setAssociateMeta(defaultImportMeta);
     setCredits([]);
     setDetail(null);
     setSelectedId(null);
@@ -661,6 +690,13 @@ export default function AdminFonasin() {
     }
   }
 
+  async function handleCorrectAssociateEmail(id: string, email: string, confirmation: string, expectedEmail: string) {
+    const updated = await correctAdminAssociateEmail(id, email, confirmation, expectedEmail);
+    setAssociates(items => items.map(item => item.id === updated.id ? updated : item));
+    if (associateProfile?.associate.id === id) setAssociateProfile(null);
+    setMessage('Correo corregido. La cuenta permanece inactiva. Activa el asociado y envia un nuevo acceso al correo correcto.');
+  }
+
   async function handleAssociateIdentitySupport(id: string, file: File) {
     if (!isAdmin) return;
     setError(null);
@@ -683,13 +719,17 @@ export default function AdminFonasin() {
   }
 
   async function loadAssociateProfile(id: string) {
+    const request = ++associateProfileRequest.current;
     setAssociateProfileState('loading');
     setError(null);
 
     try {
-      setAssociateProfile(await fetchAdminAssociateProfile(id));
+      const profile = await fetchAdminAssociateProfile(id);
+      if (request !== associateProfileRequest.current) return;
+      setAssociateProfile(profile);
       setAssociateProfileState('ready');
     } catch (caught) {
+      if (request !== associateProfileRequest.current) return;
       setAssociateProfile(null);
       setAssociateProfileState('error');
       setError(caught instanceof Error ? caught.message : 'No fue posible consultar la ficha del asociado.');
@@ -698,17 +738,40 @@ export default function AdminFonasin() {
 
   async function handleAssociateSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const request = ++associateProfileRequest.current;
+    ++associateListRequest.current;
+    setAssociateFilter({ empty: true });
+    setAssociates([]);
+    setAssociateMeta(defaultImportMeta);
+    setAssociateDataState('loading');
+    setAssociateProfile(null);
     setAssociateProfileState('loading');
     setError(null);
 
     try {
-      setAssociateProfile(await searchAdminAssociateProfile(associateSearch));
+      const profile = await searchAdminAssociateProfile(associateSearch);
+      if (request !== associateProfileRequest.current) return;
+      const filter = { id: profile.associate.id };
+      setAssociateFilter(filter);
+      setAssociateProfile(profile);
       setAssociateProfileState('ready');
+      await loadAssociates(1, filter);
     } catch (caught) {
+      if (request !== associateProfileRequest.current) return;
       setAssociateProfile(null);
       setAssociateProfileState('error');
+      setAssociateDataState('ready');
       setError(caught instanceof Error ? caught.message : 'No fue posible buscar el asociado.');
     }
+  }
+
+  async function clearAssociateSearch() {
+    ++associateProfileRequest.current;
+    setAssociateFilter(null);
+    setAssociateSearch('');
+    setAssociateProfile(null);
+    setAssociateProfileState('idle');
+    await loadAssociates(1, null);
   }
 
   async function handleAssociateProfileDownload() {
@@ -724,8 +787,10 @@ export default function AdminFonasin() {
   }
 
   async function handleCreateCredit(event: FormEvent<HTMLFormElement>) {
-    if (!isAdmin) return;
     event.preventDefault();
+    if (!isAdmin || creditCreationLock.current) return;
+    creditCreationLock.current = true;
+    setCreditCreationPending(true);
     setError(null);
     setMessage(null);
 
@@ -733,8 +798,9 @@ export default function AdminFonasin() {
       await createAdminCredit({
         associate_id: creditForm.associate_id,
         credit_line: creditForm.credit_line,
-        initial_balance: creditForm.initial_balance,
-        current_balance: creditForm.current_balance || creditForm.initial_balance,
+        initial_balance: creditForm.initial_balance.replace(/\.$/, ''),
+        current_balance: (creditForm.current_balance || creditForm.initial_balance).replace(/\.$/, ''),
+        last_payment_date: creditForm.last_payment_date || null,
         term_months: Number(creditForm.term_months),
         interest_rate: creditForm.interest_rate,
         interest_rate_nominal_annual: creditForm.interest_rate_nominal_annual || null,
@@ -746,11 +812,15 @@ export default function AdminFonasin() {
         initial_balance: '',
         current_balance: '',
         installment_amount: '',
+        last_payment_date: '',
       }));
       await loadCredits();
       setMessage('Credito registrado correctamente.');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible registrar el credito.');
+    } finally {
+      creditCreationLock.current = false;
+      setCreditCreationPending(false);
     }
   }
 
@@ -1185,6 +1255,9 @@ export default function AdminFonasin() {
         ) : activeView === 'associates' ? (
           <AssociatesPanel
             associates={associates}
+            meta={associateMeta}
+            onPageChange={loadAssociates}
+            onCorrectEmail={handleCorrectAssociateEmail}
             dataState={associateDataState}
             profile={associateProfile}
             profileState={associateProfileState}
@@ -1193,6 +1266,8 @@ export default function AdminFonasin() {
             createdAccess={createdAssociateAccess}
             onSearchChange={setAssociateSearch}
             onSearch={handleAssociateSearch}
+            isFiltered={associateFilter !== null}
+            onClearSearch={clearAssociateSearch}
             onSelectProfile={loadAssociateProfile}
             onDownloadProfile={handleAssociateProfileDownload}
             importState={importState}
@@ -1214,6 +1289,7 @@ export default function AdminFonasin() {
             form={creditForm}
             onFormChange={setCreditForm}
             onCreate={handleCreateCredit}
+            createPending={creditCreationPending}
             onStatusChange={handleCreditStatus}
             canManage={isAdmin}
           />
@@ -1288,6 +1364,9 @@ type AssociateFormState = {
 
 export function AssociatesPanel({
   associates,
+  meta,
+  onPageChange,
+  onCorrectEmail,
   dataState,
   profile,
   profileState,
@@ -1296,6 +1375,8 @@ export function AssociatesPanel({
   createdAccess,
   onSearchChange,
   onSearch,
+  isFiltered = false,
+  onClearSearch,
   onSelectProfile,
   onDownloadProfile,
   importState,
@@ -1310,6 +1391,9 @@ export function AssociatesPanel({
   canManage,
 }: {
   associates: AdminAssociate[];
+  meta?: AdminAssociatePage['meta'];
+  onPageChange?: (page: number) => void;
+  onCorrectEmail?: (id: string, email: string, confirmation: string, expectedEmail: string) => Promise<void>;
   dataState: DataState;
   profile: AdminAssociateProfile | null;
   profileState: DataState;
@@ -1318,6 +1402,8 @@ export function AssociatesPanel({
   createdAccess: { email: string; activationRequired: boolean } | null;
   onSearchChange: (value: string) => void;
   onSearch: (event: FormEvent<HTMLFormElement>) => void;
+  isFiltered?: boolean;
+  onClearSearch?: () => void;
   onSelectProfile: (id: string) => void;
   onDownloadProfile: () => void;
   importState: DataState;
@@ -1331,6 +1417,7 @@ export function AssociatesPanel({
   onDownloadIdentitySupport: (id: string) => void;
   canManage: boolean;
 }) {
+  const associateTotal = meta?.total ?? associates.length;
   return (
     <div className={`grid gap-5 ${canManage ? 'xl:grid-cols-[380px_1fr]' : ''}`}>
       {canManage ? (
@@ -1427,7 +1514,7 @@ export function AssociatesPanel({
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Asociados</p>
-            <h2 className="mt-1 text-2xl font-black text-slate-950">{associates.length} registros</h2>
+            <h2 className="mt-1 text-2xl font-black text-slate-950">{isFiltered ? `${associateTotal} ${associateTotal === 1 ? 'asociado encontrado' : 'asociados encontrados'}` : `${associateTotal} registros en total`}</h2>
           </div>
           <Users className="text-emerald-700" size={28} />
         </div>
@@ -1454,6 +1541,7 @@ export function AssociatesPanel({
             {profileState === 'loading' ? <Loader2 className="animate-spin" size={18} /> : <Search size={18} />}
             Consultar ficha
           </button>
+          {isFiltered && onClearSearch && <button type="button" onClick={onClearSearch} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-700">Ver todos</button>}
           </form>
         ) : null}
 
@@ -1464,7 +1552,7 @@ export function AssociatesPanel({
           </div>
         ) : null}
 
-        <div className="mt-5 overflow-x-auto">
+        <AssociateTableScroll>
           <table className="w-full min-w-[860px] text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
@@ -1514,7 +1602,7 @@ export function AssociatesPanel({
                           Enviar acceso
                         </button>
                       ) : null}
-                      {associate.legacy_validation_required && !associate.has_identity_support && associate.status !== 'active' ? (
+                      {!associate.has_identity_support ? (
                         <label className="cursor-pointer rounded-xl border border-emerald-200 px-3 py-2 text-xs font-black text-emerald-800 hover:bg-emerald-50">
                           Cargar cedula
                           <input type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" className="sr-only" onChange={(event) => {
@@ -1536,6 +1624,7 @@ export function AssociatesPanel({
                         {associate.status === 'active' ? 'Desactivar' : associate.legacy_validation_required ? 'Aprobar y activar' : 'Activar'}
                       </button>
                     </div>
+                    {onCorrectEmail && <AssociateEmailEditor associate={associate} onSave={onCorrectEmail} />}
                     </td>
                   ) : null}
                 </tr>
@@ -1544,10 +1633,17 @@ export function AssociatesPanel({
           </table>
           {associates.length === 0 && dataState !== 'loading' ? (
             <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">
-              No hay asociados registrados.
+              {isFiltered ? 'No hay asociados para esta consulta.' : 'No hay asociados registrados.'}
             </p>
           ) : null}
-        </div>
+        </AssociateTableScroll>
+        {meta && onPageChange && <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm">Pagina {meta.current_page} de {meta.last_page} · {associates.length} mostrados de {meta.total}</p>
+          <div className="flex gap-2">
+            <button type="button" className="rounded-xl border px-4 py-2 disabled:opacity-40" disabled={dataState === 'loading' || meta.current_page <= 1} onClick={() => onPageChange(meta.current_page - 1)}>Anterior</button>
+            <button type="button" className="rounded-xl border px-4 py-2 disabled:opacity-40" disabled={dataState === 'loading' || meta.current_page >= meta.last_page} onClick={() => onPageChange(meta.current_page + 1)}>Siguiente</button>
+          </div>
+        </div>}
 
         {canManage && profile ? (
           <AssociateProfilePanel profile={profile} onDownload={onDownloadProfile} />
@@ -1609,7 +1705,7 @@ function AssociateProfilePanel({
 
       <div className="mt-5">
         {view === 'summary' ? <AssociateProfileSummary profile={profile} /> : null}
-        {view === 'form' ? <AssociateProfileForm profile={profile} /> : null}
+        {view === 'form' ? <AssociateProfileForm key={profile.form.application?.id ?? profile.associate.id} profile={profile} /> : null}
         {view === 'credits' ? <AssociateProfileCredits profile={profile} /> : null}
         {view === 'contributions' ? <AssociateProfileContributions profile={profile} /> : null}
       </div>
@@ -1640,12 +1736,15 @@ function AssociateProfileSummary({ profile }: { profile: AdminAssociateProfile }
 }
 
 function AssociateProfileForm({ profile }: { profile: AdminAssociateProfile }) {
+  const [previewDocument, setPreviewDocument] = useState<AdminAffiliationDocument | null>(null);
   if (!profile.form.application) {
     return <EmptyProfileState text="Este asociado no tiene un formulario habilitado." />;
   }
 
   return (
     <div className="legacy-space-y-6">
+      <AssociateFormPdfButton applicationId={profile.form.application.id} onPreview={setPreviewDocument} />
+      <DocumentPreview document={previewDocument} onClose={() => setPreviewDocument(null)} />
       {profile.form.application.sections.map((section) => (
         <section key={section.section}>
           <h4 className="border-b border-emerald-200 pb-2 text-sm font-black uppercase text-emerald-800">
@@ -1745,6 +1844,7 @@ type CreditFormState = {
   credit_line: string;
   initial_balance: string;
   current_balance: string;
+  last_payment_date: string;
   term_months: string;
   interest_rate: string;
   interest_rate_nominal_annual: string;
@@ -1773,6 +1873,7 @@ export function CreditsPanel({
   onCreate,
   onStatusChange,
   canManage,
+  createPending = false,
 }: {
   credits: AdminCredit[];
   associates: AdminAssociate[];
@@ -1782,6 +1883,7 @@ export function CreditsPanel({
   onCreate: (event: FormEvent<HTMLFormElement>) => void;
   onStatusChange: (id: string, status: 'settled' | 'archived') => void;
   canManage: boolean;
+  createPending?: boolean;
 }) {
   const activeAssociates = associates.filter((associate) => associate.status === 'active');
 
@@ -1789,7 +1891,7 @@ export function CreditsPanel({
     <div className={`grid gap-5 ${canManage ? 'xl:grid-cols-[380px_1fr]' : ''}`}>
       {canManage ? (
         <div className="legacy-space-y-5">
-        <form onSubmit={onCreate} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <form onSubmit={onCreate} aria-busy={createPending} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-100 text-emerald-700">
               <WalletCards size={22} />
@@ -1800,7 +1902,7 @@ export function CreditsPanel({
             </div>
           </div>
 
-          <div className="mt-5 legacy-space-y-4">
+          <fieldset disabled={createPending} className="mt-5 min-w-0 border-0 p-0 legacy-space-y-4">
             <label className="block">
               <span className="text-sm font-bold text-slate-800">Asociado</span>
               <select
@@ -1832,11 +1934,18 @@ export function CreditsPanel({
               <label className="block">
                 <span className="text-sm font-bold text-slate-800">Saldo inicial</span>
                 <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={form.initial_balance}
-                  onChange={(event) => onFormChange({ ...form, initial_balance: event.target.value })}
+                  type="text"
+                  inputMode="decimal"
+                  value={formatCreditBalance(form.initial_balance)}
+                  autoComplete="off"
+                  onDrop={(event) => event.preventDefault()}
+                  onPaste={(event) => {
+                    if (!canPasteCreditBalance(event.clipboardData.getData('text'))) event.preventDefault();
+                  }}
+                  onChange={(event) => {
+                    const amount = readCreditBalanceInput(event.target.value);
+                    if (amount !== null) onFormChange({ ...form, initial_balance: amount });
+                  }}
                   required
                   className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
                 />
@@ -1844,15 +1953,38 @@ export function CreditsPanel({
               <label className="block">
                 <span className="text-sm font-bold text-slate-800">Saldo actual</span>
                 <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={form.current_balance}
-                  onChange={(event) => onFormChange({ ...form, current_balance: event.target.value })}
+                  type="text"
+                  inputMode="decimal"
+                  value={formatCreditBalance(form.current_balance)}
+                  autoComplete="off"
+                  onDrop={(event) => event.preventDefault()}
+                  onPaste={(event) => {
+                    if (!canPasteCreditBalance(event.clipboardData.getData('text'))) event.preventDefault();
+                  }}
+                  onChange={(event) => {
+                    const amount = readCreditBalanceInput(event.target.value);
+                    if (amount !== null) onFormChange({ ...form, current_balance: amount });
+                  }}
                   placeholder="Igual al inicial"
                   className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
                 />
               </label>
+            </div>
+            <p className="text-xs text-slate-500">Saldos en pesos: puntos para miles y coma para centavos. Ejemplo: 1.250.000,50.</p>
+            <div>
+            <label className="block">
+              <span className="text-sm font-bold text-slate-800">Fecha del último pago</span>
+              <input
+                type="date"
+                min="1000-01-01"
+                max="9999-12-31"
+                aria-describedby="credit-last-payment-help"
+                value={form.last_payment_date}
+                onChange={(event) => onFormChange({ ...form, last_payment_date: event.target.value })}
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+              />
+            </label>
+            <p id="credit-last-payment-help" className="mt-1 text-xs text-slate-500">Opcional si aún no hay pagos registrados.</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
               <label className="block">
@@ -1900,14 +2032,14 @@ export function CreditsPanel({
                 />
               </label>
             </div>
-          </div>
+          </fieldset>
 
           <button
             type="submit"
-            disabled={activeAssociates.length === 0}
+            disabled={createPending || activeAssociates.length === 0}
             className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            Registrar credito
+            {createPending ? 'Registrando credito...' : 'Registrar credito'}
             <WalletCards size={18} />
           </button>
         </form>
@@ -1943,6 +2075,7 @@ export function CreditsPanel({
                 <th className="py-3 pr-4">Plazo</th>
                 <th className="py-3 pr-4">Tasa Int NA</th>
                 <th className="py-3 pr-4">Tasa Int mv</th>
+                <th className="py-3 pr-4">Ultimo pago</th>
                 <th className="py-3 pr-4">Estado</th>
                 {canManage ? <th className="py-3 text-right">Acciones</th> : null}
               </tr>
@@ -1958,6 +2091,7 @@ export function CreditsPanel({
                   <td className="py-4 pr-4 text-slate-700">{credit.term_months ? `${credit.term_months} meses` : 'No informado'}</td>
                   <td className="py-4 pr-4 text-slate-700">{creditRateLabel(credit.interest_rate_nominal_annual)}</td>
                   <td className="py-4 pr-4 text-slate-700">{monthlyCreditRateLabel(credit)}</td>
+                  <td className="py-4 pr-4 text-slate-700">{credit.last_payment_date ?? 'Sin registro'}</td>
                   <td className="py-4 pr-4">
                     <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-700">
                       {statusLabel(credit.status)}

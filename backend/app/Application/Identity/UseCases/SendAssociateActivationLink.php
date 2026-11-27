@@ -17,49 +17,52 @@ use Illuminate\Support\Str;
 
 class SendAssociateActivationLink
 {
-    private const EXPIRES_IN_MINUTES = 60;
-
     public function __construct(
         private readonly RecordAuditEvent $recordAuditEvent,
+        private readonly ResolvePasswordLinkLifetime $linkLifetime,
     ) {}
 
     public function __invoke(Associate $associate, User $actor, ?string $ipHash = null): void
     {
-        $associate->loadMissing('user.roles');
-        $user = $associate->user;
+        DB::transaction(function () use ($associate, $actor, $ipHash): void {
+            $associate = Associate::query()->lockForUpdate()->findOrFail($associate->id);
+            $associate->loadMissing('user.roles');
+            $user = $associate->user;
 
-        if (
-            ! $user
-            || ! $user->hasRole('associate')
-            || $associate->status !== 'active'
-            || $user->status !== 'active'
-            || ! $user->must_change_password
-        ) {
-            throw CannotSendAssociateActivation::unavailable();
-        }
+            if (
+                ! $user
+                || ! $user->hasRole('associate')
+                || $associate->status !== 'active'
+                || $user->status !== 'active'
+                || ! $user->must_change_password
+            ) {
+                throw CannotSendAssociateActivation::unavailable();
+            }
 
-        $token = Str::random(64);
+            $token = Str::random(64);
+            $expiresInMinutes = ($this->linkLifetime)($user);
 
-        DB::table('password_reset_tokens')->updateOrInsert(
-            ['email' => $user->email],
-            ['token' => Hash::make($token), 'created_at' => now()],
-        );
+            DB::table('password_reset_tokens')->updateOrInsert(
+                ['email' => $user->email],
+                ['token' => Hash::make($token), 'created_at' => now()],
+            );
 
-        Mail::to($user->email)->send(new AssociateActivationMail(
-            activationUrl: $this->activationUrl($user->email, $token),
-            expiresInMinutes: self::EXPIRES_IN_MINUTES,
-        ));
+            Mail::to($user->email)->send(new AssociateActivationMail(
+                activationUrl: $this->activationUrl($user->email, $token),
+                expiresInMinutes: $expiresInMinutes,
+            ));
 
-        ($this->recordAuditEvent)(
-            module: AuditModule::Identity,
-            action: IdentityAuditAction::AssociateActivationSent->value,
-            subjectType: 'associate',
-            subjectId: $associate->id,
-            actor: $actor,
-            actorType: AuditActorType::User,
-            ipHash: $ipHash,
-            metadata: ['channel' => 'email', 'expires_in_minutes' => self::EXPIRES_IN_MINUTES],
-        );
+            ($this->recordAuditEvent)(
+                module: AuditModule::Identity,
+                action: IdentityAuditAction::AssociateActivationSent->value,
+                subjectType: 'associate',
+                subjectId: $associate->id,
+                actor: $actor,
+                actorType: AuditActorType::User,
+                ipHash: $ipHash,
+                metadata: ['channel' => 'email', 'expires_in_minutes' => $expiresInMinutes],
+            );
+        });
     }
 
     private function activationUrl(string $email, string $token): string

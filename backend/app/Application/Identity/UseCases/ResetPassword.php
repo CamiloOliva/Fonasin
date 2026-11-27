@@ -16,6 +16,8 @@ class ResetPassword
     public function __construct(
         private readonly RecordAuthEvent $recordAuthEvent,
         private readonly HashesSensitiveData $hasher,
+        private readonly ResolvePasswordLinkLifetime $linkLifetime,
+        private readonly LockPasswordRecoveryUser $lockUser,
     ) {}
 
     public function __invoke(
@@ -28,24 +30,24 @@ class ResetPassword
         $email = Str::lower(trim($email));
 
         return DB::transaction(function () use ($email, $token, $password, $ipHash, $userAgentHash): User {
+            // Always lock the user before its tokens, as email correction does.
+            $user = ($this->lockUser)($email);
+            if (! $user) {
+                throw ValidationException::withMessages([
+                    'token' => ['El enlace de recuperacion no es valido o ya expiro.'],
+                ]);
+            }
             $record = DB::table('password_reset_tokens')->where('email', $email)->lockForUpdate()->first();
 
             $createdAt = $record ? Carbon::parse($record->created_at) : null;
-            $expiresAt = $createdAt?->copy()->addMinutes((int) config('auth.passwords.users.expire', 60));
+            $expiresAt = $createdAt?->copy()->addMinutes(($this->linkLifetime)($user));
             if (! $record || ! $createdAt || $createdAt->isFuture() || $expiresAt->lte(now()) || ! Hash::check($token, $record->token)) {
                 throw ValidationException::withMessages([
                     'token' => ['El enlace de recuperacion no es valido o ya expiro.'],
                 ]);
             }
 
-            /** @var User|null $user */
-            $user = User::query()
-                ->where('email', $email)
-                ->where('status', 'active')
-                ->lockForUpdate()
-                ->first();
-
-            if (! $user) {
+            if ($user->status !== 'active') {
                 throw ValidationException::withMessages([
                     'email' => ['No fue posible actualizar la contrasena.'],
                 ]);

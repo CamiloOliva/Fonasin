@@ -96,7 +96,9 @@ return [
         'users' => [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
-            'expire' => 60,
+            // Role-specific windows confirmed by Carlos, 2026-11-27.
+            'expire' => 24 * 60,
+            'staff_expire' => 2 * 60,
             'throttle' => 60,
         ],
     ],

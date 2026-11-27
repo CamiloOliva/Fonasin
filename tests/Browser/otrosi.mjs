@@ -12,6 +12,62 @@ const fixture = JSON.parse(await readFile(path.join(artifacts, 'fixture.json'), 
 assert.equal(new URL(fixture.correction_url).origin, url.origin,
   'The captured correction email must target E2E_URL; configure FRONTEND_URL for both the seed and Laravel');
 
+async function manualCreditBrowserTest() {
+  const browser = await chromium.launch(process.env.E2E_BROWSER ? { executablePath: process.env.E2E_BROWSER } : {});
+  const admin = await browser.newContext({ baseURL });
+  const owner = await browser.newContext({ baseURL });
+  const errors = [];
+  async function login(context, route, email) {
+    const page = await context.newPage();
+    page.on('pageerror', error => errors.push(error.message));
+    await page.goto(route, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.getByLabel('Correo electronico', { exact: true }).fill(email);
+    await page.getByLabel('Contrasena', { exact: true }).fill(fixture.password);
+    await page.getByRole('button', { name: /entrar al panel|entrar al portal/i }).click();
+    await page.getByRole('button', { name: /cerrar sesion/i }).waitFor();
+    return page;
+  }
+  try {
+    const page = await login(admin, '/admin-fonasin', fixture.admin);
+    await page.getByRole('button', { name: 'Creditos', exact: true }).click();
+    const form = page.locator('form').filter({ has: page.getByRole('button', { name: 'Registrar credito', exact: true }) });
+    await form.getByLabel('Asociado', { exact: false }).selectOption({ label: 'Synthetic E2E associate' });
+    await form.getByLabel('Saldo inicial', { exact: true }).pressSequentially('1250000,50');
+    assert.equal(await form.getByLabel('Saldo inicial', { exact: true }).inputValue(), '1.250.000,50');
+    await form.getByLabel('Saldo actual', { exact: true }).fill('0');
+    await form.getByLabel('Fecha del último pago', { exact: true }).fill('2026-10-31');
+    await form.getByLabel('Plazo', { exact: true }).fill('12');
+    await form.getByLabel('Tasa Int mv (%)', { exact: true }).fill('1.5');
+    await form.getByLabel('Cuota', { exact: true }).fill('100000');
+    const submitted = page.waitForResponse(response => response.url().endsWith('/admin/credits') && response.request().method() === 'POST');
+    await form.getByRole('button', { name: 'Registrar credito', exact: true }).click();
+    const response = await submitted;
+    assert.equal(response.status(), 201, await response.text());
+    const payload = response.request().postDataJSON();
+    assert.equal(payload.initial_balance, '1250000.50');
+    assert.equal(payload.current_balance, '0');
+    assert.equal(payload.last_payment_date, '2026-10-31');
+    const created = (await response.json()).data;
+    assert.equal(created.initial_balance, '1250000.50');
+    assert.equal(created.current_balance, '0.00');
+    assert.equal(created.last_payment_date, '2026-10-31');
+    await page.locator('tr').filter({ hasText: '2026-10-31' }).first().waitFor();
+    assert.equal(await form.getByLabel('Fecha del último pago', { exact: true }).inputValue(), '');
+    const portal = await login(owner, '/portal-asociado', fixture.associate);
+    await portal.getByText('31/10/2026', { exact: true }).first().waitFor();
+    const statement = await owner.request.get('/portal/account-statement', { headers: { Accept: 'application/json' } });
+    assert.equal(statement.status(), 200);
+    const credit = (await statement.json()).data.credits.items.find(item => item.id === created.id);
+    assert.equal(credit.last_payment_date, '2026-10-31');
+    assert.equal(credit.current_balance, '0.00');
+    assert.deepEqual(errors, []);
+  } finally {
+    await admin.close();
+    await owner.close();
+    await browser.close();
+  }
+}
+
 test('security: password recovery expires links and revokes both browser sessions', { timeout: 180000 }, async () => {
   const browser = await chromium.launch(process.env.E2E_BROWSER ? { executablePath: process.env.E2E_BROWSER } : {});
   const contexts = [];
@@ -339,3 +395,7 @@ for (const purpose of ['profile_completion', 'data_update']) {
     }
   });
 }
+
+// Run after the XLSX scenario: that scenario deliberately starts with no manual
+// legacy credit, so its import must prove creation rather than updating a fixture.
+test('manual credit: grouped balances and last payment persist from admin to owner', { timeout: 120000 }, manualCreditBrowserTest);

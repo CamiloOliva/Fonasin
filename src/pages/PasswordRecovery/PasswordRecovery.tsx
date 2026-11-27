@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { ArrowLeft, CheckCircle2, KeyRound, Mail, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { requestPasswordReset, resetPassword } from '../../services/passwordRecoveryService';
+import PasswordField from '../../components/auth/PasswordField';
 
 export default function PasswordRecovery() {
   const [searchParams] = useSearchParams();
@@ -142,28 +143,11 @@ export default function PasswordRecovery() {
                 </label>
               ) : (
                 <>
-                  <label className="block">
-                    <span className="text-sm font-bold text-slate-800">Nueva contrasena</span>
-                    <input
-                      type="password"
-                      required
-                      minLength={8}
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="text-sm font-bold text-slate-800">Confirmar contrasena</span>
-                    <input
-                      type="password"
-                      required
-                      minLength={8}
-                      value={passwordConfirmation}
-                      onChange={(event) => setPasswordConfirmation(event.target.value)}
-                      className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-                    />
-                  </label>
+                  <PasswordField label="Nueva contrasena" required minLength={8} maxLength={128} autoComplete="new-password"
+                    value={password} disabled={loading} onChange={event => setPassword(event.target.value)} />
+                  <PasswordField label="Confirmar contrasena" required minLength={8} maxLength={128} autoComplete="new-password"
+                    value={passwordConfirmation} disabled={loading} onChange={event => setPasswordConfirmation(event.target.value)} />
+                  <p className="text-sm text-slate-600">Elige una contrasena propia de 8 a 128 caracteres, con letras y numeros. Escribela igual en ambos campos.</p>
                 </>
               )}
             </div>

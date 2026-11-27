@@ -4,7 +4,7 @@
 
 <p><a href="{{ $activationUrl }}">Activar acceso y definir contrasena</a></p>
 
-<p>Este enlace vence en {{ $expiresInMinutes }} minutos y solo puede utilizarse para tu cuenta.</p>
+<p>Este enlace vence en {{ $expiresInMinutes % 60 === 0 ? ($expiresInMinutes / 60).' hora'.($expiresInMinutes === 60 ? '' : 's') : $expiresInMinutes.' minutos' }} y solo puede utilizarse para tu cuenta.</p>
 
 <p>Despues de ingresar deberas completar tu informacion personal en el formulario protegido.</p>
 

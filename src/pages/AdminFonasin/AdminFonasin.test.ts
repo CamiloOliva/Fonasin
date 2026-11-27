@@ -1,4 +1,4 @@
-import { createElement } from 'react';
+import { createElement, useState } from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { AdminAffiliationDetail } from '../../services/adminAffiliationService';
@@ -30,6 +30,18 @@ const application: AdminAffiliationDetail = {
   documents: [],
   consents: [],
 };
+
+function ManualCreditForm() {
+  const [form, setForm] = useState({
+    associate_id: '', credit_line: 'FONALIBRE', initial_balance: '1250000.50', current_balance: '0',
+    last_payment_date: '', term_months: '24', interest_rate: '1.2500', interest_rate_nominal_annual: '',
+    installment_amount: '', status: 'active',
+  });
+  return createElement(CreditsPanel, {
+    credits: [], associates: [], dataState: 'ready', form, onFormChange: setForm,
+    onCreate: vi.fn(), onStatusChange: vi.fn(), canManage: true,
+  });
+}
 
 const applicationWithSections: AdminAffiliationDetail = {
   ...application,
@@ -122,6 +134,7 @@ describe('AdminFonasin permissions and imports', () => {
       })),
       associates: [], dataState: 'ready',
       form: { associate_id: '', credit_line: 'FONALIBRE', initial_balance: '', current_balance: '',
+        last_payment_date: '',
         term_months: '24', interest_rate: '1.2500', interest_rate_nominal_annual: '', installment_amount: '', status: 'active' },
       onFormChange: vi.fn(), onCreate: vi.fn(), onStatusChange: callback, canManage: true,
     }));
@@ -170,6 +183,7 @@ describe('AdminFonasin permissions and imports', () => {
     render(createElement(CreditsPanel, {
       credits, associates: [], dataState: 'ready',
       form: { associate_id: '', credit_line: 'FONALIBRE', initial_balance: '', current_balance: '',
+        last_payment_date: '',
         term_months: '24', interest_rate: '1.2500', interest_rate_nominal_annual: '', installment_amount: '', status: 'active' },
       onFormChange: vi.fn(), onCreate: vi.fn(), onStatusChange: vi.fn(), canManage: false,
     }));
@@ -212,7 +226,7 @@ describe('AdminFonasin permissions and imports', () => {
       canManage: false,
     }));
 
-    expect(screen.getByText('0 registros')).toBeInTheDocument();
+    expect(screen.getByText('0 registros en total')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Crear asociado' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Consultar ficha' })).not.toBeInTheDocument();
     associatesView.unmount();
@@ -226,6 +240,7 @@ describe('AdminFonasin permissions and imports', () => {
         credit_line: 'FONALIBRE',
         initial_balance: '',
         current_balance: '',
+        last_payment_date: '',
         term_months: '24',
         interest_rate: '1.2500',
         interest_rate_nominal_annual: '',
@@ -241,5 +256,33 @@ describe('AdminFonasin permissions and imports', () => {
     expect(screen.getByText('0 registros')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Registrar credito' })).not.toBeInTheDocument();
     expect(screen.queryByText('Importar XLSX')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Fecha del último pago')).not.toBeInTheDocument();
+  });
+
+  it('groups both balance inputs, preserves cents and zero, and allows an optional calendar date', () => {
+    render(createElement(ManualCreditForm));
+    const initial = screen.getByLabelText('Saldo inicial');
+    const current = screen.getByLabelText('Saldo actual');
+    expect(initial).toHaveAttribute('type', 'text');
+    expect(initial).toHaveValue('1.250.000,50');
+    expect(current).toHaveValue('0');
+    fireEvent.change(current, { target: { value: '999.999.999.999,99' } });
+    expect(current).toHaveValue('999.999.999.999,99');
+    fireEvent.change(current, { target: { value: '1000000000000' } });
+    expect(current).toHaveValue('999.999.999.999,99');
+    fireEvent.change(current, { target: { value: '' } });
+    expect(current).toHaveValue('');
+    fireEvent.change(initial, { target: { value: '1000' } });
+    expect(initial).toHaveValue('1.000');
+    expect(fireEvent.paste(initial, { clipboardData: { getData: () => '1250000.50' } })).toBe(false);
+    expect(fireEvent.drop(initial, { dataTransfer: { getData: () => '1250000.50' } })).toBe(false);
+    expect(initial).toHaveValue('1.000');
+    const date = screen.getByLabelText('Fecha del último pago');
+    expect(date).toHaveAttribute('type', 'date');
+    expect(date).toHaveAttribute('min', '1000-01-01');
+    expect(date).toHaveAttribute('max', '9999-12-31');
+    expect(date).not.toBeRequired();
+    fireEvent.change(date, { target: { value: '2026-10-30' } });
+    expect(date).toHaveValue('2026-10-30');
   });
 });

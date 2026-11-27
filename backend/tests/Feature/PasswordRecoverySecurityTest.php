@@ -2,13 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Application\Identity\UseCases\RequestPasswordReset;
 use App\Application\Identity\UseCases\ResetPassword;
+use App\Application\Security\Contracts\HashesSensitiveData;
+use App\Mail\PasswordResetLinkMail;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -20,10 +24,11 @@ class PasswordRecoverySecurityTest extends TestCase
     {
         return [
             'fresh' => [0, 200],
-            'just before expiry' => [3599, 200],
-            'exact expiry' => [3600, 422],
-            'past expiry' => [3601, 422],
-            'one day old' => [86400, 422],
+            'one hour old remains valid' => [3600, 200],
+            'twelve hours old remains valid' => [43200, 200],
+            'just before expiry' => [86399, 200],
+            'exact expiry' => [86400, 422],
+            'past expiry' => [86401, 422],
             'future timestamp' => [-60, 422],
         ];
     }
@@ -32,6 +37,7 @@ class PasswordRecoverySecurityTest extends TestCase
     public function test_token_expiry_is_enforced_without_changing_password_on_failure(int $age, int $status): void
     {
         $this->freezeTime();
+        $this->assertSame(1440, config('auth.passwords.users.expire'));
         $user = $this->account();
         $this->token($user, now()->subSeconds($age));
         $oldHash = $user->password;
@@ -46,6 +52,41 @@ class PasswordRecoverySecurityTest extends TestCase
             $this->assertSame($oldHash, $user->password);
             $this->assertDatabaseMissing('auth_events', ['event_type' => 'password_reset_completed']);
         }
+    }
+
+    public static function shortWindowAges(): array
+    {
+        return [[3599, 200], [3600, 422], [3601, 422]];
+    }
+
+    #[DataProvider('shortWindowAges')]
+    public function test_returning_to_one_hour_uses_the_configured_expiry(int $age, int $status): void
+    {
+        config(['auth.passwords.users.expire' => 60]);
+        $this->freezeTime();
+        $user = $this->account();
+        $this->token($user, now()->subSeconds($age));
+        $this->postJson('/password/reset', $this->resetPayload($user))->assertStatus($status);
+    }
+
+    public function test_resending_after_twelve_hours_invalidates_previous_link_and_starts_a_new_window(): void
+    {
+        Mail::fake();
+        $this->freezeTime();
+        $user = $this->account();
+        $user->forceFill(['document_number_hash' => app(HashesSensitiveData::class)->documentNumber('1234567890')])->save();
+        $send = app(RequestPasswordReset::class);
+        $send($user->email, '1234567890');
+        $first = Mail::sent(PasswordResetLinkMail::class)->first();
+        parse_str(parse_url($first->resetUrl, PHP_URL_QUERY), $firstQuery);
+        $this->travel(12)->hours();
+        $send($user->email, '1234567890');
+        $second = Mail::sent(PasswordResetLinkMail::class)->last();
+        parse_str(parse_url($second->resetUrl, PHP_URL_QUERY), $secondQuery);
+        $this->assertSame(1440, $second->expiresInMinutes);
+        $this->assertNotSame($firstQuery['token'], $secondQuery['token']);
+        $this->postJson('/password/reset', [...$this->resetPayload($user), 'token' => $firstQuery['token']])->assertUnprocessable();
+        $this->postJson('/password/reset', [...$this->resetPayload($user), 'token' => $secondQuery['token']])->assertOk();
     }
 
     public function test_reset_revokes_database_sessions_and_remember_token_but_not_other_accounts(): void
@@ -147,10 +188,43 @@ class PasswordRecoverySecurityTest extends TestCase
             ->postJson('/password/reset', $this->resetPayload($user))->assertUnprocessable();
     }
 
-    private function account(string $email = 'security-audit@example.test'): User
+    private function account(string $email = 'security-audit@example.test', array $roles = ['associate']): User
     {
-        return User::factory()->create(['email' => $email, 'password' => 'SyntheticOld123!', 'status' => 'active',
+        $user = User::factory()->create(['email' => $email, 'password' => 'SyntheticOld123!', 'status' => 'active',
             'must_change_password' => false, 'remember_token' => 'synthetic-remember']);
+        foreach ($roles as $role) {
+            $user->roles()->attach(Role::firstOrCreate(['name' => $role]));
+        }
+
+        return $user;
+    }
+
+    public static function roleWindows(): array
+    {
+        return [
+            'associate before 24h' => [['associate'], 86399, 200, 1440],
+            'associate at 24h' => [['associate'], 86400, 422, 1440],
+            'admin before 2h' => [['admin'], 7199, 200, 120],
+            'admin at 2h' => [['admin'], 7200, 422, 120],
+            'reviewer before 2h' => [['reviewer'], 7199, 200, 120],
+            'reviewer at 2h' => [['reviewer'], 7200, 422, 120],
+            'mixed roles at 2h' => [['associate', 'admin'], 7200, 422, 120],
+            'unclassified account at 2h' => [[], 7200, 422, 120],
+        ];
+    }
+
+    #[DataProvider('roleWindows')]
+    public function test_role_specific_expiry_and_recovery_mail_agree(array $roles, int $age, int $status, int $minutes): void
+    {
+        Mail::fake();
+        $this->freezeTime();
+        $user = $this->account(roles: $roles);
+        $user->forceFill(['document_number_hash' => app(HashesSensitiveData::class)->documentNumber('1234567890')])->save();
+        app(RequestPasswordReset::class)($user->email, '1234567890');
+        Mail::assertSent(PasswordResetLinkMail::class, fn ($mail) => $mail->expiresInMinutes === $minutes);
+        DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+        $this->token($user, now()->subSeconds($age));
+        $this->postJson('/password/reset', $this->resetPayload($user))->assertStatus($status);
     }
 
     public function test_malformed_email_is_a_validation_error_not_a_throttle_exception(): void

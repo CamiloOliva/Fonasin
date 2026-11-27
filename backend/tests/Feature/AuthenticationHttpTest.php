@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Identity\Enums\AuthEventType;
 use App\Application\Security\Contracts\HashesSensitiveData;
+use App\Domain\Identity\Enums\AuthEventType;
 use App\Mail\PasswordResetLinkMail;
 use App\Models\Associate;
 use App\Models\AuthEvent;
@@ -237,6 +237,7 @@ class AuthenticationHttpTest extends TestCase
             'email' => 'asociado@example.test',
             'status' => 'active',
         ]);
+        $user->roles()->attach(Role::query()->firstOrCreate(['name' => 'associate']));
         Associate::query()->create([
             'user_id' => $user->id,
             'document_type' => 'CC',
@@ -252,7 +253,7 @@ class AuthenticationHttpTest extends TestCase
         ])->assertOk()
             ->assertJsonPath('message', 'Si los datos coinciden, enviaremos un enlace temporal al correo registrado.');
 
-        Mail::assertSent(PasswordResetLinkMail::class);
+        Mail::assertSent(PasswordResetLinkMail::class, fn ($mail) => $mail->expiresInMinutes === 1440 && str_contains($mail->render(), '24 horas'));
         $this->assertDatabaseHas('password_reset_tokens', ['email' => 'asociado@example.test']);
         $this->assertDatabaseHas('auth_events', [
             'user_id' => $user->id,
