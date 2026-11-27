@@ -237,6 +237,7 @@ class AuthenticationHttpTest extends TestCase
             'email' => 'asociado@example.test',
             'status' => 'active',
         ]);
+        $user->roles()->attach(Role::query()->firstOrCreate(['name' => 'associate']));
         Associate::query()->create([
             'user_id' => $user->id,
             'document_type' => 'CC',

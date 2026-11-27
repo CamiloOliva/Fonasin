@@ -146,6 +146,20 @@ No se restauran tokens borrados. Al regresar a 60 minutos, coordinar el cambio
 despues de agotar la ultima ventana de 24 horas o reenviar acceso si hace falta;
 los pendientes tambien pasan a validarse con el plazo reducido.
 
+## Correccion y recuperacion concurrentes; plazos por rol (27 de noviembre)
+
+La solicitud y el consumo de enlaces ahora bloquean la fila de usuario por su
+clave primaria antes de los tokens, y revalidan el correo despues de adquirir el
+bloqueo. Esto evita el orden inverso frente a la correccion de correo y la emision
+posterior de un token dirigido al correo anterior. Se conservan eventos existentes
+y el cierre transaccional de cada accion; no se registran credenciales ni tokens.
+
+Por confirmacion de Carlos, el plazo comun de la nota del 26 queda sustituido por
+24 horas para asociados y 2 horas para administradores/revisores, priorizando el
+limite de personal interno en roles mixtos. Emision y validacion usan el mismo
+resolvedor; el correo y la auditoria indican ese plazo. Ver los casos concurrentes
+y el tratamiento de enlaces pendientes en operations/verification-2026-11-27.md.
+
 ## Retencion
 
 El periodo de retencion se definira con FONASIN y su asesoria juridica. Hasta contar con esa decision, los agentes no deben implementar eliminacion automatica de auditoria, documentos ni solicitudes.

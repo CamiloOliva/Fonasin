@@ -62,6 +62,12 @@ no se modifican. La recuperacion interpreta las claves de errors de Laravel para
 distinguir errores de password y token, sin pedir cedula en el formulario de
 restablecimiento ni revelar el estado de una cuenta.
 
+Revision del 27 de noviembre: Ver todos invalida tanto la busqueda por cedula
+como la consulta por fila; respuestas y errores tardios no reabren una ficha
+cerrada. Pruebas de promesas diferidas en AppRoutes.test.tsx. El plazo confirmado
+para mensajes de acceso es de 24 horas para asociados y 2 para administradores
+y revisores, con prioridad del limite interno en roles mixtos. No cambia sesion.
+
 ## Estados permitidos
 
 | Estado | Significado |

@@ -19,6 +19,7 @@ class SendAssociateActivationLink
 {
     public function __construct(
         private readonly RecordAuditEvent $recordAuditEvent,
+        private readonly ResolvePasswordLinkLifetime $linkLifetime,
     ) {}
 
     public function __invoke(Associate $associate, User $actor, ?string $ipHash = null): void
@@ -39,7 +40,7 @@ class SendAssociateActivationLink
             }
 
             $token = Str::random(64);
-            $expiresInMinutes = (int) config('auth.passwords.users.expire', 60);
+            $expiresInMinutes = ($this->linkLifetime)($user);
 
             DB::table('password_reset_tokens')->updateOrInsert(
                 ['email' => $user->email],

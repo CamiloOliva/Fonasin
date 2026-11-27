@@ -62,6 +62,8 @@ vi.mock('../services/adminAssociateService', () => ({
   fetchAdminAssociates: vi.fn().mockResolvedValue([]),
   fetchAdminAssociatePage: vi.fn().mockResolvedValue({ data: [], meta: { current_page: 1, last_page: 1, per_page: 50, total: 0 } }),
   correctAdminAssociateEmail: vi.fn(),
+  fetchAdminAssociateProfile: vi.fn(),
+  searchAdminAssociateProfile: vi.fn(),
 }));
 
 vi.mock('../services/adminCreditService', () => ({
@@ -905,3 +907,63 @@ describe('AppRoutes', () => {
 
     expect(window.sessionStorage.getItem('fonasin.portal.affiliation.draft.v1')).toBeNull();
   });});
+
+describe('Cierre de ficha ante respuestas tardias', () => {
+  const profile: adminAssociateService.AdminAssociateProfile = {
+    associate: { id: 'race-associate', document_type: 'CC', document_number: '1234567890', full_name: 'Persona Sintetica Tardia', status: 'active', email: 'race@example.test', user_status: 'active' },
+    form: { state: 'empty', application: null }, credits: { state: 'empty', items: [] },
+    contributions: { state: 'empty', account: null, movements: [], movement_count: 0, returned_movement_count: 0 }, generated_at: '',
+  };
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(adminAffiliationService.currentAdminUser).mockReset().mockResolvedValue({ id: 'admin', email: 'admin@example.test', roles: ['admin'], must_change_password: false });
+    vi.mocked(adminAffiliationService.fetchAdminAffiliationApplications).mockReset().mockResolvedValue([]);
+    vi.mocked(adminAssociateService.fetchAdminAssociatePage).mockReset().mockResolvedValue({
+      data: [{ id: 'race-associate', user_id: 'race-user', document_type: 'CC', document_number_masked: '***7890', full_name: 'Persona Sintetica Tardia', status: 'active',
+        user: { id: 'race-user', email: 'race@example.test', status: 'active' }, legacy_validation_required: false, has_identity_support: false,
+        legacy_validated_at: null, legacy_validated_by_user_id: null, affiliation_applications_count: 0, credit_accounts_count: 0, created_at: null, updated_at: null }],
+      meta: { current_page: 1, last_page: 1, per_page: 50, total: 1 },
+    });
+    vi.mocked(adminAssociateService.searchAdminAssociateProfile).mockReset().mockResolvedValue(profile);
+    vi.mocked(adminAssociateService.fetchAdminAssociateProfile).mockReset();
+  });
+
+  async function openFilteredProfile() {
+    renderRoute('/admin-fonasin');
+    fireEvent.click(await screen.findByRole('button', { name: 'Asociados' }));
+    fireEvent.change(screen.getByPlaceholderText('Buscar por cedula'), { target: { value: '1234567890' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Consultar ficha' }));
+    await screen.findByText('Ficha consolidada');
+  }
+
+  it.each(['success', 'failure'] as const)('Ver todos ignores a late row profile %s', async result => {
+    await openFilteredProfile();
+    let resolve!: (value: adminAssociateService.AdminAssociateProfile) => void;
+    let reject!: (reason: Error) => void;
+    vi.mocked(adminAssociateService.fetchAdminAssociateProfile).mockReturnValueOnce(new Promise((done, fail) => { resolve = done; reject = fail; }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ver ficha' }));
+    expect(adminAssociateService.fetchAdminAssociateProfile).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Ver todos' }));
+    expect(screen.queryByText('Ficha consolidada')).not.toBeInTheDocument();
+    await act(async () => {
+      if (result === 'success') resolve(profile);
+      else reject(new Error('Error tardio sintetico'));
+    });
+    expect(screen.queryByText('Ficha consolidada')).not.toBeInTheDocument();
+    expect(screen.queryByText('Error tardio sintetico')).not.toBeInTheDocument();
+    expect(screen.getByText('1 registros en total')).toBeInTheDocument();
+  });
+
+  it('Ver todos also invalidates a pending document search', async () => {
+    let resolve!: (value: adminAssociateService.AdminAssociateProfile) => void;
+    vi.mocked(adminAssociateService.searchAdminAssociateProfile).mockReturnValueOnce(new Promise(done => { resolve = done; }));
+    renderRoute('/admin-fonasin');
+    fireEvent.click(await screen.findByRole('button', { name: 'Asociados' }));
+    fireEvent.change(screen.getByPlaceholderText('Buscar por cedula'), { target: { value: '1234567890' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Consultar ficha' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ver todos' }));
+    await act(async () => resolve(profile));
+    expect(screen.queryByText('Ficha consolidada')).not.toBeInTheDocument();
+    expect(screen.getByText('1 registros en total')).toBeInTheDocument();
+  });
+});

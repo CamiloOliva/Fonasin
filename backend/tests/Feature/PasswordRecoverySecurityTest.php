@@ -188,10 +188,43 @@ class PasswordRecoverySecurityTest extends TestCase
             ->postJson('/password/reset', $this->resetPayload($user))->assertUnprocessable();
     }
 
-    private function account(string $email = 'security-audit@example.test'): User
+    private function account(string $email = 'security-audit@example.test', array $roles = ['associate']): User
     {
-        return User::factory()->create(['email' => $email, 'password' => 'SyntheticOld123!', 'status' => 'active',
+        $user = User::factory()->create(['email' => $email, 'password' => 'SyntheticOld123!', 'status' => 'active',
             'must_change_password' => false, 'remember_token' => 'synthetic-remember']);
+        foreach ($roles as $role) {
+            $user->roles()->attach(Role::firstOrCreate(['name' => $role]));
+        }
+
+        return $user;
+    }
+
+    public static function roleWindows(): array
+    {
+        return [
+            'associate before 24h' => [['associate'], 86399, 200, 1440],
+            'associate at 24h' => [['associate'], 86400, 422, 1440],
+            'admin before 2h' => [['admin'], 7199, 200, 120],
+            'admin at 2h' => [['admin'], 7200, 422, 120],
+            'reviewer before 2h' => [['reviewer'], 7199, 200, 120],
+            'reviewer at 2h' => [['reviewer'], 7200, 422, 120],
+            'mixed roles at 2h' => [['associate', 'admin'], 7200, 422, 120],
+            'unclassified account at 2h' => [[], 7200, 422, 120],
+        ];
+    }
+
+    #[DataProvider('roleWindows')]
+    public function test_role_specific_expiry_and_recovery_mail_agree(array $roles, int $age, int $status, int $minutes): void
+    {
+        Mail::fake();
+        $this->freezeTime();
+        $user = $this->account(roles: $roles);
+        $user->forceFill(['document_number_hash' => app(HashesSensitiveData::class)->documentNumber('1234567890')])->save();
+        app(RequestPasswordReset::class)($user->email, '1234567890');
+        Mail::assertSent(PasswordResetLinkMail::class, fn ($mail) => $mail->expiresInMinutes === $minutes);
+        DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+        $this->token($user, now()->subSeconds($age));
+        $this->postJson('/password/reset', $this->resetPayload($user))->assertStatus($status);
     }
 
     public function test_malformed_email_is_a_validation_error_not_a_throttle_exception(): void

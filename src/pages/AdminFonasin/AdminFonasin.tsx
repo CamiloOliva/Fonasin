@@ -205,7 +205,7 @@ export default function AdminFonasin() {
   const [associateMeta, setAssociateMeta] = useState<AdminAssociatePage['meta']>(defaultImportMeta);
   const associateListRequest = useRef(0);
   const [associateFilter, setAssociateFilter] = useState<AssociateListFilter>(null);
-  const associateSearchRequest = useRef(0);
+  const associateProfileRequest = useRef(0);
   const [associateProfile, setAssociateProfile] = useState<AdminAssociateProfile | null>(null);
   const [associateProfileState, setAssociateProfileState] = useState<DataState>('idle');
   const [associateSearch, setAssociateSearch] = useState('');
@@ -555,6 +555,8 @@ export default function AdminFonasin() {
   }
 
   async function handleLogout() {
+    ++associateProfileRequest.current;
+    ++associateListRequest.current;
     try {
       await logoutAdmin();
     } catch {
@@ -564,6 +566,11 @@ export default function AdminFonasin() {
     setUser(null);
     setApplications([]);
     setAssociates([]);
+    setAssociateProfile(null);
+    setAssociateProfileState('idle');
+    setAssociateFilter(null);
+    setAssociateSearch('');
+    setAssociateMeta(defaultImportMeta);
     setCredits([]);
     setDetail(null);
     setSelectedId(null);
@@ -712,13 +719,17 @@ export default function AdminFonasin() {
   }
 
   async function loadAssociateProfile(id: string) {
+    const request = ++associateProfileRequest.current;
     setAssociateProfileState('loading');
     setError(null);
 
     try {
-      setAssociateProfile(await fetchAdminAssociateProfile(id));
+      const profile = await fetchAdminAssociateProfile(id);
+      if (request !== associateProfileRequest.current) return;
+      setAssociateProfile(profile);
       setAssociateProfileState('ready');
     } catch (caught) {
+      if (request !== associateProfileRequest.current) return;
       setAssociateProfile(null);
       setAssociateProfileState('error');
       setError(caught instanceof Error ? caught.message : 'No fue posible consultar la ficha del asociado.');
@@ -727,7 +738,7 @@ export default function AdminFonasin() {
 
   async function handleAssociateSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const request = ++associateSearchRequest.current;
+    const request = ++associateProfileRequest.current;
     ++associateListRequest.current;
     setAssociateFilter({ empty: true });
     setAssociates([]);
@@ -739,14 +750,14 @@ export default function AdminFonasin() {
 
     try {
       const profile = await searchAdminAssociateProfile(associateSearch);
-      if (request !== associateSearchRequest.current) return;
+      if (request !== associateProfileRequest.current) return;
       const filter = { id: profile.associate.id };
       setAssociateFilter(filter);
       setAssociateProfile(profile);
       setAssociateProfileState('ready');
       await loadAssociates(1, filter);
     } catch (caught) {
-      if (request !== associateSearchRequest.current) return;
+      if (request !== associateProfileRequest.current) return;
       setAssociateProfile(null);
       setAssociateProfileState('error');
       setAssociateDataState('ready');
@@ -755,7 +766,7 @@ export default function AdminFonasin() {
   }
 
   async function clearAssociateSearch() {
-    ++associateSearchRequest.current;
+    ++associateProfileRequest.current;
     setAssociateFilter(null);
     setAssociateSearch('');
     setAssociateProfile(null);
